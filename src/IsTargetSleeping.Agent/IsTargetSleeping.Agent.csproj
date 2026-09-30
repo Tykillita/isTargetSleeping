@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- El agente de memoria: lo único que corre como administrador. Una app de
+       consola sin ventana, un solo .exe autocontenido y recortado. A diferencia de
+       la app (WPF), no desempaqueta DLL nativas en %TEMP% al arrancar: un proceso
+       elevado nunca carga código de una carpeta que el usuario pueda escribir. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>isTargetSleeping.MemoryAgent</AssemblyName>
+    <RootNamespace>IsTargetSleeping.Agent</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\VERSION').Trim())</Version>
+    <Product>isTargetSleeping</Product>
+    <Company>CodeSentry - Tykillita</Company>
+    <Copyright>Copyright (c) 2026 CodeSentry - Tykillita (Ruben Pino)</Copyright>
+    <Description>isTargetSleeping memory agent: frees RAM with administrator rights.</Description>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <PublishTrimmed>true</PublishTrimmed>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\IsTargetSleeping\Core\CleanSpec.cs" Link="CleanSpec.cs" />
+  </ItemGroup>
+
+</Project>

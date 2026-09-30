@@ -1,0 +1,820 @@
+<UserControl x:Class="IsTargetSleeping.UI.ContentView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:IsTargetSleeping.UI"
+             Width="340" Background="{DynamicResource PanelTint}" Foreground="{DynamicResource Fg}"
+             FontFamily="{StaticResource Sans}" FontSize="12"
+             TextOptions.TextFormattingMode="Ideal" UseLayoutRounding="True" SnapsToDevicePixels="True">
+  <UserControl.Resources>
+    <!-- Un ajuste con interruptor (Notificaciones). -->
+    <DataTemplate x:Key="SwitchRowTemplate" DataType="{x:Type ui:SwitchRow}">
+      <StackPanel>
+        <Rectangle Style="{StaticResource Divider}" Margin="0,9" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+        <DockPanel>
+          <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding IsOn}" Command="{Binding Toggle}" AutomationProperties.Name="{Binding Title}" Margin="10,0,0,0" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontSize="12" />
+            <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" Visibility="{Binding HasDetail, Converter={StaticResource Visible}}" />
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
+  <Grid>
+    <!-- Profundidad del vidrio: una sombra negra que se asienta hacia el borde inferior. -->
+    <Border Height="220" VerticalAlignment="Bottom" Background="{DynamicResource Sheen}" IsHitTestVisible="False" />
+    <StackPanel>
+
+        <!-- MARK: cabecera (se arrastra para mover el panel; doble clic: vuelve junto a la bandeja) -->
+        <Border Background="Transparent" Padding="14,11" MouseLeftButtonDown="OnHeaderMouseDown"
+                MouseMove="OnHeaderMouseMove" MouseLeftButtonUp="OnHeaderMouseUp">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="22" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:LogoView Width="22" Height="22" Color="{Binding LogoBrush}" VerticalAlignment="Center"
+                         Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}" />
+            <TextBlock Text="{Binding HeaderGlyph}" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="{DynamicResource Accent}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Visibility="{Binding ShowingSecondary, Converter={StaticResource Visible}}" />
+            <StackPanel Grid.Column="1" Margin="9,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding HeaderTitle}" FontSize="14.5" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Subtitle}" FontFamily="{StaticResource Mono}" FontSize="10.5"
+                           Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <Border Grid.Column="2" CornerRadius="10" Padding="8,3,9,3" VerticalAlignment="Center" Margin="0,0,6,0"
+                    Background="{Binding PillBackground}" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse Width="6" Height="6" Fill="{Binding PillForeground}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding PillText}" Margin="5,0,0,0" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{Binding PillForeground}" />
+                </StackPanel>
+            </Border>
+            <!-- Al lado: la otra vista (Actividad o Ajustes). En la esquina: Ajustes, o la X para volver. -->
+            <Button Grid.Column="3" Style="{StaticResource Plain}" Command="{Binding SideCommand}" ToolTip="{Binding SideHelp}"
+                    VerticalAlignment="Center" Margin="0,0,2,0">
+                <Border Width="26" Height="24" CornerRadius="6" Background="Transparent">
+                    <TextBlock Text="{Binding SideGlyph}" FontFamily="{StaticResource Icons}" FontSize="13"
+                               Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Button>
+            <Button Grid.Column="4" Style="{StaticResource Plain}" Command="{Binding CornerCommand}" ToolTip="{Binding CornerHelp}"
+                    VerticalAlignment="Center">
+                <Border Width="26" Height="24" CornerRadius="6" Background="{Binding CornerBackground}">
+                    <TextBlock Text="{Binding CornerGlyph}" FontFamily="{StaticResource Icons}" FontSize="13"
+                               Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+            </Button>
+        </Grid>
+        </Border>
+        <Rectangle Style="{StaticResource Divider}" />
+
+        <ScrollViewer MaxHeight="{Binding BodyMaxHeight}" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <Grid>
+
+        <!-- MARK: panel principal -->
+        <StackPanel Margin="14" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">
+
+            <!-- Botón grande -->
+            <Border Style="{StaticResource CardBox}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Button Style="{StaticResource Plain}" Command="{Binding TogglePower}" IsEnabled="{Binding CanToggle}"
+                            ToolTip="{Binding HeroHelp}" Width="72" Height="72">
+                        <Grid Width="72" Height="72">
+                            <Ellipse x:Name="Halo" Fill="{Binding HeroFill}" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="HaloScale" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <Ellipse Width="56" Height="56" Stroke="{Binding HeroTint}" StrokeThickness="2" />
+                            <Path Data="{Binding HeroIcon}" Stroke="{Binding HeroTint}" StrokeThickness="2.4" Width="20" Height="20"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                    </Button>
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding HeroTitle}" FontSize="17.5" FontWeight="SemiBold" Foreground="{Binding HeroTitleBrush}" />
+                        <TextBlock Text="{Binding HeroDetail}" Margin="0,2,0,0" FontSize="12" Foreground="{DynamicResource Secondary}"
+                                   TextWrapping="Wrap" MaxHeight="52" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Modo juego -->
+            <Border Style="{StaticResource CardBox}" Margin="0,10,0,0" Padding="11,10"
+                    Visibility="{Binding ShowGameBanner, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7FC;" FontFamily="{StaticResource Icons}" FontSize="16"
+                               Foreground="{DynamicResource Secondary}" Margin="0,1,10,0" VerticalAlignment="Top" />
+                    <StackPanel>
+                        <TextBlock Text="{Binding GameBannerTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding GameBannerDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Style="{StaticResource Bordered}" Content="{Binding PowerAnywayLabel}" Command="{Binding PowerAnyway}"
+                                    Visibility="{Binding ShowPowerAnyway, Converter={StaticResource Visible}}" Margin="0,0,8,0" />
+                            <Button Style="{StaticResource Plain}" Command="{Binding NotAGame}" VerticalAlignment="Center"
+                                    Visibility="{Binding ShowNotAGame, Converter={StaticResource Visible}}">
+                                <TextBlock Text="{Binding NotAGameLabel}" FontSize="11.5" Foreground="{DynamicResource Muted}" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Nueva versión -->
+            <Border Margin="0,10,0,0" CornerRadius="10" Padding="10" Background="{DynamicResource AccentSoft}"
+                    Visibility="{Binding ShowUpdate, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Prominent}" Content="{Binding UpdateLabel}" Command="{Binding InstallUpdate}"
+                            VerticalAlignment="Center" Margin="8,0,0,0" Visibility="{Binding UpdateIdle, Converter={StaticResource Visible}}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding UpdateTitle}" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding UpdateDetail}" FontSize="11" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Avisos -->
+            <Border Margin="0,10,0,0" CornerRadius="10" Padding="10" Background="{DynamicResource WarmSoft}"
+                    Visibility="{Binding HasError, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="{StaticResource Icons}" FontSize="13"
+                               Foreground="{DynamicResource Warm}" Margin="0,1,8,0" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissError}" VerticalAlignment="Top" Margin="6,2,0,0">
+                        <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
+                    </Button>
+                    <TextBox Text="{Binding ErrorText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"
+                             Background="Transparent" Foreground="{DynamicResource Fg}" FontSize="11.5" Padding="0" />
+                </DockPanel>
+            </Border>
+            <Border Margin="0,10,0,0" CornerRadius="10" Padding="10" Background="{DynamicResource WarmSoft}"
+                    Visibility="{Binding HasHotKeyError, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="{StaticResource Icons}" FontSize="13"
+                               Foreground="{DynamicResource Warm}" Margin="0,1,8,0" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissHotKeyError}" VerticalAlignment="Top" Margin="6,2,0,0">
+                        <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
+                    </Button>
+                    <TextBlock Text="{Binding HotKeyErrorText}" TextWrapping="Wrap" FontSize="11.5" />
+                </DockPanel>
+            </Border>
+            <Border Margin="0,10,0,0" CornerRadius="10" Padding="10" Background="{DynamicResource AccentSoft}"
+                    Visibility="{Binding ShowLoginOffer, Converter={StaticResource Visible}}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource Bordered}" Content="{Binding NoLabel}" Command="{Binding DeclineLogin}" />
+                        <Button Style="{StaticResource Prominent}" Content="{Binding YesLabel}" Command="{Binding AcceptLogin}" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding LoginOfferTitle}" FontSize="12" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding LoginOfferDetail}" FontSize="11" Foreground="{DynamicResource Secondary}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Memoria -->
+            <Border Style="{StaticResource CardBox}" Margin="0,10,0,0" Visibility="{Binding ShowMemory, Converter={StaticResource Visible}}">
+                <StackPanel>
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Ellipse Width="6" Height="6" Fill="{Binding PressureBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding PressureText}" Margin="6,0,0,0" FontSize="11" FontWeight="Medium" Foreground="{Binding PressureBrush}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding MemoryTitle}" Style="{StaticResource Eyebrow}" />
+                    </DockPanel>
+
+                    <ui:MemoryBar Margin="0,8,0,0" Used="{Binding UsedFraction}" Model="{Binding ModelFraction}" />
+
+                    <DockPanel Margin="0,8,0,0">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding UsedLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding LegendModel}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource MutedHalf}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            <TextBlock Text="{Binding LegendOther}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Liberar RAM (lo que hacía Mem Reduct) -->
+                    <DockPanel Margin="0,10,0,0" Visibility="{Binding ShowCleanButton, Converter={StaticResource Visible}}">
+                        <Grid DockPanel.Dock="Right" VerticalAlignment="Center">
+                            <Button Style="{StaticResource Bordered}" Command="{Binding CleanNow}" ToolTip="{Binding CleanHelp}"
+                                    Visibility="{Binding CleanIdle, Converter={StaticResource Visible}}">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{Binding CleanAndSleepLabel}" Command="{Binding CleanAndSleep}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xEA99;" FontFamily="{StaticResource Icons}" FontSize="11.5" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding CleanLabel}" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <ui:Spinner Width="12" Height="12" Visibility="{Binding IsCleaning, Converter={StaticResource Visible}}" />
+                        </Grid>
+                        <TextBlock Text="{Binding LastCleanText}" FontSize="11" Foreground="{DynamicResource Muted}" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <!-- GPU dedicada -->
+                    <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowGpu, Converter={StaticResource Visible}}">
+                        <TextBlock Text="{Binding GpuTitle}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
+                        <ui:MemoryBar Margin="0,6,0,0" Used="{Binding GpuUsedFraction}" Model="{Binding GpuModelFraction}" />
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding GpuUsedLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="7" Height="7" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding GpuLegendModel}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                                <Ellipse Width="7" Height="7" Fill="{DynamicResource MutedHalf}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                <TextBlock Text="{Binding GpuLegendOther}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,8" />
+
+                    <DockPanel Visibility="{Binding HasLoaded, Converter={StaticResource Visible}}">
+                        <Grid DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0">
+                            <Button Style="{StaticResource Bordered}" Command="{Binding FreeModel}" IsEnabled="{Binding FreeEnabled}"
+                                    ToolTip="{Binding FreeHelp}" Visibility="{Binding FreeIdle, Converter={StaticResource Visible}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M 5.5,0.5 L 10.5,6.5 H 0.5 Z M 0.5,8.5 H 10.5" Stroke="{DynamicResource Fg}" StrokeThickness="1.2"
+                                          StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          VerticalAlignment="Center" Width="11" Height="9" />
+                                    <TextBlock Text="{Binding FreeLabel}" Margin="6,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <ui:Spinner Width="12" Height="12" Visibility="{Binding FreeBusy, Converter={StaticResource Visible}}" />
+                        </Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding LoadedName}" FontFamily="{StaticResource Mono}" FontSize="12" FontWeight="Medium"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding IdleLine}" Margin="0,1,0,0" FontSize="11" Foreground="{DynamicResource Muted}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding WakeLine}" Margin="0,1,0,0" FontSize="11" Foreground="{DynamicResource Muted}"
+                                       TextTrimming="CharacterEllipsis" Visibility="{Binding HasWakeLine, Converter={StaticResource Visible}}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Text="{Binding MemoryNote}" FontSize="11.5" Foreground="{DynamicResource Muted}" TextWrapping="Wrap"
+                               Visibility="{Binding NoLoaded, Converter={StaticResource Visible}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Otros motores -->
+            <ItemsControl ItemsSource="{Binding EngineRows}" Focusable="False" Visibility="{Binding HasEngines, Converter={StaticResource Visible}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type ui:EngineRow}">
+                        <Border Style="{StaticResource CardBox}" Margin="0,10,0,0" Padding="12,10">
+                            <DockPanel>
+                                <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding IsOn}" Command="{Binding Toggle}" IsEnabled="{Binding CanToggle}" AutomationProperties.Name="{Binding Name}"
+                                                Margin="10,0,0,0" />
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Bordered}" Content="{Binding SleepLabel}" Command="{Binding Sleep}"
+                                        VerticalAlignment="Center" Margin="8,0,0,0" Visibility="{Binding CanSleep, Converter={StaticResource Visible}}" />
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="7" Height="7" Fill="{Binding DotBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" Margin="7,0,0,0" FontSize="12" FontWeight="SemiBold" />
+                                        <Border Style="{StaticResource Chip}" Visibility="{Binding Experimental, Converter={StaticResource Visible}}">
+                                            <TextBlock Text="{Binding ExperimentalLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding State}" Margin="14,3,0,0" FontFamily="{StaticResource Mono}" FontSize="11.5"
+                                               Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Detail}" Margin="14,1,0,0" FontSize="11" Foreground="{DynamicResource Muted}"
+                                               TextTrimming="CharacterEllipsis" Visibility="{Binding HasDetail, Converter={StaticResource Visible}}" />
+                                    <TextBlock Text="{Binding Error}" Margin="14,3,0,0" FontSize="11" Foreground="{DynamicResource Warm}"
+                                               TextWrapping="Wrap" Visibility="{Binding HasError, Converter={StaticResource Visible}}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Modelos instalados -->
+            <StackPanel Margin="0,10,0,0" Visibility="{Binding ShowModels, Converter={StaticResource Visible}}">
+                <DockPanel Margin="2,0,0,6">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding ToggleAddModel}" IsEnabled="{Binding CanAddModel}"
+                            ToolTip="{Binding AddModelHelp}" VerticalAlignment="Center">
+                        <Border Width="22" Height="20" CornerRadius="5" Background="{DynamicResource ButtonBg}">
+                            <TextBlock Text="{Binding AddModelGlyph}" FontFamily="{StaticResource Icons}" FontSize="10.5"
+                                       Foreground="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                    <TextBlock Text="{Binding ModelsTitle}" Style="{StaticResource Eyebrow}" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <!-- Descargar un modelo -->
+                <Border Style="{StaticResource CardBox}" Margin="0,0,0,8" Padding="10" Visibility="{Binding AddingModel, Converter={StaticResource Visible}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Prominent}" Content="{Binding PullLabel}" Margin="8,0,0,0"
+                                    Command="{Binding PullModel}" CommandParameter="{Binding Text, ElementName=PullBox}" />
+                            <Grid>
+                                <TextBox x:Name="PullBox" Style="{StaticResource Field}">
+                                    <TextBox.InputBindings>
+                                        <KeyBinding Key="Enter" Command="{Binding PullModel}" CommandParameter="{Binding Text, ElementName=PullBox}" />
+                                    </TextBox.InputBindings>
+                                </TextBox>
+                                <TextBlock Text="{Binding PullPlaceholder}" Margin="9,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                           FontFamily="{StaticResource Mono}" FontSize="11.5" Foreground="{DynamicResource Muted}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Text, ElementName=PullBox}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding PullSuggestions}" Margin="0,8,0,0" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type ui:Segment}">
+                                    <Button Style="{StaticResource Bordered}" Command="{Binding Pick}" Margin="0,0,6,0" Padding="8,2">
+                                        <TextBlock Text="{Binding Title}" FontFamily="{StaticResource Mono}" FontSize="11" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Descarga en curso -->
+                <Border Style="{StaticResource CardBox}" Margin="0,0,0,8" Padding="11,10" Visibility="{Binding IsPulling, Converter={StaticResource Visible}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Bordered}" Content="{Binding CancelLabel}" Command="{Binding CancelPull}"
+                                    VerticalAlignment="Center" Margin="8,0,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding PullName}" FontFamily="{StaticResource Mono}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                <DockPanel Margin="0,1,0,0">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding PullPercent}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                                    <TextBlock Text="{Binding PullStatus}" FontSize="11" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
+                                </DockPanel>
+                            </StackPanel>
+                        </DockPanel>
+                        <ui:MemoryBar Margin="0,8,0,0" Height="6" Used="{Binding PullFraction}" Model="{Binding PullFraction}" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBox}" Visibility="{Binding ModelsEmpty, Converter={StaticResource Visible}}">
+                    <TextBlock Text="{Binding ModelsEmptyText}" FontSize="11.5" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" />
+                </Border>
+                <Border Background="{DynamicResource CardFill}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1"
+                        CornerRadius="{StaticResource Radius}" Opacity="{Binding ModelsOpacity}"
+                        Visibility="{Binding HasModels, Converter={StaticResource Visible}}">
+                    <ScrollViewer x:Name="ModelsScroll" MaxHeight="{Binding ModelsMaxHeight}" VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <ItemsControl x:Name="ModelsItems" ItemsSource="{Binding Models}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type ui:ModelRow}">
+                                    <StackPanel>
+                                        <Rectangle Style="{StaticResource Divider}" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+                                        <Grid x:Name="row" Background="Transparent" Margin="11,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse x:Name="dot" Width="7" Height="7" Fill="{DynamicResource Line}" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Margin="9,0,4,0">
+                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource Mono}" FontSize="12"
+                                                           FontWeight="{Binding Weight}" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                    <TextBlock Text="{Binding Meta}" FontSize="11" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                                                    <Border Style="{StaticResource Chip}" Visibility="{Binding Vision, Converter={StaticResource Visible}}">
+                                                        <TextBlock Text="{Binding VisionLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                                    </Border>
+                                                    <Border Style="{StaticResource Chip}" Visibility="{Binding Tools, Converter={StaticResource Visible}}">
+                                                        <TextBlock Text="{Binding ToolsLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                                    </Border>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <ui:Spinner Width="14" Height="14" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
+                                                <Border x:Name="inUse" CornerRadius="9" Padding="7,2,7,3" Background="{DynamicResource OnSoft}" VerticalAlignment="Center"
+                                                        Visibility="{Binding IsLoaded, Converter={StaticResource Visible}}">
+                                                    <TextBlock Text="{Binding LoadedLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource On}" />
+                                                </Border>
+                                                <Button x:Name="load" Style="{StaticResource Tinted}" Content="{Binding LoadLabel}" Command="{Binding Load}"
+                                                        ToolTip="{Binding LoadHelp}" Visibility="Collapsed" />
+                                                <Button x:Name="trash" Style="{StaticResource Bordered}" Command="{Binding AskDelete}" ToolTip="{Binding DeleteHelp}"
+                                                        Padding="6,3" Margin="6,0,0,0" Visibility="Collapsed">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Secondary}" />
+                                                </Button>
+                                                <StackPanel Orientation="Horizontal" Visibility="{Binding IsConfirming, Converter={StaticResource Visible}}">
+                                                    <TextBlock Text="{Binding ConfirmText}" FontSize="11" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                    <Button Style="{StaticResource DangerButton}" Content="{Binding DeleteLabel}" Command="{Binding ConfirmDelete}" />
+                                                    <Button Style="{StaticResource Bordered}" Content="{Binding CancelLabel}" Command="{Binding CancelDelete}" Margin="5,0,0,0" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsLoaded}" Value="True">
+                                            <Setter TargetName="dot" Property="Fill" Value="{DynamicResource On}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsConfirming}" Value="True">
+                                            <Setter TargetName="inUse" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsMouseOver, ElementName=row}" Value="True" />
+                                                <Condition Binding="{Binding CanLoad}" Value="True" />
+                                                <Condition Binding="{Binding IsIdle}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="load" Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsMouseOver, ElementName=row}" Value="True" />
+                                                <Condition Binding="{Binding CanDelete}" Value="True" />
+                                                <Condition Binding="{Binding IsIdle}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="trash" Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- MARK: actividad -->
+        <StackPanel Margin="14" Visibility="{Binding ShowingActivity, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding WeekTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
+            <Border Style="{StaticResource CardBox}" Padding="8,11">
+                <ItemsControl ItemsSource="{Binding WeekTiles}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Rows="1" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type ui:StatTile}">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Value}" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                <TextBlock Text="{Binding Label}" FontSize="10.5" Foreground="{DynamicResource Muted}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <DockPanel Margin="2,10,2,6">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="7" Height="7" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding ChartModel}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                    <Ellipse Width="7" Height="7" Fill="{DynamicResource MutedHalf}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                    <TextBlock Text="{Binding ChartUsed}" Margin="4,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                </StackPanel>
+                <TextBlock Text="{Binding ChartTitle}" Style="{StaticResource Eyebrow}" />
+            </DockPanel>
+            <Border Style="{StaticResource CardBox}" Padding="10">
+                <StackPanel>
+                    <ui:Sparkline Samples="{Binding Samples}" />
+                    <DockPanel Margin="0,6,0,0">
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding ChartEnd}" Style="{StaticResource MonoSmall}" />
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding ChartStart}" Style="{StaticResource MonoSmall}" />
+                        <TextBlock Text="{Binding ChartTotal}" Style="{StaticResource MonoSmall}" HorizontalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding ClientsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}" Padding="11,9">
+                <StackPanel>
+                    <TextBlock Text="{Binding ClientsEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoClients, Converter={StaticResource Visible}}" />
+                    <ItemsControl ItemsSource="{Binding ClientRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:ClientRow}">
+                                <StackPanel>
+                                    <Rectangle Style="{StaticResource Divider}" Margin="0,7" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+                                    <DockPanel>
+                                        <Grid DockPanel.Dock="Left" Width="18" Height="18" Margin="0,0,9,0" VerticalAlignment="Center">
+                                            <Image Source="{Binding Icon}" Width="16" Height="16" Visibility="{Binding HasIcon, Converter={StaticResource Visible}}" />
+                                            <Border CornerRadius="5" Background="{DynamicResource Track}" Visibility="{Binding NoIcon, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="{Binding Initial}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Detail}" FontSize="11" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding HistoryTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}" Padding="11,9">
+                <StackPanel>
+                    <TextBlock Text="{Binding HistoryEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoHistory, Converter={StaticResource Visible}}" />
+                    <ItemsControl ItemsSource="{Binding HistoryRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:HistoryRow}">
+                                <DockPanel Margin="0,3">
+                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" FontFamily="{StaticResource Icons}" FontSize="11.5" Width="16"
+                                               Foreground="{Binding GlyphBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Time}" FontSize="10.5" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    <TextBlock Text="{Binding Text}" FontSize="11.5" Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+        <!-- MARK: ajustes -->
+        <StackPanel Margin="14" Visibility="{Binding ShowingSettings, Converter={StaticResource Visible}}">
+
+            <StackPanel Orientation="Horizontal" Margin="2,0,2,6">
+                <TextBlock Text="Ollama" Style="{StaticResource Eyebrow}" />
+                <TextBlock Text="{Binding OllamaSectionDetail}" Style="{StaticResource MonoSmall}" Margin="6,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <TextBlock Text="{Binding IdleTitle}" Style="{StaticResource Label}" />
+                    <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IdleSegments}" Margin="0,7,0,0" />
+                    <TextBlock Text="{Binding IdleHint}" Style="{StaticResource Hint}" Margin="0,7,0,0" />
+                    <StackPanel Visibility="{Binding ShowMechanisms, Converter={StaticResource Visible}}">
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <TextBlock Text="{Binding MechanismTitle}" Style="{StaticResource Label}" />
+                        <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding MechanismSegments}" Margin="0,7,0,0" />
+                        <TextBlock Text="{Binding MechanismHint}" Style="{StaticResource Hint}" Margin="0,7,0,0" />
+                    </StackPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding WatchdogOn}" Command="{Binding ToggleWatchdog}" AutomationProperties.Name="{Binding WatchdogTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding WatchdogTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding WatchdogDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding AutomaticTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding GameModeOn}" Command="{Binding ToggleGameMode}" AutomationProperties.Name="{Binding GameModeTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding GameModeTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding GameModeDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Visibility="{Binding GameModeOn, Converter={StaticResource Visible}}">
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <DockPanel>
+                            <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding GameRestoreOn}" Command="{Binding ToggleGameRestore}" AutomationProperties.Name="{Binding GameRestoreTitle}" Margin="10,0,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding GameRestoreTitle}" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding GameRestoreDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Bordered}" Content="{Binding AddGameLabel}" Command="{Binding AddGame}" />
+                            <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Label}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding GameRows}" Focusable="False" Margin="0,6,0,0"
+                                      Visibility="{Binding HasGameRows, Converter={StaticResource Visible}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type ui:GameRow}">
+                                    <DockPanel Margin="0,3" ToolTip="{Binding Path}">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Remove}" ToolTip="{Binding RemoveHelp}"
+                                                VerticalAlignment="Center" Margin="8,0,2,0">
+                                            <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
+                                        </Button>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontFamily="{StaticResource Mono}" FontSize="11.5" Foreground="{DynamicResource Secondary}" />
+                                            <Border Style="{StaticResource Chip}" Visibility="{Binding HasTag, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="{Binding Tag}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Liberar RAM -->
+            <StackPanel Visibility="{Binding ShowCleanSection, Converter={StaticResource Visible}}">
+                <TextBlock Text="{Binding CleanSectionTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+                <Border Style="{StaticResource CardBox}">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                <ui:Spinner Width="14" Height="14" Visibility="{Binding AgentBusy, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Prominent}" Content="{Binding AgentActionLabel}" Command="{Binding AgentAction}"
+                                        Visibility="{Binding ShowAgentAction, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Plain}" Command="{Binding RemoveAgent}" VerticalAlignment="Center"
+                                        Visibility="{Binding ShowRemoveAgent, Converter={StaticResource Visible}}">
+                                    <TextBlock Text="{Binding RemoveAgentLabel}" FontSize="11" Foreground="{DynamicResource Muted}" />
+                                </Button>
+                            </StackPanel>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="7" Height="7" Fill="{Binding AgentBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding AgentTitle}" Style="{StaticResource Label}" Margin="7,0,0,0" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding AgentDetail}" Style="{StaticResource Hint}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding AgentErrorText}" FontSize="11" Foreground="{DynamicResource Warm}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                           Visibility="{Binding HasAgentError, Converter={StaticResource Visible}}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <TextBlock Text="{Binding ThresholdTitle}" Style="{StaticResource Label}" />
+                        <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding ThresholdSegments}" Margin="0,7,0,0" />
+                        <TextBlock Text="{Binding IntervalTitle}" Style="{StaticResource Label}" Margin="0,10,0,0" />
+                        <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IntervalSegments}" Margin="0,7,0,0" />
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <ItemsControl ItemsSource="{Binding CleanRuleRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <TextBlock Text="{Binding AreasTitle}" Style="{StaticResource Label}" Margin="0,0,0,8" />
+                        <ItemsControl ItemsSource="{Binding AreaRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
+                        <TextBlock Text="{Binding ProtectionHint}" Style="{StaticResource Hint}" Margin="0,11,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Mem Reduct -->
+                <Border Style="{StaticResource CardBox}" Margin="0,8,0,0" Visibility="{Binding ShowMemReduct, Converter={StaticResource Visible}}">
+                    <StackPanel>
+                        <TextBlock Text="Mem Reduct" Style="{StaticResource Label}" />
+                        <TextBlock Text="{Binding MemReductDetail}" Style="{StaticResource Hint}" Margin="0,2,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,9,0,0" Visibility="{Binding ShowReplaceButtons, Converter={StaticResource Visible}}">
+                            <Button Style="{StaticResource Bordered}" Content="{Binding ImportLabel}" Command="{Binding ImportMemReduct}" />
+                            <Button Style="{StaticResource Prominent}" Content="{Binding ReplaceLabel}" Command="{Binding AskReplaceMemReduct}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Margin="0,9,0,0" Visibility="{Binding ConfirmingReplace, Converter={StaticResource Visible}}">
+                            <TextBlock Text="{Binding ReplaceQuestion}" FontSize="11.5" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                                <Button Style="{StaticResource Bordered}" Content="{Binding CancelLabel}" Command="{Binding CancelReplaceMemReduct}" />
+                                <Button Style="{StaticResource Prominent}" Content="{Binding ReplaceLabel}" Command="{Binding ReplaceMemReduct}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Button Style="{StaticResource Bordered}" Content="{Binding RestoreLabel}" Command="{Binding RestoreMemReduct}"
+                                HorizontalAlignment="Left" Margin="0,9,0,0" Visibility="{Binding ShowRestore, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Text="{Binding NotificationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <ItemsControl ItemsSource="{Binding NotificationRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
+            </Border>
+
+            <TextBlock Text="{Binding IntegrationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <TextBlock Text="{Binding LinksHint}" Style="{StaticResource Hint}" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding LinkRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:LinkRow}">
+                                <DockPanel x:Name="link" Background="Transparent" Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Copy}" ToolTip="{Binding CopyHelp}"
+                                            VerticalAlignment="Center" Margin="8,0,2,0">
+                                        <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Muted}" />
+                                    </Button>
+                                    <TextBlock Text="{Binding Url}" FontFamily="{StaticResource Mono}" FontSize="11" Foreground="{DynamicResource Secondary}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding EnginesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <TextBlock Text="{Binding EnginesEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoEngineSettings, Converter={StaticResource Visible}}" />
+                    <ItemsControl ItemsSource="{Binding EngineSettingsRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:EngineSettingsRow}">
+                                <StackPanel>
+                                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Forget}" VerticalAlignment="Center"
+                                                Visibility="{Binding CanForget, Converter={StaticResource Visible}}">
+                                            <TextBlock Text="{Binding ForgetLabel}" FontSize="11" Foreground="{DynamicResource Muted}" />
+                                        </Button>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" />
+                                            <Border Style="{StaticResource Chip}" Visibility="{Binding Experimental, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="{Binding ExperimentalLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IdleSegments}" Margin="0,7,0,0" />
+                                    <TextBlock Text="{Binding Hint}" Style="{StaticResource Hint}" Margin="0,7,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding GeneralTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding HotKeyOn}" Command="{Binding ToggleHotKey}" AutomationProperties.Name="{Binding HotKeyTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding HotKeyTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding HotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding SleepHotKeyOn}" Command="{Binding ToggleSleepHotKey}" AutomationProperties.Name="{Binding SleepHotKeyTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding SleepHotKeyTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding SleepHotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding LoginOn}" Command="{Binding ToggleLogin}" AutomationProperties.Name="{Binding LoginTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding LoginTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding LoginDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Visibility="{Binding ShowUpdateSetting, Converter={StaticResource Visible}}">
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <DockPanel>
+                            <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding UpdateCheckOn}" Command="{Binding ToggleUpdateCheck}" AutomationProperties.Name="{Binding UpdateCheckTitle}" Margin="10,0,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding UpdateCheckTitle}" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding UpdateCheckDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ItemsControl DockPanel.Dock="Right" Style="{StaticResource Segmented}" ItemsSource="{Binding LanguageSegments}"
+                                      Width="150" ToolTip="{Binding LanguageHelp}" />
+                        <TextBlock Text="{Binding LanguageTitle}" Style="{StaticResource Label}" VerticalAlignment="Center" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="2,10,2,0">
+                <TextBlock Text="{Binding LogsTitle}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
+                <Button Style="{StaticResource Plain}" Command="{Binding OpenLog}" IsEnabled="{Binding LogEnabled}" Margin="14,0,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{Binding LogBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="Ollama" Margin="5,0,0,0" FontSize="11.5" FontWeight="Medium" Foreground="{Binding LogBrush}" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource Plain}" Command="{Binding OpenEngineLog}" Margin="14,0,0,0"
+                        Visibility="{Binding ShowEngineLog, Converter={StaticResource Visible}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Accent}" VerticalAlignment="Center" />
+                        <TextBlock Text="llama.cpp" Margin="5,0,0,0" FontSize="11.5" FontWeight="Medium" Foreground="{DynamicResource Accent}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        </Grid>
+        </ScrollViewer>
+
+        <!-- MARK: pie -->
+        <Rectangle Style="{StaticResource Divider}" />
+        <DockPanel Margin="14,9">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding BrandName}" Margin="5,0,0,0" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" />
+            </StackPanel>
+            <TextBlock Text="{Binding FooterText}" FontSize="10.5" Foreground="{DynamicResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

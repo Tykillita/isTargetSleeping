@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Sin frameworks de pruebas: compila la lógica pura junto a un pequeño banco. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Activity.cs" Link="Core\Activity.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Processes.cs" Link="Core\Processes.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Win32.cs" Link="Core\Win32.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Watchdog.cs" Link="Core\Watchdog.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Games.cs" Link="Core\Games.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Clients.cs" Link="Core\Clients.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Stats.cs" Link="Core\Stats.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Links.cs" Link="Core\Links.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Updater.cs" Link="Core\Updater.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\OllamaApi.cs" Link="Core\OllamaApi.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\L10n.cs" Link="Core\L10n.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Paths.cs" Link="Core\Paths.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\CleanSpec.cs" Link="Core\CleanSpec.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\CleanRules.cs" Link="Core\CleanRules.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\MemReduct.cs" Link="Core\MemReduct.cs" />
+  </ItemGroup>
+
+</Project>

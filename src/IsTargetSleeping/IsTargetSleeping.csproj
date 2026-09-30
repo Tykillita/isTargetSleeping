@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- DXGI se llama por su tabla de métodos COM (punteros a función), sin interop generado. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>isTargetSleeping</AssemblyName>
+    <RootNamespace>IsTargetSleeping</RootNamespace>
+    <StartupObject>IsTargetSleeping.Program</StartupObject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon Condition="Exists('..\..\Assets\isTargetSleeping.ico')">..\..\Assets\isTargetSleeping.ico</ApplicationIcon>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\VERSION').Trim())</Version>
+    <Product>isTargetSleeping</Product>
+    <Company>CodeSentry - Tykillita</Company>
+    <Authors>Ruben Pino (Tykillita), CodeSentry</Authors>
+    <Copyright>Copyright (c) 2026 CodeSentry - Tykillita (Ruben Pino)</Copyright>
+    <Description>Watches your local models and puts them to sleep when they're idle.</Description>
+    <!-- Publicación: un solo .exe que no necesita instalar .NET. -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>embedded</DebugType>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Strings.en.json" LogicalName="IsTargetSleeping.Strings.en.json" WithCulture="false" />
+    <!-- El agente de memoria (src/IsTargetSleeping.Agent), publicado antes por build.ps1. -->
+    <EmbeddedResource Include="$(AgentExe)" LogicalName="IsTargetSleeping.MemoryAgent.exe" WithCulture="false"
+                      Condition="'$(AgentExe)' != '' and Exists('$(AgentExe)')" />
+  </ItemGroup>
+
+</Project>
