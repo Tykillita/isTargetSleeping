@@ -5,3 +5,5 @@ dist/
 *.user
 .vs/
 __pycache__/
+site/media/
+_site/

@@ -5,48 +5,6 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
-### Added
-- Three taskbar companions alongside Mira: a curious white llama, a relaxed capybara and a playful orange kitten.
-  Each has its own activities, gestures, reactions and walking pace; choose one in the two-column thumbnail
-  picker in Settings or the pet's context menu. The choice persists, with Mira as the default and fallback.
-- Species animation profiles share reaction timing across the brain, director and previews; switching species
-  clears old reactions and particles. Reduced motion uses species-specific static poses without animation timers.
-- Pet review sheets cover every species, both walking directions, reduced motion and 1x–4x rendering on light/dark
-  taskbars. `--snapshot output.png pet --pet llama` previews an individual pet; `settings demo --pet llama` shows
-  its selection without changing saved preferences.
-- Unique sleeping beds for every pet: Mira's blue capsule, the llama's Andean woven cushion, the capybara's
-  leafy nest with a water lily, and the kitten's padded wicker basket. Beds enter and leave with the sleep pose.
-- **Pets with personality:** each pet now has its own choreography, click reaction, idle gestures, particles and
-  way of treating the mouse. **Mira** (watchful hacker) sweeps a radar ring from her eye, locks a red reticle on
-  the cursor, her antenna sends signals and bits rise while she works; a click is a radar "ping". The **llama**
-  (proud, curious, a bit dramatic) trots head-high, chews sideways, hums with notes, carries the box on her back
-  under a woven blanket, stretches her neck toward the cursor and snorts a little cloud when clicked. The
-  **capybara** (zen) barely flinches — a slow blink and a bubble — sleeps in a steaming wooden hot tub, has a
-  bird land on her back, balances the box on her head with the mandarin on top and looks at the cursor slowly.
-  The **kitten** (playful) crouches with dilated pupils when hovered and pounces if the cursor stays still for
-  1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs, swishes her tail, sits on the laptop and
-  inside the box, and sleeps curled up with her tail around her.
-- Hiding behind the Windows logo also depends on the pet: the llama peeks over the top like a periscope, the
-  kitten shows her ears first and then her eyes while her tail sticks out the other side, and the capybara
-  doesn't hide at all — she leans on the logo.
-- New particles: steam, bubbles, falling leaves, music notes, purrs, snort clouds, 0/1 bits and antenna signals.
-- `--export-pet` sheets now show each pet's own gestures (with their particles) and a mouse row, at 2× and 3×.
-- Video tour of the app in English and Spanish with an original soundtrack (`docs/video/`), presented in both
-  READMEs with an inline player. The READMEs gain a **Pets** section, animated pixel-art SVGs made from the real sprites
-  (every pet in six states, asleep above Start and peeking behind the Windows logo), infographics for idle
-  detection and game mode, and a navigation bar. `docs/readme-art.py` regenerates them from `--export-pet`.
-
-### Changed
-- Each pet has its own animation profile instead of one shared animal choreography with speed switches.
-- Sharper animal sprites: the kitten has slit pupils that dilate, ears that swivel and flatten, an expressive
-  tail and a bristling arched back; the llama has long eyelashes, a bigger topknot, a chewing jaw and tucked legs
-  when lying down; the capybara has heavy-lidded eyes and a wobbling mandarin. The capybara's leafy nest is
-  replaced by the hot tub.
-- Refined animal sprites: the capybara now has a raised pixel-art head, honey-colored fur, a blunt snout,
-  four small connected feet with alternating steps and a mandarin, without arms; the llama has fluffy
-  wool and hooves, and the orange kitten has tabby markings and a curved striped tail. Collection review sheets
-  compare awake and sleeping pets on light and dark backgrounds.
-
 ## [1.3.0] — 2026-09-30
 
 ### Fixed
@@ -106,6 +64,46 @@ All notable changes to isTargetSleeping. The format follows
   hides instantly (foreground events, not polling) when Start, Search, a game or a full-screen app opens, and puts
   itself back on top when you click the taskbar. It hides with an auto-hiding taskbar. Turning it off closes its
   window and stops its timers. `--export-pet dir` writes every frame for review.
+- Three taskbar companions alongside Mira: a curious white llama, a relaxed capybara and a playful orange kitten.
+  Each has its own activities, gestures, reactions and walking pace; choose one in the two-column thumbnail
+  picker in Settings or the pet's context menu. The choice persists, with Mira as the default and fallback.
+- Species animation profiles share reaction timing across the brain, director and previews; switching species
+  clears old reactions and particles. Reduced motion uses species-specific static poses without animation timers.
+- Pet review sheets cover every species, both walking directions, reduced motion and 1x–4x rendering on light/dark
+  taskbars. `--snapshot output.png pet --pet llama` previews an individual pet; `settings demo --pet llama` shows
+  its selection without changing saved preferences.
+- Unique sleeping beds for every pet: Mira's blue capsule, the llama's Andean woven cushion, the capybara's
+  leafy nest with a water lily, and the kitten's padded wicker basket. Beds enter and leave with the sleep pose.
+- **Pets with personality:** each pet now has its own choreography, click reaction, idle gestures, particles and
+  way of treating the mouse. **Mira** (watchful hacker) sweeps a radar ring from her eye, locks a red reticle on
+  the cursor, her antenna sends signals and bits rise while she works; a click is a radar "ping". The **llama**
+  (proud, curious, a bit dramatic) trots head-high, chews sideways, hums with notes, carries the box on her back
+  under a woven blanket, stretches her neck toward the cursor and snorts a little cloud when clicked. The
+  **capybara** (zen) barely flinches — a slow blink and a bubble — sleeps in a steaming wooden hot tub, has a
+  bird land on her back, balances the box on her head with the mandarin on top and looks at the cursor slowly.
+  The **kitten** (playful) crouches with dilated pupils when hovered and pounces if the cursor stays still for
+  1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs, swishes her tail, sits on the laptop and
+  inside the box, and sleeps curled up with her tail around her.
+- Hiding behind the Windows logo also depends on the pet: the llama peeks over the top like a periscope, the
+  kitten shows her ears first and then her eyes while her tail sticks out the other side, and the capybara
+  doesn't hide at all — she leans on the logo.
+- New particles: steam, bubbles, falling leaves, music notes, purrs, snort clouds, 0/1 bits and antenna signals.
+- `--export-pet` sheets now show each pet's own gestures (with their particles) and a mouse row, at 2× and 3×.
+- Video tour of the app in English and Spanish with an original soundtrack (`docs/video/`), presented in both
+  READMEs with an inline player. The READMEs gain a **Pets** section, animated pixel-art SVGs made from the real sprites
+  (every pet in six states, asleep above Start and peeking behind the Windows logo), infographics for idle
+  detection and game mode, and a navigation bar. `docs/readme-art.py` regenerates them from `--export-pet`.
+
+### Changed
+- Each pet has its own animation profile instead of one shared animal choreography with speed switches.
+- Sharper animal sprites: the kitten has slit pupils that dilate, ears that swivel and flatten, an expressive
+  tail and a bristling arched back; the llama has long eyelashes, a bigger topknot, a chewing jaw and tucked legs
+  when lying down; the capybara has heavy-lidded eyes and a wobbling mandarin. The capybara's leafy nest is
+  replaced by the hot tub.
+- Refined animal sprites: the capybara now has a raised pixel-art head, honey-colored fur, a blunt snout,
+  four small connected feet with alternating steps and a mandarin, without arms; the llama has fluffy
+  wool and hooves, and the orange kitten has tabby markings and a curved striped tail. Collection review sheets
+  compare awake and sleeping pets on light and dark backgrounds.
 
 ## [1.2.0] — 2026-09-30
 
