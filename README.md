@@ -8,6 +8,8 @@
 
 **English** · [Español](README.es.md)
 
+<!-- The version badge repeats VERSION: update both together. -->
+[![Version](https://img.shields.io/badge/version-1.3.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -18,6 +20,17 @@
 
 <img src="docs/images/panel-en.png" width="280" alt="isTargetSleeping panel in black glass">&nbsp;&nbsp;<img src="docs/images/activity-en.png" width="280" alt="Activity: weekly stats, 30-minute chart and who wakes the model">&nbsp;&nbsp;<img src="docs/images/settings-en.png" width="280" alt="isTargetSleeping settings in black glass">
 
+<p>
+  <a href="#video">Video</a> &bull;
+  <a href="#-features">Features</a> &bull;
+  <a href="#-pets">Pets</a> &bull;
+  <a href="#-install">Install</a> &bull;
+  <a href="#-usage">Usage</a> &bull;
+  <a href="#how-it-works">How it works</a> &bull;
+  <a href="#-privacy">Privacy</a> &bull;
+  <a href="#development">Development</a>
+</p>
+
 <sub>By <b>CodeSentry - Tykillita</b></sub>
 
 </div>
@@ -27,6 +40,14 @@
 A native Windows tray app for [Ollama](https://ollama.com). It keeps an eye on your local models: when they stop
 working it puts them to sleep and gives you your RAM back, and it turns Ollama on and off in one click, however it
 was installed.
+
+<a id="video"></a>
+
+<p align="center">
+  <a href="docs/video/isTargetSleeping-tour-en.mp4"><img src="docs/images/video-poster-en.jpg" width="100%" alt="Watch the 77-second tour of isTargetSleeping, with sound"></a>
+  <br>
+  <sub>The tour, with sound: <a href="docs/video/isTargetSleeping-tour-en.mp4">English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">español</a></sub>
+</p>
 
 ## Why?
 
@@ -52,10 +73,11 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🧩 | **Other engines** | A standalone **llama.cpp** `llama-server` gets its own card and idle timer; **LM Studio** is supported experimentally. |
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
-| 🐾 | **Optional pets** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps, eats while a model loads, types while it generates and sweeps while freeing RAM. Each has its own personality. Click it, pet it, right-click it. Off by default; **Pet beside Start** in Settings › General or the tray menu. |
+| 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and sweeps while freeing RAM. Each one reacts to clicks and to your cursor in its own way. Off by default; [more below](#-pets). |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
-| 🔒 | **Private** | Only talks to Ollama on your PC. No accounts, no telemetry, no analytics. Update checks are opt-in and off unless a release repository is configured. |
+| 🔄 | **Updates** | Checks GitHub for new stable releases, shows the release notes and installs only when you click **Update** — verified with SHA-256, with automatic rollback if anything fails. |
+| 🔒 | **Private** | Only talks to Ollama on your PC. No accounts, no telemetry, no analytics. The update check (which you can turn off) is the only request that leaves your PC. |
 | 🧾 | **Open source** | MIT licensed. |
 
 ## 📥 Install
@@ -92,37 +114,66 @@ don't fit on screen.
 **Settings:** *Ollama* — unload when idle, which mechanism to start it with, restart it if it crashes ·
 *Automatic* — game mode, turn back on when you quit, your own games · *Notifications* — one switch per kind ·
 *Integrations* — the links, ready to copy · *Other engines* — each engine's idle timer · *General* — both shortcuts,
-open at login, tray animation, optional pet, update checks (only when configured), language · logs.
+open at login, always show in the taskbar, tray animation, pet, update checks, language · logs.
 
-**Pet beside Start:** Mira, the curious llama, the relaxed capybara or the playful orange kitten,
-drawn pixel by pixel on its own layered window (crisp at any DPI) next to the Start
-button of the main taskbar: above it, inside the taskbar to its left, or walking along the taskbar's edge. Only its
-silhouette takes clicks (click: panel, right-click: its menu, back and forth: pet it) and it never takes focus; turn
-off *Interact with the pet* and every click passes through. It hides instantly when Start, Search, a game or a
-full-screen app opens, and when the taskbar auto-hides. It sleeps in its own little bed, and while it waits for a model it hides behind the Windows logo and peeks out.
-Each pet has its own personality: Mira locks a reticle on your cursor and pings when clicked; the llama stretches her
-neck toward it, hums and snorts; the capybara barely reacts, bathes in a steaming hot tub and leans on the logo instead
-of hiding; the kitten crouches, pounces on a cursor that stays still and puffs up when clicked. The Windows logo is part of its home: with Ollama on
-it glows softly, the glow arrives pane by pane as Ollama starts, flickers as Mira types and fills up while she
-downloads, and with Ollama off it stays as Windows draws it (painted on top
-of the real logo by a window that never takes clicks). If Windows doesn't expose the Start button, it stays hidden
-and Settings explains why. Turn the switch off to close it and stop its timers.
+### 🐾 Pets
 
-The **Settings › General** picker shows thumbnails and names in two columns. Only one pet is active;
-your choice is saved and changes without restarting. You can also choose it from the pet's right-click menu.
-The llama looks around and moves its ears, the capybara strolls slowly, and the kitten grooms itself and swishes
-its tail. **Reduced motion** uses a distinct static pose for each state and species.
+<p align="center"><img src="docs/images/pets-home-en.svg" width="100%" alt="The four pets asleep in their beds right above the Start button, and peeking out from behind the Windows logo while Ollama waits for a model: Mira with half an eye, the llama like a periscope, the capybara leaning on the logo and the kitten ears first."></p>
 
-Each pet has a matching bed: a blue target capsule for Mira, an Andean woven cushion for the llama,
-a leafy nest with a water lily for the capybara, and a padded wicker basket for the kitten.
-The beds appear as the pet settles to sleep and disappear when it wakes. The capybara is drawn in profile in
-pixel art, with a raised head, honey-colored fur, blunt snout, four small legs and a mandarin, without arms;
-the llama has fluffy wool and hooves,
-and the kitten has tabby stripes and a curved tail.
+Turn on **Pet beside Start** in Settings › General (or the tray menu) and one pet moves into your taskbar. It's drawn
+pixel by pixel on its own layered window, crisp at any DPI, and lives in one of three places: **above Start**,
+**inside the taskbar left of Start** (touching the Windows logo) or **walking** along the taskbar up to the tray while
+a model is awake. Pick it from the two-column picker in Settings or from its right-click menu; the choice is saved
+and changes without restarting.
 
-To review animations without changing preferences, `--export-pet directory` creates sheets for all four species
-on light/dark backgrounds, with both walking directions, reduced motion and a collection overview with the beds. `--snapshot output.png pet --pet llama`
-previews one species; the IDs are `mira`, `llama`, `capybara` and `orange-cat`.
+**It acts out what Ollama is doing:**
+
+<p align="center"><img src="docs/images/pets-states-en.svg" width="100%" alt="The four pets in six states: asleep with Ollama off, eating while a model loads, typing on a laptop while generating, carrying a box while downloading, sweeping while freeing RAM and hearts when petted."></p>
+
+<details>
+<summary>See as a table</summary>
+
+| Ollama | The pet |
+|---|---|
+| Off | Sleeps in its bed, with Z's |
+| Starting · stopping | Stretches and wakes up · yawns and goes back to bed |
+| On, no model | Dozes — or hides behind the Windows logo and peeks out |
+| Loading a model | Eats a snack |
+| Model in memory | Stands alert, with idle gestures of its own |
+| Generating | Types on a tiny laptop |
+| Downloading a model | Carries a box |
+| Freeing RAM | Sweeps |
+| High · critical memory pressure | Sweats · turns coral |
+
+</details>
+
+One-shot reactions: sparkles when RAM is freed, a nap when the model goes to sleep, dizzy stars when Ollama crashes
+(sad if the watchdog gives up), a jump when clicked and hearts when you pet it (move the mouse back and forth over it).
+
+**Each one has its own personality:**
+
+| Pet | Character | Signature moves | Bed |
+|---|---|---|---|
+| **Mira** | Watchful hacker — the app's own logo come to life | Sweeps a radar ring from her eye, locks a red reticle on your cursor, her antenna sends signals and bits rise while she works; a click is a radar *ping* | Blue target capsule |
+| **Llama** | Proud, curious, a bit dramatic | Trots head-high, chews sideways, hums, stretches her neck toward the cursor, carries the box under a woven blanket and snorts a little cloud when clicked; peeks over the logo like a periscope | Andean woven cushion |
+| **Capybara** | Zen | Barely flinches (a slow blink and a bubble), a bird lands on her back, balances the box on her head with the mandarin on top; doesn't hide — she leans on the logo | Steaming wooden hot tub |
+| **Orange kitten** | Playful | Crouches with dilated pupils when hovered, pounces if the cursor stays still for 1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs; shows her ears first when peeking, tail sticking out | Padded wicker basket |
+
+**The Windows logo joins in** as part of its home: a second click-through window paints "lights" over the real logo,
+pane by pane. With Ollama off it stays exactly as Windows draws it; with Ollama on it glows softly, the glow arrives
+pane by pane as Ollama starts, a pane flashes with each keystroke while the model generates, the panes fill up like a
+progress bar while downloading and it glows amber while a model loads. Clicks still go to Start.
+
+**It stays out of the way.** Only its silhouette takes clicks (click: panel, right-click: its menu) and it never takes
+focus; turn off *Interact with the pet* and every click passes through. It hides instantly when Start, Search, a game
+or a full-screen app opens, and with an auto-hiding taskbar. If Windows doesn't expose the Start button it stays hidden
+and Settings explains why. **Reduced motion** uses one still pose per state and species, with no animation timers.
+Turning the switch off closes its window and stops its timers.
+
+To review animations without changing preferences, `--export-pet directory` writes sheets for all four species on
+light and dark backgrounds: every state, transition, idle gesture (with its particles), mouse reaction, both walking
+directions, reduced motion and a collection overview with the beds. `--snapshot output.png pet --pet llama` previews
+one species; the IDs are `mira`, `llama`, `capybara` and `orange-cat`.
 
 ### Links
 
@@ -136,6 +187,8 @@ previews one species; the IDs are `mira`, `llama`, `capybara` and `orange-cat`.
 
 They are registered per user under `HKCU\Software\Classes\istargetsleeping` (no admin) every time the app starts.
 From PowerShell: `start istargetsleeping://sleep`. If the app isn't running, the link starts it.
+
+<a id="how-it-works"></a>
 
 ## ⚙️ How it works
 
@@ -162,6 +215,8 @@ with (remembered across launches).
 Ollama doesn't expose when the last request happened. Each loaded model runs in a runner process that only uses CPU
 while it's working. On Windows the runner is `lib\ollama\llama-server.exe` (Ollama 0.34+), `ollama.exe runner` or
 the older `ollama_llama_server.exe`; isTargetSleeping recognizes all three.
+
+<p align="center"><img src="docs/images/idle-flow-en.svg" width="100%" alt="Four steps: every 2.5 s it adds up the runners' CPU time; growth above 0.08 s or a model change counts as activity; after 5, 15, 30 or 60 idle minutes the model is unloaded, while Ollama stays on and reloads it on demand."></p>
 
 | Measurement (Ollama 0.34, gemma-4 E2B, RTX 4060 Laptop) | Runner CPU time |
 |---|---:|
@@ -233,6 +288,8 @@ sometimes relaunches its own server first — that's why it waits two samples.)
 
 ### Game mode
 
+<p align="center"><img src="docs/images/game-mode-en.svg" width="100%" alt="Timeline: a game opens; 5 s later Ollama and the other engines turn off, leaving RAM and VRAM to the game; you quit; 30 s later only what was on comes back, the same way."></p>
+
 Every 2.5 s it looks for a process **with a visible window** whose `.exe` lives in a game library: Steam (every
 library in `libraryfolders.vdf`), Epic (its `.item` manifests), `C:\Riot Games`, EA Games, Rockstar Games, GOG (its
 registry keys), `XboxGames` on any drive, plus the games you add in Settings. Launchers, crash reporters, anti-cheat
@@ -295,6 +352,8 @@ Installations from before 1.3.0 without an update repository need one manual upg
   its own log in `Logs\app.log` (notifications, restarts, game mode). "Open at login" is the usual
   `HKCU\…\CurrentVersion\Run` entry (and it respects Task Manager's *Startup apps* switch); the links are
   `HKCU\Software\Classes\istargetsleeping`. The installer removes both.
+
+<a id="development"></a>
 
 ## 🛠️ Development
 
@@ -427,3 +486,7 @@ deleting models, llama.cpp and LM Studio, `istargetsleeping://` links, notificat
 notice is kept in [LICENSE](LICENSE), as its MIT License requires.
 
 Ollama is a trademark of its respective owners; this project is not affiliated with Ollama.
+
+---
+
+<p align="center"><em>Your model sleeps. Your RAM comes back. Your pet keeps watch.</em></p>

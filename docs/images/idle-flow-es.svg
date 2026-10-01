@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330" width="960" height="330" role="img" aria-labelledby="t d" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="t">Sin registro de peticiones: lo dice el CPU del runner</title>
+  <desc id="d">Cada 2,5 s → ¿Actividad? → Temporizador → Dormido</desc>
+  <style>
+
+@media (prefers-reduced-motion: reduce){image{animation:none!important}}
+</style>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#08090b"/><stop offset=".55" stop-color="#14171c"/><stop offset="1" stop-color="#090b0d"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".09"/><stop offset=".5" stop-color="#fff" stop-opacity=".025"/><stop offset="1" stop-color="#b9c7ca" stop-opacity=".06"/></linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26272c"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+  </defs>
+  <rect width="960" height="330" rx="28" fill="url(#bg)"/>
+  <rect x="1" y="1" width="958" height="328" rx="27" fill="url(#glass)" stroke="#fff" stroke-opacity=".14"/>
+  <text x="40" y="58" font-size="12" font-weight="600" fill="#f5f5f7" fill-opacity="0.6" text-anchor="start" letter-spacing="1.6">DETECCIÓN DE INACTIVIDAD</text>
+  <text x="40" y="88" font-size="22" font-weight="650" fill="#f5f5f7" fill-opacity="1" text-anchor="start">Sin registro de peticiones: lo dice el CPU del runner</text>
+  <rect x="40" y="116" width="196" height="176" rx="18" fill="#fff" fill-opacity=".045" stroke="#fff" stroke-opacity=".08"/>
+  <rect x="58" y="134" width="38" height="38" rx="12" fill="#fff" fill-opacity=".07"/>
+  <g transform="translate(65 141)" fill="none" stroke="#f5f5f7" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g>
+  <text x="216" y="158" font-size="13" font-weight="600" fill="#f5f5f7" fill-opacity="0.4" text-anchor="end">1</text>
+  <text x="58" y="200" font-size="16" font-weight="600" fill="#f5f5f7" fill-opacity="1" text-anchor="start">Cada 2,5 s</text>
+  <text x="58" y="226" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Suma el tiempo de CPU</text>
+  <text x="58" y="245" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">de los runners de Ollama</text>
+  <text x="58" y="264" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">(GetProcessTimes).</text>
+  <path d="M242 204h24m-7-6 7 6-7 6" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="272" y="116" width="196" height="176" rx="18" fill="#fff" fill-opacity=".045" stroke="#fff" stroke-opacity=".08"/>
+  <rect x="290" y="134" width="38" height="38" rx="12" fill="#fff" fill-opacity=".07"/>
+  <g transform="translate(297 141)" fill="none" stroke="#f5f5f7" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-5 4 10 2.5-5H21"/></g>
+  <text x="448" y="158" font-size="13" font-weight="600" fill="#f5f5f7" fill-opacity="0.4" text-anchor="end">2</text>
+  <text x="290" y="200" font-size="16" font-weight="600" fill="#f5f5f7" fill-opacity="1" text-anchor="start">¿Actividad?</text>
+  <text x="290" y="226" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Creció > 0,08 s, o</text>
+  <text x="290" y="245" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">cambió el modelo cargado.</text>
+  <text x="290" y="264" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Vale también en GPU.</text>
+  <path d="M474 204h24m-7-6 7 6-7 6" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="504" y="116" width="196" height="176" rx="18" fill="#fff" fill-opacity=".045" stroke="#fff" stroke-opacity=".08"/>
+  <rect x="522" y="134" width="38" height="38" rx="12" fill="#fff" fill-opacity=".07"/>
+  <g transform="translate(529 141)" fill="none" stroke="#f5f5f7" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h10M7 20.5h10M8 3.5c0 5 8 5 8 8.5s-8 3.5-8 8.5M16 3.5c0 5-8 5-8 8.5s8 3.5 8 8.5"/></g>
+  <text x="680" y="158" font-size="13" font-weight="600" fill="#f5f5f7" fill-opacity="0.4" text-anchor="end">3</text>
+  <text x="522" y="200" font-size="16" font-weight="600" fill="#f5f5f7" fill-opacity="1" text-anchor="start">Temporizador</text>
+  <text x="522" y="226" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">5, 15, 30 o 60 min</text>
+  <text x="522" y="245" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">sin generar</text>
+  <text x="522" y="264" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">(Ajustes › Ollama).</text>
+  <path d="M706 204h24m-7-6 7 6-7 6" fill="none" stroke="#fff" stroke-opacity=".4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="736" y="116" width="196" height="176" rx="18" fill="#fff" fill-opacity=".045" stroke="#fff" stroke-opacity=".08"/>
+  <rect x="754" y="134" width="38" height="38" rx="12" fill="#fff" fill-opacity=".07"/>
+  <g transform="translate(761 141)" fill="none" stroke="#f5f5f7" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.5A8 8 0 1 1 9.5 4.5a6.5 6.5 0 0 0 10 10z"/></g>
+  <text x="912" y="158" font-size="13" font-weight="600" fill="#f5f5f7" fill-opacity="0.4" text-anchor="end">4</text>
+  <text x="754" y="200" font-size="16" font-weight="600" fill="#4DA3FF" fill-opacity="1" text-anchor="start">Dormido</text>
+  <text x="754" y="226" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Descarga el modelo;</text>
+  <text x="754" y="245" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Ollama sigue encendido</text>
+  <text x="754" y="264" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">y lo recarga al pedirlo.</text>
+</svg>

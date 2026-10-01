@@ -8,9 +8,28 @@
 
 [English](README.md) · **Español**
 
+<!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
+[![Version](https://img.shields.io/badge/version-1.3.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
+![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
+![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![Languages](https://img.shields.io/badge/languages-EN%20%7C%20ES-5C6B64?style=flat-square)
+[![MIT License](https://img.shields.io/badge/license-MIT-4DA3FF?style=flat-square)](LICENSE)
+
 <br>
 
 <img src="docs/images/panel-es.png" width="280" alt="Panel de isTargetSleeping en vidrio negro">&nbsp;&nbsp;<img src="docs/images/activity-es.png" width="280" alt="Actividad: estadísticas de la semana, gráfica de 30 min y quién despierta al modelo">&nbsp;&nbsp;<img src="docs/images/settings-es.png" width="280" alt="Ajustes de isTargetSleeping">
+
+<p>
+  <a href="#video">Video</a> &bull;
+  <a href="#-funciones">Funciones</a> &bull;
+  <a href="#-mascotas">Mascotas</a> &bull;
+  <a href="#-instalar">Instalar</a> &bull;
+  <a href="#-uso">Uso</a> &bull;
+  <a href="#como-funciona">Cómo funciona</a> &bull;
+  <a href="#-privacidad">Privacidad</a> &bull;
+  <a href="#desarrollo">Desarrollo</a>
+</p>
 
 <sub>By <b>CodeSentry - Tykillita</b></sub>
 
@@ -21,6 +40,14 @@
 App nativa de Windows para la bandeja del sistema que vigila tus modelos de [Ollama](https://ollama.com): cuando
 dejan de trabajar los pone a dormir y te devuelve la RAM, y enciende o apaga Ollama con un clic, lo hayas instalado
 como lo hayas instalado.
+
+<a id="video"></a>
+
+<p align="center">
+  <a href="docs/video/isTargetSleeping-tour-es.mp4"><img src="docs/images/video-poster-es.jpg" width="100%" alt="Mira el recorrido de 77 segundos por isTargetSleeping, con sonido"></a>
+  <br>
+  <sub>El recorrido, con sonido: <a href="docs/video/isTargetSleeping-tour-es.mp4">español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">English</a></sub>
+</p>
 
 ## ✨ Funciones
 
@@ -40,10 +67,11 @@ como lo hayas instalado.
 | 🧩 | **Otros motores** | Un `llama-server` de **llama.cpp** propio tiene su tarjeta y su siesta; **LM Studio**, de forma experimental. |
 | 🔗 | **Enlaces** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<modelo>`… para Stream Deck, PowerToys o scripts. |
 | 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
-| 🐾 | **Mascotas opcionales** | Elige a **Mira**, una **llama**, un **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme, come mientras carga un modelo, teclea mientras genera y barre mientras libera RAM. Cada una tiene su personalidad. Tócala, acaríciala, clic derecho. Apagadas por defecto; **Mascota junto a Inicio** en Ajustes › General o en el menú de la bandeja. |
+| 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y barre mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera. Apagadas por defecto; [más abajo](#-mascotas). |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
-| 🔒 | **Privado** | Solo habla con Ollama en tu PC. Sin cuentas, sin telemetría. Buscar actualizaciones es opcional y no existe si no hay un repositorio configurado. |
+| 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256 y con vuelta atrás automática si algo falla. |
+| 🔒 | **Privado** | Solo habla con Ollama en tu PC. Sin cuentas, sin telemetría. La búsqueda de actualizaciones (que puedes apagar) es lo único que sale de tu PC. |
 
 ## 📥 Instalar
 
@@ -79,38 +107,68 @@ la pantalla, se desplazan.
 **Ajustes:** *Ollama* — liberar sin uso, con qué encenderlo, reiniciarlo si se cae · *Automático* — modo juego,
 volver a encender al salir, juegos propios · *Notificaciones* — un interruptor por tipo · *Integraciones* — los
 enlaces, listos para copiar · *Otros motores* — la siesta de cada uno · *General* — los dos atajos, abrir al iniciar
-sesión, animación de la bandeja, mascota opcional, buscar actualizaciones (solo si está configurado), idioma · logs.
+sesión, mostrar siempre en la barra, animación de la bandeja, mascota, buscar actualizaciones, idioma · logs.
 
-**Mascota junto a Inicio:** Mira, la llama curiosa, el capibara tranquilo o el gatito naranja juguetón,
-dibujados píxel a píxel en su propia ventana en capas (nítidos con cualquier
-escala), junto al botón Inicio de la barra principal: sobre él, dentro de la barra a su izquierda o paseando por el
-borde de la barra. Solo su silueta recibe clics (clic: el panel; clic derecho: su menú; ir y venir con el ratón: una
-caricia) y nunca toma el foco; con *Interactuar con la mascota* apagado, deja pasar todos los clics. Se oculta al
-instante al abrir Inicio, Buscar, un juego o una app a pantalla completa, y cuando la barra se esconde. Duerme en su camita y, mientras espera un modelo, se esconde detrás del logo de Windows y se asoma.
-Cada una tiene su carácter: Mira fija una retícula sobre el cursor y hace «ping» al clic; la llama estira el cuello
-hacia él, tararea y resopla; la capibara casi ni se inmuta, se baña en una tina humeante y en vez de esconderse se
-apoya en el logo; el gatito se agacha, se lanza sobre el cursor si se queda quieto y se eriza al clic. El logo de Windows es parte de su casa: con Ollama encendido
-brilla suavemente, el brillo llega panel a panel al arrancar, destella mientras Mira teclea y se llena mientras
-descarga, y con Ollama apagado se queda como lo dibuja Windows (pintadas encima
-del logo real por una ventana que nunca recibe clics). Si Windows
-no expone el botón Inicio, permanece oculta y Ajustes explica el motivo. Apaga el interruptor para cerrarla y
-detener sus temporizadores.
+### 🐾 Mascotas
 
-El selector de **Ajustes › General** muestra miniaturas y nombres en dos columnas. Solo hay una mascota activa;
-la selección se guarda y cambia sin reiniciar. También puedes elegirla desde su menú de clic derecho.
-La llama observa y mueve las orejas, el capibara pasea despacio y el gatito se acicala y mueve la cola.
-Con **Movimiento reducido**, cada una mantiene una postura fija para cada estado.
+<p align="center"><img src="docs/images/pets-home-es.svg" width="100%" alt="Las cuatro mascotas dormidas en sus camas justo encima del botón Inicio, y asomándose detrás del logo de Windows mientras Ollama espera un modelo: Mira con medio ojo, la llama como un periscopio, la capibara apoyada en el logo y el gatito enseñando primero las orejas."></p>
 
-Cada mascota tiene una cama a juego: una cápsula azul con diana para Mira, un cojín de tejido andino para la llama,
-un nido de hojas con nenúfar para el capibara y una cesta de mimbre acolchada para el gatito.
-Las camas aparecen al acomodarse para dormir y desaparecen al despertar. El capibara se dibuja de perfil en
-pixel art, con cabeza alta, pelaje color miel, hocico romo, cuatro patas pequeñas y una mandarina, sin brazos;
-la llama, lana esponjosa y pezuñas;
-el gatito, rayas de tabby y cola curva.
+Activa **Mascota junto a Inicio** en Ajustes › General (o en el menú de la bandeja) y una mascota se muda a tu barra
+de tareas. Está dibujada píxel a píxel en su propia ventana en capas, nítida con cualquier escala, y vive en uno de
+tres sitios: **sobre Inicio**, **dentro de la barra a la izquierda de Inicio** (tocando el logo de Windows) o
+**paseando** por la barra hasta la bandeja mientras hay un modelo despierto. Elígela en el selector de dos columnas de
+Ajustes o en su menú de clic derecho; se guarda y cambia sin reiniciar.
 
-Para revisar sus animaciones sin cambiar tus ajustes: `--export-pet carpeta` genera hojas de las cuatro especies,
-con fondos claros y oscuros, paseo en ambos sentidos, movimiento reducido y una vista conjunta de las camas. `--snapshot salida.png pet --pet llama`
-genera una vista individual; los identificadores son `mira`, `llama`, `capybara` y `orange-cat`.
+**Cuenta lo que hace Ollama:**
+
+<p align="center"><img src="docs/images/pets-states-es.svg" width="100%" alt="Las cuatro mascotas en seis estados: duermen con Ollama apagado, comen mientras carga un modelo, teclean en un portátil mientras genera, cargan una caja al descargar, barren al liberar RAM y sueltan corazones con las caricias."></p>
+
+<details>
+<summary>Ver como tabla</summary>
+
+| Ollama | La mascota |
+|---|---|
+| Apagado | Duerme en su cama, con Z |
+| Arrancando · apagándose | Se estira y despierta · bosteza y vuelve a la cama |
+| Encendido, sin modelo | Dormita — o se esconde detrás del logo de Windows y se asoma |
+| Cargando un modelo | Come algo |
+| Modelo en memoria | Atenta, con sus propios gestos |
+| Generando | Teclea en un portátil diminuto |
+| Descargando un modelo | Carga una caja |
+| Liberando RAM | Barre |
+| Presión de memoria alta · crítica | Suda · se pone coral |
+
+</details>
+
+Reacciones puntuales: destellos al liberar RAM, una siesta cuando el modelo se duerme, estrellitas de mareo cuando
+Ollama se cae (triste si el vigilante se rinde), un salto al hacerle clic y corazones al acariciarla (ir y venir con
+el ratón por encima).
+
+**Cada una tiene su carácter:**
+
+| Mascota | Carácter | Lo suyo | Cama |
+|---|---|---|---|
+| **Mira** | Hacker vigilante — el logo de la app hecho personaje | Lanza un anillo de radar desde el ojo, fija una retícula roja sobre tu cursor, su antena emite señales y suben bits mientras trabaja; el clic es un *ping* de radar | Cápsula azul con diana |
+| **Llama** | Orgullosa, curiosa y algo dramática | Trota con la cabeza alta, mastica de lado, tararea, estira el cuello hacia el cursor, lleva la caja bajo una manta tejida y resopla una nubecita al clic; se asoma sobre el logo como un periscopio | Cojín de tejido andino |
+| **Capibara** | Zen | Casi ni se inmuta (un parpadeo lento y una burbuja), un pájaro se le posa en el lomo, equilibra la caja en la cabeza con la mandarina encima; no se esconde — se apoya en el logo | Tina de madera humeante |
+| **Gatito naranja** | Juguetón | Se agacha con las pupilas dilatadas al pasar el ratón, salta sobre el cursor si se queda quieto 1,2 s, se eriza y da un zarpazo al clic, se acicala, amasa ronroneando; al asomarse enseña primero las orejas y deja la cola fuera | Cesta de mimbre acolchada |
+
+**El logo de Windows participa** como parte de su casa: una segunda ventana que no recibe clics pinta «luces» sobre el
+logo real, panel a panel. Con Ollama apagado se queda exactamente como lo dibuja Windows; con Ollama encendido brilla
+suavemente, el brillo llega panel a panel al arrancar, un panel destella con cada tecla mientras el modelo genera, los
+paneles se llenan como una barra de progreso al descargar y brilla en ámbar mientras carga un modelo. Los clics siguen
+yendo a Inicio.
+
+**No estorba.** Solo su silueta recibe clics (clic: el panel; clic derecho: su menú) y nunca toma el foco; con
+*Interactuar con la mascota* apagado deja pasar todos los clics. Se oculta al instante al abrir Inicio, Buscar, un
+juego o una app a pantalla completa, y con la barra que se oculta sola. Si Windows no expone el botón Inicio,
+permanece oculta y Ajustes explica el motivo. **Movimiento reducido** usa una postura fija por estado y especie, sin
+temporizadores. Al apagar el interruptor se cierra su ventana y se detienen sus temporizadores.
+
+Para revisar sus animaciones sin cambiar tus ajustes, `--export-pet carpeta` genera hojas de las cuatro especies con
+fondos claros y oscuros: cada estado, transición, gesto (con sus partículas), reacción al ratón, paseo en ambos
+sentidos, movimiento reducido y una vista conjunta con las camas. `--snapshot salida.png pet --pet llama` genera una
+vista individual; los identificadores son `mira`, `llama`, `capybara` y `orange-cat`.
 
 ### Enlaces
 
@@ -125,7 +183,11 @@ genera una vista individual; los identificadores son `mira`, `llama`, `capybara`
 Se registran para tu usuario en `HKCU\Software\Classes\istargetsleeping` (sin administrador) cada vez que arranca la
 app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abierta, el enlace la abre.
 
+<a id="como-funciona"></a>
+
 ## ⚙️ Cómo funciona
+
+<p align="center"><img src="docs/images/idle-flow-es.svg" width="100%" alt="Cuatro pasos: cada 2,5 s suma el tiempo de CPU de los runners; si crece más de 0,08 s o cambia el modelo, cuenta como actividad; tras 5, 15, 30 o 60 minutos sin generar descarga el modelo, y Ollama sigue encendido y lo recarga al pedirlo."></p>
 
 - **Apagar bien:** con la app de Ollama, le pide cerrar y a los 2 s termina su árbol de procesos; la enciende con
   `ollama app.exe hidden` (solo bandeja, sin abrir la ventana de chat). Un servicio se para y arranca por el
@@ -162,6 +224,8 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   (~5 s) → lo reinicia por el último mecanismo; *cuelgue* = el servidor vive pero la API no responde en 3 muestras
   (~7,5 s) → lo mata y lo reinicia. Máximo 3 veces en 10 min; luego se rinde y avisa. No actúa si lo apagaste tú, si
   saliste de la app de Ollama desde su menú ni en modo juego. Medido: un `ollama serve` matado vuelve en ~8–10 s.
+<p align="center"><img src="docs/images/game-mode-es.svg" width="100%" alt="Línea de tiempo: abres un juego; a los 5 s se apagan Ollama y los otros motores y la RAM y la VRAM quedan para el juego; sales; a los 30 s vuelve solo lo que estaba encendido, por el mismo camino."></p>
+
 - **Modo juego:** cada 2,5 s busca un proceso **con ventana visible** cuyo `.exe` esté en una biblioteca: Steam
   (todas las de `libraryfolders.vdf`), Epic (sus manifiestos `.item`), `C:\Riot Games`, EA Games, Rockstar Games,
   GOG (su registro), `XboxGames` en cualquier disco y tus juegos propios; también cuenta la pantalla completa
@@ -205,6 +269,8 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   registro en `Logs\app.log` (avisos, reinicios, modo juego). Los enlaces viven en
   `HKCU\Software\Classes\istargetsleeping`; el instalador lo borra al desinstalar.
 
+<a id="desarrollo"></a>
+
 ## 🛠️ Desarrollo
 
 Windows 100 % nativo: C# sobre .NET 10 con **WPF** para la interfaz y **Win32** directo para todo lo demás (DXGI y
@@ -246,3 +312,7 @@ su historial, descargar y borrar modelos, llama.cpp y LM Studio, enlaces `istarg
 actualizaciones. El aviso de copyright de ModelNap se conserva en [LICENSE](LICENSE), como exige su licencia MIT.
 
 Ollama es una marca de sus respectivos dueños; este proyecto no está afiliado a Ollama.
+
+---
+
+<p align="center"><em>Tu modelo duerme. Tu RAM vuelve. Tu mascota vigila.</em></p>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 330" width="960" height="330" role="img" aria-labelledby="t d" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="t">Tu juego se queda la RAM y la VRAM; Ollama vuelve solo</title>
+  <desc id="d">Abres un juego → +5 s → Sales → +30 s</desc>
+  <style>
+
+@media (prefers-reduced-motion: reduce){image{animation:none!important}}
+</style>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#08090b"/><stop offset=".55" stop-color="#14171c"/><stop offset="1" stop-color="#090b0d"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".09"/><stop offset=".5" stop-color="#fff" stop-opacity=".025"/><stop offset="1" stop-color="#b9c7ca" stop-opacity=".06"/></linearGradient>
+    <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26272c"/><stop offset="1" stop-color="#1b1c20"/></linearGradient>
+  </defs>
+  <rect width="960" height="330" rx="28" fill="url(#bg)"/>
+  <rect x="1" y="1" width="958" height="328" rx="27" fill="url(#glass)" stroke="#fff" stroke-opacity=".14"/>
+  <text x="40" y="58" font-size="12" font-weight="600" fill="#f5f5f7" fill-opacity="0.6" text-anchor="start" letter-spacing="1.6">MODO JUEGO</text>
+  <text x="40" y="88" font-size="22" font-weight="650" fill="#f5f5f7" fill-opacity="1" text-anchor="start">Tu juego se queda la RAM y la VRAM; Ollama vuelve solo</text>
+  <rect x="330" y="136" width="530" height="32" rx="16" fill="#4DA3FF" fill-opacity=".12" stroke="#4DA3FF" stroke-opacity=".35"/>
+  <text x="465" y="157" font-size="13" font-weight="600" fill="#4DA3FF" fill-opacity="1" text-anchor="middle">RAM y VRAM libres para el juego</text>
+  <path d="M80 152H330" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>
+  <circle cx="80" cy="152" r="9" fill="#0b0c0f" stroke="#f5f5f7" stroke-width="2.5"/>
+  <text x="70" y="210" font-size="16" font-weight="650" fill="#f5f5f7" fill-opacity="1" text-anchor="start">Abres un juego</text>
+  <text x="70" y="236" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">ventana visible de Steam,</text>
+  <text x="70" y="255" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="start">Epic, Riot, EA, GOG, Xbox…</text>
+  <circle cx="330" cy="152" r="9" fill="#0b0c0f" stroke="#8a8f98" stroke-width="2.5"/>
+  <circle cx="330" cy="152" r="3.5" fill="#8a8f98"/>
+  <text x="330" y="210" font-size="16" font-weight="650" fill="#8a8f98" fill-opacity="1" text-anchor="middle">+5 s</text>
+  <text x="330" y="236" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="middle">se apagan Ollama y</text>
+  <text x="330" y="255" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="middle">los otros motores</text>
+  <circle cx="600" cy="152" r="9" fill="#0b0c0f" stroke="#f5f5f7" stroke-width="2.5"/>
+  <text x="600" y="210" font-size="16" font-weight="650" fill="#f5f5f7" fill-opacity="1" text-anchor="middle">Sales</text>
+  <text x="600" y="236" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="middle">Encender igual y No es un</text>
+  <text x="600" y="255" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="middle">juego siguen en el panel</text>
+  <circle cx="860" cy="152" r="9" fill="#0b0c0f" stroke="#4DA3FF" stroke-width="2.5"/>
+  <circle cx="860" cy="152" r="3.5" fill="#4DA3FF"/>
+  <text x="870" y="210" font-size="16" font-weight="650" fill="#4DA3FF" fill-opacity="1" text-anchor="end">+30 s</text>
+  <text x="870" y="236" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="end">vuelve solo lo que estaba</text>
+  <text x="870" y="255" font-size="13" font-weight="400" fill="#ebebf5" fill-opacity="0.66" text-anchor="end">encendido, por el mismo camino</text>
+  <rect x="78" y="282" width="94" height="24" rx="12" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".1"/>
+  <circle cx="92" cy="294" r="3.5" fill="#4DA3FF"/>
+  <text x="102" y="298" font-size="11" font-weight="600" fill="#f5f5f7" fill-opacity="0.8" text-anchor="start" letter-spacing="0.6">Ollama ON</text>
+  <rect x="388" y="282" width="94" height="24" rx="12" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".1"/>
+  <circle cx="402" cy="294" r="3.5" fill="#8a8f98"/>
+  <text x="412" y="298" font-size="11" font-weight="600" fill="#f5f5f7" fill-opacity="0.8" text-anchor="start" letter-spacing="0.6">Ollama OFF</text>
+  <rect x="788" y="282" width="94" height="24" rx="12" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".1"/>
+  <circle cx="802" cy="294" r="3.5" fill="#4DA3FF"/>
+  <text x="812" y="298" font-size="11" font-weight="600" fill="#f5f5f7" fill-opacity="0.8" text-anchor="start" letter-spacing="0.6">Ollama ON</text>
+</svg>
