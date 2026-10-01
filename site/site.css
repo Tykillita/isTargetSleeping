@@ -102,7 +102,7 @@ code, kbd, pre { font-family: var(--mono); }
 .nav-links a { text-decoration: none; transition: color .15s; }
 .nav-links a:hover { color: var(--tinta); }
 .nav-acciones { display: flex; align-items: center; gap: 14px; margin-left: auto; }
-.nav-links + .nav-acciones { margin-left: 0; }
+@media (min-width: 901px) { .nav-links + .nav-acciones { margin-left: 0; } }
 .icono-btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; border: 0; background: none; cursor: pointer; color: var(--tinta-2); text-decoration: none; }
 .icono-btn:hover { background: var(--gris); }
 .icono-btn svg { width: 18px; height: 18px; }
@@ -111,7 +111,7 @@ code, kbd, pre { font-family: var(--mono); }
 @media (max-width: 600px) {
   .nav .contenedor { gap: 12px; }
   .nav-acciones { gap: 6px; }
-  .nav-acciones .icono-btn[aria-label="GitHub"] { display: none; }
+  .nav-github { display: none; }
   .marca { flex: none; white-space: nowrap; }
 }
 @media (max-width: 440px) {

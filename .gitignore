@@ -7,3 +7,5 @@ dist/
 __pycache__/
 site/media/
 _site/
+.firebase/
+firebase-debug.log

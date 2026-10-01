@@ -1,0 +1,37 @@
+name: firebase-hosting
+
+# Publica site\ en Firebase Hosting (https://istargetsleeping.web.app) en cada push a main que toque la web.
+# Necesita el secreto FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING (lo crea `firebase init hosting:github`);
+# sin él, el job se salta en vez de fallar.
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', 'Assets/**', 'docs/images/**', 'docs/video/**', 'firebase.json', '.firebaserc', '.github/workflows/firebase-hosting.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    env:
+      HAS_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.HAS_SECRET == 'true'
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        if: env.HAS_SECRET == 'true'
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING }}
+          projectId: istargetsleeping
+          channelId: live
+      - name: Sin credenciales
+        if: env.HAS_SECRET != 'true'
+        shell: pwsh
+        run: Write-Host 'Falta el secreto FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING; no se despliega.'

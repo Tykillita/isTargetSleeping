@@ -262,7 +262,7 @@ const EN = {
   'nov.proxima.fecha': "in progress",
   'nov.proxima.resumen': "Changes made after 1.3.0 that aren’t part of the app. The next app change will open its version here.",
   'nov.proxima.nuevo1t': "Official website",
-  'nov.proxima.nuevo1d': "This site: features, how it works, install, FAQ, this what’s-new page and light or dark mode.",
+  'nov.proxima.nuevo1d': "This site, live at istargetsleeping.web.app: features, how it works, install, FAQ, this what’s-new page and light or dark mode.",
   'nov.proxima.nuevo2t': "Video tour",
   'nov.proxima.nuevo2d': "77 seconds through the app, in English and Spanish, with an original soundtrack.",
   'nov.v1_3_0.fecha': "Sep 30, 2026",

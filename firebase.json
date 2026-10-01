@@ -1,0 +1,18 @@
+{
+  "hosting": {
+    "site": "istargetsleeping",
+    "public": "site",
+    "ignore": ["build.ps1", "**/.*", "**/node_modules/**"],
+    "predeploy": ["pwsh -NoProfile -File site/build.ps1"],
+    "headers": [
+      {
+        "source": "media/**",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }]
+      },
+      {
+        "source": "**/*.@(css|js)",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }]
+      }
+    ]
+  }
+}

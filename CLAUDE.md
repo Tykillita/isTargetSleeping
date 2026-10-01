@@ -45,7 +45,12 @@ Al subirla, actualiza **todo a la vez**:
   archivos en `site/`. Vista previa: servidor `site` de `.claude/launch.json` (puerto 8765).
 - Tema claro/oscuro con tokens en `:root` de `site/site.css` y `data-theme` en `<html>`; idioma con `data-i18n`.
 - Comprueba a 375, 768 y 1280 px, en claro y oscuro, en español e inglés.
-- `.github/workflows/pages.yml` publica la web en GitHub Pages.
+- Se publica en **Firebase Hosting** (proyecto `istargetsleeping`, https://istargetsleeping.web.app):
+  `firebase deploy --only hosting`. El `predeploy` de `firebase.json` ejecuta `site/build.ps1`.
+  `.github/workflows/firebase-hosting.yml` despliega en cada push a `main` que toque la web, si existe el secreto
+  `FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING`.
+- `site/firebase.js` inicializa la app web de Firebase («isTargetSleeping Web»). Solo Firebase App: no añadas
+  Analytics ni otros servicios con seguimiento sin pedirlo.
 
 ## Commits
 
