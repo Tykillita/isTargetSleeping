@@ -18,7 +18,7 @@
 
 <br>
 
-<img src="docs/images/panel-es.png" width="280" alt="Panel de isTargetSleeping en vidrio negro">&nbsp;&nbsp;<img src="docs/images/activity-es.png" width="280" alt="Actividad: estadísticas de la semana, gráfica de 30 min y quién despierta al modelo">&nbsp;&nbsp;<img src="docs/images/settings-es.png" width="280" alt="Ajustes de isTargetSleeping">
+<img src="docs/images/panel-es.png" width="280" alt="Panel de isTargetSleeping en vidrio negro">&nbsp;&nbsp;<img src="docs/images/activity-es.png" width="280" alt="Actividad: estadísticas de la semana, gráfica de 30 min y quién despierta al modelo">&nbsp;&nbsp;<a href="docs/images/settings-es.png"><img src="docs/images/settings-preview-es.png" width="280" alt="Ajustes de isTargetSleeping (clic para verlos completos)"></a>
 
 <p>
   <a href="#video">Video</a> &bull;

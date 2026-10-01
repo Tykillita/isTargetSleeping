@@ -22,12 +22,13 @@ Snap settings-es @("settings", "demo", "--lang", "es")
 & $exe --export-logo "$root\Assets" | Write-Output
 # Las ilustraciones del README (mascotas animadas, infografías y pósters del video) salen
 # de las hojas de --export-pet; hace falta Python con Pillow y numpy.
-$python = Get-Command py, python -ErrorAction SilentlyContinue | Select-Object -First 1
+$python = Get-Command python, py -All -ErrorAction SilentlyContinue | ForEach-Object Source |
+    Where-Object { & $_ -c "import PIL, numpy" 2>$null; $LASTEXITCODE -eq 0 } | Select-Object -First 1
 if ($python) {
     $pets = Join-Path ([IO.Path]::GetTempPath()) "isTargetSleeping-pets"
     & $exe --export-pet $pets | Write-Output
-    & $python.Source "$PSScriptRooteadme-art.py" $pets
+    & $python "$PSScriptRoot\readme-art.py" $pets
     Remove-Item -Recurse -Force $pets
 } else {
-    Write-Warning "Python no está instalado: no se regeneran las ilustraciones del README"
+    Write-Warning "Falta Python con Pillow y numpy: no se regeneran las ilustraciones del README"
 }

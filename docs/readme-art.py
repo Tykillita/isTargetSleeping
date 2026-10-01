@@ -363,6 +363,24 @@ def posters():
         print(f'{os.path.relpath(out, ROOT)}: {os.path.getsize(out) // 1024} KB')
 
 
+def settings_previews():
+    """The settings capture is ~4x taller than the others: a preview as tall as Activity, fading out."""
+    for lang in ('en', 'es'):
+        src = os.path.join(IMAGES, f'settings-{lang}.png')
+        if not os.path.exists(src):
+            continue
+        im = Image.open(src).convert('RGBA')
+        h = Image.open(os.path.join(IMAGES, f'activity-{lang}.png')).height
+        top = im.crop((0, 0, im.width, h))
+        fade = 260
+        alpha = np.asarray(top.getchannel('A'), dtype=np.float32)
+        alpha[h - fade:] *= np.linspace(1, 0, fade)[:, None] ** 1.6
+        top.putalpha(Image.fromarray(alpha.astype(np.uint8)))
+        out = os.path.join(IMAGES, f'settings-preview-{lang}.png')
+        top.save(out, optimize=True)
+        print(f'{os.path.relpath(out, ROOT)}: {os.path.getsize(out) // 1024} KB')
+
+
 def main():
     src = sys.argv[1]
     sheets = {p: load_sheet(p, src) for p in PETS}
@@ -373,6 +391,7 @@ def main():
         idle_flow(lang)
         game_mode(lang)
     posters()
+    settings_previews()
 
 
 if __name__ == '__main__':

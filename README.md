@@ -18,7 +18,7 @@
 
 <br>
 
-<img src="docs/images/panel-en.png" width="280" alt="isTargetSleeping panel in black glass">&nbsp;&nbsp;<img src="docs/images/activity-en.png" width="280" alt="Activity: weekly stats, 30-minute chart and who wakes the model">&nbsp;&nbsp;<img src="docs/images/settings-en.png" width="280" alt="isTargetSleeping settings in black glass">
+<img src="docs/images/panel-en.png" width="280" alt="isTargetSleeping panel in black glass">&nbsp;&nbsp;<img src="docs/images/activity-en.png" width="280" alt="Activity: weekly stats, 30-minute chart and who wakes the model">&nbsp;&nbsp;<a href="docs/images/settings-en.png"><img src="docs/images/settings-preview-en.png" width="280" alt="isTargetSleeping settings in black glass (click for the full page)"></a>
 
 <p>
   <a href="#video">Video</a> &bull;
