@@ -16,6 +16,13 @@ public partial class ContentView : UserControl
         model.PropertyChanged += OnModelChanged;
     }
 
+    // Checked cubre ratón, teclado y lectores de pantalla; una actualización del enlace no vuelve a guardar.
+    private void OnPetChoiceChecked(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (sender is RadioButton { DataContext: PetChoice choice } && !choice.IsSelected)
+            choice.Pick.Execute(null);
+    }
+
     /// La cabecera mueve el panel: arrastrar lo deja donde lo sueltes y el doble clic
     /// lo devuelve junto a la bandeja. Los botones de la cabecera se quedan su clic.
     private void OnHeaderMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

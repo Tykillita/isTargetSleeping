@@ -83,9 +83,25 @@ public sealed partial class Supervisor
             else Notify?.Invoke(Notice.Download, tr("La descarga falló"), $"{model}: {failure}");
         };
         ollama.UserPower += _ => Game.Touch(OllamaId);
+        var previous = ollama.Power;
+        ollama.PowerChanged += p =>
+        {
+            // Solo al encenderlo (desde la app, un atajo, un enlace, el modo juego o el
+            // vigilante): si ya estaba encendido al abrir la app, no se carga nada.
+            if (p == Power.On && previous == Power.Starting) LoadMainModel();
+            previous = p;
+        };
         ollama.Changed += CheckPressure;
         ApplyWatchdog();
         prefs.Changed += ApplyWatchdog;
+    }
+
+    /// El modelo principal, si hay, sigue instalado y no está ya en memoria.
+    private void LoadMainModel()
+    {
+        if (Prefs.MainModel is not { } main) return;
+        if (!Ollama.Installed.Any(m => m.Name == main) || Ollama.Loaded.Any(m => m.Name == main)) return;
+        Ollama.Load(main);
     }
 
     private void ApplyWatchdog()
@@ -288,12 +304,34 @@ public sealed partial class Supervisor
     public bool UpdatesAvailable => AppInfo.UpdateRepo.Length > 0;
     public UpdateInfo? Update { get; private set; }
     public double? UpdateProgress { get; private set; }
+    public UpdateStatus UpdateStatus { get; private set; }
+    public UpdateStage UpdateStage { get; private set; }
+    public string? UpdateMessage { get; private set; }
+    public DateTimeOffset? UpdateRetryAt { get; private set; }
+    public bool UpdateBusy => UpdateStage != UpdateStage.Idle;
+    private CancellationTokenSource? updateCancellation;
     private UpdateInfo? notified;
 
-    public async Task CheckUpdates()
+    public async Task CheckUpdates(bool manual = false)
     {
-        if (!UpdatesAvailable || !Prefs.Switch(PrefKeys.UpdateCheck) || Ollama.IsDemo) return;
-        Update = await Updater.Check(AppInfo.UpdateApi, AppInfo.UpdateRepo, AppInfo.Version);
+        if (!UpdatesAvailable || (!manual && !Prefs.Switch(PrefKeys.UpdateCheck)) || Ollama.IsDemo
+            || UpdateStatus == UpdateStatus.Checking || UpdateBusy) return;
+        if (UpdateRetryAt > DateTimeOffset.UtcNow)
+        {
+            UpdateStatus = UpdateStatus.RateLimited;
+            Changed?.Invoke();
+            return;
+        }
+        UpdateStatus = UpdateStatus.Checking;
+        UpdateMessage = null;
+        Changed?.Invoke();
+        var result = await Updater.Check(AppInfo.UpdateApi, AppInfo.UpdateRepo, AppInfo.Version);
+        UpdateStatus = result.Status;
+        UpdateMessage = result.Error;
+        UpdateRetryAt = result.RetryAt;
+        // Un fallo de red no elimina una actualización que ya se había encontrado.
+        if (result.Status is not (UpdateStatus.Error or UpdateStatus.RateLimited)) Update = result.Info;
+        AppLog.Write($"update check: {result.Status}");
         if (Update is { } u && notified?.Version != u.Version)
         {
             notified = u;
@@ -304,23 +342,79 @@ public sealed partial class Supervisor
 
     public async Task InstallUpdate()
     {
-        if (Update is not { } u || UpdateProgress is not null) return;
+        if (Update is not { } u || UpdateBusy || UpdateStatus == UpdateStatus.Checking) return;
+        using var cancellation = new CancellationTokenSource();
+        updateCancellation = cancellation;
+        PreparedUpdate? prepared = null;
+        bool handedOff = false;
+        UpdateStage = UpdateStage.Downloading;
         UpdateProgress = 0;
+        UpdateMessage = null;
         Changed?.Invoke();
         try
         {
-            var progress = new Progress<double>(p => { UpdateProgress = p; Changed?.Invoke(); });
-            var exe = await Updater.Download(u, progress);
+            var progress = new Progress<UpdateTransfer>(p =>
+            {
+                if (updateCancellation != cancellation || UpdateStage == UpdateStage.Applying) return;
+                UpdateStage = p.Stage;
+                UpdateProgress = p.Fraction;
+                Changed?.Invoke();
+            });
+            prepared = await Updater.Download(u, progress, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            UpdateStage = UpdateStage.Applying;
+            Changed?.Invoke();
             Ollama.Stats.Flush();
-            Updater.InstallAndRelaunch(exe);
+            await Task.Run(() => UpdateInstaller.Start(prepared));
+            handedOff = true;
             System.Windows.Application.Current?.Shutdown();
+        }
+        catch (OperationCanceledException)
+        {
+            UpdateMessage = tr("Descarga cancelada.");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            UpdateMessage = tr("No hay permisos para actualizar esta carpeta. Descarga la versión desde GitHub.");
         }
         catch (Exception e)
         {
+            UpdateMessage = tr("No se pudo actualizar: %@", e.Message);
+        }
+        finally
+        {
+            // Si el auxiliar tomó el relevo, su sesión sigue en uso hasta confirmar el arranque.
+            if (!handedOff && prepared is not null)
+                Updater.DeleteStaging(prepared.Directory);
+            updateCancellation = null;
             UpdateProgress = null;
-            Ollama.Error = tr("No se pudo actualizar: %@", e.Message);
+            UpdateStage = UpdateStage.Idle;
             Changed?.Invoke();
         }
+    }
+
+    public void CancelUpdate()
+    {
+        if (UpdateStage is UpdateStage.Downloading or UpdateStage.Verifying) updateCancellation?.Cancel();
+    }
+
+    public void ReportUpdateRecovery(string message)
+    {
+        UpdateMessage = message;
+        UpdateStatus = UpdateStatus.Error;
+        Changed?.Invoke();
+    }
+
+    /// Capturas de los estados de actualización, sin red ni instalación.
+    public void LoadUpdateDemo(UpdateStage stage = UpdateStage.Idle, bool error = false)
+    {
+        if (!Ollama.IsDemo) return;
+        Update = new("1.4.0", "", "", AppInfo.RepoUrl + "/releases/tag/v1.4.0");
+        UpdateStatus = UpdateStatus.Available;
+        UpdateStage = stage;
+        UpdateProgress = stage == UpdateStage.Downloading ? 0.42 : null;
+        UpdateMessage = error ? tr("No hay permisos para actualizar esta carpeta. Descarga la versión desde GitHub.") : null;
+        Changed?.Invoke();
     }
 
     /// Demo: un juego en marcha y un llama-server con modelo, para las capturas.

@@ -15,11 +15,16 @@
   Set-Content VERSION 1.0.0
   $env:SIGN_CERT_THUMBPRINT = "…"; .\package.ps1
 #>
-param([string[]]$Arch = @("x64", "arm64"))
+param(
+    [ValidateSet("x64", "arm64")] [string[]]$Arch = @("x64", "arm64"),
+    [switch]$RequireInstaller,
+    [string]$InnoCompiler
+)
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 $app = "isTargetSleeping"
 $version = (Get-Content VERSION -Raw).Trim()
+if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw "VERSION debe tener una versión estable MAJOR.MINOR.PATCH." }
 $dist = Join-Path $PSScriptRoot "dist"
 New-Item -ItemType Directory -Force $dist | Out-Null
 
@@ -37,21 +42,27 @@ function Checksum([string]$file) {
     Set-Content "$file.sha256" "$hash  $(Split-Path $file -Leaf)" -NoNewline
 }
 
-$iscc = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") |
+$iscc = @($InnoCompiler, "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "$env:ProgramFiles\Inno Setup 6\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") |
+    Where-Object { $_ } |
     Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($RequireInstaller -and -not $iscc) { throw "Falta Inno Setup 6: la publicación requiere portable e instalador." }
 
 foreach ($a in $Arch) {
-    & "$PSScriptRoot\build.ps1" -Arch $a | Out-Host
-    $exe = Join-Path $PSScriptRoot "build\$app.exe"
+    $buildOut = Join-Path $PSScriptRoot "obj\package-$a"
+    & "$PSScriptRoot\build.ps1" -Arch $a -OutputDirectory $buildOut | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "La compilación $a falló." }
+    $exe = Join-Path $buildOut "$app.exe"
     Sign $exe
 
     $stage = Join-Path $dist "$app-$version-win-$a"
+    if (-not ([IO.Path]::GetFullPath($stage)).StartsWith($dist + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Ruta de paquete no válida." }
+    if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
     Copy-Item $exe, LICENSE $stage -Force
     $zip = "$stage.zip"
     Remove-Item $zip -ErrorAction SilentlyContinue
     Compress-Archive -Path "$stage\*" -DestinationPath $zip
-    Remove-Item $stage -Recurse -Force
+    Remove-Item -LiteralPath $stage -Recurse -Force
     Checksum $zip
     "zip: $zip"
 

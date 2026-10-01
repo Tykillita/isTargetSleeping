@@ -181,9 +181,20 @@ public static class OllamaBlobs
         return names!.TryGetValue(file.Replace('-', ':'), out var name) ? name : null;
     }
 
+    /// Los modelos instalados según los manifiestos (como `ollama list`), para cuando
+    /// Ollama está apagado y su API no responde.
+    public static List<string> Installed()
+    {
+        Build();
+        return [.. installed!];
+    }
+
+    private static List<string>? installed;
+
     private static void Build()
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var all = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         var root = Path.Combine(ModelsDir, "manifests");
         try
         {
@@ -202,12 +213,14 @@ public static class OllamaBlobs
                     if (parts[0] == "registry.ollama.ai" && repo.StartsWith("library/")) repo = repo["library/".Length..];
                     else if (parts[0] != "registry.ollama.ai") repo = $"{parts[0]}/{repo}";
                     map.TryAdd(digest, $"{repo}:{tag}");
+                    all.Add($"{repo}:{tag}");
                 }
                 catch { }
             }
         }
         catch { }
         names = map;
+        installed = [.. all];
         builtAt = DateTime.Now;
     }
 }

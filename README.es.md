@@ -39,7 +39,8 @@ como lo hayas instalado.
 | 🗂️ | **Modelos** | Tamaño, cuantización y etiquetas *visión* / *herramientas*. Cárgalos, **descárgalos** (con progreso y cancelable) o **bórralos** desde el panel. |
 | 🧩 | **Otros motores** | Un `llama-server` de **llama.cpp** propio tiene su tarjeta y su siesta; **LM Studio**, de forma experimental. |
 | 🔗 | **Enlaces** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<modelo>`… para Stream Deck, PowerToys o scripts. |
-| 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar parpadeando o sin punto. |
+| 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
+| 🐾 | **Mascotas opcionales** | Elige a **Mira**, una **llama**, un **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme, come mientras carga un modelo, teclea mientras genera y barre mientras libera RAM. Cada una tiene su personalidad. Tócala, acaríciala, clic derecho. Apagadas por defecto; **Mascota junto a Inicio** en Ajustes › General o en el menú de la bandeja. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
 | 🔒 | **Privado** | Solo habla con Ollama en tu PC. Sin cuentas, sin telemetría. Buscar actualizaciones es opcional y no existe si no hay un repositorio configurado. |
@@ -55,8 +56,8 @@ Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping
 `%LOCALAPPDATA%\Programs\isTargetSleeping` (sin administrador).
 
 La primera vez abre su panel junto al reloj y pregunta si abrir al iniciar sesión. Si no ves el ícono, puede estar
-entre los ocultos (`^`): arrástralo a la barra, o actívalo en *Configuración › Personalización › Barra de tareas ›
-Otros iconos de la bandeja del sistema*.
+entre los ocultos (`^`): activa **Mostrar siempre en la barra de tareas** en Ajustes › General de la app, arrástralo a
+la barra, o actívalo en *Configuración › Personalización › Barra de tareas › Otros iconos de la bandeja del sistema*.
 
 **Requisitos:** Windows 10 (2004+) u 11 · x64 o ARM64 · [Ollama](https://ollama.com/download/windows).
 
@@ -78,7 +79,38 @@ la pantalla, se desplazan.
 **Ajustes:** *Ollama* — liberar sin uso, con qué encenderlo, reiniciarlo si se cae · *Automático* — modo juego,
 volver a encender al salir, juegos propios · *Notificaciones* — un interruptor por tipo · *Integraciones* — los
 enlaces, listos para copiar · *Otros motores* — la siesta de cada uno · *General* — los dos atajos, abrir al iniciar
-sesión, buscar actualizaciones (solo si está configurado), idioma · logs.
+sesión, animación de la bandeja, mascota opcional, buscar actualizaciones (solo si está configurado), idioma · logs.
+
+**Mascota junto a Inicio:** Mira, la llama curiosa, el capibara tranquilo o el gatito naranja juguetón,
+dibujados píxel a píxel en su propia ventana en capas (nítidos con cualquier
+escala), junto al botón Inicio de la barra principal: sobre él, dentro de la barra a su izquierda o paseando por el
+borde de la barra. Solo su silueta recibe clics (clic: el panel; clic derecho: su menú; ir y venir con el ratón: una
+caricia) y nunca toma el foco; con *Interactuar con la mascota* apagado, deja pasar todos los clics. Se oculta al
+instante al abrir Inicio, Buscar, un juego o una app a pantalla completa, y cuando la barra se esconde. Duerme en su camita y, mientras espera un modelo, se esconde detrás del logo de Windows y se asoma.
+Cada una tiene su carácter: Mira fija una retícula sobre el cursor y hace «ping» al clic; la llama estira el cuello
+hacia él, tararea y resopla; la capibara casi ni se inmuta, se baña en una tina humeante y en vez de esconderse se
+apoya en el logo; el gatito se agacha, se lanza sobre el cursor si se queda quieto y se eriza al clic. El logo de Windows es parte de su casa: con Ollama encendido
+brilla suavemente, el brillo llega panel a panel al arrancar, destella mientras Mira teclea y se llena mientras
+descarga, y con Ollama apagado se queda como lo dibuja Windows (pintadas encima
+del logo real por una ventana que nunca recibe clics). Si Windows
+no expone el botón Inicio, permanece oculta y Ajustes explica el motivo. Apaga el interruptor para cerrarla y
+detener sus temporizadores.
+
+El selector de **Ajustes › General** muestra miniaturas y nombres en dos columnas. Solo hay una mascota activa;
+la selección se guarda y cambia sin reiniciar. También puedes elegirla desde su menú de clic derecho.
+La llama observa y mueve las orejas, el capibara pasea despacio y el gatito se acicala y mueve la cola.
+Con **Movimiento reducido**, cada una mantiene una postura fija para cada estado.
+
+Cada mascota tiene una cama a juego: una cápsula azul con diana para Mira, un cojín de tejido andino para la llama,
+un nido de hojas con nenúfar para el capibara y una cesta de mimbre acolchada para el gatito.
+Las camas aparecen al acomodarse para dormir y desaparecen al despertar. El capibara se dibuja de perfil en
+pixel art, con cabeza alta, pelaje color miel, hocico romo, cuatro patas pequeñas y una mandarina, sin brazos;
+la llama, lana esponjosa y pezuñas;
+el gatito, rayas de tabby y cola curva.
+
+Para revisar sus animaciones sin cambiar tus ajustes: `--export-pet carpeta` genera hojas de las cuatro especies,
+con fondos claros y oscuros, paseo en ambos sentidos, movimiento reducido y una vista conjunta de las camas. `--snapshot salida.png pet --pet llama`
+genera una vista individual; los identificadores son `mira`, `llama`, `capybara` y `orange-cat`.
 
 ### Enlaces
 
@@ -145,16 +177,28 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   descarga el modelo sin cerrarse, «dormir» para el proceso y recuerda su línea de comandos exacta para relanzarlo
   igual. **LM Studio** (**experimental, sin probar**): solo si `lms.exe` está instalado; puerto 1234,
   `/api/v0/models`, `lms server start|stop` y `lms unload --all`.
-- **Actualizaciones:** apagadas salvo que `settings.json` tenga un repositorio de GitHub (`updateRepo`,
-  `usuario/repo`). Entonces busca al arrancar y cada 24 h en `releases/latest` los mismos archivos que genera
-  `package.ps1` (`.zip` y su `.sha256`); *Actualizar* descarga a `%TEMP%`, comprueba el SHA-256, renombra el `.exe`
-  en uso a `.old`, pone el nuevo, relanza y borra el `.old`.
+- **Actualizaciones:** repositorio público oficial **Tykillita/isTargetSleeping** configurado por defecto.
+  La búsqueda automática comienza activada, al arrancar y cada 24 horas; puedes apagarla en Ajustes. Conserva las
+  preferencias explícitas existentes, incluido `updateCheck: false` y un `updateRepo` personalizado.
+  **Buscar actualizaciones ahora** en Ajustes y en el menú de la bandeja funciona aunque la búsqueda automática
+  esté apagada. Respeta los tiempos de espera de GitHub y diferencia errores, paquetes incompatibles y ausencia
+  de versiones publicadas.
+- Solo ofrece versiones estables superiores y el paquete correspondiente al proceso x64/ARM64. Muestra versión
+  actual, nueva y **Ver novedades**. Al pulsar **Actualizar**, descarga con progreso y cancelación, comprueba
+  SHA-256, rutas del ZIP y versión/arquitectura del ejecutable. Un auxiliar espera el cierre normal, reemplaza el
+  archivo en su ubicación actual y conserva un respaldo hasta que arranca la nueva bandeja. Si falla, restaura
+  y abre la versión anterior. Conserva ajustes e historial; si no puedes escribir en la carpeta, ofrece descarga
+  manual. El agente de memoria se actualiza por separado, con su permiso de administrador.
+- Las instalaciones anteriores a 1.3.0 sin repositorio configurado necesitan una primera actualización manual.
 
 ## 🔒 Privacidad
 
-- Solo se conecta a la API local de Ollama (`127.0.0.1:11434` u `OLLAMA_HOST`) y a los puertos locales de los otros
-  motores. La **única** conexión fuera de tu PC es la búsqueda de actualizaciones en `api.github.com`, opcional y solo
-  si hay un repositorio configurado.
+- Se conecta a la API local de Ollama (`127.0.0.1:11434` u `OLLAMA_HOST`) y a los puertos locales de los otros motores.
+- La búsqueda automática de actualizaciones (activada inicialmente y opcional en Ajustes) consulta `api.github.com`
+  al arrancar y cada 24 horas, sin credenciales. Al pulsar **Actualizar**, descarga el paquete y su comprobante
+  desde GitHub y sus servidores `release-assets.githubusercontent.com`/`objects.githubusercontent.com`. GitHub
+  recibe tu IP y el identificador de la app; no se envían modelos, conversaciones, ajustes ni historial de uso.
+  No hay cuentas, telemetría ni analítica. Las páginas de novedades, descargas y créditos se abren al pulsar sus enlaces.
 - Los permisos de administrador solo los usa el agente de memoria, solo para liberar RAM (y cerrar Mem Reduct si lo
   reemplazas), y solo si lo activas.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio
@@ -172,8 +216,21 @@ views.
 .\build.ps1 -Install           # además lo instala y lo relanza
 .\build.ps1 -Test              # pruebas: IdleTracker, vigilante, modo juego, bibliotecas, estadísticas, descargas, enlaces y actualizador
 .\package.ps1                  # dist\: zip + instalador para x64 y arm64
+.\package.ps1 -RequireInstaller # falla si falta Inno Setup
 .\docs\generate-images.ps1     # imágenes del README y assets del logo
 ```
+
+### Preparar una versión en GitHub
+
+Actualiza `VERSION` con `MAJOR.MINOR.PATCH` y añade su sección `## [versión]` al changelog. Ejecuta
+`.\build.ps1 -Test`, `.\package.ps1 -RequireInstaller` y
+`.\packaging\verify-release.ps1 -Tag v<versión> -VerifyAssets`. Guarda los cambios y sube la etiqueta correspondiente.
+El proceso `prepare-release` repite las comprobaciones y pruebas, prepara Inno Setup 6, genera los ZIP e instaladores
+de ambas arquitecturas y verifica los ocho archivos con sus hashes. Después crea un **borrador** con las notas
+del changelog para que lo revises y publiques desde GitHub. La app no ve borradores ni versiones preliminares.
+Se mantienen las comprobaciones de `main` y las solicitudes de cambios. Solo el trabajo que crea el borrador tiene
+permiso de escritura; la app no requiere un token. La firma opcional conserva `SIGN_CERT_THUMBPRINT`; se admiten
+versiones sin firmar.
 
 ## Créditos
 

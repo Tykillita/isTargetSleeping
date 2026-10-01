@@ -5,6 +5,104 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+### Added
+- Three taskbar companions alongside Mira: a curious white llama, a relaxed capybara and a playful orange kitten.
+  Each has its own activities, gestures, reactions and walking pace; choose one in the two-column thumbnail
+  picker in Settings or the pet's context menu. The choice persists, with Mira as the default and fallback.
+- Species animation profiles share reaction timing across the brain, director and previews; switching species
+  clears old reactions and particles. Reduced motion uses species-specific static poses without animation timers.
+- Pet review sheets cover every species, both walking directions, reduced motion and 1x–4x rendering on light/dark
+  taskbars. `--snapshot output.png pet --pet llama` previews an individual pet; `settings demo --pet llama` shows
+  its selection without changing saved preferences.
+- Unique sleeping beds for every pet: Mira's blue capsule, the llama's Andean woven cushion, the capybara's
+  leafy nest with a water lily, and the kitten's padded wicker basket. Beds enter and leave with the sleep pose.
+- **Pets with personality:** each pet now has its own choreography, click reaction, idle gestures, particles and
+  way of treating the mouse. **Mira** (watchful hacker) sweeps a radar ring from her eye, locks a red reticle on
+  the cursor, her antenna sends signals and bits rise while she works; a click is a radar "ping". The **llama**
+  (proud, curious, a bit dramatic) trots head-high, chews sideways, hums with notes, carries the box on her back
+  under a woven blanket, stretches her neck toward the cursor and snorts a little cloud when clicked. The
+  **capybara** (zen) barely flinches — a slow blink and a bubble — sleeps in a steaming wooden hot tub, has a
+  bird land on her back, balances the box on her head with the mandarin on top and looks at the cursor slowly.
+  The **kitten** (playful) crouches with dilated pupils when hovered and pounces if the cursor stays still for
+  1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs, swishes her tail, sits on the laptop and
+  inside the box, and sleeps curled up with her tail around her.
+- Hiding behind the Windows logo also depends on the pet: the llama peeks over the top like a periscope, the
+  kitten shows her ears first and then her eyes while her tail sticks out the other side, and the capybara
+  doesn't hide at all — she leans on the logo.
+- New particles: steam, bubbles, falling leaves, music notes, purrs, snort clouds, 0/1 bits and antenna signals.
+- `--export-pet` sheets now show each pet's own gestures (with their particles) and a mouse row, at 2× and 3×.
+
+### Changed
+- Each pet has its own animation profile instead of one shared animal choreography with speed switches.
+- Sharper animal sprites: the kitten has slit pupils that dilate, ears that swivel and flatten, an expressive
+  tail and a bristling arched back; the llama has long eyelashes, a bigger topknot, a chewing jaw and tucked legs
+  when lying down; the capybara has heavy-lidded eyes and a wobbling mandarin. The capybara's leafy nest is
+  replaced by the hot tub.
+- Refined animal sprites: the capybara now has a raised pixel-art head, honey-colored fur, a blunt snout,
+  four small connected feet with alternating steps and a mandarin, without arms; the llama has fluffy
+  wool and hooves, and the orange kitten has tabby markings and a curved striped tail. Collection review sheets
+  compare awake and sleeping pets on light and dark backgrounds.
+
+## [1.3.0] — 2026-09-30
+
+### Fixed
+- About now explicitly describes isTargetSleeping as the redesigned native Windows app. ModelNap is credited
+  separately under **Inspiration**, in both English and Spanish.
+
+### Added
+- **GitHub updates:** the official public repository is configured by default. Automatic checks start enabled,
+  run at startup and every 24 hours, and preserve an existing `updateCheck: false`. Manual checks are available
+  in Settings and the tray menu even when automatic checks are off. Separate results for up to date, no published
+  releases, incompatible packages, connection errors and GitHub rate limits; Spanish and English messages.
+- **User-controlled installation:** current/new version, release notes, download progress and cancellation.
+  Stable releases only, exact x64/ARM64 asset selection, HTTPS download validation, SHA-256, bounded ZIP extraction
+  and executable architecture/version checks. A copy of the app runs as a background update helper after normal
+  shutdown, keeps a backup until the new tray starts and restores/reopens the previous version on failure.
+  Settings, history and the current portable/install location are preserved. Memory-agent updates remain separate.
+- **Reviewed releases:** stable version tags validate `VERSION` and changelog notes, run tests, build portable ZIPs
+  and per-user installers for x64/ARM64, verify all eight packages/checksums and create a GitHub draft. Existing
+  releases are never overwritten; publishing remains a manual review step. Windows signing is optional.
+- Update tests exercise public-release parsing, network errors/rate limits, corrupt or unsafe packages,
+  cancellation, locked files, permission errors, backup recovery and real child-process startup confirmation.
+- Optional **Pet beside Start** (tray icon's right-click menu and Settings › General, off by default): **Mira**, the
+  app's own pet — its body is the crosshair ring, the tick marks are its antenna, arms and feet, and its eye is the
+  logo's (closed with lashes while it sleeps, the bullseye when awake). It acts out what Ollama is doing: sleeps
+  tucked into its little bed with Z's when Ollama is off, stretches while it starts, dozes with Ollama on and no model, munches a
+  snack while a model loads, stands alert (the logo pose) with a model in memory, types on a tiny laptop while the
+  model generates, carries a box while downloading, sweeps while freeing RAM and yawns as Ollama stops. One-shot
+  reactions: sparkles when RAM is freed, dizzy stars when Ollama crashes (sad if the watchdog gives up), a yawn
+  when the model naps, a jump when clicked and hearts when petted. It sweats with high memory pressure and turns
+  coral when it's critical.
+- **Three places to live:** peeking over the taskbar above Start, inside the taskbar just left of Start, its hand touching the Windows logo as if they were one drawing (falls back
+  to above Start, with a note in Settings, when there's no room), or **walking** along the taskbar's edge up to the
+  tray while a model is awake, heading back home to Start to sleep.
+- **The Windows logo joins in** as part of the pet's home: a second click-through window paints "lights" over the
+  real logo, pane by pane. With Ollama off the logo stays exactly as Windows draws it; with Ollama on it keeps a
+  soft glow (a bit gentler than the RAM-freed one), and on top of it: the glow arrives pane by pane as Ollama
+  starts, a pane flashes with each keystroke, the panes fill up like a progress bar while downloading, it glows
+  amber while a model loads, a shine sweeps across now and then while alert, the glow leaves pane by pane as Ollama
+  stops, and it glows with sparkles, hearts and jumps. The logo is found by
+  capturing the Start button (only when Start moves, with the pet hidden for a moment) and keeping its blue pixels,
+  so the lights never touch the taskbar and the pet snugs up against the logo's real edge. Clicks still go to Start.
+- **Shy while it waits:** next to Start (*left of Start*), while Ollama starts or is on with no model loaded, it
+  hides behind the Windows logo and peeks out from its left side with half an eye, curious; now and then it
+  ducks back, blushing, until a model arrives. Whatever falls on the logo isn't drawn (and clicks there still go
+  to Start).
+- **Interaction** (on by default, *Interact with the pet*): click it to open the panel, right-click for its menu
+  (turn Ollama on/off, put the model to sleep, load the main model, position, hide), move the mouse back and forth
+  over it to pet it; its eye follows the cursor. Only its silhouette takes clicks and it never takes focus; turn
+  interaction off and every click passes through.
+- Drawn pixel by pixel on its own layered window at a whole-pixel scale (2× at 100 %, 3× at 125–150 %, 4× at
+  200 %), so it stays crisp at any DPI. **Smooth motion:** the drawing runs at 12 fps with quick gestures and long
+  rests (a blink takes a quarter of a second), while jumps (a real arc), hops, sways, walking, peeking out from
+  behind the logo and moving between spots run continuously at ~30 fps, one physical pixel at a time, with easing —
+  it slides instead of teleporting, and stays covered by the logo as it comes out from behind it. Ready for a **collection** of pets: each one only draws the shared poses, and
+  a pet selector appears once there's more than one. *Reduced motion* shows one still pose per state.
+- Lighter on Explorer: the Start button is found with UI Automation once and then only its position is read; it
+  hides instantly (foreground events, not polling) when Start, Search, a game or a full-screen app opens, and puts
+  itself back on top when you click the taskbar. It hides with an auto-hiding taskbar. Turning it off closes its
+  window and stops its timers. `--export-pet dir` writes every frame for review.
+
 ## [1.2.0] — 2026-09-30
 
 ### Added
@@ -23,15 +121,42 @@ All notable changes to isTargetSleeping. The format follows
   **Ctrl+Alt+L**, `istargetsleeping://clean` and `--clean`. The last cleanup is shown in the card and in Activity.
 - **Mem Reduct:** detects it, imports its settings (auto-clean %, interval, areas, notification) and **replaces** it —
   closes it, removes it from startup and turns its auto-clean off — with a one-click **Go back to Mem Reduct**.
-- Optional **tray icon with the RAM %** (amber/coral with pressure); the tray tooltip always shows RAM %.
+- Optional **tray icon with the RAM %**, styled like Windows' own indicators: a crisp, pixel-snapped number in the
+  taskbar's color over a thin gauge bar that fills with the % (blue with Ollama on, gray off, amber while switching or
+  with high pressure, coral when critical). Toggle it from the tray icon's right-click menu or in Settings; the tray
+  tooltip always shows RAM %.
 - "RAM freed" notification (off by default, like Mem Reduct).
 - Tests for the agent's command format (strict validation), the cleaning rules, the `memreduct.ini` parser/editor
   and the weekly totals with cleanups.
 
+- **Redrawn tray icon**, hand-tuned for 16–32 px instead of the big logo scaled down: pixel-snapped crosshair ticks, a
+  solid ring, the status dot as a badge with a cut-out (like Windows' own), and softer (not washed-out) ink when
+  Ollama is off. The eye tells the model's state: closed with lashes while it sleeps, open — the bullseye — while a
+  model is in memory.
+- **Animated tray icon** instead of the on/off blink while Ollama switches: *searching* — a faint ring with an amber
+  radar arc sweeping clockwise — while it starts; *lock-on* when it's on — the arc closes into the ring, the ticks
+  bounce and the blue badge pops; *letting go* while it stops — the eye closes, the badge turns amber and the radar
+  sweeps backwards; and the ring un-drawing to a dot and coming back dimmed when it's off. The eye opens and closes
+  when a model loads or goes to sleep, and the RAM % icon gets a light sweeping along its bar while Ollama switches.
+  20 fps only while something changes (the radar frames are drawn once and reused; the timer stops when idle), and a
+  new state picks up from wherever the icon is. **Reduced motion** (Settings › General) turns it off — the icon then
+  shows a steady amber badge while switching. Until you touch it, it follows Windows' *Animation effects*; turn it off
+  to animate the icon even with Windows' animations off.
+- **Main model:** star a model in the installed list and it loads by itself every time Ollama is turned on (from the
+  app, a hotkey, a link, game mode or the watchdog; not when Ollama was already on when the app opened). Also from
+  the tray icon's right-click menu: **Load when Ollama starts** › *None* or one of your models (listed even with
+  Ollama off, from its manifests on disk, honoring `OLLAMA_MODELS`). Click the star again
+  (or pick *None*) to clear it; deleting the model clears it too. The tray menu now supports submenus.
+- **Always show in the taskbar** (Settings › General): the same switch as Windows 11's *Other system tray icons*
+  (`HKCU\Control Panel\NotifyIconSettings`, `IsPromoted`), so the icon doesn't hide behind ^. Shown only when Windows
+  has the entry (Windows 11).
 - **Move the panel:** drag it by its header and it stays there (also the next time it opens), always inside the
   screen; double-click the header to put it back next to the tray.
 
 ### Fixed
+- **About** now links to the app's own repository (github.com/Tykillita/isTargetSleeping), under the signature.
+- The number in the RAM % tray icon changed size with the value (a "63" came out bigger than a "66"): it was fitted
+  to each number's own ink. It's now fitted to a fixed "88", so every value from 0 to 99 has the same size.
 - A flat dark strip across the top of the panel: DWM was painting the (hidden) title bar there, over the acrylic.
   The panel now asks DWM for no caption color.
 - The Free RAM shortcut is **Ctrl+Alt+L** ("liberar"): Ctrl+Alt+M is taken by the NVIDIA App overlay.
