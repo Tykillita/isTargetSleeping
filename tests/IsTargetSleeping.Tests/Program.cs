@@ -341,95 +341,309 @@ cleanStats.Add(new StatEvent(now.AddHours(-1), StatKind.Clean, null, 500_000_000
 var cw = cleanStats.Week(now);
 Check("la semana suma siestas y limpiezas", cw.Recovered == 7_000_000_000 && cw.Cleaned == 2_000_000_000 && cw.Cleans == 2 && cw.Naps == 1);
 
+// MARK: ícono animado
+
+Section("Ícono animado");
+var motion = new TrayMotion(TrayPhase.Off, false, animate: true);
+Check("apagado → arrancando: buscando", motion.Set(TrayPhase.Starting, false, 1) == TrayAnimation.Searching);
+Check("la búsqueda arranca de la pose de apagado", motion.PoseAt(1).Near(TrayPose.Off));
+Check("la búsqueda es un bucle que no acaba", motion.IsAnimating(60));
+Check("el bucle se repite cada vuelta", motion.PoseAt(3).Near(motion.PoseAt(3 + TrayMotion.Turn)));
+Check("en el bucle hay fotograma para reutilizar", motion.LoopFrame(3) is >= 0 and < TrayMotion.LoopFrames && motion.LoopFrame(1.1) is null);
+Check("el fotograma guardado es la pose", motion.PoseAt(3).Near(TrayMotion.Loop(true, motion.LoopFrame(3)!.Value)));
+Check("el radar gira en el sentido del reloj", TrayMotion.Searching(0.25).ArcStart is > 89 and < 91);
+Check("arrancando → encendido: fijado", motion.Set(TrayPhase.On, false, 3) == TrayAnimation.LockOn);
+Check("el fijado arranca de la pose del radar (sin saltos)", motion.PoseAt(3).Near(TrayMotion.Loop(true, TrayMotion.Frame(2 / TrayMotion.Turn))));
+double peak = Enumerable.Range(0, 60).Max(i => motion.PoseAt(3 + i * 0.01).Dot);
+Check("la insignia salta por encima de 1", peak > 1.15);
+Check("las marcas salen hacia fuera", Enumerable.Range(0, 60).Min(i => motion.PoseAt(3 + i * 0.01).TickShift) <= -0.99);
+Check("el fijado acaba en la pose de encendido", motion.PoseAt(3.6).Near(TrayPose.On(false)) && !motion.IsAnimating(3.6));
+Check("un modelo carga: el ojo se abre", motion.Set(TrayPhase.On, true, 5) == TrayAnimation.EyeOpen);
+Check("el ojo abierto acaba despierto", motion.PoseAt(5.35).Near(TrayPose.On(true)));
+Check("el modelo duerme: el ojo se cierra", motion.Set(TrayPhase.On, false, 6) == TrayAnimation.EyeClose && motion.PoseAt(6.45).Near(TrayPose.On(false)));
+Check("sin cambios no hay animación", motion.Set(TrayPhase.On, false, 7) == TrayAnimation.None);
+motion.Set(TrayPhase.On, true, 7);
+Check("encendido → apagándose: soltando", motion.Set(TrayPhase.Stopping, false, 8) == TrayAnimation.LettingGo);
+Check("soltando cierra el ojo y la insignia pasa a ámbar", motion.PoseAt(8.4) is { Eye: 0, DotTint: 1, Dot: 1 });
+Check("el radar al soltar gira al revés", TrayMotion.LettingGo(0.25).ArcStart is > 269 and < 271);
+Check("apagándose → apagado: se apaga", motion.Set(TrayPhase.Off, false, 9) == TrayAnimation.Off);
+Check("al apagarse el anillo se deshace", motion.PoseAt(9.24).Ring < 0.1 && motion.PoseAt(9.24).Dot < 0.1);
+Check("y acaba en la pose de apagado", motion.PoseAt(9.5).Near(TrayPose.Off) && !motion.IsAnimating(9.5));
+
+var failed = new TrayMotion(TrayPhase.Off, false, animate: true);
+failed.Set(TrayPhase.Starting, false, 0);
+Check("arrancar y fallar: la misma animación de apagado", failed.Set(TrayPhase.Off, false, 2) == TrayAnimation.Off);
+
+// Interrupción a media animación: la nueva empieza donde iba la otra.
+var cut = new TrayMotion(TrayPhase.Off, false, animate: true);
+cut.Set(TrayPhase.Starting, false, 0);
+cut.Set(TrayPhase.On, false, 2);
+var mid = cut.PoseAt(2.25);
+cut.Set(TrayPhase.Stopping, false, 2.25);
+Check("una interrupción arranca de la pose actual", cut.PoseAt(2.25).Near(mid));
+var midOff = cut.PoseAt(2.4);
+cut.Set(TrayPhase.Off, false, 2.4);
+Check("también al apagarse a media entrada", cut.PoseAt(2.4).Near(midOff));
+
+var still = new TrayMotion(TrayPhase.Off, false, animate: false);
+Check("sin animaciones: nada que animar", still.Set(TrayPhase.Starting, false, 0) == TrayAnimation.None && !still.IsAnimating(0));
+Check("sin animaciones: insignia ámbar fija", still.PoseAt(0).Near(TrayPose.Busy) && still.PoseAt(0.7).Near(TrayPose.Busy));
+still.Set(TrayPhase.On, true, 1);
+Check("sin animaciones: salta a la pose final", still.PoseAt(1).Near(TrayPose.On(true)));
+still.SetAnimate(true, 2);
+Check("volver a animar no mueve una pose fija", !still.IsAnimating(2) && still.PoseAt(2).Near(TrayPose.On(true)));
+
+// MARK: mascota
+
+Section("Mascota: estados");
+Check("apagado: duerme", PetBrain.Choose(new(), false) == PetActivity.DeepSleep);
+Check("arrancando: se despierta", PetBrain.Choose(new(Starting: true), false) == PetActivity.WakingUp);
+Check("apagándose: bosteza", PetBrain.Choose(new(Up: true, Stopping: true), false) == PetActivity.Yawning);
+Check("encendido sin modelo: somnolienta", PetBrain.Choose(new(Up: true), false) == PetActivity.Drowsy);
+Check("cargando un modelo: come", PetBrain.Choose(new(Up: true, Loading: true), false) == PetActivity.Eating);
+Check("modelo en memoria: alerta", PetBrain.Choose(new(Up: true, ModelLoaded: true), false) == PetActivity.Alert);
+Check("generando: trabaja", PetBrain.Choose(new(Up: true, ModelLoaded: true), true) == PetActivity.Working);
+Check("descargar va antes que trabajar", PetBrain.Choose(new(Up: true, ModelLoaded: true, Downloading: true), true) == PetActivity.Downloading);
+Check("liberar RAM va antes que todo, incluso apagado", PetBrain.Choose(new(Cleaning: true), false) == PetActivity.Sweeping);
+Check("jugando: oculta", PetBrain.Choose(new(Up: true, ModelLoaded: true, Cleaning: true, Game: true), true) == PetActivity.Hidden);
+
+var brain = new PetBrain();
+brain.Update(new(Up: true, ModelLoaded: true, Generating: true), 0);
+Check("la señal de generar la pone a trabajar", brain.Activity == PetActivity.Working);
+brain.Update(new(Up: true, ModelLoaded: true), 2.5);
+Check("sigue trabajando un rato sin señal", brain.Activity == PetActivity.Working);
+brain.Update(new(Up: true, ModelLoaded: true), 3.1);
+Check("y luego vuelve a estar alerta", brain.Activity == PetActivity.Alert && brain.ActivitySince == 3.1);
+
+brain.React(PetReaction.Jump, 10);
+brain.React(PetReaction.Dizzy, 10.1);
+Check("una reacción más importante interrumpe", brain.Reaction == PetReaction.Dizzy);
+brain.React(PetReaction.Hearts, 10.2);
+brain.React(PetReaction.Sparkle, 10.2);
+brain.React(PetReaction.Sparkle, 10.3);
+Check("las menos importantes esperan su turno", brain.Reaction == PetReaction.Dizzy);
+brain.Expire(10.1 + PetBrain.Duration(PetReaction.Dizzy) + 0.01);
+Check("la cola sigue por prioridad", brain.Reaction == PetReaction.Sparkle);
+brain.Expire(20);
+Check("al acabar la cola vuelve a su actividad", brain.Reaction == PetReaction.None && brain.Activity == PetActivity.Alert);
+brain.React(PetReaction.Hearts, 21);
+brain.Update(new(Up: true, Game: true), 21.1);
+Check("al ocultarse se olvidan las reacciones", brain.Activity == PetActivity.Hidden && brain.Reaction == PetReaction.None);
+brain.React(PetReaction.Jump, 21.2);
+Check("oculta no reacciona", brain.Reaction == PetReaction.None);
+
+Section("Mascota: fotogramas clave");
+var keyed = new PetClip([new(0, new PetPose(Eye: 0)), new(1, new PetPose(Eye: 1, Prop: PetProp.Laptop)), new(2, new PetPose(Eye: 0.5))], loop: true, length: 3);
+Check("en cada clave la pose es exacta", keyed.At(0).Eye == 0 && keyed.At(1).Eye == 1 && keyed.At(2).Eye == 0.5);
+Check("entre claves se interpola con su curva", keyed.At(0.5).Eye is > 0.3 and < 0.7
+    && Enumerable.Range(0, 100).Select(i => keyed.At(i / 100.0).Eye).Zip(Enumerable.Range(1, 100).Select(i => keyed.At(i / 100.0).Eye)).All(p => p.Second >= p.First - 1e-9));
+Check("el bucle vuelve a la primera clave sin salto", Math.Abs(keyed.At(2.999).Eye - 0) < 0.01 && keyed.At(3.0).Eye == keyed.At(0).Eye);
+Check("un accesorio que aparece entra con PropIn (no salta)",
+    PetPose.Lerp(new PetPose(), new PetPose(Prop: PetProp.Laptop), 0.3) is { Prop: PetProp.Laptop, PropIn: > 0.2 and < 0.4 });
+var once = new PetClip([new(0, new PetPose(Eye: 0)), new(1, new PetPose(Eye: 1))], loop: false);
+Check("sin bucle se queda en la última", once.At(5).Eye == 1);
+Check("la pose de reposo: ojo abierto y bracitos en cruz", new PetPose() is { Eye: 1, ArmL: PetArm.Out, ArmR: PetArm.Out, Sit: 0 });
+
+Section("Mascota: animación continua");
+// Lo más que puede cambiar una pose entre fotogramas a 60 fps sin que se vea un salto
+// (los parpadeos y los golpes rápidos llegan a 0,35; el resto va muy por debajo).
+double Jump(PetClip clip, double seconds) =>
+    Enumerable.Range(0, (int)(seconds * 60)).Max(i => PetPose.Distance(clip.At(i / 60.0), clip.At((i + 1) / 60.0)));
+var clips = Enum.GetValues<PetActivity>().Select(a => (a.ToString(), PetAnimations.For(a)))
+    .Concat(Enum.GetValues<PetReaction>().Select(r => (r.ToString(), PetAnimations.For(r))))
+    .Concat(Enum.GetValues<PetGesture>().Select(g => (g.ToString(), PetAnimations.Gesture(g))))
+    .Append(("Peek", PetAnimations.Peek)).ToList();
+var rough = clips.Where(c => Jump(c.Item2, c.Item2.Length * 2 + 0.1) > 0.35).Select(c => c.Item1).ToList();
+Check($"ninguna animación salta entre fotogramas a 60 fps{(rough.Count > 0 ? ": " + string.Join(", ", rough) : "")}", rough.Count == 0);
+Check("cada reacción cabe en su duración", Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
+    .All(r => PetAnimations.For(r).Length <= PetBrain.Duration(r) + 1e-9));
+Check("dormida: en su cama, con el ojo cerrado (también sin movimiento)",
+    Enumerable.Range(0, 34).Select(i => PetAnimations.For(PetActivity.DeepSleep).At(i / 10.0)).All(p => p.Eye == 0 && p.BedIn == 1)
+    && PetAnimations.Still(PetActivity.DeepSleep) is { Eye: 0, BedIn: 1 });
+Check("el bostezo acaba en la cama", PetAnimations.For(PetActivity.Yawning).At(60) == PetAnimations.Asleep);
+var alertClip = PetAnimations.For(PetActivity.Alert);
+var alertEyes = Enumerable.Range(0, (int)(alertClip.Length * 60)).Select(i => alertClip.At(i / 60.0).Eye).ToList();
+int longestBlink = 0, run = 0;
+foreach (var e in alertEyes) { run = e < 0.5 ? run + 1 : 0; longestBlink = Math.Max(longestBlink, run); }
+Check("alerta: casi siempre con el ojo abierto y parpadeos rápidos (< 0,2 s cerrado)",
+    alertEyes.Count(e => e > 0.95) >= alertEyes.Count * 0.85 && longestBlink > 0 && longestBlink / 60.0 < 0.2);
+Check("esperando un modelo: tras el logo, asomándose de 0 a 3 píxeles y sonrojándose",
+    Enumerable.Range(0, 160).Select(i => PetAnimations.Peek.At(i / 20.0)).All(p => p.Behind && p.Peek is >= -0.01 and <= 3.01)
+    && Enumerable.Range(0, 160).Max(i => PetAnimations.Peek.At(i / 20.0).Blush) > 0.9 && PetAnimations.PeekStill.Behind);
+var arc = Enumerable.Range(0, 31).Select(i => PetAnimations.Motion(PetReaction.Jump, i / 60.0).Dy).ToList();
+Check("el salto es una parábola que vuelve al suelo", arc.Min() < -4.5 && arc[0] == 0 && arc[^1] == 0);
+var walkPoses = Enumerable.Range(0, 120).Select(i => PetAnimations.Walk(i * 0.1, 1, 0, false)).ToList();
+Check("al caminar el paso va con la distancia (dos pasos cada 6 píxeles)",
+    walkPoses.Count(p => p.Feet == PetFeet.StepLeft) > 10 && walkPoses.Count(p => p.Feet == PetFeet.StepRight) > 10
+    && PetAnimations.Walk(0, 1, 0, false).Feet == PetAnimations.Walk(6, 1, 0, false).Feet);
+
+Section("Mascota: transiciones y mezclas");
+var wake = PetAnimations.Transition(PetActivity.DeepSleep, PetActivity.WakingUp, false, false)!;
+Check("al despertar sale de la cama", wake.At(0) == PetAnimations.Asleep && wake.At(wake.Length).BedIn < 0.05 && wake.At(wake.Length).Sit < 0.05);
+var laptop = PetAnimations.Transition(PetActivity.Alert, PetActivity.Working, false, false)!;
+Check("al ponerse a trabajar saca el portátil", laptop.At(0) is { Prop: PetProp.Laptop, PropIn: 0 } && laptop.At(laptop.Length).PropIn == 1);
+var close = PetAnimations.Transition(PetActivity.Working, PetActivity.Alert, false, false)!;
+Check("y al acabar lo guarda", close.At(close.Length) is { PropIn: < 0.01 });
+Check("salir de detrás del logo y meterse detrás tienen su animación",
+    PetAnimations.Transition(PetActivity.Drowsy, PetActivity.Eating, true, false) is { } emerge && emerge.At(0).Behind && !emerge.At(emerge.Length).Behind
+    && PetAnimations.Transition(PetActivity.WakingUp, PetActivity.Drowsy, false, true) is { } duck && duck.At(duck.Length).Behind);
+Check("sin transición propia, nada (se mezclan las poses)", PetAnimations.Transition(PetActivity.Alert, PetActivity.Drowsy, false, false) is null);
+
+var anchors = new PetAnchors(13.5, 6, 13.5, 15.5, 13.5, 14.5, 23.5);
+PetFrame[] Run(PetDirector d, Func<double, PetSituation> at, double from, double to)
+{
+    var frames = new List<PetFrame>();
+    for (double t = from; t < to; t += 1 / 60.0) frames.Add(d.Step(t, 1 / 60.0, at(t)));
+    return [.. frames];
+}
+var director = new PetDirector(anchors, seed: 2);
+var calm = Run(director, _ => new PetSituation(PetActivity.Alert), 0, 3);
+var switched = Run(director, _ => new PetSituation(PetActivity.Drowsy), 3, 4);
+Check("al cambiar de actividad la pose se mezcla sin salto",
+    PetPose.Distance(calm[^1].Pose, switched[0].Pose) < 0.2 && switched.Zip(switched.Skip(1)).All(p => PetPose.Distance(p.First.Pose, p.Second.Pose) < 0.35));
+var reacting = Run(director, t => new PetSituation(PetActivity.Drowsy, PetReaction.Hearts, 4), 4, 5.4);
+Check("las reacciones entran y salen mezclándose, con corazones",
+    PetPose.Distance(switched[^1].Pose, reacting[0].Pose) < 0.35 && director.Particles.Live.Any(p => p.Kind == ParticleKind.Heart));
+var calmPose = new PetDirector(anchors).Step(0, 1 / 60.0, new PetSituation(PetActivity.Working, Still: true));
+Check("con movimiento reducido: pose fija, sin partículas ni reloj",
+    calmPose.Pose == PetAnimations.Still(PetActivity.Working) && calmPose.Fps == 0);
+var dozing = new PetDirector(anchors);
+var sleepy = Run(dozing, _ => new PetSituation(PetActivity.DeepSleep), 0, 4);
+Check("dormida: suben las Z, a menos fotogramas", dozing.Particles.Live.Any(p => p.Kind == ParticleKind.Z) && sleepy[^1].Fps == 20);
+var looking = new PetDirector(anchors);
+var gaze = Run(looking, _ => new PetSituation(PetActivity.Alert, Hovered: true, HoverX: 1, HoverY: 0), 0, 1);
+Check("el ojo sigue al ratón con suavidad (sin saltos)", gaze[^1].Pose.LookX > 0.9
+    && gaze.Zip(gaze.Skip(1)).All(p => Math.Abs(p.Second.Pose.LookX - p.First.Pose.LookX) < 0.2));
+
+Section("Mascota: gestos al estar quieta");
+var gesturer = new PetIdle(seed: 4);
+var gestures = new List<(PetGesture Gesture, double At)>();
+for (double t = 0; t < 300; t += 0.05)
+{
+    var before = gesturer.Current;
+    gesturer.Update(t, allowed: true, drowsy: false);
+    if (gesturer.Current != PetGesture.None && gesturer.Current != before) gestures.Add((gesturer.Current, t));
+}
+Check("hace gestos de vez en cuando (entre 6 y 15 s de espera)", gestures.Count is > 12 and < 50
+    && gestures.Zip(gestures.Skip(1)).All(p => p.Second.At - p.First.At >= PetIdle.MinWait - 0.1));
+Check("nunca repite el mismo dos veces seguidas", gestures.Zip(gestures.Skip(1)).All(p => p.First.Gesture != p.Second.Gesture));
+Check("y cabecear es solo de somnolienta", gestures.All(g => g.Gesture != PetGesture.Nod));
+var blocked = new PetIdle(seed: 4);
+for (double t = 0; t < 100; t += 0.05) blocked.Update(t, allowed: false, drowsy: false);
+Check("sin permiso (reacción, paseo, ratón…) no hace ninguno", blocked.Current == PetGesture.None);
+var twinIdle = new PetIdle(seed: 4);
+var twinGestures = new List<PetGesture>();
+for (double t = 0; t < 300; t += 0.05)
+{
+    var before = twinIdle.Current;
+    twinIdle.Update(t, allowed: true, drowsy: false);
+    if (twinIdle.Current != PetGesture.None && twinIdle.Current != before) twinGestures.Add(twinIdle.Current);
+}
+Check("con la misma semilla, los mismos gestos", twinGestures.SequenceEqual(gestures.Select(g => g.Gesture)));
+
+Section("Mascota: partículas");
+var fx = new PetParticles(anchors, seed: 9);
+fx.Emit(ParticleKind.Z);
+fx.Emit(ParticleKind.Dust);
+double zStart = fx.Live[0].Y, dustVy = fx.Live[1].Vy;
+for (int i = 0; i < 30; i++) fx.Update(1 / 60.0);
+Check("las Z suben y el polvo cae", fx.Live[0].Y < zStart && fx.Live[1].Vy > dustVy);
+Check("aparecen y se desvanecen al final de su vida",
+    new Particle(ParticleKind.Z, 0, 0, 0, 0, 0.01, 2, 0).Alpha < 0.2 && new Particle(ParticleKind.Z, 0, 0, 0, 0, 1.0, 2, 0).Alpha == 1
+    && new Particle(ParticleKind.Z, 0, 0, 0, 0, 1.95, 2, 0).Alpha < 0.15);
+for (int i = 0; i < 300; i++) fx.Update(1 / 60.0);
+Check("y luego desaparecen", fx.Live.Count == 0);
+var drip = new PetParticles(anchors);
+for (double t = 0; t < 5; t += 1 / 60.0) { drip.Drip(ParticleKind.Z, 1.1, t); drip.Update(1 / 60.0); }
+Check("el goteo suelta una cada tanto", drip.Live.Count is >= 2 and <= 3);
+
+Section("Mascota: el logo de Windows");
+Check("Ollama apagado: el logo como siempre (ni se oscurece)", PetLights.For(PetActivity.DeepSleep, 3, false).Dark);
+Check("Ollama encendido: brilla un poco, menos que al liberar RAM",
+    PetLights.For(PetActivity.Drowsy, 3, false) == PetGlow.All(PetLights.Lit)
+    && PetLights.For(PetReaction.Sparkle, 0.1, false)!.Value.A0 > PetLights.Lit);
+double GlowJump(Func<double, PetGlow> glow, double seconds) => Enumerable.Range(0, (int)(seconds * 60))
+    .Max(i => Enumerable.Range(0, 4).Max(p => Math.Abs(glow((i + 1) / 60.0)[p] - glow(i / 60.0)[p])));
+Check("al arrancar el brillo llega panel a panel con fundidos (sin saltos)",
+    GlowJump(t => PetLights.For(PetActivity.WakingUp, t, false), 6) < 0.05
+    && PetLights.For(PetActivity.WakingUp, 0.35, false) is { A0: > 0.15, A3: < 0.01 });
+Check("al apagarse el brillo se va panel a panel y queda el logo de siempre",
+    GlowJump(t => PetLights.For(PetActivity.Yawning, t, false), 3) < 0.05 && PetLights.For(PetActivity.Yawning, 3, false).Dark);
+Check("trabajando: destellos que se apagan enseguida", PetLights.For(PetActivity.Working, 0.01, false).A1 > 0.4
+    && PetLights.For(PetActivity.Working, 0.15, false).A1 < 0.3);
+var glowDirector = new PetDirector(anchors);
+var glowA = Run(glowDirector, _ => new PetSituation(PetActivity.DeepSleep), 0, 1);
+var glowB = Run(glowDirector, _ => new PetSituation(PetActivity.Alert), 1, 2);
+Check("al cambiar de estado, las luces se funden", glowB.Zip(glowB.Skip(1)).All(p => Math.Abs(p.Second.Glow.A0 - p.First.Glow.A0) < 0.05)
+    && Math.Abs(glowB[0].Glow.A0 - glowA[^1].Glow.A0) < 0.05);
+
+Section("Mascota: paseo");
+var walker = new PetWalker(seed: 3);
+var seen = new List<double>();
+for (int i = 0; i < 4000; i++)
+{
+    walker.Update(i * 0.05, 0.05, 100, 900, 500, PetWalker.Mode.Roam, 60);
+    seen.Add(walker.X);
+}
+Check("el paseo no sale del recorrido", seen.All(x => x >= 100 && x <= 900));
+Check("y de verdad pasea", seen.Max() - seen.Min() > 300);
+var smooth = new PetWalker(seed: 3);
+var path = new List<double>();
+for (int i = 0; i < 6000; i++) { smooth.Update(i / 60.0, 1 / 60.0, 100, 900, 500, PetWalker.Mode.Roam, 60); path.Add(smooth.X); }
+var speeds = path.Zip(path.Skip(1)).Select(p => Math.Abs(p.Second - p.First) * 60).ToList();
+Check("acelera y frena: a 60 fps la velocidad nunca cambia de golpe",
+    speeds.Zip(speeds.Skip(1)).All(v => Math.Abs(v.Second - v.First) <= 2 * 60 / 0.35 / 60 + 1e-6) && speeds.Max() > 50);
+var twin = new PetWalker(seed: 3);
+for (int i = 0; i < 4000; i++) twin.Update(i * 0.05, 0.05, 100, 900, 500, PetWalker.Mode.Roam, 60);
+Check("con la misma semilla, el mismo camino", twin.X == walker.X);
+for (int i = 0; i < 600; i++) walker.Update(200 + i * 0.05, 0.05, 100, 900, 500, PetWalker.Mode.GoHome, 60);
+Check("al dormirse vuelve a casa y se para", walker.X == 500 && !walker.Walking);
+walker.Update(300, 0.05, 100, 900, 500, PetWalker.Mode.Stay, 60);
+Check("quieta no se mueve", walker.X == 500 && !walker.Walking);
+var turner = new PetWalker(seed: 1);
+turner.Update(0, 0.05, 0, 1000, 500, PetWalker.Mode.GoHome, 60);
+bool turned = false;
+for (int i = 0; i < 200; i++)
+{
+    turner.Update(i * 0.05, 0.05, 0, 1000, 100, PetWalker.Mode.GoHome, 60);
+    turned |= turner.Turning;
+}
+Check("para ir hacia el otro lado se da la vuelta", turned && turner.Facing == -1 && turner.X == 100);
+
+Section("Mascota: posición");
+Win32.RECT R(int l, int t, int r, int b) => new() { Left = l, Top = t, Right = r, Bottom = b };
+var screen = R(0, 0, 1920, 1080);
+var bottomBar = R(0, 1032, 1920, 1080);
+var startBtn = R(700, 1032, 748, 1080);       // barra centrada de Windows 11
+var trayArea = R(1613, 1032, 1920, 1080);
+var mira = new PetSize(27, 24, 18, Reach: 23);
+var above = TaskbarPetLayout.Place(PetPlacement.Above, bottomBar, startBtn, trayArea, screen, 96, mira);
+Check("sobre Inicio: centrada y asomada sobre la barra",
+    above.Scale == 2 && above.Width == 54 && above.X == 724 - 27 && above.Y + above.Height == 1032 + 4 && !above.Fallback);
+var left = TaskbarPetLayout.Place(PetPlacement.Left, bottomBar, startBtn, trayArea, screen, 96, mira);
+Check("a la izquierda: el cuerpo dentro de la barra y la mano tocando el logo de Windows",
+    left.Scale == 2 && left.X + 23 * 2 == 724 - 11 && left.Y + 6 * 2 >= 1032 && left.Y + left.Height <= 1080 && !left.Fallback);
+var snug = TaskbarPetLayout.Place(PetPlacement.Left, bottomBar, startBtn, trayArea, screen, 96, mira, logo: R(713, 1045, 736, 1068));
+Check("con el logo reconocido: la mano en su borde real y el cuerpo a su altura",
+    snug.X + 23 * 2 == 713 && snug.Y + 6 * 2 + 18 * 2 / 2 == (1045 + 1068) / 2);
+var leftAligned = TaskbarPetLayout.Place(PetPlacement.Left, bottomBar, R(0, 1032, 48, 1080), trayArea, screen, 96, mira);
+Check("sin sitio a la izquierda: sobre Inicio y avisa", leftAligned.Fallback && leftAligned.Y + leftAligned.Height == 1036);
+var roam = TaskbarPetLayout.Place(PetPlacement.Walk, bottomBar, startBtn, trayArea, screen, 96, mira);
+Check("de paseo: del borde izquierdo hasta la bandeja",
+    roam.MinX >= 0 && roam.MaxX + roam.Width <= 1613 && roam.MinX < roam.X && roam.X < roam.MaxX);
+Check("escala entera según el DPI",
+    TaskbarPetLayout.PixelScale(96) == 2 && TaskbarPetLayout.PixelScale(120) == 3 && TaskbarPetLayout.PixelScale(144) == 3
+    && TaskbarPetLayout.PixelScale(192) == 4);
+var topBar = TaskbarPetLayout.Place(PetPlacement.Above, R(0, 0, 1920, 48), R(700, 0, 748, 48), null, screen, 96, mira);
+Check("barra arriba: cuelga por debajo", topBar.Y == 48 - 4);
+var sideBar = TaskbarPetLayout.Place(PetPlacement.Walk, R(0, 0, 48, 1080), R(0, 0, 48, 48), null, screen, 96, mira);
+Check("barra vertical: al lado, sin paseo", sideBar.X == 48 - 4 && sideBar.MinX == sideBar.MaxX);
+var big = TaskbarPetLayout.Place(PetPlacement.Left, R(0, 1008, 1920, 1080), R(700, 1008, 772, 1080), null, screen, 144, mira);
+Check("a la izquierda a 150 %: el cuerpo cabe en el alto de la barra", big.Scale == 3 && big.Y + 6 * 3 >= 1008 && big.Y + big.Height <= 1080);
+
 // MARK: actualizaciones
-
 Section("Actualizaciones");
-Check("1.1.0 > 1.0.9", Updater.CompareVersions("1.1.0", "1.0.9") > 0);
-Check("v1.10.0 > 1.9.9", Updater.CompareVersions("v1.10.0", "1.9.9") > 0);
-Check("1.1 == 1.1.0", Updater.CompareVersions("1.1", "1.1.0") == 0);
-Check("2.0.0-beta.1 < 2.0.0", Updater.CompareVersions("2.0.0-beta.1", "2.0.0") < 0);
-Check("1.0.0 no es más nueva que 1.0.0", Updater.CompareVersions("1.0.0", "1.0.0") == 0);
-
-// Un servidor HTTP mínimo en 127.0.0.1 que hace de GitHub: nada sale del PC.
-var fakeExe = Encoding.UTF8.GetBytes("MZ versión 9.9.9 de prueba");
-byte[] zipBytes;
-using (var ms = new MemoryStream())
-{
-    using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
-    {
-        using (var entry = zip.CreateEntry("isTargetSleeping.exe").Open()) entry.Write(fakeExe);
-        using (var license = zip.CreateEntry("LICENSE").Open()) license.Write("MIT"u8);
-    }
-    zipBytes = ms.ToArray();
-}
-var zipName = $"isTargetSleeping-9.9.9-win-{Updater.Arch}.zip";
-var goodSha = $"{Convert.ToHexString(SHA256.HashData(zipBytes)).ToLowerInvariant()}  {zipName}";
-string sha = goodSha;
-var listener = new TcpListener(IPAddress.Loopback, 0);
-listener.Start();
-int port = ((IPEndPoint)listener.LocalEndpoint).Port;
-var api = $"http://127.0.0.1:{port}";
-var release = $$"""
-{"tag_name":"v9.9.9","html_url":"{{api}}/release",
- "assets":[{"name":"{{zipName}}","browser_download_url":"{{api}}/dl/{{zipName}}"},
-           {"name":"{{zipName}}.sha256","browser_download_url":"{{api}}/dl/{{zipName}}.sha256"},
-           {"name":"isTargetSleeping-9.9.9-setup-x64.exe","browser_download_url":"{{api}}/dl/setup.exe"}]}
-""";
-var server = Task.Run(async () =>
-{
-    while (true)
-    {
-        TcpClient client;
-        try { client = await listener.AcceptTcpClientAsync(); } catch { return; }
-        using (client)
-        {
-            var stream = client.GetStream();
-            var reader = new StreamReader(stream, Encoding.ASCII, leaveOpen: true);
-            var requestLine = await reader.ReadLineAsync() ?? "";
-            while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) { }
-            var path = requestLine.Split(' ').ElementAtOrDefault(1) ?? "/";
-            byte[] body; string type = "application/octet-stream"; int status = 200;
-            if (path == "/repos/demo/its/releases/latest") { body = Encoding.UTF8.GetBytes(release); type = "application/json"; }
-            else if (path == $"/dl/{zipName}") body = zipBytes;
-            else if (path == $"/dl/{zipName}.sha256") { body = Encoding.UTF8.GetBytes(sha); type = "text/plain"; }
-            else { body = []; status = 404; }
-            var head = Encoding.ASCII.GetBytes($"HTTP/1.1 {status} X\r\nContent-Type: {type}\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
-            await stream.WriteAsync(head);
-            await stream.WriteAsync(body);
-        }
-    }
-});
-
-var info = Updater.ParseRelease(release, Updater.Arch);
-Check("la release trae el zip y su .sha256 de esta arquitectura", info is { Version: "9.9.9" } && info.ZipUrl.EndsWith(zipName));
-Check("sin el .sha256 no se ofrece", Updater.ParseRelease(release.Replace(".sha256\"", ".txt\""), Updater.Arch) is null);
-var found = await Updater.Check(api, "demo/its", "1.1.0");
-Check("detecta la 9.9.9 en el servidor local", found?.Version == "9.9.9");
-Check("con la misma versión no hay nada", await Updater.Check(api, "demo/its", "9.9.9") is null);
-Check("un repositorio que no existe: null", await Updater.Check(api, "otro/repo", "1.0.0") is null);
-double lastProgress = 0;
-var downloaded = await Updater.Download(found!, new Progress<double>(p => lastProgress = p));
-var exe = Path.Combine(Path.GetTempPath(), $"its-new-{Guid.NewGuid():N}.exe");
-File.Copy(downloaded, exe);
-Check("descarga, comprueba el SHA-256 y extrae el .exe", File.ReadAllBytes(exe).SequenceEqual(fakeExe));
-sha = new string('0', 64) + "  " + zipName;
-bool rejected = false;
-try { await Updater.Download(found!); } catch (InvalidDataException) { rejected = true; }
-Check("un hash que no coincide se rechaza", rejected);
-listener.Stop();
-
-var dir = Directory.CreateTempSubdirectory("its-swap").FullName;
-try
-{
-    var current = Path.Combine(dir, "isTargetSleeping.exe");
-    File.WriteAllText(current, "vieja");
-    Updater.Swap(current, exe);
-    Check("sustituye el .exe y deja el viejo en .old",
-        File.ReadAllBytes(current).SequenceEqual(fakeExe) && File.ReadAllText(current + ".old") == "vieja");
-    Updater.Swap(current, exe);
-    Check("una segunda vez pisa el .old anterior", File.Exists(current + ".old") && File.ReadAllBytes(current + ".old").SequenceEqual(fakeExe));
-}
-finally { Directory.Delete(dir, recursive: true); File.Delete(exe); }
+await UpdateTests.Run(Check);
 
 Console.WriteLine();
 Console.WriteLine(failures == 0 ? "todo bien" : $"{failures} fallos");

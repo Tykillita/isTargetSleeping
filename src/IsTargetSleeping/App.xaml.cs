@@ -18,10 +18,9 @@ public partial class App : Application
     private TrayIcon tray = null!;
     private PanelWindow panel = null!;
     private PanelViewModel model = null!;
-    private DispatcherTimer? blink;
-    private bool blinkOn = true;
-    private Power blinkPower;
-    private (Mark.Dot Dot, bool Dimmed, string Tip, bool Percent) painted;
+    private TrayAnimator animator = null!;
+    private TaskbarPet? pet;
+    public bool EnsureTrayReady() => tray?.EnsureReady() == true;
 
     public void StartTray(bool launchedAtLogin, string? pending = null)
     {
@@ -45,6 +44,7 @@ public partial class App : Application
         tray.NotificationClicked += () => ShowPanel();
         tray.CommandReceived += supervisor.Execute;
         tray.AppearanceChanged += OnAppearanceChanged;
+        animator = new TrayAnimator(tray);
         HotKey.Attach(tray.Handle);
 
         var notifier = new Notifier(tray, prefs);
@@ -53,6 +53,7 @@ public partial class App : Application
         supervisor.Changed += Repaint;
 
         prefs.OnHotKeyChange = ApplyHotKeys;
+        prefs.Changed += Repaint;   // ícono con el % o animado
         prefs.OpenLog = OpenLog;
         ApplyHotKeys(prefs.HotKeyEnabled);
         Links.EnsureRegistered();
@@ -62,6 +63,7 @@ public partial class App : Application
         Repaint();
         ollama.StartPolling();
         supervisor.Start();
+        pet = new TaskbarPet(supervisor);
 
         if (pending is not null)
         {
@@ -85,7 +87,9 @@ public partial class App : Application
         HotKey.Sleep.Unregister();
         HotKey.Clean.Unregister();
         ollama?.Stats.Flush();
+        pet?.Dispose();
         tray?.Dispose();
+        animator?.Dispose();
         base.OnExit(e);
     }
 
@@ -105,59 +109,40 @@ public partial class App : Application
     /// la bandeja (barra de tareas clara u oscura, DPI).
     private void OnAppearanceChanged()
     {
-        painted = default;
+        animator.Reset();
         Repaint();
     }
 
     // MARK: - ícono
 
-    /// Parpadea mientras Ollama cambia de estado y lleva el punto verde si está encendido.
+    /// El estado de Ollama en el ícono: el radar mientras arranca o se apaga, la
+    /// insignia azul encendido y el ojo abierto con un modelo en memoria. El tooltip
+    /// lleva siempre el % de RAM; con «Ícono con el % de RAM» el ícono también.
     private void Repaint()
     {
-        if (blink is not null && ollama.Power == blinkPower) return;   // ya parpadea
-        blink?.Stop();
-        blink = null;
-        blinkPower = ollama.Power;
-        switch (ollama.Power)
+        string game = supervisor.Game.Game ?? "";
+        var status = ollama.Power switch
         {
-            case Power.On:
-                Paint(Mark.Dot.On, false, supervisor.Game.Active ? tr("Jugando a %@ · Ollama encendido", supervisor.Game.Game ?? "") : tr("Ollama encendido"));
-                break;
-            case Power.Off:
-                Paint(Mark.Dot.None, true, supervisor.Game.Active ? tr("Jugando a %@ · Ollama apagado", supervisor.Game.Game ?? "") : tr("Ollama apagado"));
-                break;
-            case Power.Missing:
-                Paint(Mark.Dot.None, true, tr("Ollama no está instalado"));
-                break;
-            default:
-                var tip = ollama.Power == Power.Starting ? tr("Ollama arrancando…") : tr("Ollama apagándose…");
-                blinkOn = true;
-                Paint(Mark.Dot.Busy, false, tip);
-                blink = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.5) };
-                blink.Tick += (_, _) =>
-                {
-                    blinkOn = !blinkOn;
-                    Paint(blinkOn ? Mark.Dot.Busy : Mark.Dot.None, !blinkOn, tip);
-                };
-                blink.Start();
-                break;
-        }
-    }
-
-    /// El tooltip lleva siempre el % de RAM; con «Ícono con el % de RAM» el ícono
-    /// también (como Mem Reduct), en ámbar o coral según la presión.
-    private void Paint(Mark.Dot dot, bool dimmed, string tip)
-    {
+            Power.On => supervisor.Game.Active ? tr("Jugando a %@ · Ollama encendido", game) : tr("Ollama encendido"),
+            Power.Off => supervisor.Game.Active ? tr("Jugando a %@ · Ollama apagado", game) : tr("Ollama apagado"),
+            Power.Missing => tr("Ollama no está instalado"),
+            Power.Starting => tr("Ollama arrancando…"),
+            _ => tr("Ollama apagándose…"),
+        };
+        var phase = ollama.Power switch
+        {
+            Power.Starting => TrayPhase.Starting,
+            Power.On => TrayPhase.On,
+            Power.Stopping => TrayPhase.Stopping,
+            _ => TrayPhase.Off,
+        };
         var mem = ollama.Memory;
         int percent = mem.Total > 0 ? (int)Math.Round(100.0 * mem.Used / mem.Total) : 0;
-        tip = $"{tip} · RAM {percent} %";
-        bool showPercent = prefs.Switch(PrefKeys.TrayPercent, false);
-        if (painted == (dot, dimmed, tip, showPercent)) return;
-        painted = (dot, dimmed, tip, showPercent);
-        var icon = showPercent
-            ? Mark.PercentBitmap(tray.IconSize, percent, mem.Pressure, dot, Theme.TaskbarIsLight())
-            : Mark.StatusBitmap(tray.IconSize, dot, dimmed, Theme.TaskbarIsLight());
-        tray.Update(icon, $"{AppInfo.Name} · {tip}");
+        // Con un modelo en memoria el ojo de la mira se abre.
+        bool awake = ollama.Power == Power.On && ollama.Loaded.Count > 0;
+        bool animate = !prefs.ReducedMotion;
+        animator.Show(phase, awake, $"{AppInfo.Name} · {status} · RAM {percent} %",
+            prefs.Switch(PrefKeys.TrayPercent, false), percent, mem.Pressure, animate);
     }
 
     // MARK: - panel
@@ -196,10 +181,20 @@ public partial class App : Application
             var sleep = Add(menu, tr("Dormir el modelo"), supervisor.Sleep);
             sleep.IsEnabled = ollama.Loaded.Count > 0;
             if (prefs.SleepHotKeyEnabled) sleep.InputGestureText = HotKey.Sleep.Display;
+            menu.Items.Add(MainModelMenu());
         }
         var clean = Add(menu, tr("Liberar RAM"), () => _ = supervisor.Clean(CleanReason.Manual));
         clean.IsEnabled = supervisor.Agent == AgentStatus.Ready && !supervisor.Cleaning;
         if (prefs.Switch(PrefKeys.CleanHotKey)) clean.InputGestureText = HotKey.Clean.Display;
+        var percent = Add(menu, tr("Mostrar el % de RAM en el ícono"), () =>
+        {
+            prefs.Toggle(PrefKeys.TrayPercent, false);
+            Repaint();
+        });
+        percent.IsChecked = prefs.Switch(PrefKeys.TrayPercent, false);
+        var still = Add(menu, tr("Movimiento reducido"), prefs.ToggleReducedMotion);   // Prefs.Changed repinta
+        still.IsChecked = prefs.ReducedMotion;
+        menu.Items.Add(PetMenu());
         Add(menu, tr("Actividad"), () => ShowPanel(PanelView.Activity));
 
         menu.Items.Add(new Separator());
@@ -213,6 +208,12 @@ public partial class App : Application
 
         menu.Items.Add(new Separator());
         Add(menu, tr("Acerca de %@", AppInfo.Name), AboutWindow.Present);
+        var checkUpdates = Add(menu, tr("Buscar actualizaciones ahora"), () =>
+        {
+            ShowPanel(PanelView.Settings);
+            _ = supervisor.CheckUpdates(manual: true);
+        });
+        checkUpdates.IsEnabled = supervisor.UpdateStatus != UpdateStatus.Checking && !supervisor.UpdateBusy;
         menu.Items.Add(new Separator());
         Add(menu, tr("Salir"), Shutdown);
 
@@ -222,6 +223,50 @@ public partial class App : Application
             if (PresentationSource.FromVisual(menu) is HwndSource source) Win32.SetForegroundWindow(source.Handle);
         };
         menu.IsOpen = true;
+    }
+
+    /// «Mascota junto a Inicio»: mostrarla, dónde vive, si se puede tocar y [cuál].
+    private MenuItem PetMenu()
+    {
+        var root = new MenuItem { Header = tr("Mascota junto a Inicio") };
+        var show = new MenuItem { Header = tr("Mostrar"), IsChecked = prefs.Switch(PrefKeys.TaskbarPet, false) };
+        show.Click += (_, _) => prefs.Toggle(PrefKeys.TaskbarPet, false);
+        root.Items.Add(show);
+        root.Items.Add(new Separator());
+        root.Items.Add(TaskbarPet.PlacementMenu(prefs));
+        if (TaskbarPet.SpeciesMenu(prefs) is { } pets) root.Items.Add(pets);
+        var touch = new MenuItem { Header = tr("Interactuar con la mascota"), IsChecked = prefs.Switch(PrefKeys.TaskbarPetInteractive) };
+        touch.Click += (_, _) => prefs.Toggle(PrefKeys.TaskbarPetInteractive);
+        root.Items.Add(touch);
+        return root;
+    }
+
+    /// «Cargar al encender»: el modelo principal (el de la estrella del panel), o ninguno.
+    /// Con Ollama apagado, los modelos salen de sus manifiestos en disco.
+    private MenuItem MainModelMenu()
+    {
+        var main = prefs.MainModel;
+        var root = new MenuItem { Header = tr("Cargar al encender") };
+        void Option(string title, string? model)
+        {
+            var item = new MenuItem { Header = title, IsChecked = model == main };
+            item.Click += (_, _) => prefs.SetMainModel(model);
+            root.Items.Add(item);
+        }
+        Option(tr("Ninguno"), null);
+        var names = ollama.Installed.Count > 0 ? ollama.Installed.Select(m => m.Name).ToList() : OllamaBlobs.Installed();
+        if (main is not null && !names.Contains(main)) names.Insert(0, main);
+        root.Items.Add(new Separator());
+        foreach (var name in names) Option(name, name);
+        if (names.Count == 0)
+            root.Items.Add(new MenuItem { Header = tr("No hay modelos instalados"), IsEnabled = false });
+        return root;
+    }
+
+    public void ShowUpdateRecovery(string message)
+    {
+        supervisor.ReportUpdateRecovery(message);
+        ShowPanel(PanelView.Settings);
     }
 
     private static MenuItem Add(ContextMenu menu, string title, Action action)

@@ -283,21 +283,42 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="bg" Background="Transparent" CornerRadius="4" Padding="8,5,10,6">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="20" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="check" Text="&#xE73E;" FontFamily="{StaticResource Icons}" FontSize="11"
-                                           VerticalAlignment="Center" Foreground="{DynamicResource Accent}" Visibility="Collapsed" />
-                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" />
-                                <TextBlock Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="24,0,0,0"
-                                           Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                            </Grid>
-                        </Border>
+                        <Grid>
+                            <Border x:Name="bg" Background="Transparent" CornerRadius="4" Padding="8,5,10,6">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="check" Text="&#xE73E;" FontFamily="{StaticResource Icons}" FontSize="11"
+                                               VerticalAlignment="Center" Foreground="{DynamicResource Accent}" Visibility="Collapsed" />
+                                    <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" RecognizesAccessKey="False" />
+                                    <TextBlock x:Name="gesture" Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="24,0,0,0"
+                                               Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="arrow" Grid.Column="2" Text="&#xE76C;" FontFamily="{StaticResource Icons}" FontSize="10"
+                                               Margin="24,0,0,0" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Visibility="Collapsed" />
+                                </Grid>
+                            </Border>
+                            <!-- Submenú (p. ej., «Cargar al encender»), con el mismo vidrio que el menú. -->
+                            <Popup x:Name="sub" Placement="Right" HorizontalOffset="2" VerticalOffset="-5" AllowsTransparency="True"
+                                   Focusable="False" PopupAnimation="None"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                                <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1"
+                                        CornerRadius="10" Padding="4" MinWidth="180" Margin="0,0,10,10"
+                                        TextElement.FontFamily="{StaticResource Sans}" TextElement.FontSize="12.5">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="Black" BlurRadius="18" ShadowDepth="3" Opacity="0.6" Direction="270" />
+                                    </Border.Effect>
+                                    <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                </Border>
+                            </Popup>
+                        </Grid>
                         <ControlTemplate.Triggers>
+                            <Trigger Property="Role" Value="SubmenuHeader">
+                                <Setter TargetName="arrow" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="gesture" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="check" Property="Visibility" Value="Visible" />
                             </Trigger>

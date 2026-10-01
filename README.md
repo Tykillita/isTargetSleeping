@@ -51,7 +51,8 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🗂️ | **Models** | Size, quantization and *vision* / *tools* tags. Load, **download** (with progress, cancellable) or **delete** them from the panel. |
 | 🧩 | **Other engines** | A standalone **llama.cpp** `llama-server` gets its own card and idle timer; **LM Studio** is supported experimentally. |
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
-| 🎯 | **Status at a glance** | The target in the tray, with a blue, blinking amber or no dot. |
+| 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
+| 🐾 | **Optional pet** | **Mira**, the app's pet, lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps, eats while a model loads, types while it generates, sweeps while freeing RAM. Click it, pet it, right-click it. Off by default; **Pet beside Start** in the tray icon's right-click menu or Settings › General. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
 | 🔒 | **Private** | Only talks to Ollama on your PC. No accounts, no telemetry, no analytics. Update checks are opt-in and off unless a release repository is configured. |
@@ -68,8 +69,8 @@ Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/re
 `%LOCALAPPDATA%\Programs\isTargetSleeping` (no admin).
 
 The first time it opens its panel next to the clock and asks whether to open at login. If you can't see the icon,
-it may be in the hidden icons (`^`): drag it to the taskbar, or turn it on in *Settings › Personalization ›
-Taskbar › Other system tray icons*.
+it may be in the hidden icons (`^`): turn on **Always show in the taskbar** in the app's Settings › General, drag it
+to the taskbar, or turn it on in *Settings › Personalization › Taskbar › Other system tray icons*.
 
 **Requirements:** Windows 10 (2004+) or 11 · x64 or ARM64 · [Ollama](https://ollama.com/download/windows).
 
@@ -91,7 +92,17 @@ don't fit on screen.
 **Settings:** *Ollama* — unload when idle, which mechanism to start it with, restart it if it crashes ·
 *Automatic* — game mode, turn back on when you quit, your own games · *Notifications* — one switch per kind ·
 *Integrations* — the links, ready to copy · *Other engines* — each engine's idle timer · *General* — both shortcuts,
-open at login, update checks (only when configured), language · logs.
+open at login, tray animation, optional pet, update checks (only when configured), language · logs.
+
+**Pet beside Start:** Mira, drawn pixel by pixel on its own layered window (crisp at any DPI) next to the Start
+button of the main taskbar: above it, inside the taskbar to its left, or walking along the taskbar's edge. Only its
+silhouette takes clicks (click: panel, right-click: its menu, back and forth: pet it) and it never takes focus; turn
+off *Interact with the pet* and every click passes through. It hides instantly when Start, Search, a game or a
+full-screen app opens, and when the taskbar auto-hides. It sleeps in its own little bed, and while it waits for a model it hides behind the Windows logo and peeks out. The Windows logo is part of its home: with Ollama on
+it glows softly, the glow arrives pane by pane as Ollama starts, flickers as Mira types and fills up while she
+downloads, and with Ollama off it stays as Windows draws it (painted on top
+of the real logo by a window that never takes clicks). If Windows doesn't expose the Start button, it stays hidden
+and Settings explains why. Turn the switch off to close it and stop its timers.
 
 ### Links
 
@@ -233,22 +244,33 @@ with their icon. Loads from the panel itself don't count.
 
 ### Updates
 
-Off unless a GitHub repository (`updateRepo`, `user/repo`) is set in `settings.json`; then Settings shows *Check for
-updates*. Once at start and every 24 h it reads `releases/latest`, compares versions, and looks for the same files
-`package.ps1` produces: `isTargetSleeping-<version>-win-<arch>.zip` and its `.sha256`. *Update* downloads to `%TEMP%`,
-checks the SHA-256, unzips, renames the running `.exe` to `.old`, puts the new one in place, relaunches and deletes
-the `.old`.
+The official public repository, **Tykillita/isTargetSleeping**, is configured by default. Automatic checks start
+enabled and run at startup and every 24 hours; you can turn them off in Settings. Existing explicit preferences,
+including `updateCheck: false` and custom `updateRepo`, are preserved. **Check for updates now** in Settings and the
+tray menu works even with automatic checks off. GitHub rate-limit waiting times are respected.
+
+Only newer stable releases are offered, using the ZIP and SHA-256 for the process architecture (x64 or ARM64).
+The panel shows your current version, the new version and **Release notes**. Nothing installs until you click
+**Update**. Downloads show progress and can be cancelled; packages are checked for SHA-256, safe ZIP paths and the
+expected executable's architecture/version. A background copy of the app waits for normal shutdown, replaces the
+executable in its current location and keeps a backup until the new tray starts. Failed replacement/startup
+restores and reopens the previous version. Settings and history are preserved. Without folder write permission,
+the app offers a manual GitHub download. Updating the memory agent remains a separate action with its UAC prompt.
+
+Installations from before 1.3.0 without an update repository need one manual upgrade to receive later offers.
 
 ## 🔒 Privacy
 
 - It only connects to Ollama's local API (`127.0.0.1:11434`, or `OLLAMA_HOST` if set, including the user-level
   environment variable) and, for other engines, to their local ports.
-- The **only** connection outside your PC is the optional update check to `api.github.com`, and only if a release
-  repository is configured.
+- Automatic update checks (enabled by default, optional in Settings) contact `api.github.com` at startup and every
+  24 hours without credentials. Clicking **Update** downloads the package and checksum from GitHub, including
+  GitHub's `release-assets.githubusercontent.com`/`objects.githubusercontent.com` download hosts. These requests
+  expose your IP and app user agent to GitHub; no models, prompts, settings or usage history are uploaded.
 - Admin rights are used only by the memory agent, only to free RAM (and to close Mem Reduct if you replace it), and
   only after you turn it on.
-- No accounts, telemetry or analytics. The only pages it opens are the ones you click: ollama.com/download and the
-  credits link in *About*.
+- No accounts, telemetry or analytics. Web pages open only when clicked: Ollama downloads, credits and GitHub
+  release notes/downloads.
 - Settings live in `%LOCALAPPDATA%\isTargetSleeping\settings.json`, the 90-day history in `stats.json` next to it and
   its own log in `Logs\app.log` (notifications, restarts, game mode). "Open at login" is the usual
   `HKCU\…\CurrentVersion\Run` entry (and it respects Task Manager's *Startup apps* switch); the links are
@@ -269,8 +291,21 @@ instances. No NuGet packages, no WinForms, no web view.
 .\build.ps1 -Install           # also installs it in %LOCALAPPDATA%\Programs\isTargetSleeping and relaunches it
 .\build.ps1 -Test              # tests of the pure logic (see below)
 .\package.ps1                  # dist\: zip + installer for x64 and arm64, with .sha256
+.\package.ps1 -RequireInstaller # fail if Inno Setup is missing
 .\docs\generate-images.ps1     # this README's images and the logo assets
 ```
+
+### Preparing a GitHub release
+
+Set `VERSION` to a stable `MAJOR.MINOR.PATCH` and add its `## [version]` section to `CHANGELOG.md`. Run
+`.\build.ps1 -Test`, then `.\package.ps1 -RequireInstaller` and
+`.\packaging\verify-release.ps1 -Tag v<version> -VerifyAssets`. Commit the sources and push the matching tag.
+The `prepare-release` workflow repeats validation and tests, ensures Inno Setup 6 is available, builds both
+architectures, verifies all eight assets/hashes, and creates a **draft** containing the changelog notes. Review
+the packages and publish that draft in GitHub. The app cannot see drafts or prereleases. The existing `main`/PR
+build checks continue to run. Only the draft-creation job has `contents: write`; clients need no token.
+
+Optional signing uses the existing `SIGN_CERT_THUMBPRINT` mechanism for local builds. Unsigned releases are supported.
 
 Set `SIGN_CERT_THUMBPRINT` before `package.ps1` to sign the `.exe` and the installer with `signtool`; unsigned
 builds trigger SmartScreen.
@@ -288,6 +323,8 @@ $B = "$env:LOCALAPPDATA\Programs\isTargetSleeping\isTargetSleeping.exe"
 & $B --idle-test 20 | Write-Output   # tests auto-free with a 20 s limit
 & $B --snapshot panel.png settings demo --lang en   # also: activity, game
 & $B --export-logo .\out        # .ico, PNGs and SVGs from the logo geometry
+& $B --export-tray .\out        # every tray-icon animation frame at 16–32 px, dark and light taskbar
+& $B --export-pet .\out         # every pet animation frame at 100 % and 150 %, dark and light taskbar
 ```
 
 It's a windowed app, so pipe its output (`| Write-Output`) for PowerShell to wait for it.
@@ -307,8 +344,8 @@ leaves the PC); the memory agent's order format (it must reject anything unexpec
 ```text
 src/IsTargetSleeping/
 ├── Program.cs              Entry point, single instance, forwards links and --sleep to the running app
-├── App.xaml(.cs)           Styles, tray, blinking icon, right-click menu, hotkeys
-├── Cli.cs                  --status, --on, --off, --sleep, --memory, --idle-test, --snapshot, --export-logo
+├── App.xaml(.cs)           Styles, tray, animated icon, right-click menu, hotkeys
+├── Cli.cs                  --status, --on, --off, --sleep, --memory, --idle-test, --snapshot, --export-logo, --export-tray, --export-pet
 ├── Core/
 │   ├── Backend.cs          Mechanism detection (app, service, task, binary) and on/off
 │   ├── OllamaApi.cs        Ollama's HTTP API, pull (NDJSON progress) and delete
@@ -320,12 +357,14 @@ src/IsTargetSleeping/
 │   ├── CleanRules.cs       When to clean automatically (pure logic)
 │   ├── MemReduct.cs        Detect, import, replace and restore Mem Reduct
 │   ├── Watchdog.cs         Crash and hang detection (pure logic)
+│   ├── TrayMotion.cs       Tray icon animations: which one plays and each frame's pose (pure logic)
 │   ├── Games.cs            Game libraries, game detector and GameModeTracker
 │   ├── Clients.cs          TCP connections per process, app names and ClientTracker
 │   ├── Stats.cs            90-day history, weekly figures, 30-minute samples
 │   ├── Gpu.cs              DXGI adapter and PDH VRAM counters
 │   ├── Links.cs            istargetsleeping:// parsing and registration
-│   ├── Updater.cs          GitHub releases, SHA-256 check and .exe swap
+│   ├── Updater.cs          GitHub release states, verified/cancellable downloads
+│   ├── UpdateInstaller.cs  Background helper, startup confirmation and backup recovery
 │   ├── Engines/            IEngine, llama.cpp and LM Studio (experimental)
 │   ├── Activity.cs         Runner CPU time, runner memory and IdleTracker
 │   ├── SystemMemory.cs     Memory in use and pressure
@@ -339,6 +378,10 @@ src/IsTargetSleeping/
 │   ├── PanelViewModel.cs   Everything the panel shows, computed from the state
 │   ├── PanelWindow.cs      The tray flyout (the body scrolls within ~75 % of the screen)
 │   ├── TrayIcon.cs         Notification-area icon, notifications, WM_COPYDATA
+│   ├── TrayAnimator.cs     Plays the tray animations at 20 fps, with the radar frames cached
+│   ├── TaskbarPet.cs       The pet: state, animation, position, mouse and its menu
+│   ├── PetSurface.cs · TaskbarLocator.cs   Its layered window; Start, tray and foreground tracking
+│   ├── Pets/               The pet collection (IPetSpecies, PetCatalog), Mira on a pixel grid, the Windows logo lights
 │   ├── Notifier.cs         Per-kind switches and the 1-per-minute limit
 │   ├── Logo.cs             The target-with-a-sleeping-eye logo (icon, tray, header, SVG)
 │   ├── Controls.cs         Switch, memory bar, 30-minute chart, spinner, app icons

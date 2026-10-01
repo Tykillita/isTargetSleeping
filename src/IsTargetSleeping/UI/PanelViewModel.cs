@@ -41,6 +41,7 @@ public sealed class ModelRow
     public bool Vision { get; init; }
     public bool Tools { get; init; }
     public bool IsLoaded { get; init; }
+    public bool IsMain { get; init; }
     public bool IsBusy { get; init; }
     public bool CanLoad { get; init; }
     public bool CanDelete { get; init; }
@@ -48,6 +49,7 @@ public sealed class ModelRow
     public bool IsIdle => !IsConfirming;
     public bool ShowDivider { get; init; }
     public required ICommand Load { get; init; }
+    public required ICommand ToggleMain { get; init; }
     public required ICommand AskDelete { get; init; }
     public required ICommand ConfirmDelete { get; init; }
     public required ICommand CancelDelete { get; init; }
@@ -58,6 +60,9 @@ public sealed class ModelRow
     public string ToolsLabel => tr("herramientas");
     public string LoadLabel => tr("Cargar");
     public string LoadHelp => tr("Carga este modelo en memoria");
+    public string MainHelp => IsMain
+        ? tr("Modelo principal: se carga solo al encender Ollama. Clic para quitarlo")
+        : tr("Hacerlo el modelo principal: se cargará solo al encender Ollama");
     public string DeleteHelp => tr("Borrar del disco");
     public string DeleteLabel => tr("Borrar");
     public string CancelLabel => tr("Cancelar");
@@ -160,6 +165,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         PowerAnyway = new Command(Supervisor.PowerAnyway);
         NotAGame = new Command(Supervisor.IgnoreCurrentGame);
         InstallUpdate = new Command(() => _ = Supervisor.InstallUpdate());
+        CheckUpdatesNow = new Command(() => _ = Supervisor.CheckUpdates(manual: true));
+        CancelUpdate = new Command(Supervisor.CancelUpdate);
+        OpenUpdateNotes = new Command(() => { if (Supervisor.Update is { } update) Paths.Open(update.Page); });
+        OpenUpdateDownloads = new Command(() => Paths.Open($"https://github.com/{AppInfo.UpdateRepo}/releases"));
         AddGame = new Command(PickGame);
         ToggleAddModel = new Command(() => { addingModel = !addingModel; Notify(); });
         PullModel = new ParamCommand(p =>
@@ -167,6 +176,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             if (p is string name && name.Trim().Length > 0) { Ollama.Pull(name); addingModel = false; Notify(); }
         });
         CancelPull = new Command(Ollama.CancelPull);
+        ToggleTrayPin = new Command(() => { TrayPin.SetPinned(!TrayPin.Pinned); Notify(); });
+        ToggleReducedMotion = new Command(Prefs.ToggleReducedMotion);
+        ToggleTaskbarPet = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPet, false));
+        TogglePetInteractive = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPetInteractive));
         CleanNow = new Command(() =>
         {
             if (Supervisor.Agent == AgentStatus.Ready) _ = Supervisor.Clean(CleanReason.Manual, fromPanel: true);
@@ -391,11 +404,40 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     // Actualización
     public bool ShowUpdate => Supervisor.Update is not null;
     public string UpdateTitle => tr("Nueva versión %@", Supervisor.Update?.Version ?? "");
-    public string UpdateDetail => Supervisor.UpdateProgress is { } p
-        ? tr("Descargando… %d %%", (int)(p * 100))
-        : tr("Tienes la %@. Se descarga, se comprueba y se reinicia.", AppInfo.Version);
-    public bool UpdateIdle => Supervisor.UpdateProgress is null;
+    public string UpdateDetail => Supervisor.UpdateStage switch
+    {
+        UpdateStage.Downloading => Supervisor.UpdateProgress is { } p ? tr("Descargando… %d %%", (int)(p * 100)) : tr("Descargando…"),
+        UpdateStage.Verifying => tr("Comprobando la descarga…"),
+        UpdateStage.Applying => tr("Instalando y reiniciando…"),
+        _ => tr("Tienes la %@. Se descarga, se comprueba y se reinicia.", AppInfo.Version),
+    };
+    public bool UpdateIdle => !Supervisor.UpdateBusy;
+    public bool CanInstallUpdate => UpdateIdle && Supervisor.UpdateStatus != UpdateStatus.Checking;
+    public bool CanCancelUpdate => Supervisor.UpdateStage is UpdateStage.Downloading or UpdateStage.Verifying;
     public string UpdateLabel => tr("Actualizar");
+    public string UpdateNotesLabel => tr("Ver novedades");
+    public string UpdateCancelLabel => tr("Cancelar descarga");
+    public ICommand CheckUpdatesNow { get; }
+    public ICommand CancelUpdate { get; }
+    public ICommand OpenUpdateNotes { get; }
+    public ICommand OpenUpdateDownloads { get; }
+    public string UpdateDownloadsLabel => tr("Descargar desde GitHub");
+    public string CheckUpdatesNowLabel => tr("Buscar actualizaciones ahora");
+    public bool CanCheckUpdates => Supervisor.UpdateStatus != UpdateStatus.Checking && !Supervisor.UpdateBusy;
+    public string UpdateCheckStatus => Supervisor.UpdateStatus switch
+    {
+        UpdateStatus.Checking => tr("Buscando actualizaciones…"),
+        UpdateStatus.UpToDate => tr("Estás al día. Versión %@.", AppInfo.Version),
+        UpdateStatus.Available => tr("Nueva versión %@ disponible.", Supervisor.Update?.Version ?? ""),
+        UpdateStatus.NoRelease => tr("Todavía no hay versiones publicadas."),
+        UpdateStatus.Incompatible => tr("La última versión no tiene un paquete compatible para este Windows."),
+        UpdateStatus.RateLimited => tr("GitHub pide esperar antes de volver a buscar.")
+            + (Supervisor.UpdateRetryAt is { } at ? " " + tr("Puedes volver a buscar a las %@.", at.ToLocalTime().ToString("t")) : ""),
+        UpdateStatus.Error => "", // El detalle y la descarga manual se muestran debajo.
+        _ => "",
+    };
+    public string? UpdateMessage => Supervisor.UpdateMessage;
+    public bool HasUpdateMessage => UpdateMessage is not null && Supervisor.UpdateStatus != UpdateStatus.RateLimited;
 
     // MARK: memoria
 
@@ -726,9 +768,32 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string LoginTitle => tr("Abrir al iniciar sesión");
     public string LoginDetail => tr("Siempre a mano en la bandeja del sistema");
     public bool LoginOn => Prefs.OpensAtLogin;
+    public bool ShowTrayPin => TrayPin.Available;
+    public string TrayPinTitle => tr("Mostrar siempre en la barra de tareas");
+    public string TrayPinDetail => tr("El ícono fuera del menú ^ de íconos ocultos, junto al reloj.");
+    public bool TrayPinOn => TrayPin.Pinned;
+    public ICommand ToggleTrayPin { get; }
+    public string ReducedMotionTitle => tr("Movimiento reducido");
+    public string ReducedMotionDetail => tr("El ícono de la bandeja sin animaciones: punto ámbar fijo mientras Ollama cambia. Por defecto, como Windows");
+    public bool ReducedMotionOn => Prefs.ReducedMotion;
+    public ICommand ToggleReducedMotion { get; }
+    public string TaskbarPetTitle => tr("Mascota junto a Inicio");
+    public string TaskbarPetDetail => tr("Mira, la mascota de la app, vive en la barra: duerme, come, trabaja y barre con tus modelos.");
+    public bool TaskbarPetOn => Prefs.Switch(PrefKeys.TaskbarPet, false);
+    public string? TaskbarPetError => Prefs.TaskbarPetError;
+    public bool HasTaskbarPetError => TaskbarPetOn && TaskbarPetError is not null;
+    public ICommand ToggleTaskbarPet { get; }
+    public string PetPlacementTitle => tr("Posición");
+    public List<Segment> PetPlacementSegments { get; private set; } = [];
+    public bool ShowPetSpecies => TaskbarPetOn && Pets.PetCatalog.All.Count > 1;
+    public List<Segment> PetSpeciesSegments { get; private set; } = [];
+    public string PetInteractiveTitle => tr("Interactuar con la mascota");
+    public string PetInteractiveDetail => tr("Clic: abre el panel. Clic derecho: su menú. Pasa el ratón de un lado a otro para acariciarla");
+    public bool PetInteractiveOn => Prefs.Switch(PrefKeys.TaskbarPetInteractive);
+    public ICommand TogglePetInteractive { get; }
     public bool ShowUpdateSetting => Supervisor.UpdatesAvailable;
     public string UpdateCheckTitle => tr("Buscar actualizaciones");
-    public string UpdateCheckDetail => tr("Una vez al día en GitHub (%@). Es la única conexión fuera de tu PC.", AppInfo.UpdateRepo);
+    public string UpdateCheckDetail => tr("Al arrancar y cada 24 horas en GitHub (%@). Tú decides cuándo instalar.", AppInfo.UpdateRepo);
     public bool UpdateCheckOn => Prefs.Switch(PrefKeys.UpdateCheck);
     public string LanguageTitle => tr("Idioma");
     public string LanguageHelp => tr("La app se reinicia al cambiarlo");
@@ -770,7 +835,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         var loaded = Ollama.Loaded.Select(m => m.Name).ToHashSet();
         if (confirmingDelete is not null && !Ollama.Installed.Any(m => m.Name == confirmingDelete)) confirmingDelete = null;
         var signature = string.Join("|", Ollama.Installed.Select(m => $"{m.Name}:{m.Bytes}:{loaded.Contains(m.Name)}"))
-                        + $"#{busy}#{P}#{L10n.Effective}#{confirmingDelete}#{Ollama.Pulling?.Name}";
+                        + $"#{busy}#{P}#{L10n.Effective}#{confirmingDelete}#{Ollama.Pulling?.Name}#{Prefs.MainModel}";
         if (signature != modelsSignature)
         {
             Models.Clear();
@@ -786,6 +851,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
                     Vision = m.Vision,
                     Tools = m.Tools,
                     IsLoaded = loaded.Contains(name),
+                    IsMain = Prefs.MainModel == name,
                     IsBusy = busy == name,
                     CanLoad = on && !loaded.Contains(name),
                     CanDelete = on && !Ollama.IsDemo,
@@ -793,8 +859,14 @@ public sealed class PanelViewModel : INotifyPropertyChanged
                     ConfirmText = tr("¿Borrar %@?", m.Bytes.Gigabytes()),
                     ShowDivider = i++ > 0,
                     Load = new Command(() => Ollama.Load(name)),
+                    ToggleMain = new Command(() => Prefs.SetMainModel(Prefs.MainModel == name ? null : name)),
                     AskDelete = new Command(() => { confirmingDelete = name; Notify(); }),
-                    ConfirmDelete = new Command(() => { confirmingDelete = null; Ollama.DeleteModel(name); }),
+                    ConfirmDelete = new Command(() =>
+                    {
+                        confirmingDelete = null;
+                        if (Prefs.MainModel == name) Prefs.SetMainModel(null);
+                        Ollama.DeleteModel(name);
+                    }),
                     CancelDelete = new Command(() => { confirmingDelete = null; Notify(); }),
                 });
             }
@@ -844,7 +916,8 @@ public sealed class PanelViewModel : INotifyPropertyChanged
                             + Prefs.Switch(PrefKeys.TrayPercent, false);
         var segSignature = $"{Ollama.IdleReleaseMinutes}#{pref}#{string.Join(",", Ollama.Mechanisms.Select(b => b.Key))}#{Prefs.Language}"
                            + $"#{string.Join(",", games)}#{string.Join(",", ignored)}#{notices}#{engineIdle}#{Supervisor.UpdatesAvailable}"
-                           + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanInterval}#{cleanSwitches}";
+                           + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanInterval}#{cleanSwitches}"
+                           + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}";
         if (segSignature == segmentsSignature) return;
         segmentsSignature = segSignature;
         IdleSegments = Segments(Ollama.IdleReleaseMinutes, m => Ollama.IdleReleaseMinutes = m);
@@ -852,6 +925,12 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             Ollama.Mechanisms.Count(x => x.Kind == b.Kind) > 1 ? b.Summary : b.KindLabel,
             b.Key == pref,
             new Command(() => Ollama.Prefer(b)))).ToList();
+        PetPlacementSegments = new[]
+        {
+            (PetPlacement.Above, tr("Sobre Inicio")), (PetPlacement.Left, tr("A su izquierda")), (PetPlacement.Walk, tr("De paseo")),
+        }.Select(p => new Segment(p.Item2, Prefs.PetPlacement == p.Item1, new Command(() => Prefs.SetPetPlacement(p.Item1)))).ToList();
+        var pet = Pets.PetCatalog.Find(Prefs.PetSpecies);
+        PetSpeciesSegments = Pets.PetCatalog.All.Select(s => new Segment(s.Name, s == pet, new Command(() => Prefs.SetPetSpecies(s.Id)))).ToList();
         LanguageSegments = Enum.GetValues<Language>().Select(l => new Segment(
             l.Label(), l == Prefs.Language, new Command(() => Prefs.SetLanguage(l)))).ToList();
 
@@ -887,7 +966,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             new(tr("Al empezar a jugar"), tr("Después de apagar Ollama por el modo juego."), Prefs.Switch(PrefKeys.CleanOnGame), new Command(() => Prefs.Toggle(PrefKeys.CleanOnGame)), true),
             new(tr("Atajo %@", HotKey.Clean.Display), tr("Libera la RAM desde cualquier app."), Prefs.Switch(PrefKeys.CleanHotKey),
                 new Command(() => { Prefs.Toggle(PrefKeys.CleanHotKey); Prefs.OnHotKeyChange?.Invoke(Prefs.HotKeyEnabled); }), true),
-            new(tr("Ícono con el % de RAM"), tr("Como Mem Reduct: el número en la bandeja, en ámbar o coral según la presión."),
+            new(tr("Ícono con el % de RAM"), tr("El número en la bandeja con una barra: azul con Ollama encendido, ámbar o coral según la presión. También desde el clic derecho del ícono."),
                 Prefs.Switch(PrefKeys.TrayPercent, false), new Command(() => Prefs.Toggle(PrefKeys.TrayPercent, false)), true),
         ];
 

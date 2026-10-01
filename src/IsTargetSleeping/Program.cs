@@ -10,6 +10,11 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (Value(args, "--apply-update") is { } apply)
+        {
+            L10n.Init();
+            return UpdateInstaller.Run(apply);
+        }
         // Relanzada tras cambiar de idioma o actualizarse: espera a que la anterior termine.
         if (Array.IndexOf(args, "--wait-pid") is var w and >= 0 && w + 1 < args.Length && int.TryParse(args[w + 1], out var old))
         {
@@ -42,11 +47,33 @@ public static class Program
             return 0;
         }
 
-        Updater.CleanUpOld();
         var app = new App();
         app.InitializeComponent();
         // En Startup ya corre el Dispatcher: los await vuelven al hilo de la interfaz.
-        app.Startup += (_, _) => app.StartTray(launchedAtLogin: args.Contains("--login"), pending);
+        app.Startup += (_, _) =>
+        {
+            app.StartTray(launchedAtLogin: args.Contains("--login"), pending);
+            if (Value(args, "--update-session") is { } session)
+            {
+                // Explorer puede tardar en aceptar el ícono: no confirmar hasta verlo registrado.
+                var confirm = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+                confirm.Tick += (_, _) =>
+                {
+                    if (!app.EnsureTrayReady()) return;
+                    confirm.Stop();
+                    UpdateInstaller.Confirm(session);
+                };
+                confirm.Start();
+            }
+            if (Value(args, "--update-recovered") is { } recovered && UpdateInstaller.RecoveryMessage(recovered) is { } error)
+                app.ShowUpdateRecovery(error);
+        };
         return app.Run();
+    }
+
+    private static string? Value(string[] args, string flag)
+    {
+        int at = Array.IndexOf(args, flag);
+        return at >= 0 && at + 1 < args.Length ? args[at + 1] : null;
     }
 }

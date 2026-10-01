@@ -134,10 +134,17 @@
                     Visibility="{Binding ShowUpdate, Converter={StaticResource Visible}}">
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Style="{StaticResource Prominent}" Content="{Binding UpdateLabel}" Command="{Binding InstallUpdate}"
-                            VerticalAlignment="Center" Margin="8,0,0,0" Visibility="{Binding UpdateIdle, Converter={StaticResource Visible}}" />
+                            IsEnabled="{Binding CanInstallUpdate}" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="{Binding UpdateIdle, Converter={StaticResource Visible}}" />
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{Binding UpdateTitle}" FontSize="12" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding UpdateDetail}" FontSize="11" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Button Style="{StaticResource Plain}" Foreground="{DynamicResource Secondary}" Content="{Binding UpdateNotesLabel}" Command="{Binding OpenUpdateNotes}" FontSize="11" />
+                            <Button Style="{StaticResource Plain}" Foreground="{DynamicResource Secondary}" Content="{Binding UpdateCancelLabel}" Command="{Binding CancelUpdate}" FontSize="11" Margin="10,0,0,0"
+                                    Visibility="{Binding CanCancelUpdate, Converter={StaticResource Visible}}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding UpdateMessage}" Style="{StaticResource Hint}" Foreground="{DynamicResource Warm}" Margin="0,4,0,0"
+                                   Visibility="{Binding HasUpdateMessage, Converter={StaticResource Visible}}" />
                     </StackPanel>
                 </DockPanel>
             </Border>
@@ -408,6 +415,10 @@
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <ui:Spinner Width="14" Height="14" Visibility="{Binding IsBusy, Converter={StaticResource Visible}}" />
+                                                <Button x:Name="star" Style="{StaticResource Plain}" Command="{Binding ToggleMain}" ToolTip="{Binding MainHelp}"
+                                                        AutomationProperties.Name="{Binding MainHelp}" VerticalAlignment="Center" Margin="4,0,6,0" Visibility="Collapsed">
+                                                    <TextBlock x:Name="starIcon" Text="&#xE734;" FontFamily="{StaticResource Icons}" FontSize="12.5" Foreground="{DynamicResource Muted}" />
+                                                </Button>
                                                 <Border x:Name="inUse" CornerRadius="9" Padding="7,2,7,3" Background="{DynamicResource OnSoft}" VerticalAlignment="Center"
                                                         Visibility="{Binding IsLoaded, Converter={StaticResource Visible}}">
                                                     <TextBlock Text="{Binding LoadedLabel}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource On}" />
@@ -430,8 +441,21 @@
                                         <DataTrigger Binding="{Binding IsLoaded}" Value="True">
                                             <Setter TargetName="dot" Property="Fill" Value="{DynamicResource On}" />
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsMain}" Value="True">
+                                            <Setter TargetName="star" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="starIcon" Property="Text" Value="&#xE735;" />
+                                            <Setter TargetName="starIcon" Property="Foreground" Value="{DynamicResource Fg}" />
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsMouseOver, ElementName=row}" Value="True" />
+                                                <Condition Binding="{Binding IsIdle}" Value="True" />
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter TargetName="star" Property="Visibility" Value="Visible" />
+                                        </MultiDataTrigger>
                                         <DataTrigger Binding="{Binding IsConfirming}" Value="True">
                                             <Setter TargetName="inUse" Property="Visibility" Value="Collapsed" />
+                                            <Setter TargetName="star" Property="Visibility" Value="Collapsed" />
                                         </DataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
@@ -765,6 +789,50 @@
                             <TextBlock Text="{Binding LoginDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
                         </StackPanel>
                     </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding ReducedMotionOn}" Command="{Binding ToggleReducedMotion}" AutomationProperties.Name="{Binding ReducedMotionTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding ReducedMotionTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding ReducedMotionDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Visibility="{Binding ShowTrayPin, Converter={StaticResource Visible}}">
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <DockPanel>
+                            <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding TrayPinOn}" Command="{Binding ToggleTrayPin}"
+                                            AutomationProperties.Name="{Binding TrayPinTitle}" Margin="10,0,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding TrayPinTitle}" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding TrayPinDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding TaskbarPetOn}" Command="{Binding ToggleTaskbarPet}"
+                                        AutomationProperties.Name="{Binding TaskbarPetTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding TaskbarPetTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding TaskbarPetDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                            <TextBlock Text="{Binding TaskbarPetError}" Style="{StaticResource Hint}" Foreground="{DynamicResource Warm}"
+                                       Margin="0,4,0,0" Visibility="{Binding HasTaskbarPetError, Converter={StaticResource Visible}}" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel Margin="0,10,0,0" Visibility="{Binding TaskbarPetOn, Converter={StaticResource Visible}}">
+                        <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding PetPlacementSegments}"
+                                      AutomationProperties.Name="{Binding PetPlacementTitle}" />
+                        <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding PetSpeciesSegments}" Margin="0,7,0,0"
+                                      Visibility="{Binding ShowPetSpecies, Converter={StaticResource Visible}}" />
+                        <DockPanel Margin="0,10,0,0">
+                            <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding PetInteractiveOn}" Command="{Binding TogglePetInteractive}"
+                                            AutomationProperties.Name="{Binding PetInteractiveTitle}" Margin="10,0,0,0" />
+                            <StackPanel>
+                                <TextBlock Text="{Binding PetInteractiveTitle}" Style="{StaticResource Label}" />
+                                <TextBlock Text="{Binding PetInteractiveDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
                     <StackPanel Visibility="{Binding ShowUpdateSetting, Converter={StaticResource Visible}}">
                         <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                         <DockPanel>
@@ -774,6 +842,23 @@
                                 <TextBlock Text="{Binding UpdateCheckDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
                             </StackPanel>
                         </DockPanel>
+                        <Button Style="{StaticResource Bordered}" Content="{Binding CheckUpdatesNowLabel}" Command="{Binding CheckUpdatesNow}"
+                                IsEnabled="{Binding CanCheckUpdates}" HorizontalAlignment="Left" Margin="0,8,0,0" />
+                        <TextBlock Text="{Binding UpdateCheckStatus}" Style="{StaticResource Hint}" Margin="0,4,0,0" />
+                        <StackPanel Visibility="{Binding ShowUpdate, Converter={StaticResource Visible}}" Margin="0,5,0,0">
+                            <TextBlock Text="{Binding UpdateDetail}" Style="{StaticResource Hint}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <Button Style="{StaticResource Plain}" Foreground="{DynamicResource Secondary}" Content="{Binding UpdateNotesLabel}" Command="{Binding OpenUpdateNotes}" Margin="0,0,10,0" />
+                                <Button Style="{StaticResource Bordered}" Content="{Binding UpdateLabel}" Command="{Binding InstallUpdate}"
+                                        IsEnabled="{Binding CanInstallUpdate}" Visibility="{Binding UpdateIdle, Converter={StaticResource Visible}}" />
+                                <Button Style="{StaticResource Bordered}" Content="{Binding UpdateCancelLabel}" Command="{Binding CancelUpdate}"
+                                        Visibility="{Binding CanCancelUpdate, Converter={StaticResource Visible}}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding HasUpdateMessage, Converter={StaticResource Visible}}" Margin="0,5,0,0">
+                            <TextBlock Text="{Binding UpdateMessage}" Style="{StaticResource Hint}" Foreground="{DynamicResource Warm}" />
+                            <Button Style="{StaticResource Plain}" Foreground="{DynamicResource Secondary}" Content="{Binding UpdateDownloadsLabel}" Command="{Binding OpenUpdateDownloads}" HorizontalAlignment="Left" Margin="0,4,0,0" />
+                        </StackPanel>
                     </StackPanel>
                     <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                     <DockPanel>

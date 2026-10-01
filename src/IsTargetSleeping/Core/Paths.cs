@@ -14,6 +14,9 @@ public static class AppInfo
     /// La firma del pie del panel, de «Acerca de» y del README.
     public const string Signature = "By " + Brand;
 
+    /// El repositorio de la app («Acerca de»).
+    public const string RepoUrl = "https://github.com/Tykillita/isTargetSleeping";
+
     /// Proyecto en cuya idea se basa (créditos de «Acerca de»).
     public const string CreditsUrl = "https://github.com/eriktaveras/modelnap";
 
@@ -21,12 +24,10 @@ public static class AppInfo
         (Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev")
         .Split('+')[0];
 
-    /// Repositorio de GitHub («usuario/repo») donde se publican las versiones. Vacío:
-    /// no se buscan actualizaciones y la opción no aparece.
-    public static string UpdateRepo => Defaults.GetString("updateRepo")?.Trim() ?? "";
-
-    /// Solo para pruebas: otra URL base en lugar de https://api.github.com.
-    public static string UpdateApi => Defaults.GetString("updateApi") is { Length: > 0 } api ? api.TrimEnd('/') : "https://api.github.com";
+    public const string OfficialUpdateRepo = "Tykillita/isTargetSleeping";
+    /// Conserva repositorios personalizados; una configuración vacía usa el oficial.
+    public static string UpdateRepo => Defaults.GetString("updateRepo")?.Trim() is { Length: > 0 } repo ? repo : OfficialUpdateRepo;
+    public static string UpdateApi => Updater.Api;
 }
 
 public static class Paths

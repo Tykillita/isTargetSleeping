@@ -13,6 +13,7 @@ public sealed class TrayIcon : IDisposable
     private readonly int taskbarCreated = Win32.RegisterWindowMessage("TaskbarCreated");
     private readonly HwndSource source;
     private IntPtr icon;
+    private bool iconOwned;
     private string tip = AppInfo.Name;
     private bool added;
 
@@ -27,6 +28,11 @@ public sealed class TrayIcon : IDisposable
     public event Action? AppearanceChanged;
 
     public IntPtr Handle => source.Handle;
+    public bool EnsureReady()
+    {
+        if (!added && icon != IntPtr.Zero) Send(Win32.NIM_ADD);
+        return added;
+    }
 
     /// Título de la ventana oculta: la segunda instancia la busca por él.
     public const string WindowName = "isTargetSleepingTray";
@@ -54,13 +60,18 @@ public sealed class TrayIcon : IDisposable
         }
     }
 
-    public void Update(BitmapSource image, string tooltip)
+    public void Update(BitmapSource image, string tooltip) => SetIcon(Mark.ToHIcon(image), tooltip, owned: true);
+
+    /// Pone un HICON ya hecho. Con `owned` el ícono pasa a ser suyo y lo destruye al
+    /// cambiarlo; sin él (los fotogramas guardados de la animación) no lo toca.
+    public void SetIcon(IntPtr hicon, string tooltip, bool owned)
     {
-        var old = icon;
-        icon = Mark.ToHIcon(image);
+        var (old, oldOwned) = (icon, iconOwned);
+        icon = hicon;
+        iconOwned = owned;
         tip = tooltip;
         Send(added ? Win32.NIM_MODIFY : Win32.NIM_ADD);
-        if (old != IntPtr.Zero) Win32.DestroyIcon(old);
+        if (oldOwned && old != IntPtr.Zero && old != hicon) Win32.DestroyIcon(old);
     }
 
     private void Send(int message)
@@ -198,7 +209,7 @@ public sealed class TrayIcon : IDisposable
             Win32.Shell_NotifyIcon(Win32.NIM_DELETE, ref data);
             added = false;
         }
-        if (icon != IntPtr.Zero) Win32.DestroyIcon(icon);
+        if (iconOwned && icon != IntPtr.Zero) Win32.DestroyIcon(icon);
         icon = IntPtr.Zero;
         if (balloonIcon != IntPtr.Zero) Win32.DestroyIcon(balloonIcon);
         balloonIcon = IntPtr.Zero;

@@ -50,18 +50,22 @@ public sealed class AboutWindow : Window
         credits.Inlines.Add(tr("Vigila tus modelos locales y los pone a dormir cuando no trabajan."));
         credits.Inlines.Add(new LineBreak());
         credits.Inlines.Add(new LineBreak());
+        credits.Inlines.Add(tr("isTargetSleeping es una app nativa de Windows rediseñada por completo, con una interfaz propia y nuevas funciones originales."));
+        credits.Inlines.Add(new LineBreak());
+        credits.Inlines.Add(new LineBreak());
         credits.Inlines.Add(new Run(AppInfo.Signature) { FontWeight = FontWeights.SemiBold });
         credits.Inlines.Add(new LineBreak());
         credits.Inlines.Add(tr("CodeSentry: desarrollo y ciberseguridad de Ruben Pino (Tykillita)."));
         credits.Inlines.Add(new LineBreak());
+        credits.Inlines.Add(Link(AppInfo.RepoUrl));
         credits.Inlines.Add(new LineBreak());
-        // Créditos: la idea viene de ModelNap (MIT); la app está rediseñada por completo.
-        credits.Inlines.Add(tr("Basado en la idea de ModelNap, de Erik Taveras (licencia MIT). Rediseñado por completo, con funciones nuevas y originales."));
         credits.Inlines.Add(new LineBreak());
-        var link = new Hyperlink(new Run("github.com/eriktaveras/modelnap")) { NavigateUri = new Uri(AppInfo.CreditsUrl) };
-        link.SetResourceReference(TextElement.ForegroundProperty, "Accent");
-        link.RequestNavigate += (_, e) => Paths.Open(e.Uri.AbsoluteUri);
-        credits.Inlines.Add(link);
+        // La descripción del rediseño pertenece a isTargetSleeping; aquí solo se acredita la idea original.
+        credits.Inlines.Add(new Run(tr("Inspiración")) { FontWeight = FontWeights.SemiBold });
+        credits.Inlines.Add(new LineBreak());
+        credits.Inlines.Add(tr("La idea de dormir los modelos inactivos proviene de ModelNap, de Erik Taveras (licencia MIT)."));
+        credits.Inlines.Add(new LineBreak());
+        credits.Inlines.Add(Link(AppInfo.CreditsUrl));
         credits.Inlines.Add(new LineBreak());
         credits.Inlines.Add(new LineBreak());
         credits.Inlines.Add(tr("Proyecto independiente, no afiliado a Ollama."));
@@ -73,6 +77,15 @@ public sealed class AboutWindow : Window
 
         SourceInitialized += (_, _) => Glass.Apply(this, extendFrame: true);
         PreviewKeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.Escape) Close(); };
+    }
+
+    /// Enlace que se abre en el navegador, mostrado sin el «https://».
+    private static Hyperlink Link(string url)
+    {
+        var link = new Hyperlink(new Run(url.Replace("https://", ""))) { NavigateUri = new Uri(url) };
+        link.SetResourceReference(TextElement.ForegroundProperty, "Accent");
+        link.RequestNavigate += (_, e) => Paths.Open(e.Uri.AbsoluteUri);
+        return link;
     }
 
     private static TextBlock Text(string text, double size, FontWeight weight, string brush, double top)

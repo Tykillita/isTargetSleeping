@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using IsTargetSleeping.UI;
+using IsTargetSleeping.UI.Pets;
 
 namespace IsTargetSleeping;
 
@@ -12,13 +13,15 @@ namespace IsTargetSleeping;
 ///   isTargetSleeping --url istargetsleeping://sleep
 ///   isTargetSleeping --memory
 ///   isTargetSleeping --idle-test 20
-///   isTargetSleeping --snapshot salida.png [settings|activity] [demo] [game] [--lang en]
+///   isTargetSleeping --snapshot salida.png [settings|activity|pet] [demo] [game] [--lang en]
 ///   isTargetSleeping --export-logo carpeta
+///   isTargetSleeping --export-tray carpeta
+///   isTargetSleeping --export-pet carpeta
 /// Es una app de ventana: en PowerShell, canaliza la salida (`| Write-Output`)
 /// para que la terminal espere a que termine.
 public static class Cli
 {
-    private static readonly string[] Flags = ["--status", "--on", "--off", "--sleep", "--clean", "--memory", "--idle-test", "--snapshot", "--export-logo", "--help"];
+    private static readonly string[] Flags = ["--status", "--on", "--off", "--sleep", "--clean", "--memory", "--idle-test", "--snapshot", "--export-logo", "--export-tray", "--export-pet", "--help"];
 
     public static bool Wants(string[] args) => args.Any(Flags.Contains);
 
@@ -31,12 +34,14 @@ public static class Cli
             if (Value(args, "--idle-test") is { } s && double.TryParse(s, CultureInfo.InvariantCulture, out var limit)) return IdleTest(limit);
             if (Value(args, "--snapshot") is { } output) return Snapshot(output, args);
             if (Value(args, "--export-logo") is { } dir) return ExportLogo(dir);
+            if (Value(args, "--export-tray") is { } trayDir) return ExportTray(trayDir);
+            if (Value(args, "--export-pet") is { } petDir) return ExportPet(petDir);
             if (args.Contains("--on")) return Power(on: true);
             if (args.Contains("--off")) return Power(on: false);
             if (args.Contains("--sleep")) return SleepNow();
             if (args.Contains("--clean")) return CleanNow();
             if (args.Contains("--status")) return Status();
-            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity] [demo] [game] [--lang en] | --export-logo dir");
+            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity|pet] [demo] [game] [--lang en] | --export-logo dir | --export-tray dir | --export-pet dir");
             return 0;
         }
         finally { Console.Out.Flush(); }
@@ -186,11 +191,15 @@ public static class Cli
     private static int Snapshot(string output, string[] args) => RunWithApp(() =>
     {
         Theme.Apply();
+        if (args.Contains("pet")) return SnapshotPet(output);
         var ollama = new OllamaController();
         var prefs = new Prefs();
         var supervisor = new Supervisor(ollama, prefs);
         if (args.Contains("demo")) { ollama.LoadDemo(); prefs.LoadDemo(); supervisor.LoadDemo(game: args.Contains("game")); }
         else Task.Run(ollama.Refresh).GetAwaiter().GetResult();   // fuera del hilo de la interfaz: si no, se bloquea
+        if (args.Contains("update")) supervisor.LoadUpdateDemo(
+            args.Contains("downloading") ? UpdateStage.Downloading : args.Contains("verifying") ? UpdateStage.Verifying
+                : args.Contains("applying") ? UpdateStage.Applying : UpdateStage.Idle, args.Contains("update-error"));
 
         var panelView = args.Contains("settings") ? PanelView.Settings : args.Contains("activity") ? PanelView.Activity : PanelView.Main;
         var view = new ContentView(new PanelViewModel(supervisor, panelView));
@@ -246,6 +255,182 @@ public static class Cli
         return 0;
     });
 
+    /// Vista previa de la mascota en cada actividad y reacción, sobre una barra simulada.
+    /// No cambia ajustes ni crea la ventana que sigue a Inicio.
+    private static int SnapshotPet(string output)
+    {
+        var pet = PetCatalog.All[0];
+        const int scale = 3, columns = 5;
+        var poses = Enum.GetValues<PetActivity>().Where(a => a != PetActivity.Hidden)
+            .Select(a => (a.ToString(), Simulate(pet, new PetSituation(a), 1.0, 1).Last()))
+            .Concat(Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
+                .Select(r => (r.ToString(), Simulate(pet, new PetSituation(PetActivity.Alert, r, 0.5), 0.5 + PetBrain.Duration(r) * 0.4, 1).Last())))
+            .ToList();
+        int cellW = (pet.Size.Width + 6) * scale, cellH = (pet.Size.Height + 8) * scale;
+        int width = columns * cellW, height = (poses.Count + columns - 1) / columns * cellH;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+        {
+            dc.DrawRectangle(Theme.Brush(Theme.Hex(0x101317)), null, new Rect(0, 0, width, height));
+            for (int i = 0; i < poses.Count; i++)
+            {
+                double x = i % columns * cellW, y = i / columns * cellH;
+                dc.DrawRectangle(Theme.Brush(Theme.Hex(0x20252C)), null, new Rect(x, y + cellH - 6 * scale, cellW, 6 * scale));
+                dc.DrawImage(PetCell(pet, poses[i].Item2, scale), new Rect(x, y, cellW, cellH));
+                dc.DrawText(new FormattedText(poses[i].Item1, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                    new Typeface("Segoe UI"), 11, Theme.Brush(Theme.Current.Secondary), 1.0), new Point(x + 6, y + 4));
+            }
+        }
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(visual);
+        File.WriteAllBytes(output, Mark.Png(bitmap));
+        Console.WriteLine($"captura: {Path.GetFullPath(output)}");
+        return 0;
+    }
+
+    /// Un fotograma simulado: la pose, las partículas y cuánto se desplaza toda la mascota.
+    private readonly record struct PetShot(PetPose Pose, Particle[] Particles, double Dx, double Dy, bool Thinking);
+
+    /// Lo que haría la mascota en la barra durante `seconds`, a 30 fps, tomando fotogramas
+    /// cada `every` segundos (con el mismo director que la de verdad).
+    private static List<PetShot> Simulate(IPetSpecies pet, PetSituation situation, double seconds, double every,
+        PetSituation? before = null, double beforeSeconds = 0)
+    {
+        var director = new PetDirector(pet.Anchors, seed: 1);
+        var shots = new List<PetShot>();
+        double t = 0, nextShot = 0;
+        const double dt = 1 / 30.0;
+        if (before is { } warm)
+            for (; t < beforeSeconds; t += dt) director.Step(t, dt, warm);
+        double start = t;
+        for (; t <= start + seconds + 1e-9; t += dt)
+        {
+            var s = situation with { ReactionSince = situation.Reaction == PetReaction.None ? 0 : start + situation.ReactionSince };
+            var frame = director.Step(t, dt, s);
+            if (t - start + 1e-9 >= nextShot)
+            {
+                shots.Add(new(frame.Pose, [.. director.Particles.Live], frame.Dx, frame.Dy,
+                    situation.Activity == PetActivity.Working && situation.Reaction == PetReaction.None));
+                nextShot += every;
+            }
+        }
+        return shots;
+    }
+
+    /// Una celda con la mascota (y sitio alrededor para los saltos y las partículas).
+    private static BitmapSource PetCell(IPetSpecies pet, PetShot shot, int scale)
+    {
+        int w = pet.Size.Width * scale, h = pet.Size.Height * scale;
+        var canvas = new PixelCanvas(w, h);
+        pet.Draw(canvas, shot.Pose, scale);
+        ParticleSprites.Draw(canvas, shot.Particles, scale);
+        if (shot.Thinking) ParticleSprites.Thinking(canvas, pet.Anchors, scale, 0.3);
+        var sprite = BitmapSource.Create(w, h, 96, 96, PixelFormats.Pbgra32, null, canvas.ToBgra(), w * 4);
+        int cw = (pet.Size.Width + 6) * scale, ch = (pet.Size.Height + 8) * scale;
+        var visual = new DrawingVisual();
+        using (var dc = visual.RenderOpen())
+            dc.DrawImage(sprite, new Rect(3 * scale + Math.Round(shot.Dx * scale), 6 * scale + Math.Round(shot.Dy * scale), w, h));
+        var cell = new RenderTargetBitmap(cw, ch, 96, 96, PixelFormats.Pbgra32);
+        cell.Render(visual);
+        return cell;
+    }
+
+    /// Hojas con la mascota animada, simulada a 30 fps: cada actividad, transición, gesto y
+    /// reacción (con sus partículas), a 100 % y 150 %, sobre barra oscura y clara.
+    private static int ExportPet(string dir) => RunWithApp(() =>
+    {
+        Directory.CreateDirectory(dir);
+        foreach (var pet in PetCatalog.All)
+        {
+            var rows = new List<(string Name, List<PetShot> Shots)>();
+            foreach (var a in Enum.GetValues<PetActivity>().Where(a => a != PetActivity.Hidden))
+            {
+                double length = PetAnimations.For(a).Length;
+                rows.Add((a.ToString(), Simulate(pet, new PetSituation(a), length, length / 12)));
+            }
+            rows.Add(("Peek", Simulate(pet, new PetSituation(PetActivity.Drowsy, Hiding: true), PetAnimations.Peek.Length, PetAnimations.Peek.Length / 16)));
+            (PetActivity From, PetActivity To, bool FromHiding)[] changes =
+            [
+                (PetActivity.DeepSleep, PetActivity.WakingUp, false), (PetActivity.Alert, PetActivity.Working, false),
+                (PetActivity.Working, PetActivity.Alert, false), (PetActivity.Alert, PetActivity.Downloading, false),
+                (PetActivity.Eating, PetActivity.Alert, false), (PetActivity.Alert, PetActivity.DeepSleep, false),
+                (PetActivity.Drowsy, PetActivity.Eating, true),
+            ];
+            foreach (var (from, to, hiding) in changes)
+                rows.Add(($"{from} → {to}", Simulate(pet, new PetSituation(to), 1.5, 0.1, new PetSituation(from, Hiding: hiding), 1)));
+            foreach (var g in Enum.GetValues<PetGesture>().Where(g => g != PetGesture.None))
+            {
+                var clip = PetAnimations.Gesture(g);
+                rows.Add(($"gesture {g}", Enumerable.Range(0, 12).Select(i => new PetShot(clip.At(clip.Length * i / 11), [], 0, 0, false)).ToList()));
+            }
+            foreach (var r in Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None))
+                rows.Add((r.ToString(), Simulate(pet, new PetSituation(PetActivity.Alert, r, 0), PetBrain.Duration(r), PetBrain.Duration(r) / 12)));
+            rows.Add(("Walk", Enumerable.Range(0, 12).Select(i => new PetShot(PetAnimations.Walk(i * 0.5, 1, 0, false), [], 0, 0, false)).ToList()));
+
+            foreach (var scale in new[] { 2, 3 })
+            foreach (var (theme, background) in new[] { ("dark", Theme.Hex(0x1C1C1C)), ("light", Theme.Hex(0xEEEEEE)) })
+            {
+                int zoom = 2, cellW = (pet.Size.Width + 6) * scale * zoom, cellH = (pet.Size.Height + 8) * scale * zoom, gap = 4, label = 170;
+                int width = label + rows.Max(r => r.Shots.Count) * (cellW + gap), height = rows.Count * (cellH + gap) + gap;
+                var visual = new DrawingVisual();
+                using (var dc = visual.RenderOpen())
+                {
+                    dc.DrawRectangle(Theme.Brush(background), null, new Rect(0, 0, width, height));
+                    var fg = Theme.Brush(theme == "light" ? Colors.Black : Colors.White);
+                    for (int row = 0; row < rows.Count; row++)
+                    {
+                        double y = gap + row * (cellH + gap);
+                        dc.DrawText(new FormattedText(rows[row].Name, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                            new Typeface("Segoe UI"), 13, fg, 1.0), new Point(6, y + cellH / 2.0 - 9));
+                        for (int k = 0; k < rows[row].Shots.Count; k++)
+                            dc.DrawImage(Enlarge(PetCell(pet, rows[row].Shots[k], scale), zoom), new Rect(label + k * (cellW + gap), y, cellW, cellH));
+                    }
+                }
+                var sheet = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+                sheet.Render(visual);
+                File.WriteAllBytes(Path.Combine(dir, $"pet-{pet.Id}-{scale}x-{theme}.png"), Mark.Png(sheet));
+            }
+        }
+
+        // Escondida tras el logo: cada fotograma junto a un logo de Windows dibujado (a 100 %, ampliado).
+        foreach (var pet in PetCatalog.All.Where(p => p.Size.HideRight > 0))
+        {
+            const int n = 2, zoom = 4, cellW = 90, cellH = 60, count = 24;
+            var logo = new Win32.RECT { Left = 50, Top = 18, Right = 73, Bottom = 41 };
+            var visual = new DrawingVisual();
+            RenderOptions.SetBitmapScalingMode(visual, BitmapScalingMode.NearestNeighbor);
+            using (var dc = visual.RenderOpen())
+            {
+                dc.DrawRectangle(Theme.Brush(Theme.Hex(0x0C2A2E)), null, new Rect(0, 0, count * cellW * zoom, cellH * zoom));
+                for (int k = 0; k < count; k++)
+                {
+                    var pose = PetAnimations.Peek.At(PetAnimations.Peek.Length * k / count);
+                    dc.PushTransform(new TransformGroup { Children = [new TranslateTransform(k * cellW, 0), new ScaleTransform(zoom, zoom)] });
+                    var (x, y) = PetHiding.Behind(logo, pet.Size, n, 0);
+                    var pane = new RectangleGeometry(new Rect(logo.Left, logo.Top, logo.Width, logo.Height));
+                    dc.PushClip(Geometry.Combine(new RectangleGeometry(new Rect(0, 0, cellW, cellH)), pane, GeometryCombineMode.Exclude, null));
+                    var canvas = new PixelCanvas(pet.Size.Width * n, pet.Size.Height * n);
+                    pet.Draw(canvas, pose, n);
+                    var sprite = BitmapSource.Create(canvas.Width, canvas.Height, 96, 96, PixelFormats.Pbgra32, null, canvas.ToBgra(), canvas.Width * 4);
+                    dc.DrawImage(sprite, new Rect(x - Math.Round(pose.Peek * n), y, canvas.Width, canvas.Height));
+                    dc.Pop();
+                    var light = Theme.Brush(Theme.Hex(0x4CC2FF));
+                    var deep = Theme.Brush(Theme.Hex(0x1A8FE8));
+                    dc.DrawRectangle(light, null, new Rect(logo.Left, logo.Top, 11, 11));
+                    dc.DrawRectangle(light, null, new Rect(logo.Left + 12, logo.Top, 11, 11));
+                    dc.DrawRectangle(deep, null, new Rect(logo.Left, logo.Top + 12, 11, 11));
+                    dc.DrawRectangle(deep, null, new Rect(logo.Left + 12, logo.Top + 12, 11, 11));
+                    dc.Pop();
+                }
+            }
+            var sheet = new RenderTargetBitmap(count * cellW * zoom, cellH * zoom, 96, 96, PixelFormats.Pbgra32);
+            sheet.Render(visual);
+            File.WriteAllBytes(Path.Combine(dir, $"pet-{pet.Id}-peek.png"), Mark.Png(sheet));
+        }
+        Console.WriteLine($"mascota: {Path.GetFullPath(dir)}");
+        return 0;
+    });
+
     /// El ícono .ico, los PNG y los SVG del logo, desde la misma geometría.
     private static int ExportLogo(string dir) => RunWithApp(() =>
     {
@@ -264,4 +449,86 @@ public static class Cli
         Console.WriteLine($"logo: {Path.GetFullPath(dir)}");
         return 0;
     });
+
+    /// Hojas con cada fotograma de las animaciones del ícono de la bandeja y del % de
+    /// RAM, a 16/20/24/32 px sobre barra oscura y clara, ampliadas píxel a píxel.
+    private static int ExportTray(string dir) => RunWithApp(() =>
+    {
+        Directory.CreateDirectory(dir);
+        const double dt = 1 / TrayMotion.Fps;
+        // Cada fila: los estados por los que pasa (un segundo en cada uno) y cuántos
+        // fotogramas se toman desde el último cambio.
+        var rows = new (string Name, (TrayPhase Phase, bool Awake)[] Steps, int Frames)[]
+        {
+            ("searching", [(TrayPhase.Off, false), (TrayPhase.Starting, false)], 30),
+            ("lock-on", [(TrayPhase.Off, false), (TrayPhase.Starting, false), (TrayPhase.On, false)], 14),
+            ("letting go", [(TrayPhase.On, true), (TrayPhase.Stopping, false)], 30),
+            ("off", [(TrayPhase.On, false), (TrayPhase.Stopping, false), (TrayPhase.Off, false)], 12),
+            ("failed", [(TrayPhase.Off, false), (TrayPhase.Starting, false), (TrayPhase.Off, false)], 12),
+            ("eye open", [(TrayPhase.On, false), (TrayPhase.On, true)], 9),
+            ("eye close", [(TrayPhase.On, true), (TrayPhase.On, false)], 11),
+        };
+        int[] values = [0, 1, 7, 11, 38, 44, 63, 66, 71, 88, 99];
+        foreach (var px in new[] { 16, 20, 24, 32 })
+        foreach (var (theme, light) in new[] { ("dark", false), ("light", true) })
+        {
+            var strips = new List<(string, List<BitmapSource>)>();
+            foreach (var (name, steps, frames) in rows)
+            {
+                var motion = new TrayMotion(steps[0].Phase, steps[0].Awake, animate: true);
+                double t = 0;
+                foreach (var (phase, awake) in steps.Skip(1))
+                {
+                    t += 1;
+                    motion.Set(phase, awake, t);
+                }
+                strips.Add((name, Enumerable.Range(0, frames).Select(k =>
+                    Mark.PoseBitmap(px, motion.PoseAt(t + k * dt), light)).ToList()));
+            }
+            strips.Add(("static", [Mark.PoseBitmap(px, TrayPose.Off, light), Mark.PoseBitmap(px, TrayPose.On(false), light),
+                Mark.PoseBitmap(px, TrayPose.On(true), light), Mark.PoseBitmap(px, TrayPose.Busy, light)]));
+            strips.Add(("ram %", values.Select(v => Mark.PercentBitmap(px, v, SystemMemory.Level.Normal, Mark.Dot.On, light)).ToList()));
+            strips.Add(("shimmer", Enumerable.Range(0, 12).Select(k => Mark.PercentBitmap(px, 63, SystemMemory.Level.Normal,
+                Mark.Dot.Busy, light, 2.0 * k / TrayMotion.LoopFrames)).ToList()));
+
+            int zoom = Math.Max(4, 128 / px), cell = px * zoom, gap = 6, label = 110;
+            int width = label + strips.Max(s => s.Item2.Count) * (cell + gap), height = strips.Count * (cell + gap) + gap;
+            var visual = new DrawingVisual();
+            using (var dc = visual.RenderOpen())
+            {
+                var bg = light ? Color.FromRgb(0xEE, 0xEE, 0xEE) : Color.FromRgb(0x1C, 0x1C, 0x1C);
+                var fg = Theme.Brush(light ? Colors.Black : Colors.White);
+                dc.DrawRectangle(Theme.Brush(bg), null, new Rect(0, 0, width, height));
+                for (int row = 0; row < strips.Count; row++)
+                {
+                    var (name, images) = strips[row];
+                    double y = gap + row * (cell + gap);
+                    dc.DrawText(new FormattedText(name, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                        new Typeface("Segoe UI"), 13, fg, 1.0), new Point(6, y + cell / 2.0 - 9));
+                    for (int k = 0; k < images.Count; k++)
+                        dc.DrawImage(Enlarge(images[k], zoom), new Rect(label + k * (cell + gap), y, cell, cell));
+                }
+            }
+            var sheet = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            sheet.Render(visual);
+            File.WriteAllBytes(Path.Combine(dir, $"tray-{theme}-{px}.png"), Mark.Png(sheet));
+        }
+        Console.WriteLine($"bandeja: {Path.GetFullPath(dir)}");
+        return 0;
+    });
+
+    /// Ampliado sin suavizar, para ver cada píxel.
+    private static BitmapSource Enlarge(BitmapSource source, int zoom)
+    {
+        var bgra = new FormatConvertedBitmap(source, PixelFormats.Pbgra32, null, 0);
+        int w = bgra.PixelWidth, h = bgra.PixelHeight;
+        var pixels = new byte[w * h * 4];
+        bgra.CopyPixels(pixels, w * 4, 0);
+        int bw = w * zoom, bh = h * zoom;
+        var big = new byte[bw * bh * 4];
+        for (int y = 0; y < bh; y++)
+            for (int x = 0; x < bw; x++)
+                Buffer.BlockCopy(pixels, ((y / zoom) * w + x / zoom) * 4, big, (y * bw + x) * 4, 4);
+        return BitmapSource.Create(bw, bh, 96, 96, PixelFormats.Pbgra32, null, big, bw * 4);
+    }
 }

@@ -19,12 +19,27 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Stats.cs" Link="Core\Stats.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Links.cs" Link="Core\Links.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Updater.cs" Link="Core\Updater.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\UpdateInstaller.cs" Link="Core\UpdateInstaller.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\OllamaApi.cs" Link="Core\OllamaApi.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\L10n.cs" Link="Core\L10n.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Paths.cs" Link="Core\Paths.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanSpec.cs" Link="Core\CleanSpec.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanRules.cs" Link="Core\CleanRules.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemReduct.cs" Link="Core\MemReduct.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\TrayMotion.cs" Link="Core\TrayMotion.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetBrain.cs" Link="Core\PetBrain.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetAnimationProfile.cs" Link="Core\PetAnimationProfile.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetMotion.cs" Link="Core\PetMotion.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetPose.cs" Link="Core\PetPose.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetKeyframes.cs" Link="Core\PetKeyframes.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetIdle.cs" Link="Core\PetIdle.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetParticles.cs" Link="Core\PetParticles.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetDirector.cs" Link="Core\PetDirector.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\TaskbarPetLayout.cs" Link="Core\TaskbarPetLayout.cs" />
   </ItemGroup>
 
+  <Target Name="PublishUpdateProbe" AfterTargets="Build">
+    <MSBuild Projects="..\UpdateProbe\UpdateProbe.csproj" Targets="Restore;Publish"
+             Properties="Configuration=$(Configuration);PublishDir=$(TargetDir)probe\" />
+  </Target>
 </Project>

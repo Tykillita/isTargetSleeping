@@ -1,0 +1,77 @@
+name: prepare-release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Validate tag and changelog
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: .\packaging\verify-release.ps1 -Tag $env:RELEASE_TAG -NotesFile release-notes.md
+      - name: Tests
+        shell: pwsh
+        run: .\build.ps1 -Test
+      - name: Ensure Inno Setup 6
+        shell: pwsh
+        run: .\packaging\ensure-inno.ps1
+      - name: Package x64 and ARM64
+        shell: pwsh
+        run: .\package.ps1 -RequireInstaller -InnoCompiler obj/tooling/inno/ISCC.exe
+      - name: Verify all release assets
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: .\packaging\verify-release.ps1 -Tag $env:RELEASE_TAG -VerifyAssets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            dist/*
+            release-notes.md
+          if-no-files-found: error
+
+  draft:
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-packages
+          path: prepared
+      - name: Verify transferred assets
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./packaging/verify-release.ps1 -Tag $env:RELEASE_TAG -VerifyAssets -AssetsDirectory prepared/dist
+      - name: Create draft for review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'A release already exists for this tag; it will not be modified.'
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" prepared/dist/* --draft --verify-tag \
+            --title "isTargetSleeping $RELEASE_TAG" --notes-file prepared/release-notes.md
