@@ -1,23 +1,20 @@
 # Genera las ilustraciones del README: SVG animados con los sprites reales de las mascotas
-# (sacados de `--export-pet`), infografías en vidrio negro y los pósters del video.
+# (sacados de `--export-pet`), infografías en vidrio negro y la vista previa de Ajustes.
 #
 #   python docs/readme-art.py <carpeta de --export-pet>
 #
-# Requiere Python 3 con Pillow y numpy; ffmpeg solo para los pósters del video.
+# Requiere Python 3 con Pillow y numpy.
 # docs/generate-images.ps1 lo llama si encuentra Python.
 import base64
 import io
 import os
-import shutil
-import subprocess
 import sys
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMAGES = os.path.join(ROOT, 'docs', 'images')
-VIDEO = os.path.join(ROOT, 'docs', 'video')
 PETS = ['mira', 'llama', 'capybara', 'orange-cat']
 SIZES = {'mira': (27, 24), 'llama': (32, 30), 'capybara': (32, 30), 'orange-cat': (32, 30)}
 FIXED = ['DeepSleep', 'WakingUp', 'Drowsy', 'Eating', 'Alert', 'Working', 'Downloading', 'Sweeping', 'Yawning', 'Peek',
@@ -47,7 +44,6 @@ T = {
                  ('You quit', 'Turn on anyway and Not a', 'game stay in the panel'),
                  ('+30 s', 'only what was on comes', 'back, the same way')],
         'game_band': 'RAM and VRAM free for the game',
-        'poster_cta': 'Watch the tour', 'poster_sub': '1:17 · with sound',
     },
     'es': {
         'states_kicker': 'MASCOTAS · QUÉ HACEN', 'states_title': 'Cuentan lo que hace Ollama',
@@ -69,7 +65,6 @@ T = {
                  ('Sales', 'Encender igual y No es un', 'juego siguen en el panel'),
                  ('+30 s', 'vuelve solo lo que estaba', 'encendido, por el mismo camino')],
         'game_band': 'RAM y VRAM libres para el juego',
-        'poster_cta': 'Mira el video', 'poster_sub': '1:17 · con sonido',
     },
 }
 
@@ -324,44 +319,7 @@ def game_mode(lang):
     svg.save(os.path.join(IMAGES, f'game-mode-{lang}.svg'))
 
 
-# ------------------------------------------------------------------ video posters
-
-def posters():
-    if not shutil.which('ffmpeg'):
-        print('ffmpeg not found: skipping video posters')
-        return
-    for lang in ('en', 'es'):
-        mp4 = os.path.join(VIDEO, f'isTargetSleeping-tour-{lang}.mp4')
-        if not os.path.exists(mp4):
-            continue
-        frame = subprocess.run(['ffmpeg', '-v', 'error', '-ss', '58.6', '-i', mp4, '-frames:v', '1', '-f', 'image2pipe',
-                                '-c:v', 'png', '-'], capture_output=True, check=True).stdout
-        im = Image.open(io.BytesIO(frame)).convert('RGB').resize((1280, 720), Image.LANCZOS)
-        # A pill at the bottom: play icon, call to action and length, sized to its text.
-        try:
-            from PIL import ImageFont
-            bold = ImageFont.truetype('segoeuib.ttf', 30)
-            reg = ImageFont.truetype('segoeui.ttf', 24)
-        except OSError:
-            bold = reg = None
-        layer = Image.new('RGBA', im.size, (0, 0, 0, 0))
-        d = ImageDraw.Draw(layer)
-        cta, sub = T[lang]['poster_cta'], T[lang]['poster_sub']
-        w = 64 + 16 + d.textlength(cta, font=bold) + 18 + d.textlength(sub, font=reg) + 34
-        x0, y0, y1 = (1280 - w) / 2, 600, 676
-        glow = Image.new('L', im.size, 0)
-        ImageDraw.Draw(glow).rounded_rectangle((x0, y0, x0 + w, y1), 38, fill=150)
-        im.paste((77, 163, 255), (0, 0), glow.filter(ImageFilter.GaussianBlur(26)))
-        d.rounded_rectangle((x0, y0, x0 + w, y1), 38, fill=(10, 11, 14, 235), outline=(77, 163, 255, 160), width=2)
-        d.ellipse((x0 + 12, y0 + 12, x0 + 64, y0 + 64), fill=(77, 163, 255, 255))
-        d.polygon([(x0 + 32, y0 + 26), (x0 + 32, y0 + 50), (x0 + 52, y0 + 38)], fill=(255, 255, 255, 255))
-        d.text((x0 + 80, y0 + 17), cta, font=bold, fill=(245, 245, 247, 255))
-        d.text((x0 + 80 + d.textlength(cta, font=bold) + 18, y0 + 22), sub, font=reg, fill=(160, 166, 176, 255))
-        im = Image.alpha_composite(im.convert('RGBA'), layer).convert('RGB')
-        out = os.path.join(IMAGES, f'video-poster-{lang}.jpg')
-        im.save(out, quality=88, optimize=True, progressive=True)
-        print(f'{os.path.relpath(out, ROOT)}: {os.path.getsize(out) // 1024} KB')
-
+# ------------------------------------------------------------------ settings preview
 
 def settings_previews():
     """The settings capture is ~4x taller than the others: a preview as tall as Activity, fading out."""
@@ -390,7 +348,6 @@ def main():
         pets_home(sheets, peeks, lang)
         idle_flow(lang)
         game_mode(lang)
-    posters()
     settings_previews()
 
 

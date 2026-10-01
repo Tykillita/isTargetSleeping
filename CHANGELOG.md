@@ -32,7 +32,7 @@ All notable changes to isTargetSleeping. The format follows
 - New particles: steam, bubbles, falling leaves, music notes, purrs, snort clouds, 0/1 bits and antenna signals.
 - `--export-pet` sheets now show each pet's own gestures (with their particles) and a mouse row, at 2× and 3×.
 - Video tour of the app in English and Spanish with an original soundtrack (`docs/video/`), presented in both
-  READMEs with a poster. The READMEs gain a **Pets** section, animated pixel-art SVGs made from the real sprites
+  READMEs with an inline player. The READMEs gain a **Pets** section, animated pixel-art SVGs made from the real sprites
   (every pet in six states, asleep above Start and peeking behind the Windows logo), infographics for idle
   detection and game mode, and a navigation bar. `docs/readme-art.py` regenerates them from `--export-pet`.
 

@@ -43,11 +43,9 @@ was installed.
 
 <a id="video"></a>
 
-<p align="center">
-  <a href="docs/video/isTargetSleeping-tour-en.mp4"><img src="docs/images/video-poster-en.jpg" width="100%" alt="Watch the 77-second tour of isTargetSleeping, with sound"></a>
-  <br>
-  <sub>The tour, with sound: <a href="docs/video/isTargetSleeping-tour-en.mp4">English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">español</a></sub>
-</p>
+https://github.com/user-attachments/assets/021c92dc-c600-4deb-83a6-ba3ed4b49ceb
+
+<p align="center"><sub>The 77-second tour, with sound · <a href="https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
 
 ## Why?
 

@@ -43,11 +43,9 @@ como lo hayas instalado.
 
 <a id="video"></a>
 
-<p align="center">
-  <a href="docs/video/isTargetSleeping-tour-es.mp4"><img src="docs/images/video-poster-es.jpg" width="100%" alt="Mira el recorrido de 77 segundos por isTargetSleeping, con sonido"></a>
-  <br>
-  <sub>El recorrido, con sonido: <a href="docs/video/isTargetSleeping-tour-es.mp4">español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">English</a></sub>
-</p>
+https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
+
+<p align="center"><sub>El recorrido de 77 segundos, con sonido · <a href="https://github.com/user-attachments/assets/021c92dc-c600-4deb-83a6-ba3ed4b49ceb">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
 
 ## ✨ Funciones
 

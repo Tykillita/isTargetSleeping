@@ -20,7 +20,7 @@ Snap activity-es @("activity", "demo", "--lang", "es")
 Snap settings-en @("settings", "demo", "--lang", "en")
 Snap settings-es @("settings", "demo", "--lang", "es")
 & $exe --export-logo "$root\Assets" | Write-Output
-# Las ilustraciones del README (mascotas animadas, infografías y pósters del video) salen
+# Las ilustraciones del README (mascotas animadas, infografías y la vista previa de Ajustes) salen
 # de las hojas de --export-pet; hace falta Python con Pillow y numpy.
 $python = Get-Command python, py -All -ErrorAction SilentlyContinue | ForEach-Object Source |
     Where-Object { & $_ -c "import PIL, numpy" 2>$null; $LASTEXITCODE -eq 0 } | Select-Object -First 1
