@@ -115,10 +115,14 @@ public static class Cli
         var areas = Defaults.Has(PrefKeys.CleanAreas) ? (CleanAreas)(Defaults.GetInt(PrefKeys.CleanAreas) & (int)CleanAreas.All) : CleanAreas.Default;
         var keep = MemoryAgent.ModelPids();
         var result = MemoryAgent.CleanNow(areas, keep);
-        if (result.Error is { } error) { Console.WriteLine(error); return 1; }
-        Console.WriteLine($"liberados {result.Freed.MemoryGB()} · zonas {areas} · protegidos {keep.Count}"
+        if (result.Error is { } error) Console.WriteLine(error);
+        Console.WriteLine($"{result.Outcome} · cambio observado a los 5 s: {result.Freed.MemoryGB()} · duración {result.DurationMilliseconds / 1000.0:0.0} s · tratados {result.ProcessesTreated} · zonas {areas}"
                           + (result.Failed != CleanAreas.None ? $" · fallaron {result.Failed}" : ""));
-        return 0;
+        foreach (var failure in result.Errors)
+            Console.WriteLine($"  {failure.Operation} · PID {failure.Pid?.ToString() ?? "-"} · Win32 {failure.Win32Error?.ToString() ?? "-"} · NTSTATUS {failure.NtStatus?.ToString("X8") ?? "-"}: {failure.Message}");
+        if (result.Before is { } before && result.AfterThirtySeconds is { } after)
+            Console.WriteLine($"cambio observado a los 30 s: {(before.Used - after.Used).MemoryGB()} · disponible {after.Available.MemoryGB()} · comprometida {after.Committed.MemoryGB()} / {after.CommitLimit.MemoryGB()}");
+        return result.Outcome switch { CleanOutcome.Partial => 2, CleanOutcome.Failed or CleanOutcome.Pending => 1, _ => 0 };
     }
 
     /// Sin la app abierta: saca de la memoria lo cargado, sin apagar Ollama.

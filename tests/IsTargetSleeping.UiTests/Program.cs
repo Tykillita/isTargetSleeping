@@ -64,6 +64,7 @@ internal static class Program
             Check($"{language}: se puede apagar sin perder la elección", !model.TaskbarPetOn && !model.ShowPetSpecies && prefs.PetSpecies == "unknown");
         }
         Check("la demo no modifica ajustes guardados", originalSettings == (File.Exists(Paths.SettingsFile) ? File.ReadAllText(Paths.SettingsFile) : null));
+        ProcessUiTests.Run(Check);
         app.Shutdown();
         Console.WriteLine(failures == 0 ? "interfaz: todo bien" : $"interfaz: {failures} fallos");
         return failures == 0 ? 0 : 1;

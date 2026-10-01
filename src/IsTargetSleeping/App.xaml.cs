@@ -20,6 +20,7 @@ public partial class App : Application
     private PanelViewModel model = null!;
     private TrayAnimator animator = null!;
     private TaskbarPet? pet;
+    private ProcessWindow? processes;
     public bool EnsureTrayReady() => tray?.EnsureReady() == true;
 
     public void StartTray(bool launchedAtLogin, string? pending = null)
@@ -30,6 +31,7 @@ public partial class App : Application
         supervisor = new Supervisor(ollama, prefs);
 
         model = new PanelViewModel(supervisor);
+        model.ProcessesRequested += ShowProcesses;
         panel = new PanelWindow(new ContentView(model));
 
         tray = new TrayIcon();
@@ -83,6 +85,9 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        supervisor?.Stop();
+        processes?.Close();
+        model?.SetPanelVisible(false);
         HotKey.Power.Unregister();
         HotKey.Sleep.Unregister();
         HotKey.Clean.Unregister();
@@ -149,9 +154,24 @@ public partial class App : Application
 
     public void ShowPanel(PanelView? view = null)
     {
+        ProcessMonitor.GetForegroundPid();
         _ = ollama.Refresh();
         if (view is { } v) model.Show(v);
         panel.ShowAt(tray.Rect());
+    }
+
+    private void ShowProcesses()
+    {
+        if (processes == null)
+        {
+            processes = new ProcessWindow(supervisor.ExecuteProcessAction,
+                async () => { await supervisor.InstallAgent(); return supervisor.AgentError; },
+                () => supervisor.Agent, supervisor.GetProcessProtectionPids);
+            processes.Closed += (_, _) => processes = null;
+        }
+        processes.Show();
+        if (processes.WindowState == WindowState.Minimized) processes.WindowState = WindowState.Normal;
+        processes.Activate();
     }
 
     private void TogglePanel()

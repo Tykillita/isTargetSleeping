@@ -5,6 +5,53 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-10-01
+
+### Added
+- **Process explorer in Activity:** the five applications using the most RAM, plus a resizable window with
+  applications grouped by executable path, owner and session. Expand PIDs, search name/path/PID, filter type and
+  minimum RAM, and sort RAM, CPU, name, count or PID. Private resident RAM is used where Windows supports it;
+  older versions explicitly show total resident RAM. Committed memory remains a separate detail.
+- **End applications, processes or trees:** every forced termination confirms its scope, PIDs and observed RAM.
+  PID plus creation time, held handles and individual exit checks protect against reused PIDs and incomplete
+  trees. Critical Windows and app/agent processes are blocked. Access denied offers an explicit UAC retry through
+  the installed agent, separate from its cleanup task. Managed servers ended here stay manually stopped.
+- Cleanup reports include request ID, duration, outcome, process counts and Win32/NTSTATUS errors, written
+  atomically in the protected agent directory. Metrics retain the observed change immediately and at 5/30 seconds,
+  including negative changes; weekly cleanup totals use the five-second observation.
+- Bilingual process-window tests cover filtering, identity-stable selection, missing metrics, critical processes,
+  virtualized tables, confirmation and visibility/pause/minimize/close sampling. Termination tests use disposable
+  child-process fixtures.
+
+### Changed
+- The process explorer and its confirmation follow the app's black glass design: panel-style header with the logo
+  and summary, Fluent icon buttons, the segmented type filter from Settings, glass search and menus, a glass-card
+  table with section-style headers, chevrons and thin RAM bars, and only the actions that apply to the selection.
+  The confirmation lists every affected process in a glass card, warns in amber and keeps coral for **End**.
+- **Automatic cleanup is selective:** physical RAM pressure must be high or critical. At most ten low-activity
+  processes of the current user/session, with at least 128 MiB resident RAM and at most 1 % of one CPU core over
+  two seconds, have their working sets trimmed. Models, engines, games, foreground applications and descendants
+  remain protected; candidates and pressure are rechecked before each trim. Manual cleanup retains configured
+  Mem Reduct-compatible areas, with global caches and volume writes labelled as advanced operations.
+- Cleanup requests from panel, shortcut and CLI are serialized and track their specific agent instance. A running
+  agent remains pending after 130 seconds and blocks another cleanup. The protocol rejects requests beyond 1024
+  protected identities or 32,000 characters instead of silently dropping protections.
+- Critical pressure takes priority over threshold and interval triggers. Automatic failures retry after three
+  and six minutes, up to three attempts per episode. Game cleanup waits for confirmed engine shutdown and cancels
+  when the game ends, the option changes or shutdown fails.
+- Process sampling runs every two seconds while visible; pause, refresh, virtualized rows, cached icons/metadata
+  and stable identities limit work and preserve selection. The window retains size, position and sorting.
+- Public website and bilingual video tour accompany the 1.4.0 notes. Existing settings and history are preserved;
+  the memory agent is updated through the existing UAC installation flow.
+
+### Fixed
+- Ending a process that Windows was already closing (for example a console host exiting with its console) is no
+  longer reported as access denied: an access-denied termination now waits briefly for the exit before offering
+  an administrator retry. This also made the real termination test pass reliably.
+- Cleanup failures no longer appear as successful RAM freeing. Success, partial completion, failure and no work
+  have distinct results. Coincident rules consume one successful episode, failed attempts do not count as success,
+  and critical pressure can be handled from startup.
+
 ## [1.3.0] — 2026-09-30
 
 ### Fixed

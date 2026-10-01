@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.3.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -54,7 +54,8 @@ https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
 | ⏻ | **Encender y apagar** | El botón grande del panel, o **Ctrl+Alt+O** desde cualquier app. |
 | 🔍 | **Detecta tu instalación** | La app de Ollama, un servicio de Windows (NSSM, WinSW, `sc create`…), una tarea programada o un `ollama serve` a mano. Lo apaga por el mismo camino por el que arranca. |
 | 🧹 | **Libera la memoria sin uso** | Tras 5, 15, 30 o 60 minutos sin generar, saca el modelo de la memoria. Ollama sigue encendido y lo recarga con el siguiente mensaje. **Ctrl+Alt+S** lo duerme al momento. |
-| 🧽 | **Liberar RAM** | La limpieza de Mem Reduct integrada (memoria de trabajo, caché de archivos, listas en espera…) — con un botón, **Ctrl+Alt+L**, al pasar de X % o cada N minutos — pero sin tocar nunca los modelos ni tu juego. Puede importar y reemplazar Mem Reduct. |
+| 🧽 | **Liberar RAM** | Limpieza automática selectiva cuando la presión física es alta; zonas avanzadas manuales con el botón o **Ctrl+Alt+L**. Protege modelos, juegos y aplicaciones en primer plano; puede importar y reemplazar Mem Reduct. |
+| 🔎 | **Reconocimiento de procesos** | Actividad muestra las cinco aplicaciones que más RAM usan. Abre la ventana completa para ver RAM/CPU, desplegar PIDs, buscar y filtrar, o finalizar una aplicación, proceso o árbol tras confirmar. |
 | 🎮 | **Modo juego** | Abres un juego de Steam, Epic, Riot, EA, GOG, Rockstar o Xbox (o uno que añadas) y Ollama se apaga para dejarle la RAM y la VRAM; al salir vuelve a encenderse por el mismo camino. |
 | 🛟 | **Vigilante** | Si Ollama se cae o se cuelga, lo reinicia con el mismo mecanismo (hasta 3 veces en 10 minutos). |
 | 🔔 | **Notificaciones** | Avisos nativos de Windows cuando un modelo se duerme, Ollama se cae, la memoria llega a crítica, empieza un juego o termina una descarga; cada uno con su interruptor. |
@@ -199,21 +200,43 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
 - **GPU:** elige por DXGI el adaptador con más memoria dedicada (la RTX de un portátil, no la gráfica integrada) y
   lee los contadores `GPU Adapter Memory` y `GPU Process Memory`, los mismos del Administrador de tareas. La VRAM de
   los runners es la parte del modelo.
-- **Liberar RAM (en lugar de Mem Reduct):** las mismas zonas y los mismos bits de `ReductMask2` que Mem Reduct
-  (memoria de trabajo, caché de archivos del sistema, listas en espera de prioridad baja y completa, páginas
-  modificadas, combinar páginas, caché del registro y de archivos modificados; por defecto las suyas, `0xE7`). La
-  diferencia: Mem Reduct vacía **toda** la memoria de trabajo de golpe; isTargetSleeping lo hace proceso a proceso y
-  se salta los runners de Ollama, `llama-server`, LM Studio y el juego en curso. Medido: el runner del modelo cargado
-  conservó sus ~700 MB mientras otras apps bajaban de 371 a 168 MB, y la siguiente respuesta salió a velocidad normal.
-  Reglas: al pasar de X % (se rearma al bajar 5 puntos), cada N minutos, con presión crítica y al empezar a jugar;
-  mínimo 3 min entre limpiezas automáticas.
-- **Permisos de administrador, una vez:** *Activar* en Ajustes › Liberar RAM lanza con UAC un programa aparte y
-  pequeño, `isTargetSleeping.MemoryAgent.exe` (13 MB, un solo archivo que no desempaqueta nada en `%TEMP%`). Se copia
+- **Limpieza automática selectiva:** requiere presión física alta o crítica. Recorta la memoria de trabajo de
+  hasta diez procesos poco activos de tu usuario y sesión, con al menos 128 MiB residentes. Protege modelos,
+  motores, juego, aplicaciones en primer plano y sus descendientes. Conserva tu umbral e intervalo; la presión
+  crítica tiene prioridad y hay al menos tres minutos entre intentos. Los fallos se reintentan después de tres y
+  seis minutos, hasta tres intentos por episodio. Al entrar en un juego espera el apagado confirmado de los
+  motores, hasta treinta segundos; cancela si falla el apagado o termina el juego.
+- **Limpieza manual (en lugar de Mem Reduct):** conserva las zonas configuradas y los mismos bits de `ReductMask2`
+  (por defecto `0xE7`): memoria de trabajo, cachés, listas en espera, páginas modificadas y combinación de páginas.
+  Las operaciones globales de caché y escritura de volúmenes aparecen como opciones avanzadas. El resultado
+  distingue éxito, parcial, fallo y sin trabajo, con mediciones antes, al terminar y a los cinco y treinta segundos.
+  El cambio observado puede ser negativo e incluir otras actividades del PC; no garantiza ahorro sostenido. El
+  agregado semanal usa la observación a los cinco segundos. La memoria en espera ya está disponible para Windows.
+- **Permisos de administrador para limpieza, una vez:** *Activar* en Ajustes › Liberar RAM lanza con UAC el programa
+  aparte `isTargetSleeping.MemoryAgent.exe`. Se copia
   a `C:\Program Files\isTargetSleeping\cleaner` (solo un administrador puede escribir ahí: la tarea elevada nunca
   ejecuta algo que un proceso normal pueda cambiar) y registra la tarea `\isTargetSleeping\Liberar RAM`, sin
-  disparadores y con los privilegios más altos de tu usuario. Cada limpieza lanza esa tarea con una orden compacta y
-  validada estrictamente (`a=e7;k=1234,5678`: zonas y PIDs protegidos); la app mide la RAM antes y después y lee del
-  código de salida qué zonas fallaron. *Quitar* (o el desinstalador) borra la tarea y la carpeta.
+  disparadores y con los privilegios más altos de tu usuario. Cada limpieza tiene una solicitud validada, su
+  identificador y las identidades protegidas; el agente escribe su informe atómicamente en su carpeta protegida.
+  Las solicitudes del panel, atajo y CLI se serializan; si el agente sigue activo, permanece pendiente e impide
+  otra limpieza. *Quitar* (o el desinstalador) borra la tarea y la carpeta. Actualiza el agente anterior desde
+  Ajustes para usar las nuevas operaciones.
+- **Reconocimiento de procesos:** Actividad muestra las cinco aplicaciones que más RAM usan. **Ver todos los
+  procesos** abre una ventana con RAM, porcentaje de RAM física, CPU, usuario y estado, agrupada por ruta del
+  ejecutable, propietario y sesión. Despliega los PIDs para ver ruta, padre y memoria comprometida. Busca por
+  nombre, ejecutable, ruta o PID; filtra por tipo y RAM mínima; ordena por RAM, CPU, nombre, cantidad o PID.
+  Usa RAM privada residente donde Windows la admite y etiqueta el fallback como RAM residente total. Los datos
+  inaccesibles quedan «No disponible» y las sumas pueden diferir de la RAM global.
+- La ventana actualiza cada dos segundos mientras está visible; al minimizar o cerrar deja de muestrear.
+  **Pausar** y **Actualizar** permiten controlarlo. Guarda tamaño, posición y ordenación; búsqueda y filtros son
+  temporales. La consulta y finalización normal funcionan sin instalar el agente.
+- **Finalizar procesos:** **Finalizar aplicación** incluye sus procesos agrupados y descendientes; **Finalizar
+  proceso**, solo el PID elegido; **Finalizar árbol**, también sus descendientes. Siempre pide confirmación con
+  alcance, PIDs y memoria. El cierre es forzado y puede perder trabajo sin guardar. Bloquea procesos críticos de
+  Windows y los propios; revalida PID y hora de creación y comprueba cada salida. Ante acceso denegado ofrece
+  **Reintentar como administrador**, con UAC propio y una orden separada del agente. La tarea de limpieza no admite
+  estas órdenes. Un servidor gestionado finalizado queda apagado manualmente; si un servicio externo lo reinicia,
+  aparece como reaparecido, sin desactivar servicios ni tareas de inicio.
 - **Mem Reduct:** si está instalado, Ajustes muestra su configuración (de `%APPDATA%\Henry++\Mem Reduct\memreduct.ini`).
   *Importar ajustes* copia su %, intervalo, zonas y aviso; *Reemplazar* importa, lo cierra (a través del agente,
   porque corre como administrador), lo quita del inicio y apaga su limpieza automática en su ini para que nunca
@@ -261,8 +284,10 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   desde GitHub y sus servidores `release-assets.githubusercontent.com`/`objects.githubusercontent.com`. GitHub
   recibe tu IP y el identificador de la app; no se envían modelos, conversaciones, ajustes ni historial de uso.
   No hay cuentas, telemetría ni analítica. Las páginas de novedades, descargas y créditos se abren al pulsar sus enlaces.
-- Los permisos de administrador solo los usa el agente de memoria, solo para liberar RAM (y cerrar Mem Reduct si lo
-  reemplazas), y solo si lo activas.
+- El agente usa permisos de administrador para la limpieza activada, reemplazar Mem Reduct y los reintentos de
+  finalización confirmados. Cada finalización elevada requiere su propio permiso de UAC.
+- Nombres, PIDs, rutas, usuarios y métricas de RAM/CPU se leen localmente; el reconocimiento de procesos no envía
+  esos datos a ningún servicio externo.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio
   registro en `Logs\app.log` (avisos, reinicios, modo juego). Los enlaces viven en
   `HKCU\Software\Classes\istargetsleeping`; el instalador lo borra al desinstalar.

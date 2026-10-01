@@ -14,6 +14,7 @@ public partial class ContentView : UserControl
         InitializeComponent();
         DataContext = model;
         model.PropertyChanged += OnModelChanged;
+        IsVisibleChanged += (_, _) => model.SetPanelVisible(IsVisible);
     }
 
     // Checked cubre ratón, teclado y lectores de pantalla; una actualización del enlace no vuelve a guardar.

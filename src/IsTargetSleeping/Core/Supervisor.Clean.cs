@@ -11,6 +11,9 @@ public sealed partial class Supervisor
     public string? AgentError { get; private set; }
     public bool Cleaning { get; private set; }
     public (long Freed, DateTime At, CleanReason Reason)? LastClean { get; private set; }
+    public CleanResult? LastCleanResult { get; private set; }
+    private readonly CancellationTokenSource cleaningLifetime = new();
+    private int gameCleanGeneration;
 
     public bool MemReductInstalled { get; private set; }
     public bool MemReductRunning { get; private set; }
@@ -35,7 +38,7 @@ public sealed partial class Supervisor
     public int CleanInterval
     {
         get => cleanDemo ? 0 : Defaults.GetInt(PrefKeys.CleanInterval);
-        set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanInterval, value); rules.Cleaned(DateTime.Now); Changed?.Invoke(); }
+        set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanInterval, value); rules.ResetInterval(DateTime.Now); Changed?.Invoke(); }
     }
 
     public void ToggleArea(CleanAreas area) => Areas ^= area;
@@ -87,15 +90,13 @@ public sealed partial class Supervisor
     /// Studio), el propio Ollama, el juego en curso y esta app.
     private List<int> ProtectedPids()
     {
-        var pids = MemoryAgent.ModelPids();
-        if (CurrentGame is { Pid: > 0 } game) pids.Add(game.Pid);
-        return [.. pids];
+        return [.. GetProcessProtectionPids()];
     }
 
     /// `fromPanel`: el botón del panel ya enseña el resultado; lo demás (atajo, enlace, reglas) avisa.
     public async Task Clean(CleanReason reason, bool fromPanel = false, bool sleepModels = false)
     {
-        if (Cleaning || Ollama.IsDemo) return;
+        if (Cleaning || Processing || Ollama.IsDemo) return;
         if (Agent != AgentStatus.Ready)
         {
             if (reason == CleanReason.Manual)
@@ -105,6 +106,10 @@ public sealed partial class Supervisor
             return;
         }
         Cleaning = true;
+        var initial = SystemMemory.Current();
+        rules.Attempted(DateTime.Now, initial.Total > 0 ? 100.0 * initial.Used / initial.Total : 0,
+            initial.PhysicalPressure == SystemMemory.Level.Critical);
+        bool completed = false;
         Changed?.Invoke();
         try
         {
@@ -113,32 +118,83 @@ public sealed partial class Supervisor
                 await Ollama.ReleaseAll();
                 foreach (var e in Engines.Where(e => e.Power == Power.On && e.Model is not null)) await e.Sleep();
             }
-            var areas = Areas;
-            long before = SystemMemory.Current().Used;
+            var areas = reason == CleanReason.Manual ? Areas : CleanAreas.WorkingSets;
+            var before = MemoryReading(SystemMemory.Current());
             var keep = await Task.Run(ProtectedPids);
-            var (failed, error) = await Task.Run(() => MemoryAgent.Run(new CleanSpec(areas, keep)));
-            await Task.Delay(300);
-            long freed = Math.Max(0, before - SystemMemory.Current().Used);
-            rules.Cleaned(DateTime.Now);
-            var detail = reason.ToString().ToLowerInvariant();
-            if (error is not null)
+            var identitySample = await new ProcessMonitor().CaptureAsync(keep.ToHashSet());
+            var spec = new CleanSpec(areas, keep)
             {
-                AppLog.Write($"limpieza ({detail}) falló: {error}");
-                if (reason == CleanReason.Manual) Ollama.Error = error;
+                RequestId = Guid.NewGuid(), Selective = reason != CleanReason.Manual,
+                KeepIdentities = identitySample.Processes.Where(p => keep.Contains(p.Pid) && p.Identity.IsValid)
+                    .Select(p => p.Identity).ToArray(),
+            };
+            var result = await Task.Run(() => MemoryAgent.Run(spec));
+            while (result.Outcome == CleanOutcome.Pending && result.Completion is { } pending)
+            {
+                LastCleanResult = result;
+                Changed?.Invoke();
+                result = await pending;
+            }
+            result = result with { Before = result.Before ?? before,
+                Immediate = result.Immediate ?? MemoryReading(SystemMemory.Current()) };
+            LastCleanResult = result;
+            var detail = reason.ToString().ToLowerInvariant();
+            if (result.Outcome == CleanOutcome.Pending)
+            {
+                LastCleanResult = result;
+                Ollama.Error = tr("El agente sigue activo. La limpieza permanece pendiente.");
                 return;
             }
-            LastClean = (freed, DateTime.Now, reason);
-            Ollama.Stats.Add(new StatEvent(DateTime.Now, StatKind.Clean, null, freed, detail));
-            AppLog.Write($"limpieza ({detail}): {freed.MemoryGB()} liberados · zonas {areas}{(failed != CleanAreas.None ? $" · fallaron {failed}" : "")} · protegidos {keep.Count}");
-            if (!fromPanel)
-                Notify?.Invoke(Notice.Clean, tr("RAM liberada"), tr("%@ liberados · %@", freed.MemoryGB(), ReasonText(reason)));
+            completed = result.Completed;
+            if (result.Outcome == CleanOutcome.Failed)
+            {
+                LastCleanResult = result;
+                AppLog.Write($"limpieza ({detail}) falló: {result.Error ?? string.Join(", ", result.Errors.Select(e => e.Operation))}");
+                if (reason == CleanReason.Manual) Ollama.Error = result.Error ?? tr("Fallaron las operaciones de limpieza. Revisa el resultado y el log.");
+            }
+            await Task.Delay(TimeSpan.FromSeconds(5), cleaningLifetime.Token);
+            var five = MemoryReading(SystemMemory.Current());
+            result = result with { AfterFiveSeconds = five, Freed = result.Before!.Used - five.Used };
+            if (completed) LastClean = (result.Freed, DateTime.Now, reason);
+            LastCleanResult = result;
+            Ollama.Stats.Add(new StatEvent(DateTime.Now, StatKind.Clean, Bytes: result.Freed, Detail: detail, Clean: result));
+            AppLog.Write($"limpieza ({detail}): {result.Outcome} · cambio observado {result.Freed.MemoryGB()} · zonas {areas} · tratados {result.ProcessesTreated} · fallaron {result.Failed}");
+            if (!fromPanel && result.Outcome is CleanOutcome.Success or CleanOutcome.Partial)
+                Notify?.Invoke(Notice.Clean, result.Outcome == CleanOutcome.Partial ? tr("Limpieza parcial") : tr("Limpieza terminada"),
+                    tr("Cambio observado: %@ · %@", result.Freed.MemoryGB(), ReasonText(reason)));
+            _ = ObserveThirtySeconds(result);
+        }
+        catch (OperationCanceledException) when (cleaningLifetime.IsCancellationRequested) { }
+        catch (Exception e)
+        {
+            AppLog.Write($"limpieza: {e.Message}");
+            if (reason == CleanReason.Manual) Ollama.Error = e.Message;
         }
         finally
         {
-            Cleaning = false;
+            rules.Completed(DateTime.Now, completed);
+            Cleaning = LastCleanResult?.Outcome == CleanOutcome.Pending;
             _ = Ollama.Refresh();
             Changed?.Invoke();
         }
+    }
+
+    public static CleanMemorySample MemoryReading(SystemMemory memory) => new(DateTimeOffset.Now,
+        memory.Used, memory.Available, memory.Committed, memory.CommitLimit,
+        memory.Total > 0 ? (int)(100 * memory.Used / memory.Total) : 0,
+        memory.PhysicalPressure == SystemMemory.Level.Critical);
+
+    private async Task ObserveThirtySeconds(CleanResult result)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(25), cleaningLifetime.Token);
+            result = result with { AfterThirtySeconds = MemoryReading(SystemMemory.Current()) };
+            Ollama.Stats.UpdateClean(result);
+            if (LastCleanResult?.RequestId == result.RequestId) LastCleanResult = result;
+            Changed?.Invoke();
+        }
+        catch (OperationCanceledException) { }
     }
 
     public string ReasonText(CleanReason reason) => reason switch
@@ -152,13 +208,14 @@ public sealed partial class Supervisor
 
     private async Task CheckCleanRules()
     {
-        if (Agent != AgentStatus.Ready || Cleaning || Ollama.IsDemo) return;
+        if (Agent != AgentStatus.Ready || Cleaning || Processing || Ollama.IsDemo) return;
         rules.ThresholdPercent = CleanThreshold;
         rules.IntervalMinutes = CleanInterval;
         rules.OnCritical = Prefs.Switch(PrefKeys.CleanOnCritical);
-        var mem = Ollama.Memory;
+        var mem = SystemMemory.Current();
         double used = mem.Total > 0 ? 100.0 * mem.Used / mem.Total : 0;
-        if (rules.Sample(used, mem.Pressure == SystemMemory.Level.Critical, DateTime.Now) is { } reason)
+        if (rules.Sample(used, mem.PhysicalPressure == SystemMemory.Level.Critical, DateTime.Now,
+            mem.PhysicalPressure != SystemMemory.Level.Normal) is { } reason)
             await Clean(reason);
     }
 
@@ -166,9 +223,41 @@ public sealed partial class Supervisor
     private void CleanSoon(CleanReason reason)
     {
         if (Agent != AgentStatus.Ready) return;
-        var once = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
-        once.Tick += async (_, _) => { once.Stop(); await Clean(reason); };
-        once.Start();
+        int generation = ++gameCleanGeneration;
+        _ = WaitForGameShutdown();
+        async Task WaitForGameShutdown()
+        {
+            var deadline = System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                while (deadline.Elapsed < TimeSpan.FromSeconds(30))
+                {
+                    bool stopped = !Ollama.IsPowerActionRunning && Ollama.Power is Power.Off or Power.Missing
+                        && Engines.All(e => e.Power is Power.Off or Power.Missing && !e.IsBusy);
+                    if (stopped) stopped = await Task.Run(() => Detector.ServerPids().Count == 0
+                        && ProcessCpu.RunnerPids().Count == 0 && Procs.ByName("llama-server").Count == 0);
+                    var decision = GameCleanGate.Decide(generation == gameCleanGeneration && Game.Active && CurrentGame != null,
+                        Prefs.Switch(PrefKeys.CleanOnGame), Ollama.Error != null || Engines.Any(e => e.Error != null), stopped, deadline.Elapsed);
+                    if (decision == GameCleanDecision.Cancelled) return;
+                    if (decision == GameCleanDecision.Ready)
+                    {
+                        while (!rules.CanAttempt(DateTime.Now) || Cleaning || Processing)
+                        {
+                            if (generation != gameCleanGeneration || !Game.Active || CurrentGame is null
+                                || !Prefs.Switch(PrefKeys.CleanOnGame)) return;
+                            await Task.Delay(500, cleaningLifetime.Token);
+                        }
+                        if (Ollama.IsPowerActionRunning || Ollama.Power is Power.On or Power.Starting or Power.Stopping
+                            || Engines.Any(e => e.IsBusy || e.Power is Power.On or Power.Starting or Power.Stopping)) return;
+                        if (SystemMemory.Current().PhysicalPressure != SystemMemory.Level.Normal) await Clean(reason);
+                        return;
+                    }
+                    await Task.Delay(500, cleaningLifetime.Token);
+                }
+                AppLog.Write("limpieza al jugar omitida: los motores no confirmaron el apagado en 30 s");
+            }
+            catch (OperationCanceledException) { }
+        }
     }
 
     // MARK: Mem Reduct

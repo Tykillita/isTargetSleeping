@@ -25,6 +25,11 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Paths.cs" Link="Core\Paths.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanSpec.cs" Link="Core\CleanSpec.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanRules.cs" Link="Core\CleanRules.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\CleanSelection.cs" Link="Core\CleanSelection.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryContracts.cs" Link="Core\MemoryContracts.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\ProcessContracts.cs" Link="Core\ProcessContracts.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\ProcessMonitoring.cs" Link="Core\ProcessMonitoring.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\ProcessActions.cs" Link="Core\ProcessActions.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemReduct.cs" Link="Core\MemReduct.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\TrayMotion.cs" Link="Core\TrayMotion.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetBrain.cs" Link="Core\PetBrain.cs" />

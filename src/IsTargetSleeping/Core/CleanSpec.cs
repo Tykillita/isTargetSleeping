@@ -39,29 +39,52 @@ public enum CleanAreas
 /// El agente corre elevado: todo se valida estrictamente y lo desconocido se rechaza.
 public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Keep, bool CloseMemReduct = false)
 {
-    public const int MaxLength = 1024;
-    public const int MaxKeep = 128;
+    public const int MaxLength = 32_000;
+    public const int MaxKeep = 1024;
+    public Guid RequestId { get; init; }
+    public bool Selective { get; init; }
+    public IReadOnlyList<ProcessIdentity> KeepIdentities { get; init; } = [];
+    public string? OwnerSid { get; init; }
+    public int SessionId { get; init; } = -1;
 
     public string Format()
     {
+        if (((int)Areas & ~(int)CleanAreas.All) != 0 || Keep.Count + KeepIdentities.Count > MaxKeep
+            || Keep.Any(p => p <= 0) || KeepIdentities.Any(p => p.Pid <= 0 || p.CreatedFileTime <= 0))
+            throw new ArgumentException("Invalid clean request.");
         var sb = new StringBuilder();
         sb.Append("a=").Append(((int)Areas).ToString("x", CultureInfo.InvariantCulture));
-        if (Keep.Count > 0) sb.Append(";k=").Append(string.Join(',', Keep.Take(MaxKeep).Select(p => p.ToString(CultureInfo.InvariantCulture))));
+        if (Keep.Count > 0) sb.Append(";k=").Append(string.Join(',', Keep.Select(p => p.ToString(CultureInfo.InvariantCulture))));
         if (CloseMemReduct) sb.Append(";x=memreduct");
-        return sb.ToString();
+        if (RequestId != Guid.Empty) sb.Append(";r=").Append(RequestId.ToString("N"));
+        if (Selective) sb.Append(";m=selective");
+        if (KeepIdentities.Count > 0) sb.Append(";i=").Append(string.Join(',', KeepIdentities.Select(p =>
+            p.Pid.ToString(CultureInfo.InvariantCulture) + ":" + p.CreatedFileTime.ToString(CultureInfo.InvariantCulture))));
+        if (OwnerSid is not null) sb.Append(";u=").Append(OwnerSid);
+        if (SessionId >= 0) sb.Append(";s=").Append(SessionId.ToString(CultureInfo.InvariantCulture));
+        var text = sb.ToString();
+        if (Parse(text) is null) throw new ArgumentException("Invalid or oversized clean request.");
+        return text;
     }
 
     public static CleanSpec? Parse(string? text)
     {
-        if (string.IsNullOrEmpty(text) || text.Length > MaxLength) return null;
+        if (string.IsNullOrEmpty(text) || text.Length > MaxLength || text.Any(c => c > 127 || char.IsControl(c))) return null;
         CleanAreas? areas = null;
         var keep = new List<int>();
+        var identities = new List<ProcessIdentity>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        Guid requestId = Guid.Empty;
+        bool selective = false;
+        string? owner = null;
+        int session = -1;
         bool close = false;
         foreach (var part in text.Split(';'))
         {
             int eq = part.IndexOf('=');
             if (eq <= 0) return null;
             var (key, value) = (part[..eq], part[(eq + 1)..]);
+            if (!seen.Add(key)) return null;
             switch (key)
             {
                 case "a" when areas is null:
@@ -81,11 +104,38 @@ public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Kee
                 case "x" when value == "memreduct" && !close:
                     close = true;
                     break;
+                case "r":
+                    if (value.Length != 32 || !Guid.TryParseExact(value, "N", out requestId) || requestId == Guid.Empty) return null;
+                    break;
+                case "m" when value == "selective":
+                    selective = true;
+                    break;
+                case "i":
+                    foreach (var item in value.Split(','))
+                    {
+                        var fields = item.Split(':');
+                        if (fields.Length != 2 || !fields.All(f => f.Length > 0 && f.All(char.IsAsciiDigit))
+                            || !int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out int pid) || pid <= 0
+                            || !long.TryParse(fields[1], NumberStyles.None, CultureInfo.InvariantCulture, out long ticks) || ticks <= 0) return null;
+                        identities.Add(new ProcessIdentity(pid, ticks));
+                        if (identities.Count + keep.Count > MaxKeep) return null;
+                    }
+                    break;
+                case "u":
+                    if (!value.StartsWith("S-1-", StringComparison.Ordinal) || value.Length is < 5 or > 100
+                        || !value.All(c => char.IsAsciiDigit(c) || c is 'S' or '-')) return null;
+                    owner = value;
+                    break;
+                case "s":
+                    if (!value.All(char.IsAsciiDigit) || !int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out session) || session < 0) return null;
+                    break;
                 default:
                     return null;
             }
         }
-        return areas is { } a ? new CleanSpec(a, keep, close) : null;
+        if (keep.Count + identities.Count > MaxKeep || selective && (owner is null || session < 0)) return null;
+        return areas is { } a ? new CleanSpec(a, keep, close)
+            { RequestId = requestId, Selective = selective, KeepIdentities = identities, OwnerSid = owner, SessionId = session } : null;
     }
 }
 

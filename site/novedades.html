@@ -51,7 +51,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
-      <a href="#proxima" data-i18n="nov.proxima.num">Próxima</a>
+      <a href="#v1-4-0">1.4.0</a>
       <a href="#v1-3-0">1.3.0</a>
       <a href="#v1-2-0">1.2.0</a>
       <a href="#v1-1-0">1.1.0</a>
@@ -64,19 +64,37 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
-    <article class="version version--proxima" id="proxima">
+    <article class="version" id="v1-4-0">
       <div class="version-meta">
-        <div class="version-num"><span data-i18n="nov.proxima.num">Próxima</span></div>
-        <span class="version-fecha" data-i18n="nov.proxima.fecha">en desarrollo</span>
-        <span class="salto salto--proxima" data-i18n="nov.s.proxima">Próxima versión</span>
+        <div class="version-num">1.4.0</div>
+        <span class="version-fecha" data-i18n="nov.v1_4_0.fecha">en desarrollo</span>
+        <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.proxima.resumen">Cambios publicados después de la 1.3.0 que no forman parte de la app. El próximo cambio de la app abrirá aquí su versión.</p>
+        <p data-i18n="nov.v1_4_0.resumen">Reconocimiento de procesos, cierres confirmados y limpieza automática selectiva. La web y el recorrido de la app acompañan esta versión.</p>
         <div class="grupo">
           <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.proxima.nuevo1t">Web oficial</b><span data-i18n="nov.proxima.nuevo1d">Esta web, publicada en istargetsleeping.web.app: funciones, cómo funciona, instalación, preguntas, esta página de novedades y modo claro u oscuro.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.nuevo2t">Video del recorrido</b><span data-i18n="nov.proxima.nuevo2d">77 segundos por la app, en español y en inglés, con banda sonora original.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo1t">Web oficial</b><span data-i18n="nov.v1_4_0.nuevo1d">Esta web, publicada en istargetsleeping.web.app: funciones, cómo funciona, instalación, preguntas, esta página de novedades y modo claro u oscuro.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo2t">Video del recorrido</b><span data-i18n="nov.v1_4_0.nuevo2d">77 segundos por la app, en español y en inglés, con banda sonora original.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo3t">Reconocimiento de procesos</b><span data-i18n="nov.v1_4_0.nuevo3d">Las cinco aplicaciones que más RAM usan en Actividad y una ventana con todos los procesos, filtros, ordenación y detalles por PID.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo4t">Tú eliges qué cerrar</b><span data-i18n="nov.v1_4_0.nuevo4d">Finaliza una aplicación, un PID o su árbol, siempre con confirmación. Si Windows deniega el acceso, puedes reintentar con UAC. Los procesos críticos y los propios quedan bloqueados.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.cambios">Cambios</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.v1_4_0.cambios1t">Limpieza automática selectiva</b><span data-i18n="nov.v1_4_0.cambios1d">Actúa con presión física alta sobre procesos poco activos, protegiendo modelos, motores, juegos y aplicaciones en primer plano. Las zonas avanzadas quedan en la limpieza manual.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.cambios2t">El cambio real en la RAM</b><span data-i18n="nov.v1_4_0.cambios2d">Observa la memoria al terminar y a los cinco y treinta segundos. Los datos pueden subir o bajar; la ventana de procesos pausa al minimizar o cerrar.</span></div>
+            <div class="novedad novedad--ancha"><b data-i18n="nov.v1_4_0.cambios3t">El explorador, con el vidrio negro de la app</b><span data-i18n="nov.v1_4_0.cambios3d">La ventana de procesos y su confirmación usan la cabecera del panel, botones de icono, el selector segmentado de Ajustes y una tabla en tarjeta de vidrio. Solo ves las acciones que aplican a lo seleccionado.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.arreglos">Arreglos</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.v1_4_0.arreglos1t">Resultados claros</b><span data-i18n="nov.v1_4_0.arreglos1d">Distingue éxito, parcial, fallo y sin trabajo. Una limpieza pendiente bloquea otra solicitud y los fallos automáticos tienen reintentos limitados.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.arreglos2t">Reglas coordinadas</b><span data-i18n="nov.v1_4_0.arreglos2d">La presión crítica tiene prioridad; al jugar espera el apagado de los motores. Los servidores que finalizas a mano no vuelven por el vigilante ni por el modo juego.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_4_0.arreglos3t">Sin falsos «acceso denegado»</b><span data-i18n="nov.v1_4_0.arreglos3d">Si Windows ya estaba cerrando un proceso, isTargetSleeping espera un momento y lo da por finalizado en vez de pedirte permisos de administrador.</span></div>
           </div>
         </div>
       </div>
@@ -239,7 +257,7 @@
           <h2 data-i18n="pie.oss">Código abierto</h2>
           <ul>
             <li><a href="https://github.com/Tykillita/isTargetSleeping" data-i18n="pie.repo">Repositorio en GitHub</a></li>
-            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.3.0" data-i18n="pie.notas">Notas de la versión</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.4.0" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/LICENSE" data-i18n="pie.mit">Licencia MIT</a></li>
@@ -259,7 +277,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.3.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.4.0</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

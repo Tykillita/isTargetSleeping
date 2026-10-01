@@ -97,6 +97,10 @@ public sealed class OllamaController
     private bool releasing;
     /// Si el usuario quiere Ollama encendido: lo decide él, no una caída.
     private bool wantOn;
+    private bool externalTermination;
+    private int powerIntentGeneration;
+    private Task? powerOperation;
+    public bool IsPowerActionRunning => powerOperation is { IsCompleted: false };
     private DateTime lastRefresh = DateTime.Now;
     private HashSet<string> lastLoaded = [];
     /// Modelos que cargó el propio panel: no cuentan como «despertado por».
@@ -190,7 +194,7 @@ public sealed class OllamaController
 
     private async Task Watch(bool up)
     {
-        if (up && Power == Power.On && transition is null) wantOn = true;
+        if (up && Power == Power.On && transition is null && !externalTermination) wantOn = true;
         bool armed = wantOn && WatchdogEnabled && !GameMode && transition is null;
         bool serverAlive = false;
         if (!up && armed)
@@ -373,9 +377,31 @@ public sealed class OllamaController
         Turn(on);
     }
 
+    /// A confirmed external termination must not be mistaken for a crash.
+    /// The caller commits only after the managed server actually exits.
+    public Action<bool> PrepareExternalTermination()
+    {
+        int generation = powerIntentGeneration;
+        bool previous = wantOn;
+        bool previousExternal = externalTermination;
+        wantOn = false;
+        externalTermination = true;
+        return completed =>
+        {
+            // A newer power choice made while UAC or termination was pending wins.
+            if (generation != powerIntentGeneration) return;
+            wantOn = completed ? false : previous;
+            externalTermination = completed || previousExternal;
+            if (completed) { transition = null; UserPower?.Invoke(false); }
+            Changed?.Invoke();
+        };
+    }
+
     /// Encender o apagar por una regla (modo juego): no cuenta como decisión del usuario.
     public void Turn(bool on, string? napReason = null)
     {
+        powerIntentGeneration++;
+        externalTermination = false;
         error = null;
         if (Backend.Kind == BackendKind.Missing)
         {
@@ -388,7 +414,7 @@ public sealed class OllamaController
         var target = Backend;
         transition = (on ? Power.Starting : Power.Stopping, DateTime.Now);
         SetPower(on ? Power.Starting : Power.Stopping);
-        _ = Run();
+        powerOperation = Run();
 
         async Task Run()
         {

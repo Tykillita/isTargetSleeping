@@ -11,9 +11,10 @@ namespace IsTargetSleeping;
 ///  - GameOn / GameOff: modo juego (Subject: el juego).
 ///  - Download / Delete: modelos descargados o borrados (Subject: el modelo).
 ///  - Clean: RAM liberada (Bytes: lo liberado; Detail: manual, threshold, interval, critical o game).
-public enum StatKind { Nap, Wake, Crash, Restart, GiveUp, GameOn, GameOff, Download, Delete, Clean }
+public enum StatKind { Nap, Wake, Crash, Restart, GiveUp, GameOn, GameOff, Download, Delete, Clean, ProcessTerminated }
 
-public sealed record StatEvent(DateTime At, StatKind Kind, string? Subject = null, long Bytes = 0, string? Detail = null, string? Model = null);
+public sealed record StatEvent(DateTime At, StatKind Kind, string? Subject = null, long Bytes = 0, string? Detail = null, string? Model = null,
+    CleanResult? Clean = null, ProcessActionResult? ProcessAction = null);
 
 public readonly record struct StatsSummary(long Recovered, int Naps, double LoadedHours, int Restarts, long Cleaned = 0, int Cleans = 0);
 
@@ -82,6 +83,19 @@ public sealed class StatsStore
         Changed?.Invoke();
     }
 
+    public void UpdateClean(CleanResult result)
+    {
+        lock (gate)
+        {
+            int index = events.FindIndex(e => e.Clean?.RequestId == result.RequestId);
+            if (index < 0) return;
+            events[index] = events[index] with { Bytes = result.Freed, Clean = result };
+            dirty = true;
+        }
+        Save(force: true);
+        Changed?.Invoke();
+    }
+
     /// Suma el tiempo con modelo cargado (se llama en cada muestra). Guarda como
     /// mucho una vez por minuto.
     public void AddLoaded(double seconds, DateTime now)
@@ -133,7 +147,8 @@ public sealed class StatsStore
                 var day = now.Date.AddDays(-i).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 if (loaded.TryGetValue(day, out var s)) seconds += s;
             }
-            var cleans = week.Where(e => e.Kind == StatKind.Clean).ToList();
+            var cleans = week.Where(e => e.Kind == StatKind.Clean && (e.Clean is null
+                || e.Clean.Outcome is CleanOutcome.Success or CleanOutcome.Partial)).ToList();
             long cleaned = cleans.Sum(e => e.Bytes);
             return new StatsSummary(naps.Sum(e => e.Bytes) + cleaned, naps.Count, seconds / 3600, week.Count(e => e.Kind == StatKind.Restart), cleaned, cleans.Count);
         }

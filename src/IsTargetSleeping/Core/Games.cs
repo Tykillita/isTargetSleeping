@@ -284,7 +284,9 @@ public sealed class GameModeTracker
     /// El usuario encendió o apagó un motor a mano durante el juego.
     public void Touch(string engine)
     {
-        if (Active) touched.Add(engine);
+        // A process action may finish after the game has exited, while restore
+        // is deferred until its result. Preserve that manual choice as well.
+        if (Active || stopped.Count > 0) touched.Add(engine);
     }
 
     /// Al salir: los que se apagaron por el juego, no se tocaron a mano y siguen apagados.

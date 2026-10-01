@@ -46,6 +46,7 @@ public sealed partial class Supervisor
     public GameModeTracker Game { get; } = new();
     private System.Windows.Threading.DispatcherTimer? timer;
     private bool scanning;
+    private bool deferredGameExit;
     private SystemMemory.Level lastPressure = SystemMemory.Level.Normal;
     private bool pressureWarned;
 
@@ -125,8 +126,10 @@ public sealed partial class Supervisor
 
     private async Task Tick()
     {
+        ProcessMonitor.GetForegroundPid();
         foreach (var e in Engines) await e.Refresh();
         await ScanGames();
+        modelProtectionPids = await Task.Run(MemoryAgent.ModelPids);
         await CheckCleanRules();
     }
 
@@ -136,7 +139,7 @@ public sealed partial class Supervisor
 
     private async Task ScanGames()
     {
-        if (scanning) return;
+        if (scanning || Processing) return;
         scanning = true;
         try
         {
@@ -182,6 +185,14 @@ public sealed partial class Supervisor
 
     private void ExitGame()
     {
+        gameCleanGeneration++;
+        if (Processing)
+        {
+            deferredGameExit = true;
+            Ollama.GameMode = false;
+            return;
+        }
+        deferredGameExit = false;
         var game = Ollama.Stats.Last(StatKind.GameOn)?.Subject;
         Ollama.GameMode = false;
         bool restore = Prefs.Switch(PrefKeys.GameRestore);

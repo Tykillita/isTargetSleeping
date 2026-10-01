@@ -139,6 +139,7 @@ public sealed record ClientRow(string Name, string Detail, ImageSource? Icon, bo
 public sealed record HistoryRow(string Glyph, string Text, string Time, Brush GlyphBrush);
 
 public sealed record StatTile(string Value, string Label);
+public sealed record ProcessSummaryRow(string Name, string Memory, string Count, ImageSource? Icon);
 
 /// Todo lo que muestra el panel, calculado a partir del estado: la interfaz
 /// (ContentView.xaml) solo se enlaza a estas propiedades.
@@ -162,6 +163,8 @@ public sealed class PanelViewModel : INotifyPropertyChanged
 
         CornerCommand = new Command(() => Show(this.view == PanelView.Main ? PanelView.Settings : PanelView.Main));
         SideCommand = new Command(() => Show(this.view == PanelView.Activity ? PanelView.Settings : PanelView.Activity));
+        OpenProcesses = new Command(() => ProcessesRequested?.Invoke());
+        processSummaryTimer.Tick += async (_, _) => await RefreshProcessSummary();
         TogglePower = new Command(Ollama.Toggle);
         DismissError = new Command(() => Ollama.Error = null);
         DismissHotKeyError = new Command(() => Prefs.HotKeyError = null);
@@ -224,7 +227,57 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     {
         view = v;
         confirmingDelete = null;
+        UpdateProcessSampling();
         Notify();
+    }
+
+    public event Action? ProcessesRequested;
+    public ICommand OpenProcesses { get; }
+    private readonly ProcessMonitor processSummaryMonitor = new();
+    private readonly System.Windows.Threading.DispatcherTimer processSummaryTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    private bool panelVisible, summaryBusy;
+    public bool ProcessSamplingActive => panelVisible && ShowingActivity && !Ollama.IsDemo;
+    public List<ProcessSummaryRow> ProcessSummaryRows { get; private set; } = [];
+    public string ProcessesTitle => tr("Reconocimiento de procesos");
+    public string OpenProcessesLabel => tr("Ver todos los procesos");
+    public string ProcessesHint => (processSummaryUsesPrivate is { } usePrivate
+        ? (usePrivate ? tr("RAM privada residente") : tr("RAM residente total")) + " · " : "")
+        + tr("Las cinco aplicaciones con más RAM. Despliega sus procesos en la ventana para ver detalles o finalizarlos.");
+    public string ProcessesEmpty => tr("El listado se actualiza mientras esta vista está abierta.");
+    public bool NoProcessSummary => ProcessSummaryRows.Count == 0;
+    private bool? processSummaryUsesPrivate;
+
+    public void SetPanelVisible(bool visible)
+    {
+        panelVisible = visible;
+        UpdateProcessSampling();
+    }
+
+    private void UpdateProcessSampling()
+    {
+        if (ProcessSamplingActive) { processSummaryTimer.Start(); _ = RefreshProcessSummary(); }
+        else processSummaryTimer.Stop();
+    }
+
+    private async Task RefreshProcessSummary()
+    {
+        if (!ProcessSamplingActive || summaryBusy) return;
+        summaryBusy = true;
+        try
+        {
+            var sample = await processSummaryMonitor.CaptureAsync(Supervisor.GetProcessProtectionPids());
+            var icons = await AppIcons.LoadAsync(sample.Groups.Take(5).Select(g => g.Path));
+            if (!ProcessSamplingActive) return;
+            processSummaryUsesPrivate = sample.UsesPrivateWorkingSet;
+            ProcessSummaryRows = sample.Groups.Where(g => g.RamBytes.HasValue).Take(5).Select(g =>
+                new ProcessSummaryRow(g.Name, g.RamBytes!.Value.MemoryGB(), tr("%d procesos", g.Count),
+                    g.Path != null ? icons.GetValueOrDefault(g.Path) : null)).ToList();
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessSummaryRows)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NoProcessSummary)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessesHint)));
+        }
+        catch (Exception e) { AppLog.Write($"muestreo de procesos: {e.Message}"); }
+        finally { summaryBusy = false; }
     }
 
     private Theme T => Theme.Current;
@@ -461,12 +514,15 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     private SystemMemory Mem => Ollama.Memory;
     private long ModelRam => Ollama.ModelRam;
 
-    public string PressureText => Mem.Pressure switch
+    public string PressureText => Mem.CommitCritical && Mem.PhysicalPressure == SystemMemory.Level.Normal
+        ? tr("presión crítica de memoria comprometida") : Mem.Pressure switch
     {
         SystemMemory.Level.Normal => tr("presión normal"),
         SystemMemory.Level.Warning => tr("presión alta"),
         _ => tr("presión crítica"),
     };
+    public bool HasCommitPressure => Mem.CommitCritical && Mem.PhysicalPressure == SystemMemory.Level.Normal;
+    public string CommitPressureHint => tr("El compromiso de memoria está cerca del límite; la RAM física disponible es suficiente. No inicia limpiezas automáticas.");
 
     public Brush PressureBrush => B(Mem.Pressure switch
     {
@@ -545,8 +601,17 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string CleanAndSleepLabel => tr("Liberar RAM y dormir los modelos");
     public bool IsCleaning => Supervisor.Cleaning;
     public bool CleanIdle => !Supervisor.Cleaning;
-    public bool HasLastClean => Supervisor.LastClean is not null;
-    public string LastCleanText => Supervisor.LastClean is { } c
+    public bool HasLastClean => Supervisor.LastCleanResult is not null || Supervisor.LastClean is not null;
+    public string LastCleanText => Supervisor.LastCleanResult is { } result
+        ? result.Outcome switch
+        {
+            CleanOutcome.Failed => tr("La limpieza falló"),
+            CleanOutcome.Partial => tr("Limpieza parcial · cambio observado %@", result.Freed.MemoryGB()),
+            CleanOutcome.NoWork => tr("Sin procesos adecuados para limpiar"),
+            CleanOutcome.Pending => tr("Limpieza pendiente: el agente sigue activo"),
+            _ => tr("Cambio observado: %@ a los 5 s", result.Freed.MemoryGB()),
+        }
+        : Supervisor.LastClean is { } c
         ? tr("%@ liberados · %@", c.Freed.MemoryGB(), Supervisor.Ago(c.At))
         : "";
 
@@ -616,6 +681,37 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public bool HasHistory => HistoryRows.Count > 0;
     public bool NoHistory => !HasHistory;
     public string HistoryEmpty => tr("Sin eventos todavía.");
+    public bool HasCleanObservation => Supervisor.LastCleanResult is { Before: not null };
+    public string CleanObservationTitle => tr("Resultado de la limpieza");
+    private static string AreaText(CleanAreas area) => area switch
+    {
+        CleanAreas.WorkingSets => tr("Memoria de trabajo de las apps"),
+        CleanAreas.SystemFileCache => tr("Caché de archivos del sistema"),
+        CleanAreas.StandbyLowPriority => tr("Lista en espera de prioridad baja"),
+        CleanAreas.Standby => tr("Lista en espera completa"),
+        CleanAreas.ModifiedList => tr("Páginas modificadas"),
+        CleanAreas.CombineLists => tr("Combinar páginas iguales"),
+        CleanAreas.RegistryCache => tr("Caché del registro"),
+        CleanAreas.ModifiedFileCache => tr("Caché de archivos modificados"), _ => area.ToString(),
+    };
+    public string CleanObservationText
+    {
+        get
+        {
+            if (Supervisor.LastCleanResult is not { Before: { } before } r) return "";
+            string Delta(CleanMemorySample? s) => s is null ? tr("pendiente") : (before.Used - s.Used).MemoryGB();
+            return tr("Cambio observado · al terminar %@ · 5 s %@ · 30 s %@", Delta(r.Immediate), Delta(r.AfterFiveSeconds), Delta(r.AfterThirtySeconds))
+                + "\n" + tr("Duración: %@ s", (r.DurationMilliseconds / 1000.0).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))
+                + "\n" + tr("%d procesos tratados · %d omitidos · %d fallidos", r.ProcessesTreated, r.ProcessesSkipped, r.ProcessesFailed)
+                + (r.Failed != CleanAreas.None ? "\n" + tr("Zonas fallidas: %@", string.Join(", ", Enum.GetValues<CleanAreas>()
+                    .Where(a => (int)a > 0 && ((int)a & ((int)a - 1)) == 0 && r.Failed.HasFlag(a)).Select(AreaText))) : "")
+                + (r.Error is not null ? "\n" + r.Error : "")
+                + (r.Errors.Count > 0 ? "\n" + string.Join("\n", r.Errors.Take(8).Select(e =>
+                    $"{(Enum.TryParse<CleanAreas>(e.Operation, out var area) ? AreaText(area) : e.Operation == "Privilege" ? tr("Privilegio") : e.Operation)} {e.Target} · PID {e.Pid?.ToString() ?? "—"} · Win32 {e.Win32Error?.ToString() ?? "—"} · NTSTATUS {e.NtStatus?.ToString("X8") ?? "—"}")) : "")
+                + (r.Errors.Count > 8 ? "\n" + tr("%d errores adicionales en el informe del agente", r.Errors.Count - 8) : "")
+                + "\n" + tr("Memoria disponible: %@ · comprometida: %@ / %@", Mem.Available.MemoryGB(), Mem.Committed.MemoryGB(), Mem.CommitLimit.MemoryGB());
+        }
+    }
 
     private void BuildActivity()
     {
@@ -654,6 +750,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             StatKind.GameOn => ("", tr("Empezaste a jugar a %@", e.Subject ?? ""), T.Secondary),
             StatKind.GameOff => ("", tr("Terminaste de jugar a %@", e.Subject ?? ""), T.Secondary),
             StatKind.Download => ("", tr("Descargaste %@ · %@", e.Subject ?? "", gb), T.Secondary),
+            StatKind.ProcessTerminated => ("", tr("Finalización de %@ · %@", e.Subject ?? tr("procesos"), ProcessOutcomeText(e.ProcessAction?.Outcome)), T.Secondary),
+            StatKind.Clean when e.Clean?.Outcome == CleanOutcome.Failed => ("", tr("La limpieza falló"), T.Danger),
+            StatKind.Clean when e.Clean?.Outcome == CleanOutcome.NoWork => ("", tr("Sin procesos adecuados para limpiar"), T.Secondary),
+            StatKind.Clean when e.Clean != null => ("", tr("Limpieza · cambio observado %@", e.Bytes.MemoryGB()), T.Secondary),
             StatKind.Clean => ("", e.Detail == "manual"
                 ? tr("Liberaste %@ de RAM", e.Bytes.MemoryGB())
                 : tr("Limpieza automática · %@", e.Bytes.MemoryGB()), T.Secondary),
@@ -661,6 +761,13 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         };
         return new HistoryRow(glyph, text, Supervisor.Ago(e.At), B(color));
     }
+
+    private static string ProcessOutcomeText(ProcessActionOutcome? outcome) => outcome switch
+    {
+        ProcessActionOutcome.Success => tr("completada"), ProcessActionOutcome.Partial => tr("parcial"),
+        ProcessActionOutcome.NoWork => tr("sin trabajo"), ProcessActionOutcome.Pending => tr("pendiente"),
+        ProcessActionOutcome.Cancelled => tr("cancelada"), _ => tr("fallida"),
+    };
 
     // MARK: ajustes
 
@@ -725,14 +832,14 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public bool AgentBusy => Supervisor.AgentBusy;
     public string? AgentErrorText => Supervisor.AgentError;
     public bool HasAgentError => Supervisor.AgentError is not null;
-    public string AreasTitle => tr("Qué liberar");
+    public string AreasTitle => tr("Zonas para limpieza manual");
     public List<SwitchRow> AreaRows { get; private set; } = [];
     public string ThresholdTitle => tr("Al pasar de este uso de RAM");
     public List<Segment> ThresholdSegments { get; private set; } = [];
     public string IntervalTitle => tr("Cada");
     public List<Segment> IntervalSegments { get; private set; } = [];
     public List<SwitchRow> CleanRuleRows { get; private set; } = [];
-    public string ProtectionHint => tr("Nunca toca la memoria de los modelos (Ollama, llama.cpp, LM Studio) ni la del juego en curso: su próxima respuesta no se ralentiza.");
+    public string ProtectionHint => tr("La limpieza automática es selectiva y solo actúa con presión física alta. Protege modelos, juego, aplicación en primer plano y sus descendientes. Las zonas avanzadas se aplican a la limpieza manual.");
 
     public bool ShowMemReduct => Supervisor.MemReductInstalled;
     public string MemReductDetail
@@ -974,7 +1081,8 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             (CleanAreas.RegistryCache, tr("Caché del registro"), tr("Recomendado.")),
             (CleanAreas.ModifiedFileCache, tr("Caché de archivos modificados"), tr("Escribe a disco lo pendiente de cada volumen.")),
         ];
-        AreaRows = areaList.Select((a, i) => new SwitchRow(a.Title, a.Hint, areas.HasFlag(a.Area),
+        AreaRows = areaList.Select((a, i) => new SwitchRow(a.Title,
+            a.Area == CleanAreas.WorkingSets ? a.Hint : tr("Avanzado · %@", a.Hint), areas.HasFlag(a.Area),
             new Command(() => Supervisor.ToggleArea(a.Area)), i > 0)).ToList();
         ThresholdSegments = Choices([0, 50, 60, 70, 80, 90], Supervisor.CleanThreshold, m => $"{m} %", m => Supervisor.CleanThreshold = m);
         IntervalSegments = Choices([0, 5, 10, 15, 30, 60], Supervisor.CleanInterval, m => $"{m} min", m => Supervisor.CleanInterval = m);

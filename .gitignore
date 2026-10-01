@@ -9,3 +9,4 @@ site/media/
 _site/
 .firebase/
 firebase-debug.log
+artifacts/

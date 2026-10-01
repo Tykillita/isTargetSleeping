@@ -52,7 +52,7 @@
 <section class="hero">
   <div class="contenedor">
     <img class="hero-icono" src="media/istargetsleeping-icon.svg" alt="Ícono de isTargetSleeping" width="104" height="104">
-    <p class="eyebrow" data-i18n="hero.eyebrow">Nuevo · Versión 1.3.0, con mascotas</p>
+    <p class="eyebrow" data-i18n="hero.eyebrow">Nuevo · Versión 1.4.0, reconoce tus procesos</p>
     <h1 data-i18n="hero.titulo">Tus modelos trabajan cuando les hablas. El resto del tiempo, duermen.</h1>
     <p class="hero-sub" data-i18n="hero.sub">isTargetSleeping vive junto al reloj de Windows. Enciende y apaga Ollama con un clic, duerme al modelo cuando deja de generar y te devuelve la RAM y la VRAM.</p>
     <div class="hero-cta">
@@ -62,7 +62,7 @@
       </a>
       <a class="enlace" href="#como-funciona" data-i18n="cta.como">Así funciona</a>
     </div>
-    <p class="hero-meta" data-i18n="hero.meta">Gratis y de código abierto · Versión 1.3.0 · Windows 10 y 11 · x64 y ARM64</p>
+    <p class="hero-meta" data-i18n="hero.meta">Gratis y de código abierto · Versión 1.4.0 · Windows 10 y 11 · x64 y ARM64</p>
 
     <div class="escritorio" aria-label="El panel de isTargetSleeping abierto en el escritorio de Windows" data-i18n-aria="hero.escritorio">
       <img class="ventana ventana--ajustes" data-src-lang="media/settings-preview-{lang}.png" src="media/settings-preview-es.png" alt="" loading="lazy">
@@ -237,13 +237,25 @@
 
       <article class="tarjeta s3 revela">
         <p class="eyebrow" data-i18n="ram.eyebrow">Liberar RAM</p>
-        <h3 data-i18n="ram.titulo">Mem Reduct, pero respetando al modelo.</h3>
-        <p data-i18n="ram.texto">Limpia memoria de trabajo, caché de archivos y listas en espera, proceso a proceso, sin tocar los runners de Ollama ni tu juego. Puede importar tus ajustes de Mem Reduct.</p>
+        <h3 data-i18n="ram.titulo">Limpieza selectiva cuando hace falta.</h3>
+        <p data-i18n="ram.texto">Con presión física alta, recorta la RAM de procesos poco activos y protege modelos, juegos y tu aplicación en primer plano. La limpieza manual conserva las zonas avanzadas de Mem Reduct.</p>
         <div class="ram-antes">
           <div class="ram-col"><small data-i18n="ram.antes">Antes</small><div class="medidor-barra"><i class="modelo" style="width:18%"></i><i class="resto" style="width:62%"></i></div></div>
           <div class="ram-col"><small data-i18n="ram.despues">Después</small><div class="medidor-barra"><i class="modelo" style="width:18%"></i><i class="resto" style="width:31%"></i></div></div>
         </div>
-        <p class="ram-nota" data-i18n="ram.nota">el modelo conserva su memoria · la siguiente respuesta sale a toda velocidad</p>
+        <p class="ram-nota" data-i18n="ram.nota">ejemplo ilustrativo · observa el cambio al terminar y a los 5 y 30 segundos</p>
+      </article>
+
+      <article class="tarjeta tarjeta--hielo s3 revela">
+        <p class="eyebrow" data-i18n="proc.eyebrow">Reconocimiento de procesos</p>
+        <h3 data-i18n="proc.titulo">La RAM, aplicación por aplicación.</h3>
+        <p data-i18n="proc.texto">Actividad muestra las cinco que más consumen. Abre la ventana completa, ordena por RAM o CPU, filtra y despliega cada PID con sus detalles.</p>
+        <ul class="minilista">
+          <li><span data-i18n="proc.app">Finalizar aplicación</span><span data-i18n="proc.grupo">grupo y descendientes</span></li>
+          <li><span data-i18n="proc.pid">Finalizar proceso</span><span data-i18n="proc.uno">solo el PID elegido</span></li>
+          <li><span data-i18n="proc.arbol">Finalizar árbol</span><span data-i18n="proc.hijos">PID y descendientes</span></li>
+        </ul>
+        <p class="ram-nota" data-i18n="proc.nota">cierre forzado con confirmación · UAC si Windows deniega el acceso</p>
       </article>
 
       <article class="tarjeta s2 revela">
@@ -402,7 +414,7 @@
       <div class="paso revela">
         <div class="paso-num">1</div>
         <h3 data-i18n="inst.p1">Descárgala</h3>
-        <p><code>isTargetSleeping-1.3.0-setup-x64.exe</code></p>
+        <p><code>isTargetSleeping-1.4.0-setup-x64.exe</code></p>
       </div>
       <div class="paso revela">
         <div class="paso-num">2</div>
@@ -417,14 +429,14 @@
     </div>
 
     <div class="descargas revela">
-      <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.3.0/isTargetSleeping-1.3.0-setup-x64.exe">
+      <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.4.0/isTargetSleeping-1.4.0-setup-x64.exe">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
         <span data-i18n="cta.windows">Descargar para Windows</span>
       </a>
       <div class="descargas-alt">
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.3.0/isTargetSleeping-1.3.0-win-x64.zip" data-i18n="inst.zip">Portable x64 (.zip)</a>
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.3.0/isTargetSleeping-1.3.0-setup-arm64.exe" data-i18n="inst.arm">Instalador ARM64</a>
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.3.0/isTargetSleeping-1.3.0-win-arm64.zip" data-i18n="inst.armZip">Portable ARM64 (.zip)</a>
+        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.4.0/isTargetSleeping-1.4.0-win-x64.zip" data-i18n="inst.zip">Portable x64 (.zip)</a>
+        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.4.0/isTargetSleeping-1.4.0-setup-arm64.exe" data-i18n="inst.arm">Instalador ARM64</a>
+        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.4.0/isTargetSleeping-1.4.0-win-arm64.zip" data-i18n="inst.armZip">Portable ARM64 (.zip)</a>
       </div>
       <p class="descargas-meta" data-i18n="inst.meta">~65 MB · Windows 10 (2004+) u 11 · necesita Ollama · se descarga de GitHub Releases</p>
     </div>
@@ -433,7 +445,7 @@
       <summary data-i18n="inst.verificar">Verifica la descarga (opcional)</summary>
       <div class="verificar-cuerpo">
         <div class="terminal">
-          <pre><span class="t-prompt">PS&gt;</span> Get-FileHash .\isTargetSleeping-1.3.0-setup-x64.exe -Algorithm SHA256</pre>
+          <pre><span class="t-prompt">PS&gt;</span> Get-FileHash .\isTargetSleeping-1.4.0-setup-x64.exe -Algorithm SHA256</pre>
         </div>
         <div class="hash">
           <span class="hash-nombre">setup-x64.exe</span>
@@ -551,7 +563,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q5">¿Necesita permisos de administrador?</summary>
-        <div class="respuesta"><p data-i18n="faq.a5">No para lo normal: se instala y corre como tu usuario. Solo pide UAC al activar el agente que libera RAM (una vez) o si Ollama corre como servicio de Windows.</p></div>
+        <div class="respuesta"><p data-i18n="faq.a5">Se instala y corre como tu usuario. Pide UAC al activar o actualizar el agente de RAM, si Ollama corre como servicio, o si eliges reintentar una finalización de procesos como administrador. La consulta de procesos funciona sin el agente.</p></div>
       </details>
       <details>
         <summary data-i18n="faq.q6">¿Qué les pasa a mis apps cuando el modelo duerme?</summary>
@@ -587,11 +599,11 @@
     <img src="media/istargetsleeping-icon.svg" alt="" width="88" height="88">
     <h2 data-i18n="cierre.titulo">Que tu modelo descanse.</h2>
     <p data-i18n="cierre.texto">Gratis para Windows. Sin cuentas. Despierto cuando le hablas, dormido cuando no.</p>
-    <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.3.0/isTargetSleeping-1.3.0-setup-x64.exe">
+    <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.4.0/isTargetSleeping-1.4.0-setup-x64.exe">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
       <span data-i18n="cta.windows">Descargar para Windows</span>
     </a>
-    <p class="hero-meta" data-i18n="cierre.meta">Versión 1.3.0 · Windows 10 y 11 · x64 y ARM64</p>
+    <p class="hero-meta" data-i18n="cierre.meta">Versión 1.4.0 · Windows 10 y 11 · x64 y ARM64</p>
   </div>
 </section>
 
@@ -624,7 +636,7 @@
           <h2 data-i18n="pie.oss">Código abierto</h2>
           <ul>
             <li><a href="https://github.com/Tykillita/isTargetSleeping" data-i18n="pie.repo">Repositorio en GitHub</a></li>
-            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.3.0" data-i18n="pie.notas">Notas de la versión</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.4.0" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/LICENSE" data-i18n="pie.mit">Licencia MIT</a></li>
@@ -644,7 +656,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.3.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.4.0</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

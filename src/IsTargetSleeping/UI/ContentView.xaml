@@ -236,6 +236,8 @@
                     </DockPanel>
 
                     <ui:MemoryBar Margin="0,8,0,0" Used="{Binding UsedFraction}" Model="{Binding ModelFraction}" />
+                    <TextBlock Text="{Binding CommitPressureHint}" Margin="0,6,0,0" TextWrapping="Wrap" FontSize="11"
+                               Foreground="{DynamicResource Warm}" Visibility="{Binding HasCommitPressure, Converter={StaticResource Visible}}" />
 
                     <DockPanel Margin="0,8,0,0">
                         <TextBlock DockPanel.Dock="Right" Text="{Binding UsedLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
@@ -559,6 +561,37 @@
                     </DockPanel>
                 </StackPanel>
             </Border>
+
+            <TextBlock Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}" Padding="11,9">
+                <StackPanel>
+                    <TextBlock Text="{Binding ProcessesHint}" Style="{StaticResource Hint}" />
+                    <TextBlock Text="{Binding ProcessesEmpty}" Style="{StaticResource Hint}" Margin="0,6,0,0"
+                               Visibility="{Binding NoProcessSummary, Converter={StaticResource Visible}}" />
+                    <ItemsControl ItemsSource="{Binding ProcessSummaryRows}" Margin="0,5,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:ProcessSummaryRow}">
+                                <DockPanel Margin="0,4">
+                                    <Image DockPanel.Dock="Left" Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0" />
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Memory}" Style="{StaticResource MonoSmall}" VerticalAlignment="Center" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Count}" FontSize="10" Foreground="{DynamicResource Muted}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{Binding OpenProcessesLabel}" Command="{Binding OpenProcesses}" Style="{StaticResource Bordered}"
+                            HorizontalAlignment="Stretch" Margin="0,8,0,0" AutomationProperties.Name="{Binding OpenProcessesLabel}" />
+                </StackPanel>
+            </Border>
+            <StackPanel Visibility="{Binding HasCleanObservation, Converter={StaticResource Visible}}">
+                <TextBlock Text="{Binding CleanObservationTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+                <Border Style="{StaticResource CardBox}" Padding="11,9">
+                    <TextBlock Text="{Binding CleanObservationText}" Style="{StaticResource Hint}" TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
 
             <TextBlock Text="{Binding ClientsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="11,9">

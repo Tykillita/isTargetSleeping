@@ -203,26 +203,51 @@ public sealed class Sparkline : FrameworkElement
 public static class AppIcons
 {
     private static readonly Dictionary<string, ImageSource?> cache = new(StringComparer.OrdinalIgnoreCase);
+    [System.Runtime.InteropServices.DllImport("ole32.dll")]
+    private static extern int CoInitializeEx(IntPtr reserved, uint mode);
+    [System.Runtime.InteropServices.DllImport("ole32.dll")]
+    private static extern void CoUninitialize();
 
     public static ImageSource? For(string? path)
     {
-        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
-        if (cache.TryGetValue(path, out var known)) return known;
-        ImageSource? image = null;
-        var info = new Win32.SHFILEINFO();
-        if (Win32.SHGetFileInfo(path, 0, ref info, System.Runtime.InteropServices.Marshal.SizeOf<Win32.SHFILEINFO>(),
-                Win32.SHGFI_ICON | Win32.SHGFI_SMALLICON) != IntPtr.Zero && info.hIcon != IntPtr.Zero)
+        if (string.IsNullOrEmpty(path)) return null;
+        lock (cache)
         {
+            if (cache.TryGetValue(path, out var known)) return known;
+            if (cache.Count >= 2048) cache.Remove(cache.Keys.First());
+            if (!File.Exists(path)) return cache[path] = null;
+            ImageSource? image = null;
+            var info = new Win32.SHFILEINFO();
+            if (Win32.SHGetFileInfo(path, 0, ref info, System.Runtime.InteropServices.Marshal.SizeOf<Win32.SHFILEINFO>(),
+                    Win32.SHGFI_ICON | Win32.SHGFI_SMALLICON) != IntPtr.Zero && info.hIcon != IntPtr.Zero)
+            {
+                try
+                {
+                    image = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(info.hIcon, Int32Rect.Empty,
+                        System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                    image.Freeze();
+                }
+                catch { }
+                finally { Win32.DestroyIcon(info.hIcon); }
+            }
+            return cache[path] = image;
+        }
+    }
+
+    public static Task<IReadOnlyDictionary<string, ImageSource?>> LoadAsync(IEnumerable<string?> paths)
+    {
+        var files = paths.OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        return Task.Run<IReadOnlyDictionary<string, ImageSource?>>(() =>
+        {
+            int initialized = CoInitializeEx(IntPtr.Zero, 0);
             try
             {
-                image = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(info.hIcon, Int32Rect.Empty,
-                    System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-                image.Freeze();
+                if (initialized < 0 && initialized != unchecked((int)0x80010106))
+                    return files.ToDictionary(path => path, _ => (ImageSource?)null, StringComparer.OrdinalIgnoreCase);
+                return files.ToDictionary(path => path, path => For(path), StringComparer.OrdinalIgnoreCase);
             }
-            catch { }
-            finally { Win32.DestroyIcon(info.hIcon); }
-        }
-        return cache[path] = image;
+            finally { if (initialized >= 0) CoUninitialize(); }
+        });
     }
 }
 

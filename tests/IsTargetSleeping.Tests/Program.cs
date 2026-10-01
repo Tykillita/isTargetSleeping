@@ -274,7 +274,7 @@ Check("rechaza zonas desconocidas, PIDs raros, claves repetidas o inventadas",
     CleanSpec.Parse("a=1ff") is null && CleanSpec.Parse("a=e7;k=12a") is null && CleanSpec.Parse("a=e7;k=-1") is null
     && CleanSpec.Parse("a=e7;a=01") is null && CleanSpec.Parse("a=e7;cmd=calc") is null && CleanSpec.Parse("a=e7;x=calc") is null
     && CleanSpec.Parse("k=1") is null && CleanSpec.Parse("") is null && CleanSpec.Parse("a=e7;k=1 2") is null);
-Check("rechaza una orden demasiado larga", CleanSpec.Parse("a=e7;k=" + string.Join(',', Enumerable.Repeat("123456789", 120))) is null);
+Check("rechaza una orden demasiado larga", CleanSpec.Parse("a=e7;k=" + new string('1', CleanSpec.MaxLength)) is null);
 Check("códigos de salida del agente", AgentExit.IsDone(AgentExit.Done | 0x08) && AgentExit.Failed(AgentExit.Done | 0x08) == CleanAreas.Standby
     && !AgentExit.IsDone(AgentExit.NotElevated) && !AgentExit.IsDone(0));
 
@@ -307,6 +307,12 @@ crit.Sample(80, false, At(700));
 Check("tras volver a normal, vuelve a actuar", crit.Sample(97, true, At(800)) == CleanReason.Critical);
 Check("todo apagado: nunca", new CleanRuleTracker(t0).Sample(99, true, At(9999)) is null);
 
+Section("Coordinación de limpieza y compatibilidad");
+CleanCoordinationTests.Run(Check);
+Section("Procesos y finalización");
+ProcessTests.Run(Check);
+Section("Informes y protocolo del agente");
+MemoryAgentTests.Run(Check);
 Section("Mem Reduct");
 var ini = """
 [memreduct]

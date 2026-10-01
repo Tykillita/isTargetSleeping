@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Security;
 using System.Security.Principal;
 using System.Text;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace IsTargetSleeping.Agent;
 
@@ -25,6 +27,7 @@ public static class Program
             return args switch
             {
                 ["--clean", var spec] => Clean(spec),
+                ["--terminate", var spec] => Terminate(spec),
                 ["--install", var sid, .. var rest] => Install(sid, rest.Contains("--close-memreduct")),
                 ["--uninstall"] => Uninstall(),
                 _ => AgentExit.BadSpec,
@@ -43,14 +46,45 @@ public static class Program
     {
         if (CleanSpec.Parse(text) is not { } spec) return AgentExit.BadSpec;
         if (spec.CloseMemReduct) CloseMemReduct();
-        var failed = MemoryCleaner.Clean(spec.Areas, spec.Keep.ToHashSet());
-        return AgentExit.Done | (int)failed;
+        CleanResult result;
+        try { result = MemoryCleaner.Clean(spec); }
+        catch (Exception e)
+        {
+            result = new(0, spec.Areas, e.Message)
+            { RequestId = spec.RequestId, Requested = spec.Areas, Outcome = CleanOutcome.Failed,
+                Errors = [new("Clean", Message: e.Message)] };
+        }
+        if (spec.RequestId != Guid.Empty) AgentReports.Write(result);
+        return AgentExit.Done | (int)result.Failed;
+    }
+
+    private static int Terminate(string text)
+    {
+        if (ProcessActionProtocol.Parse(text) is not { } request) return AgentExit.BadSpec;
+        // UAC launches only the trusted installed agent. The scheduled task always
+        // prepends --clean, and its strict parser rejects this separate protocol.
+        var expected = Path.Combine(InstallDir, "isTargetSleeping.MemoryAgent.exe");
+        if (!string.Equals(Path.GetFullPath(Environment.ProcessPath!), Path.GetFullPath(expected), StringComparison.OrdinalIgnoreCase))
+            return AgentExit.BadSpec;
+        ProcessActionResult result;
+        try { result = ProcessActions.Execute(request); }
+        catch (Exception e)
+        {
+            var now = DateTimeOffset.UtcNow;
+            result = new(request.Id, ProcessActionOutcome.Failed, now, now,
+                request.Targets.Select(t => new ProcessTargetResult(t, ProcessTargetOutcome.Failed, e.Message)).ToArray());
+        }
+        AgentReports.Write(result);
+        return result.Outcome is ProcessActionOutcome.Success or ProcessActionOutcome.NoWork ? 0 : 1;
     }
 
     /// Cierra Mem Reduct (corre como administrador: la app normal no puede). Solo el
     /// memreduct.exe instalado en Program Files.
     private static void CloseMemReduct()
     {
+        var installedPaths = new[] { Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolder.ProgramFilesX86 }
+            .Select(folder => Path.Combine(Environment.GetFolderPath(folder), "Mem Reduct", "memreduct.exe"))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var p in Process.GetProcessesByName("memreduct"))
         {
             using (p)
@@ -58,7 +92,8 @@ public static class Program
                 try
                 {
                     var path = p.MainModule?.FileName ?? "";
-                    if (path.EndsWith(@"\Mem Reduct\memreduct.exe", StringComparison.OrdinalIgnoreCase)) p.Kill();
+                    if (installedPaths.Contains(path) && ProcessMonitor.QueryIdentity(p.Id) is { } identity)
+                        ProcessActions.Execute(new(Guid.NewGuid(), ProcessActionMode.Single, [identity]));
                 }
                 catch { }
             }
@@ -73,6 +108,9 @@ public static class Program
         if (!sid.StartsWith("S-1-5-", StringComparison.Ordinal) || sid.Length > 100 || !sid.All(c => char.IsAsciiDigit(c) || c is 'S' or '-'))
             return AgentExit.BadSpec;
         Directory.CreateDirectory(InstallDir);
+        SecureDirectory(InstallDir);
+        Directory.CreateDirectory(AgentReports.DirectoryPath);
+        SecureDirectory(AgentReports.DirectoryPath);
         var target = Path.Combine(InstallDir, Path.GetFileName(Environment.ProcessPath!));
         if (!string.Equals(Path.GetFullPath(Environment.ProcessPath!), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase))
         {
@@ -89,6 +127,29 @@ public static class Program
         try { File.Delete(xml); } catch { }
         if (code == 0 && closeMemReduct) CloseMemReduct();
         return code;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool ConvertStringSecurityDescriptorToSecurityDescriptor(string text, uint revision,
+        out IntPtr descriptor, out uint size);
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool SetFileSecurity(string path, uint information, IntPtr descriptor);
+    [DllImport("kernel32.dll")] private static extern IntPtr LocalFree(IntPtr memory);
+    private static void SecureDirectory(string path)
+    {
+        // Protected DACL: administrators and SYSTEM write; normal users only read
+        // and traverse. Children inherit the same permissions (including reports).
+        if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Agent directory must not be a reparse point.");
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptor(
+            "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)", 1, out var descriptor, out _))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+        try
+        {
+            if (!SetFileSecurity(path, 0x80000004 /* DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION */, descriptor))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+        finally { LocalFree(descriptor); }
     }
 
     /// La tarea: sin disparadores (solo se lanza a petición), con los privilegios más

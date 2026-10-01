@@ -9,6 +9,12 @@ public readonly record struct SystemMemory(long Total, long Installed, long Used
 {
     public enum Level { Normal, Warning, Critical }
 
+    public long Available => Math.Max(0, Total - Used);
+    public long Committed { get; init; }
+    public long CommitLimit { get; init; }
+    public Level PhysicalPressure { get; init; }
+    public bool CommitCritical => CommitLimit > 0 && (double)Committed / CommitLimit >= 0.97;
+
     private static readonly IntPtr lowMemory = Win32.CreateMemoryResourceNotification(0 /* LowMemoryResourceNotification */);
 
     public static SystemMemory Current()
@@ -26,11 +32,17 @@ public readonly record struct SystemMemory(long Total, long Installed, long Used
         double commit = s.ullTotalPageFile > 0 ? 1 - (double)s.ullAvailPageFile / s.ullTotalPageFile : 0;
         // La RAM física disponible manda. El commit solo cuenta cerca del límite:
         // CUDA reserva mucho sin usarlo y el archivo de paginación puede crecer.
-        var pressure = low || s.dwMemoryLoad >= 95 || commit >= 0.97 ? Level.Critical
+        var physical = low || s.dwMemoryLoad >= 95 ? Level.Critical
             : s.dwMemoryLoad >= 85 ? Level.Warning
             : Level.Normal;
+        var pressure = commit >= 0.97 ? Level.Critical : physical;
 
-        return new SystemMemory(total, Math.Max(installed, total), used, pressure);
+        return new SystemMemory(total, Math.Max(installed, total), used, pressure)
+        {
+            PhysicalPressure = physical,
+            CommitLimit = (long)s.ullTotalPageFile,
+            Committed = (long)(s.ullTotalPageFile - Math.Min(s.ullTotalPageFile, s.ullAvailPageFile)),
+        };
     }
 }
 

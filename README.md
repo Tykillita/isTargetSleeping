@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.3.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -60,7 +60,8 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | ⏻ | **Turn on and off** | The big button in the panel, or **Ctrl+Alt+O** from any app. |
 | 🔍 | **Detects your install** | The Ollama app, a Windows service (NSSM, WinSW, `sc create`…), a scheduled task or a manual `ollama serve`. It stops Ollama the same way it starts. |
 | 🧹 | **Frees idle memory** | After 5, 15, 30 or 60 minutes without generating, it unloads the model. Ollama stays on and reloads it with the next message. **Ctrl+Alt+S** puts it to sleep right now. |
-| 🧽 | **Free RAM** | Mem Reduct's cleanup built in (working sets, file cache, standby lists…) — by button, **Ctrl+Alt+L**, over X % or every N minutes — but it never touches the models or your game. It can import and replace Mem Reduct. |
+| 🧽 | **Free RAM** | Selective automatic cleanup when physical RAM pressure is high; manual advanced areas through the button or **Ctrl+Alt+L**. Protects models, games and foreground applications, and can import and replace Mem Reduct. |
+| 🔎 | **Process explorer** | Activity shows the five applications using the most RAM. Open the full window to inspect RAM/CPU, expand PIDs, search and filter, or forcibly end an application, process or tree after confirmation. |
 | 🎮 | **Game mode** | Open a game from Steam, Epic, Riot, EA, GOG, Rockstar or Xbox (or one you add) and Ollama turns off to give it the RAM and VRAM; quit and it comes back the same way. |
 | 🛟 | **Watchdog** | If Ollama crashes or hangs, it restarts it with the same mechanism (up to 3 times in 10 minutes). |
 | 🔔 | **Notifications** | Native Windows notifications when a model falls asleep, Ollama crashes, memory runs critical, a game starts or a download finishes — each one with its own switch. |
@@ -239,9 +240,18 @@ counters Task Manager uses. The runners' VRAM is the model's share. It's hidden 
 
 ### Freeing RAM (instead of Mem Reduct)
 
+Automatic rules run only with **high or critical physical RAM pressure**. They select at most ten low-activity
+processes of your user/session with at least 128 MiB resident RAM. Models, engines, the active game, foreground
+applications and their descendants are protected. Threshold and interval settings remain yours; critical pressure
+takes priority and at least three minutes separate automatic attempts. Failures retry after three and six minutes,
+up to three attempts per episode. Game cleanup waits for confirmed engine shutdown, up to thirty seconds, and
+cancels if shutdown fails or the game ends.
+
+**Manual cleanup** retains the areas selected in Settings, including these advanced operations:
+
 | Area | How | Default |
 |---|---|:-:|
-| Apps' working sets | `EmptyWorkingSet` **per process**, skipping the models and the game | ✅ |
+| Apps' working sets | `EmptyWorkingSet` **per process**, skipping protected applications and descendants | ✅ |
 | System file cache | `NtSetSystemInformation(SystemFileCacheInformationEx)` | ✅ |
 | Low-priority standby list | `SystemMemoryListInformation` → `MemoryPurgeLowPriorityStandbyList` | ✅ |
 | Full standby list | → `MemoryPurgeStandbyList` (slow: Windows reads it back from disk) | ⬜ |
@@ -251,21 +261,41 @@ counters Task Manager uses. The runners' VRAM is the model's share. It's hidden 
 | Modified file cache | `FlushFileBuffers` on each fixed volume | ✅ |
 
 The defaults are Mem Reduct's (`ReductMask2 = 0xE7`); the bits are the same, so its settings import as they are.
-Mem Reduct empties **every** working set at once; isTargetSleeping trims process by process and skips Ollama's
-runners, `llama-server`, LM Studio and the current game — measured: the loaded model's runner kept its ~700 MB while
-other apps dropped from 371 to 168 MB, and the next reply ran at full speed with no reload.
+The panel distinguishes success, partial completion, failure and no work. Memory is observed before cleanup,
+immediately afterward and at five/thirty seconds; changes can be negative and include other activity on the PC.
+Weekly cleanup totals use the five-second observation. These values describe an observed change, rather than a
+guarantee of sustained savings or faster applications. Standby memory is already available to Windows.
 
 **Administrator rights, once.** These calls need admin, and isTargetSleeping runs as a normal user. *Turn on* in
-Settings › Free RAM extracts a small separate console program, `isTargetSleeping.MemoryAgent.exe` (13 MB, single
-file, nothing unpacked to `%TEMP%`), and runs it with UAC once: it copies itself to `C:\Program Files\isTargetSleeping\cleaner`
+Settings › Free RAM extracts a separate program, `isTargetSleeping.MemoryAgent.exe`, and runs it with UAC once:
+it copies itself to `C:\Program Files\isTargetSleeping\cleaner`
 (only admins can write there, so the elevated task never runs code a normal process could replace) and registers the
 task `\isTargetSleeping\Liberar RAM` — no triggers, highest privileges, your user only. Each cleanup starts that task
-with a compact, strictly validated order as its argument (`a=e7;k=1234,5678`: areas and protected PIDs); the app
-measures RAM before and after and reads the failed areas from the task's exit code. No files are written by the
-elevated side. *Remove* (or the uninstaller) deletes the task and the folder.
+with a strictly validated request ID and process identities. Its report is written atomically in the protected
+agent folder. Cleanup and process actions are serialized, and a still-running cleanup remains pending instead of
+allowing another request. *Remove* (or the uninstaller) deletes the task and the folder. Update an older agent from
+Settings before using the new operations.
 
-**Rules:** over X % of RAM (it has to drop 5 points before it fires again, so a loaded model doesn't cause a loop),
-every N minutes, on critical pressure, when a game starts; at least 3 minutes between automatic cleanups.
+### Recognizing and ending processes
+
+**Activity › Process explorer** lists the five applications using the most RAM. **View all processes** opens an
+independent window with RAM, physical RAM share, CPU, user and status, grouped by executable path, owner and session.
+Expand an application to see each PID, path, parent and committed memory. Search name, executable, path or PID;
+filter windowed/background/system/protected applications and minimum RAM; sort RAM, CPU, name, count or PID.
+On supported Windows versions RAM is **private resident RAM**; older versions explicitly show **total resident
+RAM**. Unreadable metrics stay unavailable and process totals can differ from global RAM.
+
+The table updates every two seconds while visible, stops when minimized or closed, and has **Pause** and
+**Refresh**. Size, position and sorting persist; searches and filters do not. Queries and normal termination work
+without installing the agent.
+
+**End application** targets its grouped processes and descendants. **End process** targets only the selected PID;
+**End process tree** includes its descendants. Each forced close confirms PIDs and memory and can lose unsaved work.
+Critical Windows processes and isTargetSleeping/its agent are blocked. Creation-time validation and individual
+exit checks protect against PID reuse and report partial failures. Access denied offers **Retry as administrator**
+with its own UAC prompt and a separate agent command; the cleanup task cannot terminate arbitrary processes.
+Managed servers ended here stay manually stopped. External services may restart a process; the inspector
+identifies it without disabling services or startup entries.
 
 **Mem Reduct:** if it's installed, Settings shows its setup (read from `%APPDATA%\Henry++\Mem Reduct\memreduct.ini`).
 *Import settings* copies its %, interval, areas and notification. *Replace* imports, closes it (through the agent: it
@@ -342,8 +372,10 @@ Installations from before 1.3.0 without an update repository need one manual upg
   24 hours without credentials. Clicking **Update** downloads the package and checksum from GitHub, including
   GitHub's `release-assets.githubusercontent.com`/`objects.githubusercontent.com` download hosts. These requests
   expose your IP and app user agent to GitHub; no models, prompts, settings or usage history are uploaded.
-- Admin rights are used only by the memory agent, only to free RAM (and to close Mem Reduct if you replace it), and
-  only after you turn it on.
+- The agent uses administrator rights for enabled RAM cleanup, replacing Mem Reduct and explicitly confirmed
+  process-termination retries. Each elevated termination requires its own UAC approval.
+- Process names, PIDs, paths, users and memory/CPU metrics are read locally; the inspector sends none of them to
+  an external service.
 - No accounts, telemetry or analytics. Web pages open only when clicked: Ollama downloads, credits and GitHub
   release notes/downloads.
 - Settings live in `%LOCALAPPDATA%\isTargetSleeping\settings.json`, the 90-day history in `stats.json` next to it and
