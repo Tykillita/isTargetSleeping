@@ -237,10 +237,21 @@ const EN = {
   'cierre.meta': 'Version 1.3.0 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
-  'pie.afiliado': 'Not affiliated with Ollama',
-  'pie.releases': 'Releases',
   'pie.novedades': 'What’s new',
   'pie.cambios': 'Changelog',
+  'pie.lema': 'Watches your local models and puts them to sleep when they stop working. Your RAM, back.',
+  'pie.descargar': 'Download for Windows',
+  'pie.aria': 'Footer',
+  'pie.producto': 'Product',
+  'pie.oss': 'Open source',
+  'pie.repo': 'GitHub repository',
+  'pie.notas': 'Release notes',
+  'pie.fallo': 'Report a bug',
+  'pie.quien': 'Who makes it',
+  'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
+  'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
+  'pie.version': 'Version 1.3.0',
+  'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
   // ---------- Novedades (site/novedades.html) ----------
@@ -401,15 +412,22 @@ function aplicarIdioma(lang) {
   btn.textContent = lang === 'es' ? 'EN' : 'ES';
   btn.setAttribute('aria-label', lang === 'es' ? 'Switch to English' : 'Cambiar a español');
 
+  document.querySelectorAll('.pie-idioma [data-lang]').forEach((b) => {
+    b.setAttribute('aria-current', b.dataset.lang === lang ? 'true' : 'false');
+  });
+
   pintarBotonTema();
   if ($('siesta')) actualizarSiesta();
   if ($('reloj')) actualizarReloj();
 }
 
-$('idioma').addEventListener('click', () => {
-  const nuevo = idioma === 'es' ? 'en' : 'es';
+function elegirIdioma(nuevo) {
   try { localStorage.setItem('its-lang', nuevo); } catch (e) { /* sin almacenamiento */ }
   aplicarIdioma(nuevo);
+}
+$('idioma').addEventListener('click', () => elegirIdioma(idioma === 'es' ? 'en' : 'es'));
+document.querySelectorAll('.pie-idioma [data-lang]').forEach((b) => {
+  b.addEventListener('click', () => elegirIdioma(b.dataset.lang));
 });
 
 // ---------- Tema claro / oscuro ----------

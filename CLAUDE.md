@@ -22,8 +22,9 @@ Al subirla, actualiza **todo a la vez**:
 - `VERSION` — única fuente: los `.csproj` leen `<Version>` de este archivo y el instalador la recibe de `package.ps1`.
 - Placa de versión en `README.md` y `README.es.md` (`badge/version-x.y.z`).
 - `CHANGELOG.md` (Keep a Changelog): mueve `[Unreleased]` a `## [x.y.z] — AAAA-MM-DD` y deja un `[Unreleased]` vacío.
-- Web: las cadenas "Versión x.y.z" de `site/index.html` y su traducción en el diccionario `EN` de `site/site.js`,
-  y los enlaces `releases/download/vX.Y.Z/isTargetSleeping-X.Y.Z-…`. Los SHA-256 de `site/index.html` solo
+- Web: las cadenas "Versión x.y.z" de `site/index.html` y del pie de `site/index.html` y `site/novedades.html`
+  (clave `pie.version`), su traducción en el diccionario `EN` de `site/site.js`, los enlaces
+  `releases/download/vX.Y.Z/isTargetSleeping-X.Y.Z-…` y el de "Notas de la versión" (`releases/tag/vX.Y.Z`). Los SHA-256 de `site/index.html` solo
   cambian cuando hay paquetes nuevos en `dist/` (`.sha256` junto a cada archivo).
 - `site/novedades.html` (ver abajo).
 
