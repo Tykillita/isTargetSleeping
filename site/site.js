@@ -280,7 +280,7 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
-  'nov.v1_4_0.fecha': "in development",
+  'nov.v1_4_0.fecha': "Oct 1, 2026",
   'nov.v1_4_0.resumen': "Process explorer, confirmed termination and selective automatic cleanup. The website and app tour accompany this version.",
   'nov.v1_4_0.nuevo1t': "Official website",
   'nov.v1_4_0.nuevo1d': "This site, live at istargetsleeping.web.app: features, how it works, install, FAQ, this what’s-new page and light or dark mode.",
