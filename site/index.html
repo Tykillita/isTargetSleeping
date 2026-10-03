@@ -371,7 +371,34 @@
       <h3 data-i18n="como.juegoTitulo">Y cuando abres un juego</h3>
       <p data-i18n="como.juegoTexto">Detecta juegos de tus bibliotecas que tengan ventana visible. Lanzadores, anticheats y Wallpaper Engine no cuentan. Si enciendes Ollama a mano mientras juegas, lo respeta.</p>
       <div class="figura-lienzo">
-        <img data-src-lang="media/game-mode-{lang}.svg" src="media/game-mode-es.svg" alt="Línea de tiempo: abres un juego, a los 5 s Ollama se apaga; sales y a los 30 s vuelve solo lo que estaba encendido" data-i18n-alt="como.juegoAlt" loading="lazy">
+        <figure class="game-diagram" aria-labelledby="game-diagram-title">
+          <figcaption class="game-diagram__caption">
+            <span data-i18n="como.juegoDiagramaKicker">Modo juego</span>
+            <strong id="game-diagram-title" data-i18n="como.juegoDiagramaTitulo">Tu juego se queda la RAM y la VRAM; Ollama vuelve solo</strong>
+          </figcaption>
+          <p class="game-diagram__band" data-i18n="como.juegoDiagramaBanda">RAM y VRAM libres para el juego</p>
+          <ol class="game-diagram__steps">
+            <li class="game-diagram__step">
+              <strong data-i18n="como.juegoPaso1">Abres un juego</strong>
+              <p data-i18n="como.juegoPaso1Texto">Ventana visible de Steam, Epic, Riot, EA, GOG, Xbox…</p>
+              <span class="game-diagram__state">Ollama ON</span>
+            </li>
+            <li class="game-diagram__step game-diagram__step--off">
+              <strong>+5 s</strong>
+              <p data-i18n="como.juegoPaso2Texto">Se apagan Ollama y los otros motores.</p>
+              <span class="game-diagram__state">Ollama OFF</span>
+            </li>
+            <li class="game-diagram__step">
+              <strong data-i18n="como.juegoPaso3">Sales</strong>
+              <p data-i18n="como.juegoPaso3Texto">Encender igual y No es un juego siguen en el panel.</p>
+            </li>
+            <li class="game-diagram__step game-diagram__step--back">
+              <strong>+30 s</strong>
+              <p data-i18n="como.juegoPaso4Texto">Vuelve solo lo que estaba encendido, por el mismo camino.</p>
+              <span class="game-diagram__state">Ollama ON</span>
+            </li>
+          </ol>
+        </figure>
       </div>
     </div>
   </div>

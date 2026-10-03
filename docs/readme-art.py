@@ -295,30 +295,28 @@ def idle_flow(lang):
 
 def game_mode(lang):
     t = T[lang]
-    svg = Svg(960, 330, t['game_title'], ' → '.join(e[0] for e in t['game']))
+    svg = Svg(960, 360, t['game_title'], ' → '.join(e[0] for e in t['game']))
     svg.frame(t['game_kicker'], t['game_title'])
-    xs = [80, 330, 600, 860]
-    line_y = 152
-    svg.add(f'<rect x="{xs[1]}" y="{line_y - 16}" width="{xs[3] - xs[1]}" height="32" rx="16" fill="{BLUE}" fill-opacity=".12" stroke="{BLUE}" stroke-opacity=".35"/>')
-    svg.text((xs[1] + xs[2]) // 2, line_y + 5, t['game_band'], 13, 600, fill=BLUE, anchor='middle')
+    xs = [130, 363, 597, 830]
+    line_y = 178
+    svg.add(f'<rect x="{xs[1] - 24}" y="122" width="{xs[3] - xs[1] + 48}" height="32" rx="16" fill="{BLUE}" fill-opacity=".12" stroke="{BLUE}" stroke-opacity=".35"/>')
+    svg.text((xs[1] + xs[3]) / 2, 143, t['game_band'], 13, 600, fill=BLUE, anchor='middle')
     svg.add(f'<path d="M{xs[0]} {line_y}H{xs[1]}" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>')
+    svg.add(f'<path d="M{xs[1]} {line_y}H{xs[3]}" stroke="{BLUE}" stroke-opacity=".4" stroke-width="2"/>')
     for i, (head, a, b) in enumerate(t['game']):
         x = xs[i]
-        on = i in (0, 3)
         color = BLUE if i == 3 else ('#8a8f98' if i == 1 else INK)
         svg.add(f'<circle cx="{x}" cy="{line_y}" r="9" fill="#0b0c0f" stroke="{color}" stroke-width="2.5"/>')
         if i in (1, 3):
             svg.add(f'<circle cx="{x}" cy="{line_y}" r="3.5" fill="{color}"/>')
-        anchor = 'start' if i == 0 else 'end' if i == 3 else 'middle'
-        tx = x - 10 if i == 0 else x + 10 if i == 3 else x
-        svg.text(tx, 210, head, 16, 650, fill=color if i else INK, anchor=anchor)
-        svg.text(tx, 236, a, 13, fill='#ebebf5', opacity=.66, anchor=anchor)
-        svg.text(tx, 255, b, 13, fill='#ebebf5', opacity=.66, anchor=anchor)
+        svg.text(x, 222, head, 16, 650, fill=color if i else INK, anchor='middle')
+        svg.text(x, 248, a, 13, fill='#ebebf5', opacity=.66, anchor='middle')
+        svg.text(x, 267, b, 13, fill='#ebebf5', opacity=.66, anchor='middle')
     # Ollama on/off chips under the line
-    for x, label, color in ((xs[0], 'Ollama ON', BLUE), (xs[1] + 60, 'Ollama OFF', '#8a8f98'), (xs[3] - 70, 'Ollama ON', BLUE)):
-        svg.add(f'<rect x="{x - 2}" y="282" width="94" height="24" rx="12" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".1"/>')
-        svg.add(f'<circle cx="{x + 12}" cy="294" r="3.5" fill="{color}"/>')
-        svg.text(x + 22, 298, label, 11, 600, opacity=.8, spacing=.6)
+    for x, label, color in ((xs[0], 'Ollama ON', BLUE), (xs[1], 'Ollama OFF', '#8a8f98'), (xs[3], 'Ollama ON', BLUE)):
+        svg.add(f'<rect x="{x - 47}" y="298" width="94" height="24" rx="12" fill="#fff" fill-opacity=".06" stroke="#fff" stroke-opacity=".1"/>')
+        svg.add(f'<circle cx="{x - 33}" cy="310" r="3.5" fill="{color}"/>')
+        svg.text(x - 23, 314, label, 11, 600, opacity=.8, spacing=.6)
     svg.save(os.path.join(IMAGES, f'game-mode-{lang}.svg'))
 
 
