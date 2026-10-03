@@ -81,9 +81,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 
 ## 📥 Install
 
-**1.5.0 is in development.** This README describes the current source. The latest published download is
-**1.4.0**; the new memory overview, cleanup rules and pet animations will arrive with 1.5.0.
-
+**1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 
 **Portable:** download `isTargetSleeping-<version>-win-x64.zip` (or `-arm64`), unzip it anywhere and run
@@ -431,7 +429,7 @@ Optional signing uses the existing `SIGN_CERT_THUMBPRINT` mechanism for local bu
 
 Keep only the eight files for the version being verified in the assets folder. If `dist` contains older packages,
 copy the current eight to a separate folder and pass `-AssetsDirectory <folder>` to `verify-release.ps1`.
-The [1.5.0 preparation record](docs/release-1.5.0.md) lists validation and the remaining publication steps.
+The [1.5.0 preparation record](docs/release-1.5.0.md) lists the validation it went through.
 
 Set `SIGN_CERT_THUMBPRINT` before `package.ps1` to sign the `.exe` and the installer with `signtool`; unsigned
 builds trigger SmartScreen.

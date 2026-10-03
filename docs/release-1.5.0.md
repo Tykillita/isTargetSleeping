@@ -1,8 +1,9 @@
 # Preparación de isTargetSleeping 1.5.0
 
 Preparada el **2 de octubre de 2026** en Windows x64, con .NET SDK 10.0.401 e Inno Setup 6.7.3.
-La versión pública comprobada en GitHub sigue siendo **1.4.0**. La 1.5.0 está en desarrollo;
-esta preparación no publica una release ni despliega la web.
+Esta preparación no publica una release ni despliega la web. Ambas cosas se hicieron después, sobre el
+commit `96d95cb` con la etiqueta `v1.5.0`: la release quedó publicada el 2 de octubre de 2026 (03:55 UTC)
+y la web, con los SHA-256 de esos archivos, en el mismo push.
 
 ## Contenido
 
@@ -34,18 +35,17 @@ Los ocho archivos listos para adjuntar están en **`artifacts/release-1.5.0/`**;
 del changelog están en `artifacts/release-notes-1.5.0.md`. Estas salidas están ignoradas por Git.
 Los paquetes anteriores de `dist/` se conservan; no deben mezclarse con los ocho archivos de esta versión.
 
-## Publicación pendiente
+## Publicación
 
-1. Revisar y subir el commit preparado a `main`; crear y subir la etiqueta **`v1.5.0`** sobre ese commit.
-2. El workflow `prepare-release` ejecutará sus pruebas, generará los ocho archivos y creará un **borrador**.
-   Revisar y publicar el borrador desde GitHub. Los hashes de CI pueden diferir de los paquetes locales;
-   para la web se usan siempre los `.sha256` de los archivos efectivamente publicados.
-3. Comprobar las cuatro descargas publicadas. Cambiar en `site/index.html`, `site/novedades.html` y
-   `site/site.js` los enlaces, hashes, fecha real y avisos de desarrollo por los datos de 1.5.0.
-   Retirar también el aviso de desarrollo de ambos README; conservar sus placas 1.5.0.
-4. Subir esa actualización de documentación. El workflow de Firebase despliega al cambiar la web en `main`
-   si está configurado su secreto; como alternativa, `firebase deploy --only hosting` ejecuta el mismo
-   `site/build.ps1` previo. Confirmar el contenido en <https://istargetsleeping.web.app>.
+Los cuatro pasos se cumpliendo en este orden:
+
+1. `96d95cb` subido a `main` con la etiqueta **`v1.5.0`**; el workflow `prepare-release` pasó sus pruebas,
+   generó los ocho archivos y creó el borrador. Los hashes de CI difieren de los paquetes locales, así que
+   para la web se usaron los `.sha256` de los archivos efectivamente publicados.
+2. Borrador revisado y publicado; las cuatro descargas de 1.5.0 responden 200.
+3. `site/index.html`, `site/novedades.html` y `site/site.js` actualizados con los enlaces, los hashes y la
+   fecha real, y sin avisos de desarrollo; en ambos README se retiró el aviso conservando la placa 1.5.0.
+4. Ese push de documentación lo despliega el workflow de Firebase en <https://istargetsleeping.web.app>.
 
 Hasta publicar la release, los botones conservan **1.4.0**, evitando enlaces a archivos todavía inexistentes.
 

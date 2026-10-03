@@ -74,9 +74,8 @@ https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
 
 ## 📥 Instalar
 
-**1.5.0 está en desarrollo.** Este README describe el código actual. La última descarga publicada es
-**1.4.0**; el nuevo resumen de memoria, las reglas de limpieza y las animaciones llegarán con 1.5.0.
-
+**1.5.0 ya está publicada** (2 de octubre de 2026): memoria ahora en Actividad, reglas de limpieza
+automática completas y mascotas renovadas.
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
 **Portable:** descarga `isTargetSleeping-<versión>-win-x64.zip` (o `-arm64`), descomprímelo donde quieras y abre
@@ -355,7 +354,7 @@ versiones sin firmar.
 
 La carpeta de archivos verificados debe contener solo los ocho de esa versión. Si `dist` conserva paquetes
 anteriores, copia los ocho actuales a otra carpeta y usa `-AssetsDirectory <carpeta>` en `verify-release.ps1`.
-El [informe de preparación de 1.5.0](docs/release-1.5.0.md) recoge las comprobaciones y los pasos de publicación.
+El [informe de preparación de 1.5.0](docs/release-1.5.0.md) recoge las comprobaciones que pasó.
 Configura `SIGN_CERT_THUMBPRINT` antes de empaquetar para firmar el ejecutable y el instalador con `signtool`;
 las compilaciones sin firma pueden activar SmartScreen.
 
