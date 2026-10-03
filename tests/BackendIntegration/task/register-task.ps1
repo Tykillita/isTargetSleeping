@@ -35,9 +35,8 @@ $env:OLLAMA_NUM_PARALLEL = '1'
 $env:OLLAMA_MAX_LOADED_MODELS = '1'
 $child = Start-Process -FilePath '__BINARY__' -ArgumentList 'serve' -WorkingDirectory $runRoot -PassThru -WindowStyle Hidden -RedirectStandardOutput (Join-Path $runRoot 'server.stdout.log') -RedirectStandardError (Join-Path $runRoot 'server.stderr.log')
 $shellPath = (Get-Process -Id $PID).Path
-$auxiliary = Start-Process -FilePath $shellPath -ArgumentList '-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -Command "Start-Sleep -Seconds 120"' -WorkingDirectory $runRoot -PassThru -WindowStyle Hidden
 $wrapperProcess = [Diagnostics.Process]::GetCurrentProcess()
-$evidence = [ordered]@{ Pid=$child.Id; CreatedUtcTicks=$child.StartTime.ToUniversalTime().Ticks; Executable='__BINARY__'; Port=__PORT__; StartedUtc=[DateTime]::UtcNow.ToString('o'); Wrapper=[ordered]@{ Pid=$PID; CreatedUtcTicks=$wrapperProcess.StartTime.ToUniversalTime().Ticks; Executable=$shellPath }; Auxiliary=[ordered]@{ Pid=$auxiliary.Id; CreatedUtcTicks=$auxiliary.StartTime.ToUniversalTime().Ticks; Executable=$shellPath } }
+$evidence = [ordered]@{ Pid=$child.Id; CreatedUtcTicks=$child.StartTime.ToUniversalTime().Ticks; Executable='__BINARY__'; Port=__PORT__; StartedUtc=[DateTime]::UtcNow.ToString('o'); Wrapper=[ordered]@{ Pid=$PID; CreatedUtcTicks=$wrapperProcess.StartTime.ToUniversalTime().Ticks; Executable=$shellPath } }
 $childTemporary = Join-Path $runRoot 'child.json.tmp'
 [IO.File]::WriteAllText($childTemporary, ($evidence | ConvertTo-Json -Depth 6))
 [IO.File]::Move($childTemporary,(Join-Path $runRoot 'child.json'),$true)

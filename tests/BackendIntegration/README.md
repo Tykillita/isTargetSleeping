@@ -11,7 +11,7 @@ Run `.github/workflows/backend-integration.yml` on GitHub Actions. It builds the
 app and the small native SCM test host, creates exclusive manual/no-trigger
 fixtures on loopback ports 59152/59153, and checks two complete start/stop cycles,
 the API, empty model lists, PID/creation identities, repeated actions and cleanup.
-The task also checks termination of its wrapper and auxiliary child. JSON reports
+The task also checks termination of its wrapper and any observed descendants of Ollama. JSON reports
 and logs are retained in the `backend-integration-evidence` artifact.
 
 **Use a disposable Windows VM.** The service requires an elevated token and runs

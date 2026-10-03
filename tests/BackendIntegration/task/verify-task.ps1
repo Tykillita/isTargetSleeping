@@ -34,7 +34,7 @@ function Api-Version {
 function Owned-Child-Alive($Child) {
     try { $process = Get-Process -Id $Child.Pid -ErrorAction Stop } catch { return $false }
     try {
-        if ($process.StartTime.ToUniversalTime().Ticks -ne $Child.CreatedUtcTicks -or $process.Path -ne $Child.Executable) { throw 'Child identity changed; PID reused' }
+        if ($process.StartTime.ToUniversalTime().Ticks -ne $Child.CreatedUtcTicks -or $process.Path -ne $Child.Executable) { return $false } # The retained identity exited; a reused PID is unrelated.
         return !$process.HasExited
     } finally { $process.Dispose() }
 }
@@ -58,8 +58,42 @@ function Assert-No-Foreign-Ollama($ExpectedChild = $null) {
         } finally { $process.Dispose() }
     }
 }
-function Fixture-Exited($Child) {
-    return !(Owned-Child-Alive $Child) -and !(Owned-Child-Alive $Child.Wrapper) -and !(Owned-Child-Alive $Child.Auxiliary)
+function Ollama-Descendants($Child) {
+    # Only real descendants of the server count. A helper launched beside Ollama
+    # by the task wrapper is its sibling, not part of the Ollama process tree.
+    if (!(Owned-Child-Alive $Child)) { throw 'Ollama identity exited before descendant sampling' }
+    $rows = @(Get-CimInstance Win32_Process -ErrorAction Stop)
+    $known = [Collections.Generic.Dictionary[int,long]]::new()
+    $known.Add([int]$Child.Pid,[long]$Child.CreatedUtcTicks)
+    $result = [Collections.Generic.List[object]]::new()
+    do {
+        $added = $false
+        foreach ($row in $rows) {
+            $processId = [int]$row.ProcessId
+            $parentId = [int]$row.ParentProcessId
+            if ($known.ContainsKey($processId) -or !$known.ContainsKey($parentId) -or $null -eq $row.CreationDate) { continue }
+            $snapshotTicks = $row.CreationDate.ToUniversalTime().Ticks
+            if ($snapshotTicks -lt ($known[$parentId] - 9)) { continue }
+            try { $process = [Diagnostics.Process]::GetProcessById($processId) } catch [ArgumentException] { continue }
+            try {
+                $createdTicks = $process.StartTime.ToUniversalTime().Ticks
+                # CIM timestamps round to microseconds; refuse a different PID identity.
+                if ([Math]::Abs($createdTicks - $snapshotTicks) -gt 9) { continue }
+                $identity = [ordered]@{ Pid=$processId; CreatedUtcTicks=$createdTicks; Executable=$process.Path; ParentPid=$parentId; Name=$process.ProcessName }
+                $known.Add($processId,$createdTicks)
+                $result.Add($identity)
+                $added = $true
+            } finally { $process.Dispose() }
+        }
+    } while ($added)
+    return $result.ToArray()
+}
+function Descendants-Exited($Descendants) {
+    foreach ($identity in $Descendants) { if (Owned-Child-Alive $identity) { return $false } }
+    return $true
+}
+function Fixture-Exited($Child,$Descendants) {
+    return !(Owned-Child-Alive $Child) -and !(Owned-Child-Alive $Child.Wrapper) -and (Descendants-Exited $Descendants)
 }
 function Invoke-Cli([string]$Flag) {
     $start = [Diagnostics.ProcessStartInfo]::new($report.AppExe)
@@ -153,7 +187,7 @@ try {
     for ($cycle=1; $cycle -le $Cycles; $cycle++) {
         $childMetadataPath = Join-Path $runRoot 'child.json'
         if (Test-Path -LiteralPath $childMetadataPath) { Remove-Item -LiteralPath $childMetadataPath }
-        $cycleReport = [ordered]@{ Cycle=$cycle; StartError=$null; ApiVersion=$null; TagsCount=$null; Child=$null; StartMs=0; StopError=$null; StopMs=0; TaskStopped=$false; ChildExited=$false; DescendantsExited=$false; ApiClosed=$false }
+        $cycleReport = [ordered]@{ Cycle=$cycle; StartError=$null; ApiVersion=$null; TagsCount=$null; InferenceExercised=$false; Child=$null; OllamaDescendants=@(); DescendantCount=0; StartMs=0; StopError=$null; StopMs=0; TaskStopped=$false; ChildExited=$false; WrapperExited=$false; DescendantsExited=$false; ApiClosed=$false }
         $watch = [Diagnostics.Stopwatch]::StartNew()
         $cycleReport.StartError = Invoke-ProductionAction 'Start'
         Assert-Probe ($null -eq $cycleReport.StartError) "Cycle $cycle production Start returns success"
@@ -169,28 +203,31 @@ try {
         Assert-Probe ($cycleReport.TagsCount -eq 0) "Cycle $cycle isolated model directory has no models"
         $cycleReport.Child = Get-Content -LiteralPath $childMetadataPath -Raw | ConvertFrom-Json
         Assert-Probe (Owned-Child-Alive $cycleReport.Child) "Cycle $cycle genuine Ollama process alive with expected PID and creation time"
-        Assert-Probe ((Owned-Child-Alive $cycleReport.Child.Wrapper) -and (Owned-Child-Alive $cycleReport.Child.Auxiliary)) "Cycle $cycle task wrapper and auxiliary descendant alive"
+        Assert-Probe (Owned-Child-Alive $cycleReport.Child.Wrapper) "Cycle $cycle real task action wrapper alive"
         if ($report.Cycles.Count -gt 0) {
             $previousChild = $report.Cycles[-1].Child
-            foreach ($pair in @(@($cycleReport.Child,$previousChild),@($cycleReport.Child.Wrapper,$previousChild.Wrapper),@($cycleReport.Child.Auxiliary,$previousChild.Auxiliary))) {
+            foreach ($pair in @(@($cycleReport.Child,$previousChild),@($cycleReport.Child.Wrapper,$previousChild.Wrapper))) {
                 Assert-Probe (($pair[0].Pid -ne $pair[1].Pid) -or ($pair[0].CreatedUtcTicks -ne $pair[1].CreatedUtcTicks)) "Cycle $cycle started a fresh process identity"
             }
         }
         Assert-Probe ($cycleReport.Child.Port -eq $Port) "Cycle $cycle fixture bound to private port"
         $secondStart = Invoke-ProductionAction 'Start' $cycleReport.Child
         Assert-Probe ($null -eq $secondStart) "Cycle $cycle repeated production Start does not error"
+        $cycleReport.OllamaDescendants = @(Ollama-Descendants $cycleReport.Child)
+        $cycleReport.DescendantCount = $cycleReport.OllamaDescendants.Count
         $watch.Restart()
         $cycleReport.StopError = Invoke-ProductionAction 'Stop' $cycleReport.Child
         Assert-Probe ($null -eq $cycleReport.StopError) "Cycle $cycle production Stop returns success"
-        $stopped = Wait-Probe { !(Task-IsRunning) -and (Fixture-Exited $cycleReport.Child) -and $null -eq (Api-Version) }
+        $stopped = Wait-Probe { !(Task-IsRunning) -and (Fixture-Exited $cycleReport.Child $cycleReport.OllamaDescendants) -and $null -eq (Api-Version) }
         $watch.Stop()
         $cycleReport.StopMs = $watch.ElapsedMilliseconds
         $cycleReport.TaskStopped = !(Task-IsRunning)
         $cycleReport.ChildExited = !(Owned-Child-Alive $cycleReport.Child)
-        $cycleReport.DescendantsExited = Fixture-Exited $cycleReport.Child
+        $cycleReport.WrapperExited = !(Owned-Child-Alive $cycleReport.Child.Wrapper)
+        $cycleReport.DescendantsExited = Descendants-Exited $cycleReport.OllamaDescendants
         $cycleReport.ApiClosed = $null -eq (Api-Version)
         $report.Cycles += $cycleReport
-        Assert-Probe $stopped "Cycle $cycle task stopped, actual Ollama PID exited, API offline"
+        Assert-Probe $stopped "Cycle $cycle task stopped, action wrapper and Ollama tree exited, API offline"
         $secondStop = Invoke-ProductionAction 'Stop'
         Assert-Probe ($null -eq $secondStop) "Cycle $cycle repeated production Stop does not error"
     }
