@@ -139,6 +139,8 @@ public sealed record ClientRow(string Name, string Detail, ImageSource? Icon, bo
 public sealed record HistoryRow(string Glyph, string Text, string Time, Brush GlyphBrush);
 
 public sealed record StatTile(string Value, string Label);
+/// Una fila de «Memoria ahora»: qué es, cuánto y su barra (0 … 1).
+public sealed record MemoryRow(string Label, string Value, double Fraction, bool ShowDivider);
 public sealed record ProcessSummaryRow(string Name, string Memory, string Count, ImageSource? Icon);
 
 /// Todo lo que muestra el panel, calculado a partir del estado: la interfaz
@@ -206,11 +208,6 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         CleanAndSleep = new Command(() => _ = Supervisor.Clean(CleanReason.Manual, fromPanel: true, sleepModels: true));
         AgentAction = new Command(() => _ = Supervisor.InstallAgent());
         RemoveAgent = new Command(() => _ = Supervisor.UninstallAgent());
-        ImportMemReduct = new Command(Supervisor.ImportMemReduct);
-        AskReplaceMemReduct = new Command(() => { confirmingReplace = true; Notify(); });
-        CancelReplaceMemReduct = new Command(() => { confirmingReplace = false; Notify(); });
-        ReplaceMemReduct = new Command(() => { confirmingReplace = false; _ = Supervisor.ReplaceMemReduct(); });
-        RestoreMemReduct = new Command(() => _ = Supervisor.RestoreMemReduct());
         PullSuggestions = new[] { "llama3.2", "qwen3", "gemma3", "phi4" }
             .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; Notify(); })))
             .ToList();
@@ -328,11 +325,6 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public ICommand CleanAndSleep { get; }
     public ICommand AgentAction { get; }
     public ICommand RemoveAgent { get; }
-    public ICommand ImportMemReduct { get; }
-    public ICommand AskReplaceMemReduct { get; }
-    public ICommand CancelReplaceMemReduct { get; }
-    public ICommand ReplaceMemReduct { get; }
-    public ICommand RestoreMemReduct { get; }
 
     // MARK: cabecera
 
@@ -671,6 +663,9 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string ChartEnd => tr("ahora");
     public string ChartUsed => tr("RAM en uso");
     public string ChartModel => tr("Modelo");
+    public string MemoryNowTitle => tr("Memoria ahora");
+    public List<MemoryRow> MemoryRows { get; private set; } = [];
+    public string MemoryNowHint => tr("Comprometida: lo que los programas tienen reservado entre la RAM y los archivos de paginación. Si llega al límite, Windows no puede dar más memoria aunque quede RAM libre.");
     public string ClientsTitle => tr("Quién lo despierta");
     public List<ClientRow> ClientRows { get; private set; } = [];
     public bool HasClients => ClientRows.Count > 0;
@@ -728,6 +723,28 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             $"{(c.Wakes == 1 ? tr("1 vez") : tr("%d veces", c.Wakes))} · {Supervisor.Ago(c.Last)}",
             AppIcons.For(c.Path), i > 0)).ToList();
         HistoryRows = Ollama.Stats.Recent(12).Select(Describe).ToList();
+        MemoryRows = MemoryNow(MemoryBreakdown.Current());
+    }
+
+    /// Lo que también enseña Mem Reduct (física, paginación y caché del sistema) más la comprometida.
+    internal static List<MemoryRow> MemoryNow(MemoryBreakdown m)
+    {
+        static string Percent(double fraction) => $"{Math.Round(fraction * 100):0} %";
+        return
+        [
+            new(tr("RAM física"), m.PhysicalTotal > 0
+                ? tr("%@ · %@ libres de %@", Percent(m.PhysicalFraction), m.PhysicalAvailable.MemoryGB(), m.PhysicalTotal.MemoryGB())
+                : tr("No disponible"), m.PhysicalFraction, false),
+            new(tr("Memoria comprometida"), m.CommitLimit > 0
+                ? tr("%@ · %@ de %@", Percent(m.CommitFraction), m.Committed.MemoryGB(), m.CommitLimit.MemoryGB())
+                : tr("No disponible"), m.CommitFraction, true),
+            new(tr("Archivos de paginación"), m.PageFileTotal > 0
+                ? tr("%@ · %@ de %@", Percent(m.PageFileFraction), m.PageFileUsed.MemoryGB(), m.PageFileTotal.MemoryGB())
+                : tr("Sin archivo de paginación"), m.PageFileFraction, true),
+            new(tr("Caché del sistema"), m.CachePeak > 0
+                ? tr("%@ · pico %@", m.CacheCurrent.MemoryGB(), m.CachePeak.MemoryGB())
+                : tr("No disponible"), m.CacheFraction, true),
+        ];
     }
 
     private HistoryRow Describe(StatEvent e)
@@ -832,39 +849,18 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public bool AgentBusy => Supervisor.AgentBusy;
     public string? AgentErrorText => Supervisor.AgentError;
     public bool HasAgentError => Supervisor.AgentError is not null;
-    public string AreasTitle => tr("Zonas para limpieza manual");
+    public string AreasTitle => tr("Zonas que se limpian");
     public List<SwitchRow> AreaRows { get; private set; } = [];
     public string ThresholdTitle => tr("Al pasar de este uso de RAM");
     public List<Segment> ThresholdSegments { get; private set; } = [];
-    public string IntervalTitle => tr("Cada");
+    public string CooldownTitle => tr("Si sigue por encima, repetir como mucho cada");
+    public List<Segment> CooldownSegments { get; private set; } = [];
+    public bool ShowCooldown => Supervisor.CleanThreshold > 0;
+    public string IntervalTitle => tr("Además, limpiar cada");
     public List<Segment> IntervalSegments { get; private set; } = [];
     public List<SwitchRow> CleanRuleRows { get; private set; } = [];
-    public string ProtectionHint => tr("La limpieza automática es selectiva y solo actúa con presión física alta. Protege modelos, juego, aplicación en primer plano y sus descendientes. Las zonas avanzadas se aplican a la limpieza manual.");
+    public string ProtectionHint => tr("Las automáticas limpian las mismas zonas que el botón. El porcentaje actúa aunque no toque el intervalo, y si la RAM sigue por encima repite tras la pausa mínima. Se protegen los modelos, el juego y la app que estás usando con sus procesos.");
 
-    public bool ShowMemReduct => Supervisor.MemReductInstalled;
-    public string MemReductDetail
-    {
-        get
-        {
-            if (Supervisor.MemReductReplaced) return tr("Reemplazado: ya no arranca con Windows y su limpieza automática está apagada.");
-            var parts = new List<string>();
-            if (Supervisor.MemReductConfig is { } c)
-            {
-                if (c.AutoEnabled) parts.Add(tr("limpia al %d %%", c.AutoPercent));
-                if (c.IntervalEnabled) parts.Add(tr("cada %d min", c.IntervalMinutes));
-            }
-            parts.Add(Supervisor.MemReductRunning ? tr("en marcha") : tr("cerrado"));
-            return string.Join(" · ", parts);
-        }
-    }
-    public string ImportLabel => tr("Importar ajustes");
-    public string ReplaceLabel => tr("Reemplazar");
-    public string RestoreLabel => tr("Volver a Mem Reduct");
-    public string ReplaceQuestion => tr("¿Importar sus ajustes, cerrarlo y quitarlo del inicio?");
-    private bool confirmingReplace;
-    public bool ShowReplaceButtons => !Supervisor.MemReductReplaced && !confirmingReplace;
-    public bool ConfirmingReplace => confirmingReplace && !Supervisor.MemReductReplaced;
-    public bool ShowRestore => Supervisor.MemReductReplaced;
 
     public string NotificationsTitle => tr("Notificaciones");
     public List<SwitchRow> NotificationRows { get; private set; } = [];
@@ -1038,7 +1034,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
                             + Prefs.Switch(PrefKeys.TrayPercent, false);
         var segSignature = $"{Ollama.IdleReleaseMinutes}#{pref}#{string.Join(",", Ollama.Mechanisms.Select(b => b.Key))}#{Prefs.Language}"
                            + $"#{string.Join(",", games)}#{string.Join(",", ignored)}#{notices}#{engineIdle}#{Supervisor.UpdatesAvailable}"
-                           + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanInterval}#{cleanSwitches}"
+                           + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanCooldown}#{Supervisor.CleanInterval}#{cleanSwitches}"
                            + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}";
         if (segSignature == segmentsSignature) return;
         segmentsSignature = segSignature;
@@ -1085,6 +1081,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             a.Area == CleanAreas.WorkingSets ? a.Hint : tr("Avanzado · %@", a.Hint), areas.HasFlag(a.Area),
             new Command(() => Supervisor.ToggleArea(a.Area)), i > 0)).ToList();
         ThresholdSegments = Choices([0, 50, 60, 70, 80, 90], Supervisor.CleanThreshold, m => $"{m} %", m => Supervisor.CleanThreshold = m);
+        CooldownSegments = Choices([1, 2, 5, 10, 15, 30], Supervisor.CleanCooldown, m => $"{m} min", m => Supervisor.CleanCooldown = m);
         IntervalSegments = Choices([0, 5, 10, 15, 30, 60], Supervisor.CleanInterval, m => $"{m} min", m => Supervisor.CleanInterval = m);
         CleanRuleRows =
         [
@@ -1110,7 +1107,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         }).ToList();
     }
 
-    /// Opciones fijas y, si el valor actual no está (p. ej. los 6 min importados de Mem Reduct), también ese.
+    /// Opciones fijas y, si el valor actual no está (p. ej. uno guardado por una versión anterior), también ese.
     private static List<Segment> Choices(int[] choices, int current, Func<int, string> label, Action<int> pick) =>
         choices.Append(current).Distinct().Order().Select(m => new Segment(
             m == 0 ? tr("Nunca") : label(m), m == current, new Command(() => pick(m)))).ToList();

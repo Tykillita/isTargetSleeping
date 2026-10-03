@@ -2,8 +2,9 @@ namespace IsTargetSleeping;
 
 /// Las comunes (Z, corazones, destellos, estrellas, polvo, sudor, lágrimas) y las de cada
 /// carácter: vapor y burbujas del baño, hojas que caen, notas al tararear, el «~» del
-/// ronroneo, el resoplido, los bits de Mira y las señales de su antena.
-public enum ParticleKind { Z, Heart, Sparkle, Star, Dust, Sweat, Tear, Steam, Bubble, Leaf, Note, Purr, Puff, Bit, Signal }
+/// ronroneo, el resoplido, los bits de Mira, las señales de su antena, las gotas que
+/// salen al sacudirse el agua y los fragmentos de datos que Mira atrae al escanear.
+public enum ParticleKind { Z, Heart, Sparkle, Star, Dust, Sweat, Tear, Steam, Bubble, Leaf, Note, Purr, Puff, Bit, Signal, Drop, Fragment }
 
 /// Dónde salen las partículas en la rejilla de cada especie: encima de la cabeza (las Z),
 /// el centro del cuerpo, el ojo, el suelo y la boca (resoplidos y notas; sin ella, bajo el ojo).
@@ -38,6 +39,7 @@ public record struct Particle(ParticleKind Kind, double X, double Y, double Vx, 
         ParticleKind.Puff => 0.8 + 0.9 * Math.Sqrt(K),
         ParticleKind.Signal => 0.6 + 1.2 * K,
         ParticleKind.Bubble => K < 0.85 ? 1 : 1.6,
+        ParticleKind.Fragment => 1 - 0.7 * K * K,
         _ => 1,
     };
 }
@@ -127,11 +129,19 @@ public sealed class PetParticles(PetAnchors anchors, int seed = 5)
                     p.X = anchors.HeadX + 7 * Math.Cos(angle);
                     p.Y = anchors.HeadY - 1 + 2 * Math.Sin(angle);
                     break;
+                case ParticleKind.Fragment:
+                {
+                    // Atraído por el ojo, cada vez más deprisa: al llegar ya casi no se ve.
+                    double k = Math.Clamp(p.Age / p.Life, 0, 1), pull = 2 + 10 * k;
+                    p.X += (p.Vx * (1 - k) + (anchors.EyeX - p.X) * pull) * dt;
+                    p.Y += (p.Vy * (1 - k) + (anchors.EyeY - p.Y) * pull) * dt;
+                    break;
+                }
                 case ParticleKind.Sparkle:
                 case ParticleKind.Signal:
                     break;
                 default:
-                    // Polvo, sudor y lágrimas: caen.
+                    // Polvo, sudor, lágrimas y gotas: caen.
                     p.Vy += 18 * dt;
                     p.X += p.Vx * dt;
                     p.Y += p.Vy * dt;
@@ -162,7 +172,14 @@ public sealed class PetParticles(PetAnchors anchors, int seed = 5)
             ParticleKind.Puff => new(kind, mx + 3, my, R(5, 7), R(-1.5, -0.5), 0, 0.7, 0),
             ParticleKind.Bit => new(kind, a.CenterX + R(-8, 8), a.CenterY - R(4, 7), 0, R(-4, -3), 0, R(0.8, 1.1), random.Next(2)),
             ParticleKind.Signal => new(kind, a.HeadX, a.HeadY, 0, 0, 0, 0.6, 0),
+            // Salen despedidas a los lados del cuerpo y caen.
+            ParticleKind.Drop => Fling(R(-1, 1) < 0 ? -1 : 1),
+            // Salen del suelo, a un lado, con un saltito hacia arriba.
+            ParticleKind.Fragment => new(kind, a.CenterX + (random.Next(2) == 0 ? -1 : 1) * R(8, 12), a.GroundY - R(0, 1.5),
+                0, R(-4, -2), 0, R(0.55, 0.7), random.Next(2)),
             _ => new(kind, a.EyeX - 2.5, a.EyeY + 1.5, R(-0.4, 0.2), 1, 0, 0.8, 0),
         };
+
+        Particle Fling(int side) => new(kind, a.CenterX + side * R(6, 10), a.CenterY + R(-4, 1), side * R(4, 7), R(-5, -2.5), 0, R(0.5, 0.75), 0);
     }
 }

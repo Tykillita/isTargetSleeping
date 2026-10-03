@@ -34,18 +34,15 @@ public enum CleanAreas
 }
 
 /// Lo que la app le pide al agente con privilegios, como un único argumento
-/// (`$(Arg0)` de la tarea programada): `a=e7;k=1234,5678;x=memreduct`.
-///  - a: zonas (hexadecimal)  · k: PIDs que no se tocan  · x=memreduct: cerrar Mem Reduct.
+/// (`$(Arg0)` de la tarea programada): `a=e7;k=1234,5678`.
+///  - a: zonas (hexadecimal)  · k: PIDs que no se tocan  · r: solicitud  · i: identidades que no se tocan.
 /// El agente corre elevado: todo se valida estrictamente y lo desconocido se rechaza.
-public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Keep, bool CloseMemReduct = false)
+public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Keep)
 {
     public const int MaxLength = 32_000;
     public const int MaxKeep = 1024;
     public Guid RequestId { get; init; }
-    public bool Selective { get; init; }
     public IReadOnlyList<ProcessIdentity> KeepIdentities { get; init; } = [];
-    public string? OwnerSid { get; init; }
-    public int SessionId { get; init; } = -1;
 
     public string Format()
     {
@@ -55,13 +52,9 @@ public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Kee
         var sb = new StringBuilder();
         sb.Append("a=").Append(((int)Areas).ToString("x", CultureInfo.InvariantCulture));
         if (Keep.Count > 0) sb.Append(";k=").Append(string.Join(',', Keep.Select(p => p.ToString(CultureInfo.InvariantCulture))));
-        if (CloseMemReduct) sb.Append(";x=memreduct");
         if (RequestId != Guid.Empty) sb.Append(";r=").Append(RequestId.ToString("N"));
-        if (Selective) sb.Append(";m=selective");
         if (KeepIdentities.Count > 0) sb.Append(";i=").Append(string.Join(',', KeepIdentities.Select(p =>
             p.Pid.ToString(CultureInfo.InvariantCulture) + ":" + p.CreatedFileTime.ToString(CultureInfo.InvariantCulture))));
-        if (OwnerSid is not null) sb.Append(";u=").Append(OwnerSid);
-        if (SessionId >= 0) sb.Append(";s=").Append(SessionId.ToString(CultureInfo.InvariantCulture));
         var text = sb.ToString();
         if (Parse(text) is null) throw new ArgumentException("Invalid or oversized clean request.");
         return text;
@@ -75,10 +68,6 @@ public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Kee
         var identities = new List<ProcessIdentity>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         Guid requestId = Guid.Empty;
-        bool selective = false;
-        string? owner = null;
-        int session = -1;
-        bool close = false;
         foreach (var part in text.Split(';'))
         {
             int eq = part.IndexOf('=');
@@ -101,14 +90,8 @@ public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Kee
                     }
                     if (keep.Count > MaxKeep) return null;
                     break;
-                case "x" when value == "memreduct" && !close:
-                    close = true;
-                    break;
                 case "r":
                     if (value.Length != 32 || !Guid.TryParseExact(value, "N", out requestId) || requestId == Guid.Empty) return null;
-                    break;
-                case "m" when value == "selective":
-                    selective = true;
                     break;
                 case "i":
                     foreach (var item in value.Split(','))
@@ -121,21 +104,12 @@ public readonly record struct CleanSpec(CleanAreas Areas, IReadOnlyList<int> Kee
                         if (identities.Count + keep.Count > MaxKeep) return null;
                     }
                     break;
-                case "u":
-                    if (!value.StartsWith("S-1-", StringComparison.Ordinal) || value.Length is < 5 or > 100
-                        || !value.All(c => char.IsAsciiDigit(c) || c is 'S' or '-')) return null;
-                    owner = value;
-                    break;
-                case "s":
-                    if (!value.All(char.IsAsciiDigit) || !int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out session) || session < 0) return null;
-                    break;
                 default:
                     return null;
             }
         }
-        if (keep.Count + identities.Count > MaxKeep || selective && (owner is null || session < 0)) return null;
-        return areas is { } a ? new CleanSpec(a, keep, close)
-            { RequestId = requestId, Selective = selective, KeepIdentities = identities, OwnerSid = owner, SessionId = session } : null;
+        if (keep.Count + identities.Count > MaxKeep) return null;
+        return areas is { } a ? new CleanSpec(a, keep) { RequestId = requestId, KeepIdentities = identities } : null;
     }
 }
 

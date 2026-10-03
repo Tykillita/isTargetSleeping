@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.4.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -60,26 +60,29 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | ⏻ | **Turn on and off** | The big button in the panel, or **Ctrl+Alt+O** from any app. |
 | 🔍 | **Detects your install** | The Ollama app, a Windows service (NSSM, WinSW, `sc create`…), a scheduled task or a manual `ollama serve`. It stops Ollama the same way it starts. |
 | 🧹 | **Frees idle memory** | After 5, 15, 30 or 60 minutes without generating, it unloads the model. Ollama stays on and reloads it with the next message. **Ctrl+Alt+S** puts it to sleep right now. |
-| 🧽 | **Free RAM** | Selective automatic cleanup when physical RAM pressure is high; manual advanced areas through the button or **Ctrl+Alt+L**. Protects models, games and foreground applications, and can import and replace Mem Reduct. |
-| 🔎 | **Process explorer** | Activity shows the five applications using the most RAM. Open the full window to inspect RAM/CPU, expand PIDs, search and filter, or forcibly end an application, process or tree after confirmation. |
+| 🧽 | **Free RAM** | Automatic cleanup when RAM goes over your percentage (repeating after a minimum pause while it stays high), every few minutes or under critical pressure; also with the button or **Ctrl+Alt+L**. Protects models, games and the app you're using. Doesn't need Mem Reduct. |
+| 🔎 | **Process explorer** | Activity shows the five applications using the most RAM. Open the full window (✕ or Esc closes it and returns to the panel) to inspect RAM/CPU, expand PIDs, search and filter, or forcibly end an application, process or tree after confirmation. |
 | 🎮 | **Game mode** | Open a game from Steam, Epic, Riot, EA, GOG, Rockstar or Xbox (or one you add) and Ollama turns off to give it the RAM and VRAM; quit and it comes back the same way. |
 | 🛟 | **Watchdog** | If Ollama crashes or hangs, it restarts it with the same mechanism (up to 3 times in 10 minutes). |
 | 🔔 | **Notifications** | Native Windows notifications when a model falls asleep, Ollama crashes, memory runs critical, a game starts or a download finishes — each one with its own switch. |
 | 📊 | **PC and GPU memory** | RAM in use (same figure as Task Manager), dedicated **VRAM** of your GPU, how much of each is the model, and memory pressure. |
 | 👀 | **Who wakes it** | Shows which app loaded the model (Obsidian, Cursor, a script…) from its connection to Ollama's port. |
-| 📈 | **Activity** | This week: GB reclaimed, naps, hours with a model loaded, restarts; a 30-minute chart and the latest events. |
+| 📈 | **Activity** | This week: GB reclaimed, naps, hours with a model loaded, restarts; a 30-minute chart, **memory now** (physical RAM, committed memory, page files and system cache, like Mem Reduct) and the latest events. |
 | 🗂️ | **Models** | Size, quantization and *vision* / *tools* tags. Load, **download** (with progress, cancellable) or **delete** them from the panel. |
 | 🧩 | **Other engines** | A standalone **llama.cpp** `llama-server` gets its own card and idle timer; **LM Studio** is supported experimentally. |
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
-| 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and sweeps while freeing RAM. Each one reacts to clicks and to your cursor in its own way. Off by default; [more below](#-pets). |
+| 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and cleans up in its own way while freeing RAM. Each one reacts to clicks and to your cursor in its own way — asleep, without leaving its bed. Off by default; [more below](#-pets). |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
 | 🔄 | **Updates** | Checks GitHub for new stable releases, shows the release notes and installs only when you click **Update** — verified with SHA-256, with automatic rollback if anything fails. |
-| 🔒 | **Private** | Only talks to Ollama on your PC. No accounts, no telemetry, no analytics. The update check (which you can turn off) is the only request that leaves your PC. |
+| 🔒 | **Private** | Talks to your local model engines. No accounts, telemetry or analytics. Optional update checks and downloads contact GitHub; process data stays on your PC. |
 | 🧾 | **Open source** | MIT licensed. |
 
 ## 📥 Install
+
+**1.5.0 is in development.** This README describes the current source. The latest published download is
+**1.4.0**; the new memory overview, cleanup rules and pet animations will arrive with 1.5.0.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 
@@ -127,7 +130,7 @@ and changes without restarting.
 
 **It acts out what Ollama is doing:**
 
-<p align="center"><img src="docs/images/pets-states-en.svg" width="100%" alt="The four pets in six states: asleep with Ollama off, eating while a model loads, typing on a laptop while generating, carrying a box while downloading, sweeping while freeing RAM and hearts when petted."></p>
+<p align="center"><img src="docs/images/pets-states-en.svg" width="100%" alt="The four pets in six states: asleep with Ollama off, eating while a model loads, typing on a laptop while generating, carrying a box while downloading, cleaning up in their own way while freeing RAM (Mira scans and compacts the data, the llama shakes her wool, the capybara scoots her bottom along the floor and the kitten washes) and hearts when petted."></p>
 
 <details>
 <summary>See as a table</summary>
@@ -141,22 +144,24 @@ and changes without restarting.
 | Model in memory | Stands alert, with idle gestures of its own |
 | Generating | Types on a tiny laptop |
 | Downloading a model | Carries a box |
-| Freeing RAM | Sweeps |
+| Freeing RAM | Cleans up in its own way (see below); if it was asleep it gets out of bed first, and goes back afterwards |
 | High · critical memory pressure | Sweats · turns coral |
 
 </details>
 
 One-shot reactions: sparkles when RAM is freed, a nap when the model goes to sleep, dizzy stars when Ollama crashes
 (sad if the watchdog gives up), a jump when clicked and hearts when you pet it (move the mouse back and forth over it).
+The sparkles close the cleanup: they arrive once it has been seen cleaning, wherever it is. **Asleep, it reacts without
+leaving its bed** — an eye half opens, an ear twitches, a bubble, a snort or a purr — and the Windows logo stays dark.
 
 **Each one has its own personality:**
 
 | Pet | Character | Signature moves | Bed |
 |---|---|---|---|
-| **Mira** | Watchful hacker — the app's own logo come to life | Sweeps a radar ring from her eye, locks a red reticle on your cursor, her antenna sends signals and bits rise while she works; a click is a radar *ping* | Blue target capsule |
-| **Llama** | Proud, curious, a bit dramatic | Trots head-high, chews sideways, hums, stretches her neck toward the cursor, carries the box under a woven blanket and snorts a little cloud when clicked; peeks over the logo like a periscope | Andean woven cushion |
-| **Capybara** | Zen | Barely flinches (a slow blink and a bubble), a bird lands on her back, balances the box on her head with the mandarin on top; doesn't hide — she leans on the logo | Steaming wooden hot tub |
-| **Orange kitten** | Playful | Crouches with dilated pupils when hovered, pounces if the cursor stays still for 1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs; shows her ears first when peeking, tail sticking out | Padded wicker basket |
+| **Mira** | Watchful hacker — the app's own logo come to life | Sweeps a radar ring from her eye, locks a red reticle on your cursor, her antenna sends signals and bits rise while she works; a click is a radar *ping*; a robot, she boots up calibrating her eye and cleans by scanning the taskbar with a beam from her eye, pulling the loose data towards her and compacting it into a cube that bursts into sparkles | Blue target capsule |
+| **Llama** | Proud, curious, a bit dramatic | No arms: she speaks with her neck, ears, hooves and woolly tail. Trots head-high, chews sideways with the food in her muzzle, types by pecking the laptop to the beat of her hooves, hums, stretches her neck toward the cursor, carries the box under a woven blanket and snorts a little cloud when clicked; shakes the dust out of her wool to clean; peeks over the logo like a periscope | Andean woven cushion |
+| **Capybara** | Zen | Barely flinches (a slow blink and a bubble), a bird lands on her back, balances the box on her head with the mandarin on top; with nothing to do she sits; while Ollama starts her crocodile arrives, she jumps on standing, sits on its back for the ride and hops off once it's on (the ride always finishes); to clean she scoots her bottom along the floor and ends up sparkling (if she was asleep, she climbs out of her tub and wrings out her fur instead); doesn't hide — she leans on the logo | Steaming wooden hot tub |
+| **Orange kitten** | Playful | Crouches with dilated pupils when hovered, pounces if the cursor stays still for 1.2 s, puffs up and swipes when clicked, grooms, kneads with purrs; a cat doesn't sweep — it washes itself; shows her ears first when peeking, tail sticking out | Padded wicker basket |
 
 **The Windows logo joins in** as part of its home: a second click-through window paints "lights" over the real logo,
 pane by pane. With Ollama off it stays exactly as Windows draws it; with Ollama on it glows softly, the glow arrives
@@ -170,8 +175,9 @@ and Settings explains why. **Reduced motion** uses one still pose per state and 
 Turning the switch off closes its window and stops its timers.
 
 To review animations without changing preferences, `--export-pet directory` writes sheets for all four species on
-light and dark backgrounds: every state, transition, idle gesture (with its particles), mouse reaction, both walking
-directions, reduced motion and a collection overview with the beds. `--snapshot output.png pet --pet llama` previews
+light and dark backgrounds: every state, transition (including cleaning from bed and awake), idle gesture (with its
+particles), mouse reaction, every reaction standing and in bed, the end of a cleanup, both walking directions, reduced
+motion and a collection overview with the beds. `--snapshot output.png pet --pet llama` previews
 one species; the IDs are `mira`, `llama`, `capybara` and `orange-cat`.
 
 ### Links
@@ -238,16 +244,27 @@ The **GPU** bar picks the adapter with the most dedicated memory (via DXGI, so a
 graphics) and reads `\GPU Adapter Memory(*)\Dedicated Usage` and `\GPU Process Memory(*)\Dedicated Usage` — the same
 counters Task Manager uses. The runners' VRAM is the model's share. It's hidden when there's no dedicated GPU.
 
+Activity's **Memory now** separates physical RAM, committed memory, page files and system cache (current/peak).
+Committed memory is what programs have reserved across RAM and page files; reaching its limit can prevent new
+allocations even with physical RAM available. Each measurement has its own bar.
+
 ### Freeing RAM (instead of Mem Reduct)
 
-Automatic rules run only with **high or critical physical RAM pressure**. They select at most ten low-activity
-processes of your user/session with at least 128 MiB resident RAM. Models, engines, the active game, foreground
-applications and their descendants are protected. Threshold and interval settings remain yours; critical pressure
-takes priority and at least three minutes separate automatic attempts. Failures retry after three and six minutes,
-up to three attempts per episode. Game cleanup waits for confirmed engine shutdown, up to thirty seconds, and
-cancels if shutdown fails or the game ends.
+Every cleanup — automatic or manual — cleans the areas selected in Settings. The automatic rules are independent:
 
-**Manual cleanup** retains the areas selected in Settings, including these advanced operations:
+- **Percentage:** when RAM use reaches the percentage you set (say 70 %), it cleans right away, even if the interval
+  hasn't come around. While it stays above, it repeats at most every *minimum pause* (1–30 min, 5 by default).
+- **Interval:** every N minutes since the last cleanup of any kind, whatever the RAM use.
+- **Critical pressure:** acts as soon as Windows reports it and, if it persists, repeats after the minimum pause.
+- **When a game starts:** after Ollama and the other engines confirm they're off (up to thirty seconds).
+
+None of them waits for Windows to report high pressure: your percentage rules. At least a minute separates two
+attempts; a failed attempt retries after 3, 6, 15 and then every 30 minutes. Models, engines, the active game and the app
+you're using (with its child processes) are protected; when the taskbar, tray or desktop is in front, only Explorer
+itself is protected, not everything opened from Start. Protected Windows processes that deny access even to
+administrators are skipped.
+
+The areas match Mem Reduct's, including these advanced operations:
 
 | Area | How | Default |
 |---|---|:-:|
@@ -260,7 +277,8 @@ cancels if shutdown fails or the game ends.
 | Registry cache | `SystemRegistryReconciliationInformation` (Windows 8.1+) | ✅ |
 | Modified file cache | `FlushFileBuffers` on each fixed volume | ✅ |
 
-The defaults are Mem Reduct's (`ReductMask2 = 0xE7`); the bits are the same, so its settings import as they are.
+The defaults are Mem Reduct's (`ReductMask2 = 0xE7`) and the bits are the same. Mem Reduct isn't needed: if you still
+have it, uninstall it or turn its auto-clean off so the two don't clean at once.
 The panel distinguishes success, partial completion, failure and no work. Memory is observed before cleanup,
 immediately afterward and at five/thirty seconds; changes can be negative and include other activity on the PC.
 Weekly cleanup totals use the five-second observation. These values describe an observed change, rather than a
@@ -279,7 +297,7 @@ Settings before using the new operations.
 ### Recognizing and ending processes
 
 **Activity › Process explorer** lists the five applications using the most RAM. **View all processes** opens an
-independent window with RAM, physical RAM share, CPU, user and status, grouped by executable path, owner and session.
+independent window (its ✕ button or Esc closes it and brings the panel back) with RAM, physical RAM share, CPU, user and status, grouped by executable path, owner and session.
 Expand an application to see each PID, path, parent and committed memory. Search name, executable, path or PID;
 filter windowed/background/system/protected applications and minimum RAM; sort RAM, CPU, name, count or PID.
 On supported Windows versions RAM is **private resident RAM**; older versions explicitly show **total resident
@@ -296,11 +314,6 @@ exit checks protect against PID reuse and report partial failures. Access denied
 with its own UAC prompt and a separate agent command; the cleanup task cannot terminate arbitrary processes.
 Managed servers ended here stay manually stopped. External services may restart a process; the inspector
 identifies it without disabling services or startup entries.
-
-**Mem Reduct:** if it's installed, Settings shows its setup (read from `%APPDATA%\Henry++\Mem Reduct\memreduct.ini`).
-*Import settings* copies its %, interval, areas and notification. *Replace* imports, closes it (through the agent: it
-runs as admin), removes it from startup and turns its own auto-clean off in its ini, so the two never clean at once.
-*Go back to Mem Reduct* restores its startup entry and its auto-clean.
 
 ### Watchdog
 
@@ -372,7 +385,7 @@ Installations from before 1.3.0 without an update repository need one manual upg
   24 hours without credentials. Clicking **Update** downloads the package and checksum from GitHub, including
   GitHub's `release-assets.githubusercontent.com`/`objects.githubusercontent.com` download hosts. These requests
   expose your IP and app user agent to GitHub; no models, prompts, settings or usage history are uploaded.
-- The agent uses administrator rights for enabled RAM cleanup, replacing Mem Reduct and explicitly confirmed
+- The agent uses administrator rights for enabled RAM cleanup and explicitly confirmed
   process-termination retries. Each elevated termination requires its own UAC approval.
 - Process names, PIDs, paths, users and memory/CPU metrics are read locally; the inspector sends none of them to
   an external service.
@@ -398,7 +411,7 @@ instances. No NuGet packages, no WinForms, no web view.
 ```powershell
 .\build.ps1                    # build\isTargetSleeping.exe (self-contained, single file)
 .\build.ps1 -Install           # also installs it in %LOCALAPPDATA%\Programs\isTargetSleeping and relaunches it
-.\build.ps1 -Test              # tests of the pure logic (see below)
+.\build.ps1 -Test              # logic, native integration and WPF tests (see below)
 .\package.ps1                  # dist\: zip + installer for x64 and arm64, with .sha256
 .\package.ps1 -RequireInstaller # fail if Inno Setup is missing
 .\docs\generate-images.ps1     # this README's images and the logo assets
@@ -415,6 +428,10 @@ the packages and publish that draft in GitHub. The app cannot see drafts or prer
 build checks continue to run. Only the draft-creation job has `contents: write`; clients need no token.
 
 Optional signing uses the existing `SIGN_CERT_THUMBPRINT` mechanism for local builds. Unsigned releases are supported.
+
+Keep only the eight files for the version being verified in the assets folder. If `dist` contains older packages,
+copy the current eight to a separate folder and pass `-AssetsDirectory <folder>` to `verify-release.ps1`.
+The [1.5.0 preparation record](docs/release-1.5.0.md) lists validation and the remaining publication steps.
 
 Set `SIGN_CERT_THUMBPRINT` before `package.ps1` to sign the `.exe` and the installer with `signtool`; unsigned
 builds trigger SmartScreen.
@@ -440,13 +457,15 @@ It's a windowed app, so pipe its output (`| Write-Output`) for PowerShell to wai
 
 ### Tests
 
-`.\build.ps1 -Test` runs a small test bench (no test framework) over the pure logic: `IdleTracker`, the watchdog
+`.\build.ps1 -Test` runs the logic/native and WPF test benches (no test framework): `IdleTracker`, the watchdog
 (crash, hang, restart limit, manual off), `GameModeTracker` (debounce, restoring only what was on, manual override),
 the `libraryfolders.vdf` and Epic manifest parsers, `ClientTracker` (10-second window), `StatsStore` aggregates and
 persistence, `/api/pull` NDJSON progress, `istargetsleeping://` links, and the updater — version comparison, release
 parsing, and a full download + SHA-256 check + `.exe` swap against a local HTTP server on `127.0.0.1` (nothing
-leaves the PC); the memory agent's order format (it must reject anything unexpected), the cleaning rules, and the
-`memreduct.ini` parser and editor.
+leaves the PC); the memory agent's protocol and reports, cleaning rules, memory breakdown and pet animations.
+Process tests cover grouping, PID reuse, protected processes and actual termination of test-created descendants.
+WPF tests cover both languages, filtering, stable selection, virtualization and pausing sampling when hidden.
+Settings and history compatibility are checked. These tests do not install the agent or clean the user's RAM.
 
 ### Project layout
 
@@ -454,17 +473,20 @@ leaves the PC); the memory agent's order format (it must reject anything unexpec
 src/IsTargetSleeping/
 ├── Program.cs              Entry point, single instance, forwards links and --sleep to the running app
 ├── App.xaml(.cs)           Styles, tray, animated icon, right-click menu, hotkeys
-├── Cli.cs                  --status, --on, --off, --sleep, --memory, --idle-test, --snapshot, --export-logo, --export-tray, --export-pet
+├── Cli.cs                  --status, --on, --off, --sleep, --clean, --memory, --idle-test, --snapshot, --export-logo, --export-tray, --export-pet
 ├── Core/
 │   ├── Backend.cs          Mechanism detection (app, service, task, binary) and on/off
 │   ├── OllamaApi.cs        Ollama's HTTP API, pull (NDJSON progress) and delete
 │   ├── OllamaController.cs State for the interface, polling, idle auto-free, watchdog, downloads
 │   ├── Supervisor.cs       Game mode, other engines, notifications, pressure, links, updates
-│   ├── Supervisor.Clean.cs Freeing RAM: rules, agent, Mem Reduct
-│   ├── MemoryAgent.cs      Installs and runs the memory agent (scheduled task, exit code)
+│   ├── Supervisor.Clean.cs Freeing RAM: rules and agent
+│   ├── MemoryAgent.cs      Agent installation, scheduled task and versioned operation reports
+│   ├── MemoryBreakdown.cs  Physical/committed memory, page files and system cache
+│   ├── ProcessContracts.cs Shared identities, snapshots and action results
+│   ├── ProcessMonitoring.cs Native process sampling and protection detection
+│   ├── ProcessActions.cs   Verified process/tree termination
 │   ├── CleanSpec.cs        Cleaning areas and the agent's order format (shared with the agent)
 │   ├── CleanRules.cs       When to clean automatically (pure logic)
-│   ├── MemReduct.cs        Detect, import, replace and restore Mem Reduct
 │   ├── Watchdog.cs         Crash and hang detection (pure logic)
 │   ├── TrayMotion.cs       Tray icon animations: which one plays and each frame's pose (pure logic)
 │   ├── Games.cs            Game libraries, game detector and GameModeTracker
@@ -486,6 +508,7 @@ src/IsTargetSleeping/
 │   ├── ContentView.xaml    Main view, Activity and Settings
 │   ├── PanelViewModel.cs   Everything the panel shows, computed from the state
 │   ├── PanelWindow.cs      The tray flyout (the body scrolls within ~75 % of the screen)
+│   ├── ProcessWindow.cs    Process explorer and termination confirmations
 │   ├── TrayIcon.cs         Notification-area icon, notifications, WM_COPYDATA
 │   ├── TrayAnimator.cs     Plays the tray animations at 20 fps, with the radar frames cached
 │   ├── TaskbarPet.cs       The pet: state, animation, position, mouse and its menu
@@ -497,7 +520,8 @@ src/IsTargetSleeping/
 │   ├── Theme.cs · Glass.cs · Mark.cs · AboutWindow.cs
 └── Resources/Strings.en.json
 src/IsTargetSleeping.Agent/    The memory agent: the only code that runs as administrator
-tests/IsTargetSleeping.Tests   Tests of the pure logic
+tests/IsTargetSleeping.Tests   Logic and native integration tests
+tests/IsTargetSleeping.UiTests WPF interface tests
 packaging/isTargetSleeping.iss Inno Setup installer
 Assets/                        Icon (.ico), PNG and SVG logo
 ```

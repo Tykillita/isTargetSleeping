@@ -9,7 +9,7 @@ namespace IsTargetSleeping.Agent;
 
 /// Agente de memoria de isTargetSleeping. Tres órdenes:
 ///   --clean &lt;spec&gt;              libera RAM (lo lanza la tarea programada, elevada)
-///   --install &lt;SID&gt; [--close-memreduct]   se copia a Program Files y registra la tarea (con UAC, una vez)
+///   --install &lt;SID&gt;              se copia a Program Files y registra la tarea (con UAC, una vez)
 ///   --uninstall                    quita la tarea y su carpeta (con UAC)
 /// El código de salida es el resultado: la app lo lee de la tarea.
 public static class Program
@@ -28,7 +28,7 @@ public static class Program
             {
                 ["--clean", var spec] => Clean(spec),
                 ["--terminate", var spec] => Terminate(spec),
-                ["--install", var sid, .. var rest] => Install(sid, rest.Contains("--close-memreduct")),
+                ["--install", var sid] => Install(sid),
                 ["--uninstall"] => Uninstall(),
                 _ => AgentExit.BadSpec,
             };
@@ -45,7 +45,6 @@ public static class Program
     private static int Clean(string text)
     {
         if (CleanSpec.Parse(text) is not { } spec) return AgentExit.BadSpec;
-        if (spec.CloseMemReduct) CloseMemReduct();
         CleanResult result;
         try { result = MemoryCleaner.Clean(spec); }
         catch (Exception e)
@@ -78,31 +77,9 @@ public static class Program
         return result.Outcome is ProcessActionOutcome.Success or ProcessActionOutcome.NoWork ? 0 : 1;
     }
 
-    /// Cierra Mem Reduct (corre como administrador: la app normal no puede). Solo el
-    /// memreduct.exe instalado en Program Files.
-    private static void CloseMemReduct()
-    {
-        var installedPaths = new[] { Environment.SpecialFolder.ProgramFiles, Environment.SpecialFolder.ProgramFilesX86 }
-            .Select(folder => Path.Combine(Environment.GetFolderPath(folder), "Mem Reduct", "memreduct.exe"))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in Process.GetProcessesByName("memreduct"))
-        {
-            using (p)
-            {
-                try
-                {
-                    var path = p.MainModule?.FileName ?? "";
-                    if (installedPaths.Contains(path) && ProcessMonitor.QueryIdentity(p.Id) is { } identity)
-                        ProcessActions.Execute(new(Guid.NewGuid(), ProcessActionMode.Single, [identity]));
-                }
-                catch { }
-            }
-        }
-    }
-
     // MARK: instalar y desinstalar
 
-    private static int Install(string sid, bool closeMemReduct)
+    private static int Install(string sid)
     {
         // Solo un SID de usuario (S-1-5-21-…): va dentro del XML de la tarea.
         if (!sid.StartsWith("S-1-5-", StringComparison.Ordinal) || sid.Length > 100 || !sid.All(c => char.IsAsciiDigit(c) || c is 'S' or '-'))
@@ -125,7 +102,6 @@ public static class Program
         int code = RegisterTask(xml, target, sid, withSecurity: true);
         if (code != 0) code = RegisterTask(xml, target, sid, withSecurity: false);
         try { File.Delete(xml); } catch { }
-        if (code == 0 && closeMemReduct) CloseMemReduct();
         return code;
     }
 

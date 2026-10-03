@@ -10,71 +10,59 @@ public static class GameCleanGate
         ? GameCleanDecision.Cancelled : shutdownConfirmed ? GameCleanDecision.Ready : GameCleanDecision.Wait;
 }
 
-/// One decision per memory episode. Failed attempts retry after 3/6 minutes,
-/// then wait for physical-pressure recovery. Successful work consumes triggers.
+/// Las reglas automáticas de Liberar RAM, cada una con su reloj:
+///  - **umbral**: con la RAM en el % elegido o por encima limpia aunque no toque el intervalo, y
+///    mientras siga alta repite como mucho cada `ThresholdCooldownMinutes` (la «pausa mínima»);
+///  - **intervalo**: cada `IntervalMinutes` desde la última limpieza completada, sea del tipo que sea;
+///  - **presión crítica**: al empezar actúa enseguida; si sigue crítica, repite con la pausa mínima.
+/// Ninguna depende de la presión que marque Windows: manda el % que se configura en la app.
+/// Entre dos intentos pasa al menos `MinGap`, y un intento fallido espera 3, 6, 15 y luego 30 min.
 public sealed class CleanRuleTracker
 {
-    public const int Hysteresis = 5;
-    public static readonly TimeSpan MinGap = TimeSpan.FromMinutes(3);
+    public static readonly TimeSpan MinGap = TimeSpan.FromMinutes(1);
+    public const int DefaultCooldownMinutes = 5;
+    private static readonly int[] RetryMinutes = [3, 6, 15, 30];
+
     public int ThresholdPercent { get; set; }
+    public int ThresholdCooldownMinutes { get; set; } = DefaultCooldownMinutes;
     public int IntervalMinutes { get; set; }
     public bool OnCritical { get; set; }
+
+    /// El intervalo cuenta desde aquí (al arrancar, desde ahora).
     private DateTime lastClean;
+    /// La última limpieza completada de verdad: la pausa mínima cuenta desde aquí.
+    private DateTime? lastCompleted;
     private DateTime? lastAttempt, retryAt;
-    private bool thresholdArmed = true, criticalArmed = true, inFlight;
-    private bool pendingThreshold, pendingCritical;
-    private CleanReason? retryReason;
+    private bool inFlight, criticalArmed = true;
     private int failures;
 
     public CleanRuleTracker(DateTime now) => lastClean = now;
-    public bool CanAttempt(DateTime now) => !inFlight && (lastAttempt is null || now - lastAttempt >= MinGap);
 
-    public CleanReason? Sample(double usedPercent, bool critical, DateTime now, bool physicalHigh = true)
+    private TimeSpan Cooldown => TimeSpan.FromMinutes(Math.Max(1, ThresholdCooldownMinutes));
+
+    /// Si ahora se puede lanzar una limpieza automática (también la del modo juego).
+    public bool CanAttempt(DateTime now) => !inFlight && (lastAttempt is null || now - lastAttempt >= MinGap)
+        && (retryAt is null || now >= retryAt);
+
+    public CleanReason? Sample(double usedPercent, bool critical, DateTime now)
     {
-        if (ThresholdPercent <= 0 || usedPercent < ThresholdPercent - Hysteresis) thresholdArmed = true;
         if (!critical) criticalArmed = true;
-        if (!physicalHigh)
-        {
-            failures = 0;
-            retryAt = null;
-            retryReason = null;
-            return null;
-        }
-        if (!CanAttempt(now) || failures >= 3) return null;
-        if (retryReason is CleanReason.Threshold && ThresholdPercent <= 0
-            || retryReason is CleanReason.Interval && IntervalMinutes <= 0
-            || retryReason is CleanReason.Critical && !OnCritical)
-        {
-            retryReason = null;
-            retryAt = null;
-        }
-        CleanReason? reason;
-        if (OnCritical && critical && criticalArmed && retryReason != CleanReason.Critical)
-            reason = CleanReason.Critical;
-        else if (retryReason is { } retry)
-            reason = retryAt <= now ? retry : null;
-        else if (now - lastClean < MinGap)
-            reason = null;
-        else if (ThresholdPercent > 0 && thresholdArmed && usedPercent >= ThresholdPercent)
-            reason = CleanReason.Threshold;
-        else if (IntervalMinutes > 0 && now - lastClean >= TimeSpan.FromMinutes(IntervalMinutes))
-            reason = CleanReason.Interval;
-        else
-            reason = null;
-        if (reason is null) return null;
-        pendingThreshold = ThresholdPercent > 0 && usedPercent >= ThresholdPercent;
-        pendingCritical = critical;
-        Attempted(now, usedPercent, critical);
-        retryReason = reason;
+        if (!CanAttempt(now)) return null;
+        bool cooled = lastCompleted is null || now - lastCompleted >= Cooldown;
+        CleanReason? reason =
+            OnCritical && critical && (criticalArmed || cooled) ? CleanReason.Critical
+            : ThresholdPercent > 0 && usedPercent >= ThresholdPercent && cooled ? CleanReason.Threshold
+            : IntervalMinutes > 0 && now - lastClean >= TimeSpan.FromMinutes(IntervalMinutes) ? CleanReason.Interval
+            : null;
+        if (reason == CleanReason.Critical) criticalArmed = false;
         return reason;
     }
 
-    public void Attempted(DateTime now, double? usedPercent = null, bool critical = false)
+    /// Empieza una limpieza (automática o a mano).
+    public void Attempted(DateTime now)
     {
         inFlight = true;
         lastAttempt = now;
-        if (usedPercent is { } used) pendingThreshold = ThresholdPercent > 0 && used >= ThresholdPercent;
-        pendingCritical |= critical;
     }
 
     public void Completed(DateTime now, bool successful)
@@ -83,25 +71,24 @@ public sealed class CleanRuleTracker
         if (successful)
         {
             lastClean = now;
-            if (pendingThreshold) thresholdArmed = false;
-            if (pendingCritical) criticalArmed = false;
+            lastCompleted = now;
             failures = 0;
             retryAt = null;
-            retryReason = null;
         }
         else
         {
+            retryAt = now.AddMinutes(RetryMinutes[Math.Min(failures, RetryMinutes.Length - 1)]);
             failures++;
-            retryAt = now.AddMinutes(failures == 1 ? 3 : 6);
         }
-        pendingThreshold = pendingCritical = false;
     }
 
+    /// Una limpieza que ya terminó bien (pruebas y limpiezas de fuera de la app).
     public void Cleaned(DateTime now)
     {
-        lastAttempt = now;
+        Attempted(now);
         Completed(now, true);
     }
 
+    /// Al cambiar el intervalo, cuenta desde ahora.
     public void ResetInterval(DateTime now) => lastClean = now;
 }

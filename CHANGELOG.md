@@ -5,6 +5,103 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-10-02
+
+### Added
+- **Each pet cleans up in its own way** while RAM is freed, instead of all four sweeping: Mira scans the taskbar
+  with a beam from her eye, pulls the loose data fragments towards her and compacts them into a little cube that
+  bursts into sparkles; the llama shakes the dust out of her wool, the kitten washes itself and the capybara, awake,
+  scoots her bottom along the floor without moving from her spot (she leans forward over her front leg with her rump
+  planted, then drags the rump forward, flattening, and leaves a dust mark that stays behind; pose fields `Drag`,
+  `Rump` and `Skid`) and stays seated, sparkling, when it's done; if she was asleep she
+  climbs out of her hot tub, wrings out her fur with water drops flying and ends up dry. New pose fields `Shake`,
+  `Wet` and `Beam` (Mira's scanner beam, aimed where her pupil looks), a `Cube` prop and `Drop` and `Fragment`
+  particles (fragments fly towards Mira's eye).
+- **An activity can look different depending on where it came from:** `PetBrain` records `ActivityFrom` and
+  `ReactionFrom`, the director passes them on (`PetSituation.From`/`ReactionFrom`) and profiles look clips, motion,
+  particles and reactions up by `PetContext` (activity plus origin, implicitly built from a `PetActivity`).
+  `ProfileKit.AfterBed` registers the version of an activity (and of its reactions) that starts by leaving the bed:
+  the capybara's wringing and its finale.
+- **In-bed reactions:** asleep (or yawning into bed) the pet reacts to clicks, petting, the watchdog and sparkles
+  without leaving its bed and without moving, with its own version per species and a fallback for anything not
+  defined. Reactions record the activity they started in (`PetBrain.ReactionDuring`), which drives clip, duration,
+  motion, particles and logo lights; asleep, a reaction doesn't light the Windows logo.
+- `--export-pet` adds cleaning from bed and awake, going back to bed, every reaction in bed, both ends of a cleanup
+  (awake and after the bed), the after-bed cleaning loop and getting on and off the crocodile.
+- **The capybara's crocodile:** while Ollama starts, a crocodile walks in from the right; she gets up (out of her
+  hot tub first if she was asleep), waits for it standing, jumps onto its back, lands on her feet and only then sits
+  down, and they ride while it starts; once it's on she stands up on its back, jumps down and watches it leave
+  standing. Standing on the crocodile, her body and feet are lifted onto its back (`CapybaraPet`).
+  The ride always finishes: profiles can hold an activity with `HoldFor` (the cleanup hold now uses it too), and the
+  capybara holds *waking up* for the arrival plus one ride loop. New pose fields `Croc`, `CrocStep` and `Ride`, and
+  `UI/Pets/Crocodile.cs`: a pixel-art crocodile as wide as the pet (brow and yellow eye, toothy snout, back crests,
+  light belly, tapering tail and stepping legs). With nothing to do the capybara now sits, with her own seated sprite
+  (upright chest on a straight front leg, folded haunch), also for idle gestures, reactions, working, eating and
+  riding; she stands to walk, carry the box, wring out her fur and get on or off the crocodile.
+- **Memory now** in Activity: physical RAM, committed memory (with what it means), page files and the system cache
+  (current and peak), each with a bar — the figures Mem Reduct shows, read with `GlobalMemoryStatusEx` and
+  `NtQuerySystemInformation` (`MemoryBreakdown`).
+- **Minimum pause for the percentage rule** (Settings › Free RAM, 1–30 min, 5 by default; pref `cleanCooldown`):
+  while RAM stays over the chosen percentage, automatic cleanup repeats at most that often.
+
+### Changed
+- Cleaning stays visible: `PetBrain` keeps the cleaning activity at least for its intro plus one loop (at most 6 s)
+  and the "RAM freed" sparkles are now its finale (`React(…, finale: true)`), played in the cleaning pose before
+  going back to the requested activity, instead of arriving after the pet was already back in bed.
+- Pet animation profiles take the activity a reaction started in (`For`, `ReactionDuration`, `Still`, `Motion`,
+  `Drips`, `Burst`); `ProfileKit` adds per-activity reaction tables and `InBed`.
+- `docs/readme-art.py` follows the new `--export-pet` rows; the pet states illustration shows each pet's own cleanup.
+- **Mira's animations redone** on `ProfileKit` like the other three (`MiraProfile`; the original `PetAnimations`
+  clips are gone, `PetMotion.cs` keeps the logo lights and the walker): anticipation before jumps, overshoot on
+  landing, arms out of sync, a "boot" wake-up that calibrates her reticle, a radar sweep while on patrol, the box on
+  her head steadied with both arms up, a celebration jump with her eye darting around and a pupil that spirals when
+  dizzy. Her arms are outlined tick marks with round hands, her feet are rounded and the antenna has a beacon that
+  lights up while she scans, pings or locks on.
+- **The llama has no arms anymore:** the two stubs on her chest are gone and every animation was redone around her
+  neck, ears, hooves and a woolly tail that now moves (`Tail`). She carries food in her muzzle, types by pecking the
+  laptop to the beat of her hooves, prances when petted and has her own end of cleanup (fluffed-up wool, tail high).
+- **Automatic cleanups are full again:** threshold, interval, critical and game cleanups clean the areas selected in
+  Settings for every unprotected process, like the button (in 1.4.0 they trimmed at most ten idle processes and only
+  working sets). The selective mode is removed from the protocol (`m`, `u` and `s` are rejected) and from the agent,
+  together with `CleanSelection`. The agent re-checks live exclusions at most every 250 ms instead of once per process.
+- Automatic rules (`CleanRuleTracker`) have independent clocks: the percentage acts as soon as RAM reaches it, even
+  before the interval, and repeats after the minimum pause while RAM stays high; the interval counts from the last
+  cleanup of any kind; critical pressure acts immediately when it starts and repeats after the minimum pause. At least
+  one minute separates attempts; failures retry after 3, 6, 15 and then 30 minutes instead of stopping after three.
+
+### Removed
+- `PetProp.Broom` and the pose field `Sway` (only the broom used them).
+- **Mem Reduct integration:** the Settings card (import settings, replace, go back), `MemReduct.cs` and the agent's
+  command to close it (`x=memreduct` in the protocol and `--install … --close-memreduct`). isTargetSleeping cleans
+  with its own agent and never needed Mem Reduct; the cleanup areas keep its `ReductMask2` bits.
+
+### Fixed
+- Long cleanups keep each pet's contextual finale before returning to bed or idle; game mode still cancels it.
+- **The kitten, the llama and Mira fell back asleep on every loop while Ollama started:** their *waking up* loop
+  started and ended with closed eyes, so a start longer than one loop showed them waking up again and again. The
+  stretch and yawn now play once, as the transition out of bed, and the loop is an awake routine (washing the face,
+  chewing, calibrating the eye, looking around) that never closes the eyes.
+- The capybara no longer stands up just to yawn before getting into her tub: she yawns seated.
+- **The process window can be closed:** its glass frame left no visible window buttons. A ✕ button in its header
+  (and Esc) closes it and brings back the panel on Activity.
+- **The taskbar pet vanished after window changes:** taskbar thumbnail previews, Alt+Tab and the Snipping Tool
+  capture are invisible Explorer/system windows covering the whole screen, and Windows reports *busy*
+  (`QUNS_BUSY`) while they are in front, so the pet took them for a full-screen app and hid — until another window
+  took the foreground, sometimes not even on the desktop. Full screen now means a visible, uncloaked, activatable,
+  not click-through window of an app other than the shell (`TaskbarPetLayout.FullscreenApp`); `QUNS_BUSY` alone no
+  longer hides it. The pet also goes back above the taskbar whenever the taskbar ends up in front of it (checked
+  after each foreground change and every second), not only when the taskbar is the foreground window.
+- **Freeing RAM skipped most applications** (regression in 1.4.0): when the foreground window was the taskbar, the
+  tray or the desktop, `explorer.exe` was protected as the foreground application together with every descendant —
+  practically everything opened from Start (about half of the trimmable memory on a typical session). Protection no
+  longer expands through the Windows shell, both in `ProcessMonitor.ExpandProtection` and in the agent's live check.
+- Protected Windows processes that deny access even to administrators (antivirus, PPL) are skipped, as in 1.3 and
+  Mem Reduct, instead of counting as failures: a normal manual cleanup no longer always ends as *Partial*.
+- **The configured percentage was ignored** (regression in 1.4.0): every automatic rule, the interval included, ran
+  only when Windows reported high physical pressure (85 % load) and the agent stopped trimming below 85 %, so a 70 %
+  threshold never acted between 70 and 85 %. After a threshold cleanup it also waited for RAM to drop five points
+  below the threshold, so with RAM staying high it never cleaned again. Game cleanup required high pressure too.
+
 ## [1.4.0] — 2026-10-01
 
 ### Added

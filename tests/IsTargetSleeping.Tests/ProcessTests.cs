@@ -55,6 +55,11 @@ internal static class ProcessTests
             [P(0, 0), P(11, 110, parent: 0)]).Count == 1);
         check("procesos: finaliza hojas antes de raíz", ProcessActions.LeafFirst(expanded.Select(p => p.Identity), expanded).Select(p => p.Pid).SequenceEqual(new[] { 12, 11, 10 }));
         check("procesos: exclusiones se amplían a descendientes válidos", ProcessMonitor.ExpandProtection(new HashSet<int> { 10 }, tree).SetEquals([10, 11, 12]));
+        // La barra, la bandeja o el escritorio en primer plano son explorer.exe: lo abierto desde Inicio no se protege con él.
+        ProcessSnapshot[] session = [P(20) with { Executable = "explorer.exe" }, P(21, parent: 20), P(22, parent: 21), P(23, parent: 20)];
+        check("procesos: el shell en primer plano no protege lo que lanzó", ProcessMonitor.ExpandProtection(new HashSet<int> { 20 }, session).SetEquals([20])
+            && ProcessMonitor.ExpandProtection(new HashSet<int> { 21 }, session).SetEquals([21, 22])
+            && ProcessMonitor.IsShellHost(@"C:\Windows\EXPLORER.EXE") && !ProcessMonitor.IsShellHost("sample.exe"));
         check("procesos: resultados parciales conservan denegados", ProcessActions.Summarize([
             new(id, ProcessTargetOutcome.Terminated), new(new(11, 110), ProcessTargetOutcome.Denied)]) == ProcessActionOutcome.Partial);
         check("procesos: procesos ya cerrados no indican trabajo", ProcessActions.Summarize([new(id, ProcessTargetOutcome.AlreadyExited)]) == ProcessActionOutcome.NoWork);

@@ -27,7 +27,6 @@
 
   <ItemGroup>
     <Compile Include="..\IsTargetSleeping\Core\CleanSpec.cs" Link="CleanSpec.cs" />
-    <Compile Include="..\IsTargetSleeping\Core\CleanSelection.cs" Link="CleanSelection.cs" />
     <Compile Include="..\IsTargetSleeping\Core\MemoryContracts.cs" Link="MemoryContracts.cs" />
     <Compile Include="..\IsTargetSleeping\Core\ProcessContracts.cs" Link="ProcessContracts.cs" />
     <Compile Include="..\IsTargetSleeping\Core\ProcessMonitoring.cs" Link="ProcessMonitoring.cs" />

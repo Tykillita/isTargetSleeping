@@ -43,6 +43,7 @@ internal static class MemoryCleaner
     // MARK: procesos, volúmenes y privilegios
 
     private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000, PROCESS_SET_QUOTA = 0x0100;
+    private const int AccessDenied = 5;
 
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
@@ -103,7 +104,7 @@ internal static class MemoryCleaner
         var errors = new List<CleanError>();
         foreach (string privilege in new[] { "SeProfileSingleProcessPrivilege", "SeIncreaseQuotaPrivilege", "SeDebugPrivilege" })
             if (EnablePrivilege(privilege) is { } error) errors.Add(error);
-        var areas = spec.Selective ? spec.Areas & CleanAreas.WorkingSets : spec.Areas;
+        var areas = spec.Areas;
         var failed = CleanAreas.None;
         int succeeded = 0, treated = 0, skipped = 0, processFailed = 0;
         void TryNt(CleanAreas area, Func<int> action)
@@ -146,64 +147,53 @@ internal static class MemoryCleaner
             OperationsSucceeded = succeeded, Errors = errors.Take(4096).ToArray(), Before = before, Immediate = immediate };
     }
 
+    /// Vacía la memoria de trabajo de cada proceso, de más a menos RAM, menos los protegidos:
+    /// modelos, el juego, esta app y la app en primer plano con sus procesos. Las exclusiones se
+    /// vuelven a mirar como mucho cada 250 ms (la app activa puede cambiar mientras tanto) en vez
+    /// de recorrer todos los procesos por cada uno.
     private static (int Treated, int Skipped, int Failed) EmptyWorkingSets(CleanSpec spec, List<CleanError> errors)
     {
-        var monitor = new ProcessMonitor();
         var roots = spec.Keep.ToHashSet();
-        var first = monitor.Capture(roots);
+        var sample = new ProcessMonitor().Capture(roots);
         foreach (var id in spec.KeepIdentities)
-            if (first.Processes.Any(p => p.Identity == id)) roots.Add(id.Pid);
-        foreach (var p in first.Processes.Where(IsModel)) roots.Add(p.Pid);
-        var sample = first;
-        long baseline = Stopwatch.GetTimestamp();
-        if (spec.Selective)
-        {
-            Thread.Sleep(2000);
-            sample = monitor.Capture(roots);
-        }
+            if (sample.Processes.Any(p => p.Identity == id)) roots.Add(id.Pid);
+        foreach (var p in sample.Processes.Where(IsModel)) roots.Add(p.Pid);
         // Critical and inaccessible processes are individually excluded. Their
         // system ancestry must not cause unrelated user applications to be excluded.
-        foreach (var protectedProcess in sample.Processes.Where(p => p.ProtectionReason == "OwnApplication")) roots.Add(protectedProcess.Pid);
-        double elapsed = (Stopwatch.GetTimestamp() - baseline) / (double)Stopwatch.Frequency;
+        foreach (var own in sample.Processes.Where(p => p.ProtectionReason == "OwnApplication")) roots.Add(own.Pid);
         var protectedPids = ProcessMonitor.ExpandProtection(roots, sample.Processes);
-        var candidates = sample.Processes.Where(p => p.Identity.IsValid && p.Pid > 4
-            && p.ProtectionReason == null && !protectedPids.Contains(p.Pid) && !IsModel(p) && p.IsCritical == false);
-        if (spec.Selective)
-            candidates = CleanSelection.Select(first, sample, spec.OwnerSid!, spec.SessionId, protectedPids, elapsed).Where(p => !IsModel(p));
-        var list = candidates.OrderByDescending(p => p.WorkingSetBytes).ToArray();
-        int treated = 0, skipped = sample.Processes.Count - list.Length, failed = 0, examined = 0;
+        var list = sample.Processes.Where(p => p.Identity.IsValid && p.Pid > 4
+                && p.ProtectionReason == null && !protectedPids.Contains(p.Pid) && !IsModel(p) && p.IsCritical == false)
+            .OrderByDescending(p => p.WorkingSetBytes).ToArray();
+        int treated = 0, skipped = sample.Processes.Count - list.Length, failed = 0;
+        HashSet<int>? protectedNow = null;
+        long checkedAt = 0;
         foreach (var p in list)
         {
-            if (spec.Selective && !CleanSelection.ShouldContinue(CurrentMemory()))
-            { skipped += list.Length - examined; break; }
-            examined++;
-            // Automatic selection needs fresh CPU counters. Manual cleanup uses
-            // a cheap fresh process forest for exclusions instead of sampling
-            // every process's memory/user/version hundreds of times.
-            var current = spec.Selective ? monitor.Capture(roots) : sample;
-            var live = current.Processes.FirstOrDefault(q => q.Identity == p.Identity);
-            var protectedNow = spec.Selective ? ProcessMonitor.ExpandProtection(roots, current.Processes) : LiveProtection(roots);
-            if (live is null || protectedNow is null || live.ProtectionReason != null || protectedNow.Contains(p.Pid) || IsModel(live)
-                || live.IsCritical != false || spec.Selective && (live.OwnerSid != spec.OwnerSid || live.SessionId != spec.SessionId
-                    || !CleanSelection.LowActivity(p.CpuSeconds, live.CpuSeconds, (current.CapturedAt - sample.CapturedAt).TotalSeconds)))
-            { skipped++; continue; }
+            if (protectedNow is null || Stopwatch.GetElapsedTime(checkedAt) > TimeSpan.FromMilliseconds(250))
+            {
+                protectedNow = LiveProtection(roots);
+                checkedAt = Stopwatch.GetTimestamp();
+            }
+            if (protectedNow is null || protectedNow.Contains(p.Pid)) { skipped++; continue; }
             using var handle = NativeProcess.OpenProcess(NativeProcess.Query | PROCESS_SET_QUOTA, false, p.Pid);
             if (handle.IsInvalid)
-            { failed++; errors.Add(new("WorkingSets", p.Pid, Win32Error: Marshal.GetLastWin32Error())); continue; }
+            {
+                // Los procesos protegidos de Windows (antivirus, PPL) no dejan tocar su memoria ni
+                // siendo administrador: se saltan, como en Mem Reduct, sin contar como fallo.
+                int error = Marshal.GetLastWin32Error();
+                if (error == AccessDenied) skipped++;
+                else { failed++; errors.Add(new("WorkingSets", p.Pid, Win32Error: error)); }
+                continue;
+            }
+            // El mismo PID puede ser ya otro proceso: solo si es el que se vio y no es crítico.
             if (!NativeProcess.GetProcessTimes(handle, out long created, out _, out _, out _)
                 || created != p.Identity.CreatedFileTime || NativeProcess.Critical(handle) != false)
             { skipped++; continue; }
-            if (spec.Selective)
-            {
-                // Same held handle revalidates activity and owner immediately before trimming.
-                var owner = NativeProcess.Owner(handle).Sid;
-                if (owner != spec.OwnerSid || NativeProcess.Session(p.Pid) != spec.SessionId
-                    || !NativeProcess.GetProcessTimes(handle, out _, out _, out long kernel, out long user)
-                    || !CleanSelection.LowActivity(p.CpuSeconds, (kernel + (double)user) / 10_000_000,
-                        (DateTimeOffset.UtcNow - sample.CapturedAt).TotalSeconds)) { skipped++; continue; }
-            }
-            if (EmptyWorkingSet(handle)) treated++;
-            else { failed++; errors.Add(new("WorkingSets", p.Pid, Win32Error: Marshal.GetLastWin32Error())); }
+            if (EmptyWorkingSet(handle)) { treated++; continue; }
+            int emptyError = Marshal.GetLastWin32Error();
+            if (emptyError == AccessDenied) skipped++;
+            else { failed++; errors.Add(new("WorkingSets", p.Pid, Win32Error: emptyError)); }
         }
         return (treated, skipped, failed);
     }
@@ -224,12 +214,14 @@ internal static class MemoryCleaner
             if (NativeProcess.OwnExecutable(entry.Executable) || name is "llama-server" or "lm studio" or "lms"
                 || name.StartsWith("ollama", StringComparison.Ordinal)) protectedPids.Add(entry.Pid);
         }
+        // Como `ProcessMonitor.ExpandProtection`: lo lanzado por el shell no queda protegido con él.
+        var shells = entries.Where(e => ProcessMonitor.IsShellHost(e.Executable)).Select(e => e.Pid).ToHashSet();
         bool changed;
         do
         {
             changed = false;
             foreach (var entry in entries)
-                if (protectedPids.Contains(entry.ParentPid)) changed |= protectedPids.Add(entry.Pid);
+                if (protectedPids.Contains(entry.ParentPid) && !shells.Contains(entry.ParentPid)) changed |= protectedPids.Add(entry.Pid);
         } while (changed);
         return protectedPids;
     }

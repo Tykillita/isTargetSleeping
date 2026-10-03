@@ -18,8 +18,11 @@ IMAGES = os.path.join(ROOT, 'docs', 'images')
 PETS = ['mira', 'llama', 'capybara', 'orange-cat']
 SIZES = {'mira': (27, 24), 'llama': (32, 30), 'capybara': (32, 30), 'orange-cat': (32, 30)}
 FIXED = ['DeepSleep', 'WakingUp', 'Drowsy', 'Eating', 'Alert', 'Working', 'Downloading', 'Sweeping', 'Yawning', 'Peek',
-         'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
-TAIL = ['Mouse', 'Jump', 'Hearts', 'Sparkle', 'Nap', 'Dizzy', 'Sad', 'WalkL', 'WalkR', 'Reduced']
+         'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10']
+# Cada reacción de pie y en la cama (`…Bed`), el final de la limpieza (despierta y tras la cama) y la
+# limpieza tras la cama.
+REACTIONS = ['Jump', 'Hearts', 'Sparkle', 'Nap', 'Dizzy', 'Sad']
+TAIL = ['Mouse'] + [n for r in REACTIONS for n in (r, r + 'Bed')] + ['SparkleClean', 'SparkleCleanBed', 'SweepingBed', 'WalkL', 'WalkR', 'Reduced']
 FONT = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
 INK, BLUE, LIGHT, DEEP = '#f5f5f7', '#4DA3FF', '#4CC2FF', '#1A8FE8'
 
@@ -27,7 +30,7 @@ T = {
     'en': {
         'states_kicker': 'PETS · WHAT THEY DO', 'states_title': 'They act out what Ollama is doing',
         'cols': [('Ollama off', 'sleeps', '#8a8f98'), ('Loading', 'eats', BLUE), ('Generating', 'types', BLUE),
-                 ('Downloading', 'carries a box', BLUE), ('Freeing RAM', 'sweeps', '#5CD69A'), ('Petted', 'hearts', '#FF7A9C')],
+                 ('Downloading', 'carries a box', BLUE), ('Freeing RAM', 'cleans up', '#5CD69A'), ('Petted', 'hearts', '#FF7A9C')],
         'pets': [('Mira', 'watchful hacker'), ('Llama', 'proud & curious'), ('Capybara', 'totally zen'), ('Kitten', 'playful')],
         'home_kicker': 'PETS · BESIDE START', 'home_title': 'Each one sleeps in its own bed, right above Start',
         'beds': ['target capsule', 'woven cushion', 'steaming hot tub', 'wicker basket'],
@@ -48,7 +51,7 @@ T = {
     'es': {
         'states_kicker': 'MASCOTAS · QUÉ HACEN', 'states_title': 'Cuentan lo que hace Ollama',
         'cols': [('Ollama apagado', 'duerme', '#8a8f98'), ('Cargando', 'come', BLUE), ('Generando', 'teclea', BLUE),
-                 ('Descargando', 'carga una caja', BLUE), ('Liberando RAM', 'barre', '#5CD69A'), ('Caricias', 'corazones', '#FF7A9C')],
+                 ('Descargando', 'carga una caja', BLUE), ('Liberando RAM', 'se asea', '#5CD69A'), ('Caricias', 'corazones', '#FF7A9C')],
         'pets': [('Mira', 'hacker vigilante'), ('Llama', 'orgullosa y curiosa'), ('Capibara', 'totalmente zen'), ('Gatito', 'juguetón')],
         'home_kicker': 'MASCOTAS · JUNTO A INICIO', 'home_title': 'Cada una duerme en su cama, justo encima de Inicio',
         'beds': ['cápsula con diana', 'cojín andino', 'tina humeante', 'cesta de mimbre'],

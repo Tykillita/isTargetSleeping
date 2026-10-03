@@ -390,6 +390,11 @@ public static class Win32
     [DllImport("dwmapi.dll")]
     public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
+    public const int DWMWA_CLOAKED = 14;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct MARGINS { public int Left, Right, Top, Bottom; }
 
@@ -503,6 +508,14 @@ public static class Win32
 
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsIconic(IntPtr hwnd);
+
+    public const uint GW_HWNDPREV = 3;
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetWindow(IntPtr hwnd, uint command);
 
     // MARK: estado del usuario (pantalla completa exclusiva de Direct3D)
 

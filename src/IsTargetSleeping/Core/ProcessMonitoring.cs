@@ -126,17 +126,23 @@ public sealed class ProcessMonitor
     internal static bool IsShellSurface(string className) => className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"
         or "NotifyIconOverflowWindow" or "TopLevelWindowForOverflowXamlIsland" or "Xaml_WindowedPopupClass";
 
+    /// El shell de Windows lanza casi todo lo que abre el usuario: protegerlo (por estar en
+    /// primer plano la barra, la bandeja o el escritorio) no protege a sus descendientes.
+    public static bool IsShellHost(string? executable) =>
+        string.Equals(System.IO.Path.GetFileName(executable), "explorer.exe", StringComparison.OrdinalIgnoreCase);
+
     public static HashSet<int> ExpandProtection(IReadOnlySet<int> roots, IReadOnlyList<ProcessSnapshot> processes)
     {
         var result = new HashSet<int>(roots);
         var identities = processes.GroupBy(p => p.Pid).ToDictionary(g => g.Key, g => g.First().Identity);
+        var shells = processes.Where(p => IsShellHost(p.Executable)).Select(p => p.Pid).ToHashSet();
         bool changed;
         do
         {
             changed = false;
             foreach (var p in processes)
             {
-                if (p.ParentPid is not int parent || !result.Contains(parent) || result.Contains(p.Pid)) continue;
+                if (p.ParentPid is not int parent || !result.Contains(parent) || result.Contains(p.Pid) || shells.Contains(parent)) continue;
                 // The current PID holder cannot be the parent of an older child.
                 if (identities.TryGetValue(parent, out var id) && id.IsValid && p.Identity.IsValid
                     && id.CreatedFileTime > p.Identity.CreatedFileTime) continue;

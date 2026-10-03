@@ -62,6 +62,7 @@ public static class PrefKeys
     public const string CleanAreas = "cleanAreas";            // int, bits de Mem Reduct
     public const string CleanThreshold = "cleanThreshold";    // int, % (0 = no)
     public const string CleanInterval = "cleanInterval";      // int, min (0 = no)
+    public const string CleanCooldown = "cleanCooldown";      // int, min entre limpiezas por % (sin valor: 5)
     public const string CleanOnCritical = "cleanOnCritical";
     public const string CleanOnGame = "cleanOnGame";
     public const string TrayPercent = "trayPercent";          // ícono con el % de RAM (apagado por defecto)

@@ -3,6 +3,7 @@ namespace IsTargetSleeping;
 /// El gatito naranja: juguetón y caprichoso. Persigue el cursor agachado y se lanza si
 /// se queda quieto; al clic se eriza, da un zarpazo y queda satisfecho. Se sienta encima
 /// del portátil y dentro de la caja, amasa, se acicala, agita la cola y duerme enroscado.
+/// Un gato no barre: para limpiar se lava a lametones. Dormido, reacciona sin desenroscarse.
 public sealed class CatProfile : ProfileKit
 {
     protected override PetPose Rest => new(ArmL: PetArm.Down, ArmR: PetArm.Down, Pupil: 0.3, Tail: 0.3);
@@ -23,11 +24,14 @@ public sealed class CatProfile : ProfileKit
         var r = Rest;
         var d = Loaf;
         Activities[PetActivity.DeepSleep] = Loop(3.2, K(0, Asleep), K(1.4, Asleep with { Squash = 0.7 }), K(2.2, Asleep with { Tail = -0.75 }));
-        // Se despereza con las patas delante, bosteza y se lava la cara.
-        Activities[PetActivity.WakingUp] = Loop(4.2, K(0, d with { Eye = 0 }),
-            K(0.8, r with { Eye = 0.1, Stretch = 1, ArmL = -10, ArmR = -10, Squash = 0.3, Mouth = 1, Tail = 1, EarL = -0.4, EarR = -0.4 }, Ease.Out),
-            K(1.6, r with { Eye = 0.2, Mouth = 0.3, Stretch = 0.6, Tail = 0.8 }), K(2.2, r with { Eye = 0.3, ArmR = PetArm.Rub, Mouth = 0.3 }),
-            K(2.6, r with { Eye = 0.3, ArmR = -110 }), K(3.0, r with { Eye = 0.5, LookX = 0.6, Pupil = 0.6 }), K(3.8, d));
+        // Mientras Ollama arranca, ya despierto (el desperezo es su transición desde la cesta):
+        // se lava la cara con la pata, mira a un lado y a otro y se le escapa un bostezo.
+        var waking = r with { Eye = 0.45, Tail = 0.5 };
+        Activities[PetActivity.WakingUp] = Loop(4.2, K(0, waking), K(0.5, waking with { ArmR = PetArm.Rub, Eye = 0.3, Mouth = 0.3 }),
+            K(0.8, waking with { ArmR = -110, EarR = -0.7, Eye = 0.3 }), K(1.1, waking with { ArmR = PetArm.Rub, Eye = 0.3, Mouth = 0.2 }),
+            K(1.4, waking with { ArmR = -110, EarR = -0.7, Eye = 0.3 }), K(1.8, waking),
+            K(2.3, waking with { LookX = 0.7, Pupil = 0.6, EarL = 0.8, Tail = 0.9 }), K(2.9, waking with { LookX = -0.7, Pupil = 0.6, Tail = 0.2 }),
+            K(3.3, waking with { Eye = 0.15, Mouth = 0.8, EarL = -0.4, EarR = -0.4 }), K(3.8, waking));
         Activities[PetActivity.Drowsy] = Loop(5.4, K(0, d), K(1.6, d with { Eye = 0, Bob = 0.4, EarL = -0.3 }),
             K(2.2, d with { Eye = 0.4, Tail = 0.6 }, Ease.Out), K(3.2, d with { Tail = -0.2 }), K(4.2, d with { LookX = -0.5, EarL = 0.6 }), K(4.8, d));
         // Despierta: la punta de la cola y las orejas no paran; mira rápido a un lado y al otro.
@@ -46,9 +50,14 @@ public sealed class CatProfile : ProfileKit
         var box = r with { Prop = PetProp.Box, Sit = 0.6, Pupil = 1, EarL = 0.8, EarR = 0.8 };
         Activities[PetActivity.Downloading] = Loop(1.6, K(0, box with { LookX = -0.8 }), K(0.5, box with { LookX = -0.8, Tail = 0.9 }),
             K(0.8, box with { LookX = 0.8 }), K(1.3, box with { LookX = 0.8, EarL = -0.2 }));
-        var broom = r with { Prop = PetProp.Broom };
-        Activities[PetActivity.Sweeping] = Loop(1.4, K(0, broom with { Sway = -1, LookX = -0.6, ArmR = 65, Tail = -0.7 }),
-            K(0.7, broom with { Sway = 1, LookX = 0.6, ArmR = 30, Tail = 0.7 }));
+        // Se lava: lame la pata, se la pasa por la cara y la oreja, y luego se lame el costado.
+        var wash = Washing;
+        var flank = r with { Sit = 0.4, Eye = 0.2, Lean = -0.4, LookX = -0.8, LookY = 0.5, Tail = 0.6 };
+        Activities[PetActivity.Sweeping] = Loop(3.2, K(0, wash with { Mouth = 0.3 }), K(0.2, wash with { Mouth = 0.15 }),
+            K(0.4, wash with { Mouth = 0.3, Tail = 0.5 }), K(0.6, wash with { Mouth = 0.15 }), K(0.8, wash with { Mouth = 0.3, Tail = 0.1 }),
+            K(1.2, wash with { ArmR = -110, EarR = -0.7 }), K(1.45, wash with { EarR = -0.7 }), K(1.7, wash with { ArmR = -110, EarR = -0.7 }),
+            K(2.1, flank with { Mouth = 0.3 }), K(2.35, flank with { Mouth = 0.1, Tail = 0.9 }), K(2.6, flank with { Mouth = 0.3 }),
+            K(2.85, flank with { Mouth = 0.1, Tail = 0.4 }));
         Activities[PetActivity.Yawning] = Once(K(0, d),
             K(0.7, r with { Eye = 0, Mouth = 1, Stretch = 0.8, Tail = 0.8, EarL = -0.5, EarR = -0.5 }, Ease.Out),
             K(1.4, r with { Eye = 0, Mouth = 0.3, Sit = 0.6, Curl = 0.5, BedIn = 0.4 }), K(2.4, Asleep));
@@ -71,6 +80,19 @@ public sealed class CatProfile : ProfileKit
         Reactions[PetReaction.Sad] = Once(K(0, r), K(0.5, sulk), K(1.8, sulk with { Eye = 0.45 }), K(2.2, r));
         Reactions[PetReaction.Nap] = Once(K(0, r with { Eye = 0.5 }), K(0.5, r with { Eye = 0, Mouth = 0.9, Stretch = 0.7 }),
             K(1.2, Asleep with { BedIn = 0.6, Curl = 0.6 }), K(1.9, Asleep));
+
+        // Dormido en la cesta: una oreja, la cola, un ojo de rendija… y sigue enroscado.
+        var a = Asleep;
+        InBed(PetReaction.Jump, Once(K(0, a), K(0.12, a with { EarL = 0.8 }, Ease.Out), K(0.3, a with { EarL = -0.3, Eye = 0.25, Pupil = 0 }),
+            K(0.6, a with { Tail = -0.4, Eye = 0.25, Pupil = 0 }), K(0.9, a with { Eye = 0.1 }), K(1.2, a)));
+        InBed(PetReaction.Hearts, Once(K(0, a), K(0.3, a with { Blush = 0.7, Squash = 0.65 }), K(1.3, a with { Blush = 0.7, Squash = 0.55, Tail = -0.6 }),
+            K(1.7, a)), D((ParticleKind.Purr, 0.3), (ParticleKind.Heart, 0.5)));
+        InBed(PetReaction.Sparkle, Once(K(0, a), K(0.4, a with { Eye = 0.2, Blush = 0.3 }), K(1.0, a with { Eye = 0.2 }), K(1.4, a)),
+            D((ParticleKind.Sparkle, 0.1)));
+        var tight = a with { EarL = -1, EarR = -1, Squash = 0.75 };
+        InBed(PetReaction.Dizzy, Once(K(0, a), K(0.4, tight with { Eye = 0.2, Tail = -0.6 }), K(0.8, tight with { Tail = -1 }),
+            K(1.2, tight with { Eye = 0.2, Tail = -0.6 }), K(1.6, a)), burst: [(ParticleKind.Star, 3)]);
+        InBed(PetReaction.Sad, Once(K(0, a), K(0.5, tight), K(1.8, tight with { Squash = 0.7 }), K(2.2, a)), D((ParticleKind.Tear, 0.7)));
 
         // Se lame la pata (la lengua asoma) y se la pasa por la oreja.
         var groom = r with { ArmR = PetArm.Rub, Eye = 0.25, Sit = 0.4, LookY = 0.2 };
@@ -110,7 +132,7 @@ public sealed class CatProfile : ProfileKit
         ActivityDrips[PetActivity.DeepSleep] = D((ParticleKind.Z, 1.8));
         ActivityDrips[PetActivity.Working] = D((ParticleKind.Purr, 0.7));
         ActivityDrips[PetActivity.Eating] = D((ParticleKind.Sparkle, 0.4));
-        ActivityDrips[PetActivity.Sweeping] = D((ParticleKind.Dust, 0.12));
+        ActivityDrips[PetActivity.Sweeping] = D((ParticleKind.Sparkle, 0.8));
         ReactionDrips[PetReaction.Hearts] = D((ParticleKind.Heart, 0.25), (ParticleKind.Purr, 0.3));
         ReactionDrips[PetReaction.Sad] = D((ParticleKind.Tear, 0.6));
         ReactionDrips[PetReaction.Sparkle] = D((ParticleKind.Sparkle, 0.07));
@@ -127,9 +149,33 @@ public sealed class CatProfile : ProfileKit
         PetActivity.Eating => Rest with { Prop = PetProp.Crumb, ArmR = PetArm.Rub, Mouth = 0.5 },
         PetActivity.Working => Rest with { Prop = PetProp.Laptop, ArmL = 70, ArmR = 35, LookY = 0.5, Eye = 0.5, Sit = 0.2 },
         PetActivity.Downloading => Rest with { Prop = PetProp.Box, Sit = 0.6, Pupil = 1, EarL = 0.8, EarR = 0.8 },
-        PetActivity.Sweeping => Rest with { Prop = PetProp.Broom, Sway = -1 },
+        PetActivity.Sweeping => Washing with { Mouth = 0.3 },
         _ => base.Still(activity),
     };
+
+    /// Lavándose: sentado, con la pata en la boca y los ojos entornados.
+    private PetPose Washing => Rest with { ArmR = PetArm.Rub, Eye = 0.25, Sit = 0.4, LookY = 0.2 };
+
+    /// Si dormía, se despereza saliendo de la cesta (patas delante, bostezo) antes de lavarse
+    /// o mientras Ollama arranca; y al despertar, además se frota la cara una vez.
+    public override PetClip? Transition(PetActivity from, PetActivity to, bool fromHiding, bool toHiding)
+    {
+        if (fromHiding || toHiding || to is not (PetActivity.Sweeping or PetActivity.WakingUp) || !from.InBed())
+            return base.Transition(from, to, fromHiding, toHiding);
+        var r = Rest;
+        var after = For(new PetContext(to, from)).At(0);
+        var stretch = new List<PetKey>
+        {
+            K(0, Asleep), K(0.4, Asleep with { Eye = 0.2 }),
+            K(1.0, r with { Stretch = 1, ArmL = -10, ArmR = -10, Squash = 0.3, Mouth = 1, Tail = 1, BedIn = 0.4, Eye = 0.1 }, Ease.Out),
+            K(1.6, r with { Stretch = 0.5, Mouth = 0.2, Eye = 0.3 }),
+        };
+        if (to == PetActivity.WakingUp)
+            stretch.AddRange([K(2.0, r with { Eye = 0.3, ArmR = PetArm.Rub, Mouth = 0.3 }), K(2.4, r with { Eye = 0.3, ArmR = -110 }),
+                K(2.8, r with { Eye = 0.5, LookX = 0.6, Pupil = 0.6 }), K(3.3, after)]);
+        else stretch.Add(K(2.0, after));
+        return Once([.. stretch]);
+    }
 
     /// Se agacha, dilata las pupilas, levanta las orejas y la punta de la cola no para.
     public override PetPose Hover(PetPose pose, double hoverX, double hoverY, double seconds) => pose with
@@ -152,7 +198,6 @@ public sealed class CatProfile : ProfileKit
     public override (double Dx, double Dy) Motion(PetActivity activity, double seconds) => activity switch
     {
         PetActivity.Downloading => (Math.Sin(2 * Math.PI * seconds / 0.8) * 0.4, 0),   // la caja se tambalea
-        PetActivity.Sweeping => (Math.Sin(Math.PI * seconds / 0.7) * 0.8, 0),
         _ => (0, 0),
     };
 

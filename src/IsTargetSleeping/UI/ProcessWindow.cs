@@ -19,7 +19,7 @@ public sealed class ProcessWindow : Window
 {
     // Segoe Fluent Icons
     private const string GlyphPause = "", GlyphPlay = "", GlyphRefresh = "", GlyphSearch = "",
-        GlyphDown = "", GlyphUp = "", GlyphInfo = "";
+        GlyphDown = "", GlyphUp = "", GlyphClose = "", GlyphInfo = "";
 
     private readonly Func<ProcessActionRequest, bool, Task<ProcessActionResult>> executeAction;
     private readonly Func<ProcessActionRequest, Task<ProcessActionPreview>> previewAction;
@@ -104,6 +104,11 @@ public sealed class ProcessWindow : Window
         refreshButton.ToolTip = tr("Actualizar") + " (F5)";
         sampling.Children.Add(pauseButton);
         sampling.Children.Add(refreshButton);
+        // El marco de vidrio no deja botones de ventana a la vista: este cierra y vuelve al panel.
+        var (backButton, _) = IconButton(GlyphClose, tr("Cerrar y volver a isTargetSleeping"), GoBack);
+        backButton.ToolTip = tr("Cerrar y volver a isTargetSleeping") + " (Esc)";
+        backButton.Margin = new Thickness(6, 0, 0, 0);
+        sampling.Children.Add(backButton);
         Grid.SetColumn(sampling, 2);
         header.Children.Add(sampling);
         root.Children.Add(header);
@@ -251,7 +256,7 @@ public sealed class ProcessWindow : Window
         };
         PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Escape && !operating) { Close(); e.Handled = true; }
+            if (e.Key == Key.Escape && !operating) { GoBack(); e.Handled = true; }
             else if (e.Key == Key.F5) { _ = Model.RefreshAsync(); e.Handled = true; }
             else if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control) { search.Focus(); search.SelectAll(); e.Handled = true; }
         };
@@ -260,6 +265,16 @@ public sealed class ProcessWindow : Window
     }
 
     private void UpdateSampling() => Model.SetSamplingActive(IsVisible && WindowState != WindowState.Minimized);
+
+    /// Al cerrar desde la ventana (botón o Esc) se vuelve al panel de la app.
+    public event Action? BackRequested;
+
+    private void GoBack()
+    {
+        if (operating) return;
+        Close();
+        BackRequested?.Invoke();
+    }
     protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);

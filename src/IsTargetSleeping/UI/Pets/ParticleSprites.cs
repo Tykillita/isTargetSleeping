@@ -2,14 +2,14 @@ namespace IsTargetSleeping.UI.Pets;
 
 /// Cómo se ven las partículas: pequeños dibujos de pixel art en su posición real, que
 /// crecen por pasos enteros y se desvanecen con transparencia. Las de cada carácter
-/// (vapor, burbujas, hojas, notas, ronroneo, resoplido, bits, señales) tienen su dibujo.
+/// (vapor, burbujas, hojas, notas, ronroneo, resoplido, bits, señales, fragmentos) tienen su dibujo.
 public static class ParticleSprites
 {
     private const uint ZColor = 0xFF8FB8E0, Pink = 0xFFFF6FA0, Yellow = 0xFFFFE58A, White = 0xFFF4F8FF;
     private const uint Dust = 0xFF9AA3AD, Water = 0xFF9FD8FF, Amber = 0xFFF5BD57, Gray = 0xFFC9D1DB;
     private const uint Steam = 0xFFEEF3F7, SteamShade = 0xFFC9D6E0, BubbleRim = 0xFF6FBFE0, Leaf = 0xFF86A95C, LeafDark = 0xFF587A3A;
     private const uint NoteColor = 0xFFE77FA8, PurrColor = 0xFFFFA94D, Cloud = 0xFFF4F1EA, CloudShade = 0xFF9E9384;
-    private const uint BitColor = 0xFF35C977, SignalColor = 0xFF6CC0FF;
+    private const uint BitColor = 0xFF35C977, SignalColor = 0xFF6CC0FF, Fragment = 0xFF3FBFB4, FragmentLight = 0xFFB8FFF6;
 
     private static readonly string[] Z = ["oooo", "..o.", ".o..", "oooo"];
     private static readonly string[] Heart = [".X.X.", "XXXXX", ".XXX.", "..X.."];
@@ -26,6 +26,8 @@ public static class ParticleSprites
     private static readonly string[] Puff = [".CC.", "CccC", "CcCC", ".CC."];
     private static readonly string[] Zero = [".g.", "g.g", "g.g", ".g."];
     private static readonly string[] One = [".g", "gg", ".g", ".g"];
+    private static readonly string[] Shard = ["lf", "ff"];
+    private static readonly string[] ShardTilted = ["fl", "ff"];
 
     public static void Draw(PixelCanvas canvas, IEnumerable<Particle> particles, int scale)
     {
@@ -52,6 +54,7 @@ public static class ParticleSprites
                 ParticleKind.Purr => (Tilde, _ => PurrColor),
                 ParticleKind.Puff => (Puff, k => k == 'C' ? CloudShade : Cloud),
                 ParticleKind.Bit => (p.Phase > 0.5 ? One : Zero, _ => BitColor),
+                ParticleKind.Fragment => (p.Phase > 0.5 ? ShardTilted : Shard, k => k == 'l' ? FragmentLight : Fragment),
                 _ => (Drop, _ => Water),
             };
             // El reventón de la burbuja no se amplía: se separa.

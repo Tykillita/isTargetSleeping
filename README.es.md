@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.4.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -54,25 +54,28 @@ https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
 | ⏻ | **Encender y apagar** | El botón grande del panel, o **Ctrl+Alt+O** desde cualquier app. |
 | 🔍 | **Detecta tu instalación** | La app de Ollama, un servicio de Windows (NSSM, WinSW, `sc create`…), una tarea programada o un `ollama serve` a mano. Lo apaga por el mismo camino por el que arranca. |
 | 🧹 | **Libera la memoria sin uso** | Tras 5, 15, 30 o 60 minutos sin generar, saca el modelo de la memoria. Ollama sigue encendido y lo recarga con el siguiente mensaje. **Ctrl+Alt+S** lo duerme al momento. |
-| 🧽 | **Liberar RAM** | Limpieza automática selectiva cuando la presión física es alta; zonas avanzadas manuales con el botón o **Ctrl+Alt+L**. Protege modelos, juegos y aplicaciones en primer plano; puede importar y reemplazar Mem Reduct. |
-| 🔎 | **Reconocimiento de procesos** | Actividad muestra las cinco aplicaciones que más RAM usan. Abre la ventana completa para ver RAM/CPU, desplegar PIDs, buscar y filtrar, o finalizar una aplicación, proceso o árbol tras confirmar. |
+| 🧽 | **Liberar RAM** | Limpieza automática al pasar de tu porcentaje (repite tras una pausa mínima mientras siga alta), cada cierto tiempo o con presión crítica; también con el botón o **Ctrl+Alt+L**. Protege modelos, juegos y la app que estás usando. No necesita Mem Reduct. |
+| 🔎 | **Reconocimiento de procesos** | Actividad muestra las cinco aplicaciones que más RAM usan. Abre la ventana completa (su botón ✕ o Esc la cierran y vuelven al panel) para ver RAM/CPU, desplegar PIDs, buscar y filtrar, o finalizar una aplicación, proceso o árbol tras confirmar. |
 | 🎮 | **Modo juego** | Abres un juego de Steam, Epic, Riot, EA, GOG, Rockstar o Xbox (o uno que añadas) y Ollama se apaga para dejarle la RAM y la VRAM; al salir vuelve a encenderse por el mismo camino. |
 | 🛟 | **Vigilante** | Si Ollama se cae o se cuelga, lo reinicia con el mismo mecanismo (hasta 3 veces en 10 minutos). |
 | 🔔 | **Notificaciones** | Avisos nativos de Windows cuando un modelo se duerme, Ollama se cae, la memoria llega a crítica, empieza un juego o termina una descarga; cada uno con su interruptor. |
 | 📊 | **Memoria del PC y de la GPU** | RAM en uso (la misma cifra que el Administrador de tareas), **VRAM** dedicada de tu GPU, cuánto de cada una es del modelo y la presión de memoria. |
 | 👀 | **Quién lo despierta** | Qué app cargó el modelo (Obsidian, Cursor, un script…), por su conexión al puerto de Ollama. |
-| 📈 | **Actividad** | Esta semana: GB recuperados, siestas, horas con modelo cargado, reinicios; gráfica de 30 min y los últimos eventos. |
+| 📈 | **Actividad** | Esta semana: GB recuperados, siestas, horas con modelo cargado, reinicios; gráfica de 30 min, **memoria ahora** (RAM física, memoria comprometida, archivos de paginación y caché del sistema, como Mem Reduct) y los últimos eventos. |
 | 🗂️ | **Modelos** | Tamaño, cuantización y etiquetas *visión* / *herramientas*. Cárgalos, **descárgalos** (con progreso y cancelable) o **bórralos** desde el panel. |
 | 🧩 | **Otros motores** | Un `llama-server` de **llama.cpp** propio tiene su tarjeta y su siesta; **LM Studio**, de forma experimental. |
 | 🔗 | **Enlaces** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<modelo>`… para Stream Deck, PowerToys o scripts. |
 | 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
-| 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y barre mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera. Apagadas por defecto; [más abajo](#-mascotas). |
+| 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y se asea a su manera mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera — dormida, sin salir de la cama. Apagadas por defecto; [más abajo](#-mascotas). |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
 | 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256 y con vuelta atrás automática si algo falla. |
-| 🔒 | **Privado** | Solo habla con Ollama en tu PC. Sin cuentas, sin telemetría. La búsqueda de actualizaciones (que puedes apagar) es lo único que sale de tu PC. |
+| 🔒 | **Privado** | Habla con tus motores de modelos locales. Sin cuentas, telemetría ni analítica. La búsqueda opcional de actualizaciones y sus descargas contactan con GitHub; los datos de procesos se quedan en tu PC. |
 
 ## 📥 Instalar
+
+**1.5.0 está en desarrollo.** Este README describe el código actual. La última descarga publicada es
+**1.4.0**; el nuevo resumen de memoria, las reglas de limpieza y las animaciones llegarán con 1.5.0.
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
@@ -120,7 +123,7 @@ Ajustes o en su menú de clic derecho; se guarda y cambia sin reiniciar.
 
 **Cuenta lo que hace Ollama:**
 
-<p align="center"><img src="docs/images/pets-states-es.svg" width="100%" alt="Las cuatro mascotas en seis estados: duermen con Ollama apagado, comen mientras carga un modelo, teclean en un portátil mientras genera, cargan una caja al descargar, barren al liberar RAM y sueltan corazones con las caricias."></p>
+<p align="center"><img src="docs/images/pets-states-es.svg" width="100%" alt="Las cuatro mascotas en seis estados: duermen con Ollama apagado, comen mientras carga un modelo, teclean en un portátil mientras genera, cargan una caja al descargar, limpian a su manera al liberar RAM (Mira escanea y compacta los datos, la llama se sacude la lana, la capibara se frota el trasero por el suelo y el gatito se lava) y sueltan corazones con las caricias."></p>
 
 <details>
 <summary>Ver como tabla</summary>
@@ -134,23 +137,25 @@ Ajustes o en su menú de clic derecho; se guarda y cambia sin reiniciar.
 | Modelo en memoria | Atenta, con sus propios gestos |
 | Generando | Teclea en un portátil diminuto |
 | Descargando un modelo | Carga una caja |
-| Liberando RAM | Barre |
+| Liberando RAM | Limpia a su manera (ver abajo); si dormía, primero sale de la cama y después vuelve |
 | Presión de memoria alta · crítica | Suda · se pone coral |
 
 </details>
 
 Reacciones puntuales: destellos al liberar RAM, una siesta cuando el modelo se duerme, estrellitas de mareo cuando
 Ollama se cae (triste si el vigilante se rinde), un salto al hacerle clic y corazones al acariciarla (ir y venir con
-el ratón por encima).
+el ratón por encima). Los destellos cierran la limpieza: llegan cuando ya se la ha visto limpiar, allí donde esté.
+**Dormida, reacciona sin salir de la cama** — entreabre un ojo, mueve una oreja, una burbuja, un resoplido o un
+ronroneo — y el logo de Windows se queda apagado.
 
 **Cada una tiene su carácter:**
 
 | Mascota | Carácter | Lo suyo | Cama |
 |---|---|---|---|
-| **Mira** | Hacker vigilante — el logo de la app hecho personaje | Lanza un anillo de radar desde el ojo, fija una retícula roja sobre tu cursor, su antena emite señales y suben bits mientras trabaja; el clic es un *ping* de radar | Cápsula azul con diana |
-| **Llama** | Orgullosa, curiosa y algo dramática | Trota con la cabeza alta, mastica de lado, tararea, estira el cuello hacia el cursor, lleva la caja bajo una manta tejida y resopla una nubecita al clic; se asoma sobre el logo como un periscopio | Cojín de tejido andino |
-| **Capibara** | Zen | Casi ni se inmuta (un parpadeo lento y una burbuja), un pájaro se le posa en el lomo, equilibra la caja en la cabeza con la mandarina encima; no se esconde — se apoya en el logo | Tina de madera humeante |
-| **Gatito naranja** | Juguetón | Se agacha con las pupilas dilatadas al pasar el ratón, salta sobre el cursor si se queda quieto 1,2 s, se eriza y da un zarpazo al clic, se acicala, amasa ronroneando; al asomarse enseña primero las orejas y deja la cola fuera | Cesta de mimbre acolchada |
+| **Mira** | Hacker vigilante — el logo de la app hecho personaje | Lanza un anillo de radar desde el ojo, fija una retícula roja sobre tu cursor, su antena emite señales y suben bits mientras trabaja; el clic es un *ping* de radar; es un robot: arranca calibrando el ojo y limpia escaneando la barra con un haz del ojo, atrae los datos sueltos y los compacta en un cubo que estalla en destellos | Cápsula azul con diana |
+| **Llama** | Orgullosa, curiosa y algo dramática | Sin brazos: se expresa con el cuello, las orejas, las pezuñas y su cola lanuda. Trota con la cabeza alta, rumia de lado con la comida en el hocico, teclea picoteando el portátil al ritmo de sus pezuñas, tararea, estira el cuello hacia el cursor, lleva la caja bajo una manta tejida y resopla una nubecita al clic; para limpiar se sacude el polvo de la lana; se asoma sobre el logo como un periscopio | Cojín de tejido andino |
+| **Capibara** | Zen | Casi ni se inmuta (un parpadeo lento y una burbuja), un pájaro se le posa en el lomo, equilibra la caja en la cabeza con la mandarina encima; sin nada que hacer está sentada; mientras Ollama arranca llega su cocodrilo, se sube de un salto (de pie), se sienta en su lomo para pasear y ya encendido se baja (el paseo siempre termina); para limpiar se frota el trasero por el suelo y acaba brillante (si dormía, sale de su tina y se escurre el pelo); no se esconde — se apoya en el logo | Tina de madera humeante |
+| **Gatito naranja** | Juguetón | Se agacha con las pupilas dilatadas al pasar el ratón, salta sobre el cursor si se queda quieto 1,2 s, se eriza y da un zarpazo al clic, se acicala, amasa ronroneando; un gato no barre: se lava a lametones; al asomarse enseña primero las orejas y deja la cola fuera | Cesta de mimbre acolchada |
 
 **El logo de Windows participa** como parte de su casa: una segunda ventana que no recibe clics pinta «luces» sobre el
 logo real, panel a panel. Con Ollama apagado se queda exactamente como lo dibuja Windows; con Ollama encendido brilla
@@ -165,8 +170,9 @@ permanece oculta y Ajustes explica el motivo. **Movimiento reducido** usa una po
 temporizadores. Al apagar el interruptor se cierra su ventana y se detienen sus temporizadores.
 
 Para revisar sus animaciones sin cambiar tus ajustes, `--export-pet carpeta` genera hojas de las cuatro especies con
-fondos claros y oscuros: cada estado, transición, gesto (con sus partículas), reacción al ratón, paseo en ambos
-sentidos, movimiento reducido y una vista conjunta con las camas. `--snapshot salida.png pet --pet llama` genera una
+fondos claros y oscuros: cada estado, transición (también limpiar desde la cama y despierta), gesto (con sus
+partículas), reacción al ratón, cada reacción de pie y en la cama, el final de una limpieza, paseo en ambos sentidos,
+movimiento reducido y una vista conjunta con las camas. `--snapshot salida.png pet --pet llama` genera una
 vista individual; los identificadores son `mira`, `llama`, `capybara` y `orange-cat`.
 
 ### Enlaces
@@ -200,18 +206,35 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
 - **GPU:** elige por DXGI el adaptador con más memoria dedicada (la RTX de un portátil, no la gráfica integrada) y
   lee los contadores `GPU Adapter Memory` y `GPU Process Memory`, los mismos del Administrador de tareas. La VRAM de
   los runners es la parte del modelo.
-- **Limpieza automática selectiva:** requiere presión física alta o crítica. Recorta la memoria de trabajo de
-  hasta diez procesos poco activos de tu usuario y sesión, con al menos 128 MiB residentes. Protege modelos,
-  motores, juego, aplicaciones en primer plano y sus descendientes. Conserva tu umbral e intervalo; la presión
-  crítica tiene prioridad y hay al menos tres minutos entre intentos. Los fallos se reintentan después de tres y
-  seis minutos, hasta tres intentos por episodio. Al entrar en un juego espera el apagado confirmado de los
-  motores, hasta treinta segundos; cancela si falla el apagado o termina el juego.
-- **Limpieza manual (en lugar de Mem Reduct):** conserva las zonas configuradas y los mismos bits de `ReductMask2`
+- **Limpieza automática:** limpia las mismas zonas que el botón, con reglas independientes.
+  - **Porcentaje:** al llegar al % elegido (por ejemplo 70 %) limpia enseguida, aunque no toque el intervalo; si la
+    RAM sigue por encima, repite como mucho cada *pausa mínima* (de 1 a 30 min; 5 por defecto).
+  - **Intervalo:** cada N minutos desde la última limpieza, sea del tipo que sea, con la RAM que haya.
+  - **Presión crítica:** actúa en cuanto Windows la avisa y, si sigue, repite tras la pausa mínima.
+  - **Al empezar a jugar:** cuando Ollama y los otros motores confirman que se apagaron (hasta treinta segundos).
+
+  Ninguna espera a que Windows marque presión alta: manda tu porcentaje. Hay al menos un minuto entre dos intentos y
+  un intento fallido se reintenta a los 3, 6, 15 y luego cada 30 minutos. Protege modelos, motores, el juego y la app
+  que estás usando con sus procesos; con la barra de tareas, la bandeja o el escritorio delante solo se protege el
+  Explorador, no todo lo abierto desde Inicio. Los procesos protegidos de Windows que niegan el acceso se saltan.
+- **Zonas (en lugar de Mem Reduct):** conserva las zonas configuradas y los mismos bits de `ReductMask2`
   (por defecto `0xE7`): memoria de trabajo, cachés, listas en espera, páginas modificadas y combinación de páginas.
   Las operaciones globales de caché y escritura de volúmenes aparecen como opciones avanzadas. El resultado
   distingue éxito, parcial, fallo y sin trabajo, con mediciones antes, al terminar y a los cinco y treinta segundos.
   El cambio observado puede ser negativo e incluir otras actividades del PC; no garantiza ahorro sostenido. El
   agregado semanal usa la observación a los cinco segundos. La memoria en espera ya está disponible para Windows.
+
+  | Zona | API | Por defecto |
+  |---|---|:-:|
+  | Memoria de trabajo de aplicaciones | `EmptyWorkingSet` por proceso, excluyendo protegidos y descendientes | ✅ |
+  | Caché de archivos del sistema | `NtSetSystemInformation(SystemFileCacheInformationEx)` | ✅ |
+  | Lista en espera de prioridad baja | `SystemMemoryListInformation` → `MemoryPurgeLowPriorityStandbyList` | ✅ |
+  | Toda la lista en espera | → `MemoryPurgeStandbyList` (Windows vuelve a leerla del disco) | ⬜ |
+  | Lista de páginas modificadas | → `MemoryFlushModifiedList` | ⬜ |
+  | Combinar páginas idénticas | `SystemCombinePhysicalMemoryInformation` (Windows 10+) | ✅ |
+  | Caché del registro | `SystemRegistryReconciliationInformation` (Windows 8.1+) | ✅ |
+  | Caché de archivos modificados | `FlushFileBuffers` en cada volumen fijo | ✅ |
+
 - **Permisos de administrador para limpieza, una vez:** *Activar* en Ajustes › Liberar RAM lanza con UAC el programa
   aparte `isTargetSleeping.MemoryAgent.exe`. Se copia
   a `C:\Program Files\isTargetSleeping\cleaner` (solo un administrador puede escribir ahí: la tarea elevada nunca
@@ -237,10 +260,8 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   **Reintentar como administrador**, con UAC propio y una orden separada del agente. La tarea de limpieza no admite
   estas órdenes. Un servidor gestionado finalizado queda apagado manualmente; si un servicio externo lo reinicia,
   aparece como reaparecido, sin desactivar servicios ni tareas de inicio.
-- **Mem Reduct:** si está instalado, Ajustes muestra su configuración (de `%APPDATA%\Henry++\Mem Reduct\memreduct.ini`).
-  *Importar ajustes* copia su %, intervalo, zonas y aviso; *Reemplazar* importa, lo cierra (a través del agente,
-  porque corre como administrador), lo quita del inicio y apaga su limpieza automática en su ini para que nunca
-  limpien los dos a la vez; *Volver a Mem Reduct* lo deja como estaba.
+- **Mem Reduct no hace falta:** isTargetSleeping limpia con su propio agente. Si aún lo tienes, desinstálalo o apaga
+  su limpieza automática para que no limpien los dos a la vez.
 - **Vigilante:** *caída* = debería estar encendido, la API no responde y no queda ningún `ollama serve` en 2 muestras
   (~5 s) → lo reinicia por el último mecanismo; *cuelgue* = el servidor vive pero la API no responde en 3 muestras
   (~7,5 s) → lo mata y lo reinicia. Máximo 3 veces en 10 min; luego se rinde y avisa. No actúa si lo apagaste tú, si
@@ -276,6 +297,12 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   manual. El agente de memoria se actualiza por separado, con su permiso de administrador.
 - Las instalaciones anteriores a 1.3.0 sin repositorio configurado necesitan una primera actualización manual.
 
+### Memoria ahora
+
+Actividad separa RAM física, memoria comprometida, archivos de paginación y caché del sistema (actual y pico),
+con una barra para cada medida. La memoria comprometida es lo que los programas han reservado entre RAM y
+archivos de paginación; llegar a su límite puede impedir nuevas reservas aunque quede RAM física disponible.
+
 ## 🔒 Privacidad
 
 - Se conecta a la API local de Ollama (`127.0.0.1:11434` u `OLLAMA_HOST`) y a los puertos locales de los otros motores.
@@ -284,27 +311,32 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
   desde GitHub y sus servidores `release-assets.githubusercontent.com`/`objects.githubusercontent.com`. GitHub
   recibe tu IP y el identificador de la app; no se envían modelos, conversaciones, ajustes ni historial de uso.
   No hay cuentas, telemetría ni analítica. Las páginas de novedades, descargas y créditos se abren al pulsar sus enlaces.
-- El agente usa permisos de administrador para la limpieza activada, reemplazar Mem Reduct y los reintentos de
+- El agente usa permisos de administrador para la limpieza activada y los reintentos de
   finalización confirmados. Cada finalización elevada requiere su propio permiso de UAC.
 - Nombres, PIDs, rutas, usuarios y métricas de RAM/CPU se leen localmente; el reconocimiento de procesos no envía
   esos datos a ningún servicio externo.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio
-  registro en `Logs\app.log` (avisos, reinicios, modo juego). Los enlaces viven en
-  `HKCU\Software\Classes\istargetsleeping`; el instalador lo borra al desinstalar.
+  registro en `Logs\app.log` (avisos, reinicios, modo juego). «Abrir al iniciar sesión» usa
+  `HKCU\…\CurrentVersion\Run` y respeta el interruptor de aplicaciones de inicio del Administrador de tareas.
+  Los enlaces viven en `HKCU\Software\Classes\istargetsleeping`; el desinstalador elimina ambas entradas.
 
 <a id="desarrollo"></a>
 
 ## 🛠️ Desarrollo
 
-Windows 100 % nativo: C# sobre .NET 10 con **WPF** para la interfaz y **Win32** directo para todo lo demás (DXGI y
-PDH para la GPU, `GetExtendedTcpTable`, `WM_COPYDATA` entre instancias…). Sin paquetes NuGet, sin WinForms, sin web
-views.
+Windows 100 % nativo: C# sobre .NET 10 con **WPF** para la interfaz y **Win32** directo (P/Invoke):
+`Shell_NotifyIcon`, `RegisterHotKey`, `GlobalMemoryStatusEx`, `GetProcessTimes`, `NtQueryInformationProcess`,
+administrador de servicios, programador de tareas (COM), DWM para vidrio acrílico y esquinas redondas, DXGI
+(tabla de métodos COM) y PDH para la GPU, `GetExtendedTcpTable`, `SHQueryUserNotificationState` y `WM_COPYDATA`
+entre instancias. Sin paquetes NuGet, WinForms ni vistas web.
+
+**Requisitos:** SDK de .NET 10 (`winget install Microsoft.DotNet.SDK.10`); Inno Setup 6 para crear el instalador.
 
 ```powershell
 .\build.ps1                    # build\isTargetSleeping.exe (autocontenido, un solo archivo)
 .\build.ps1 -Install           # además lo instala y lo relanza
-.\build.ps1 -Test              # pruebas: IdleTracker, vigilante, modo juego, bibliotecas, estadísticas, descargas, enlaces y actualizador
-.\package.ps1                  # dist\: zip + instalador para x64 y arm64
+.\build.ps1 -Test              # pruebas de lógica, integración nativa e interfaz WPF
+.\package.ps1                  # dist\: zip + instalador para x64 y arm64, con .sha256
 .\package.ps1 -RequireInstaller # falla si falta Inno Setup
 .\docs\generate-images.ps1     # imágenes del README y assets del logo
 ```
@@ -320,6 +352,103 @@ del changelog para que lo revises y publiques desde GitHub. La app no ve borrado
 Se mantienen las comprobaciones de `main` y las solicitudes de cambios. Solo el trabajo que crea el borrador tiene
 permiso de escritura; la app no requiere un token. La firma opcional conserva `SIGN_CERT_THUMBPRINT`; se admiten
 versiones sin firmar.
+
+La carpeta de archivos verificados debe contener solo los ocho de esa versión. Si `dist` conserva paquetes
+anteriores, copia los ocho actuales a otra carpeta y usa `-AssetsDirectory <carpeta>` en `verify-release.ps1`.
+El [informe de preparación de 1.5.0](docs/release-1.5.0.md) recoge las comprobaciones y los pasos de publicación.
+Configura `SIGN_CERT_THUMBPRINT` antes de empaquetar para firmar el ejecutable y el instalador con `signtool`;
+las compilaciones sin firma pueden activar SmartScreen.
+
+### Línea de comandos
+
+```powershell
+$B = "$env:LOCALAPPDATA\Programs\isTargetSleeping\isTargetSleeping.exe"
+& $B --status | Write-Output    # mecanismo detectado, respuesta de la API y procesos llama-server
+& $B --on | Write-Output        # igual que el botón del panel (también --off)
+& $B --sleep | Write-Output     # duerme los modelos a través de la instancia abierta, si existe
+& $B --clean | Write-Output     # libera RAM con el agente y las mismas protecciones
+& $B --url istargetsleeping://load/llama3.2
+& $B --memory | Write-Output    # memoria del PC, CPU de runners y memoria de GPU
+& $B --idle-test 20 | Write-Output # prueba liberación por inactividad con un límite de 20 s
+& $B --snapshot panel.png settings demo --lang es # también: activity, game
+& $B --export-logo .\out        # ICO, PNG y SVG a partir de la geometría del logo
+& $B --export-tray .\out        # animaciones de bandeja de 16–32 px, barra clara y oscura
+& $B --export-pet .\out         # animaciones de mascotas al 100 % y 150 %, barra clara y oscura
+```
+
+Es una app de ventanas: canaliza la salida con `| Write-Output` para que PowerShell espere a que termine.
+
+### Pruebas
+
+`.\build.ps1 -Test` ejecuta los bancos de lógica/integración e interfaz WPF, sin framework de pruebas:
+`IdleTracker`, vigilante (caída, cuelgue, límites, apagado manual), `GameModeTracker` (esperas, restauración y
+cambios manuales), bibliotecas Steam/Epic, `ClientTracker`, agregados e historial de `StatsStore`, progreso
+NDJSON y enlaces. El actualizador se prueba con un servidor en `127.0.0.1`: versiones, descarga, SHA-256 y
+reemplazo/recuperación del ejecutable, sin salir del PC. Incluye protocolo e informes del agente, reglas de
+limpieza, desglose de memoria y animaciones de mascotas.
+Las pruebas de procesos cubren agrupación, PID reutilizado, protegidos y finalización real de descendientes
+creados por las pruebas. Las de WPF cubren ambos idiomas, filtros, selección estable, virtualización y pausa
+del muestreo al ocultar la ventana. Comprueba compatibilidad de ajustes e historial; no instala el agente ni
+limpia la RAM del usuario.
+
+### Estructura del proyecto
+
+```text
+src/IsTargetSleeping/
+├── Program.cs              Entrada, instancia única y reenvío de enlaces y --sleep
+├── App.xaml(.cs)           Estilos, bandeja, icono animado, menú y atajos
+├── Cli.cs                  Comandos --status, --on, --off, --sleep, --clean, --memory y exportaciones
+├── Core/
+│   ├── Backend.cs          Detección de app, servicio, tarea o binario; encendido/apagado
+│   ├── OllamaApi.cs        API HTTP, descargas NDJSON y borrado
+│   ├── OllamaController.cs Estado, sondeo, inactividad, vigilante y descargas
+│   ├── Supervisor.cs       Juegos, otros motores, avisos, presión, enlaces y actualizaciones
+│   ├── Supervisor.Clean.cs Reglas y coordinación de limpieza
+│   ├── MemoryAgent.cs      Instalación, tarea e informes versionados del agente
+│   ├── MemoryBreakdown.cs  Memoria física/comprometida, paginación y caché
+│   ├── ProcessContracts.cs Identidades, muestras y resultados compartidos
+│   ├── ProcessMonitoring.cs Muestreo nativo y detección de protecciones
+│   ├── ProcessActions.cs   Finalización verificada de procesos y árboles
+│   ├── CleanSpec.cs        Zonas y protocolo compartido con el agente
+│   ├── CleanRules.cs       Reglas automáticas
+│   ├── Watchdog.cs         Detección de caídas y cuelgues
+│   ├── TrayMotion.cs       Animaciones y poses del icono
+│   ├── Games.cs            Bibliotecas, detección y GameModeTracker
+│   ├── Clients.cs          Conexiones TCP, nombres y ClientTracker
+│   ├── Stats.cs            Historial de 90 días, semana y gráfica de 30 minutos
+│   ├── Gpu.cs              DXGI y contadores PDH de VRAM
+│   ├── Links.cs            Registro e interpretación de enlaces
+│   ├── Updater.cs          Releases GitHub y descargas verificadas/cancelables
+│   ├── UpdateInstaller.cs  Auxiliar, confirmación de inicio y recuperación
+│   ├── Engines/            IEngine, llama.cpp y LM Studio experimental
+│   ├── Activity.cs         CPU/memoria de runners e IdleTracker
+│   ├── SystemMemory.cs     Uso y presión de memoria
+│   ├── Processes.cs        Nombre, línea de comandos y parentesco
+│   ├── Prefs.cs            Atajos, inicio y preferencias
+│   ├── Paths.cs            Identidad, rutas, ajustes y registro
+│   ├── L10n.cs             Traducciones con claves españolas
+│   └── Win32.cs            API de Windows
+├── UI/
+│   ├── ContentView.xaml    Panel, Actividad y Ajustes
+│   ├── PanelViewModel.cs   Datos del panel calculados desde el estado
+│   ├── PanelWindow.cs      Panel de bandeja con desplazamiento
+│   ├── ProcessWindow.cs    Procesos y confirmaciones de finalización
+│   ├── TrayIcon.cs         Icono, avisos y WM_COPYDATA
+│   ├── TrayAnimator.cs     Animaciones a 20 fps, radar cacheado
+│   ├── TaskbarPet.cs       Estado, animación, posición, ratón y menú de mascota
+│   ├── PetSurface.cs · TaskbarLocator.cs Ventana, Inicio, bandeja y primer plano
+│   ├── Pets/               Especies, catálogo, sprites y luces del logo de Windows
+│   ├── Notifier.cs         Interruptores y límite de un aviso por minuto
+│   ├── Logo.cs             Geometría del logo
+│   ├── Controls.cs         Interruptor, memoria, gráfica, progreso e iconos
+│   ├── Theme.cs · Glass.cs · Mark.cs · AboutWindow.cs
+└── Resources/Strings.en.json
+src/IsTargetSleeping.Agent/    Limpieza y finalización con permisos elevados
+tests/IsTargetSleeping.Tests   Lógica e integración nativa
+tests/IsTargetSleeping.UiTests Interfaz WPF
+packaging/isTargetSleeping.iss Instalador Inno Setup
+Assets/                       Iconos y logo PNG/SVG
+```
 
 ## Créditos
 

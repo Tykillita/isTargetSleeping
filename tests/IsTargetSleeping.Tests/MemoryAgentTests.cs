@@ -7,14 +7,12 @@ internal static class MemoryAgentTests
     {
         Guid id = Guid.NewGuid();
         var identity = new ProcessIdentity(1234, 133000000000000000);
-        var request = new CleanSpec(CleanAreas.WorkingSets, [5678])
-        { RequestId = id, Selective = true, KeepIdentities = [identity], OwnerSid = "S-1-5-21-1-2-3-1001", SessionId = 2 };
+        var request = new CleanSpec(CleanAreas.WorkingSets, [5678]) { RequestId = id, KeepIdentities = [identity] };
         var parsed = CleanSpec.Parse(request.Format());
-        check("protocolo v2 conserva identidad, solicitud y modo selectivo", parsed is { } spec
-            && spec.RequestId == id && spec.Selective && spec.OwnerSid == request.OwnerSid && spec.SessionId == 2
-            && spec.KeepIdentities.SequenceEqual(request.KeepIdentities) && spec.Keep.SequenceEqual(request.Keep));
-        check("protocolo legado de zonas y exclusiones sigue válido", CleanSpec.Parse("a=e7;k=1234,5678;x=memreduct")
-            is { Areas: CleanAreas.Default, CloseMemReduct: true, Keep.Count: 2 });
+        check("protocolo v2 conserva identidad y solicitud", parsed is { } spec
+            && spec.RequestId == id && spec.KeepIdentities.SequenceEqual(request.KeepIdentities) && spec.Keep.SequenceEqual(request.Keep));
+        check("protocolo legado de zonas y exclusiones sigue válido", CleanSpec.Parse("a=e7;k=1234,5678")
+            is { Areas: CleanAreas.Default, Keep.Count: 2 } && CleanSpec.Parse("a=e7;x=memreduct") is null);
         var many = new CleanSpec(CleanAreas.WorkingSets, Enumerable.Range(1, 1024).ToArray());
         check("1024 exclusiones se conservan sin truncarlas", CleanSpec.Parse(many.Format()) is { Keep.Count: 1024 });
         check("1025 exclusiones fallan al formar la solicitud", Throws(() =>
@@ -25,8 +23,8 @@ internal static class MemoryAgentTests
             CleanSpec.Parse("a=1;r=" + id.ToString("N") + ";r=" + id.ToString("N")) is null
             && CleanSpec.Parse("a=1;k=１２") is null && CleanSpec.Parse("a=1;i=123:0") is null
             && CleanSpec.Parse("a=1;i=0:123") is null && CleanSpec.Parse("a=1;k=1\n") is null);
-        check("modo selectivo exige sesión y SID", CleanSpec.Parse("a=1;m=selective") is null
-            && CleanSpec.Parse("a=1;m=selective;u=S-1-5-18;s=0") is { Selective: true });
+        check("el modo selectivo retirado ya no se acepta", CleanSpec.Parse("a=1;m=selective") is null
+            && CleanSpec.Parse("a=1;m=selective;u=S-1-5-18;s=0") is null && CleanSpec.Parse("a=1;u=S-1-5-18") is null);
         check("solicitud grande nunca se acepta", CleanSpec.Parse("a=1;k=" + new string('1', CleanSpec.MaxLength)) is null);
 
         var termination = new ProcessActionRequest(id, ProcessActionMode.Tree, [identity]);
@@ -92,39 +90,6 @@ internal static class MemoryAgentTests
         check("instancia terminada sin informe se distingue de espera", AgentRunTracking.Evaluate(id,
             TimeSpan.FromSeconds(20), true, null) == AgentTrackingState.MissingReport
             && AgentRunTracking.Evaluate(id, TimeSpan.FromSeconds(1), true, null) == AgentTrackingState.Waiting);
-
-        ProcessSnapshot Candidate(int pid, double? cpu, long ram = CleanSelection.MinimumResidentBytes) => new()
-        { Identity = new(pid, 100000 + pid), Name = "app", Executable = "app.exe", OwnerSid = "S-1-5-21-1", SessionId = 1,
-            IsCritical = false, WorkingSetBytes = ram, CpuSeconds = cpu };
-        var start = new ProcessSample(now, 1024L * 1024 * 1024, false, [Candidate(100, 2)]);
-        var end = start with { CapturedAt = now.AddSeconds(2), Processes = [Candidate(100, 2.02)] };
-        var sid = "S-1-5-21-1";
-        check("selección automática acepta exactamente 128 MiB y 1 % de un núcleo", CleanSelection.Select(start, end, sid, 1,
-            new HashSet<int>(), 2).Select(p => p.Pid).SequenceEqual([100]));
-        check("selección exige mismo usuario y sesión", CleanSelection.Select(start, end, "S-1-5-21-2", 1, new HashSet<int>(), 2).Count == 0
-            && CleanSelection.Select(start, end, sid, 2, new HashSet<int>(), 2).Count == 0);
-        check("selección rechaza RAM baja, actividad y CPU desconocida", new[]
-        { Candidate(100, 2, CleanSelection.MinimumResidentBytes - 1), Candidate(100, 2.021), Candidate(100, null) }
-            .All(p => CleanSelection.Select(start, end with { Processes = [p] }, sid, 1, new HashSet<int>(), 2).Count == 0));
-        check("selección no actúa sobre identidad reutilizada ni proceso protegido", CleanSelection.Select(start,
-            end with { Processes = [Candidate(100, 2) with { Identity = new(100, 999999) }] }, sid, 1, new HashSet<int>(), 2).Count == 0
-            && CleanSelection.Select(start, end, sid, 1, new HashSet<int> { 100 }, 2).Count == 0
-            && CleanSelection.Select(start, end with { Processes = [Candidate(100, 2) with { ProtectionReason = "Foreground" }] },
-                sid, 1, new HashSet<int>(), 2).Count == 0);
-        check("selección rechaza criticidad desconocida", CleanSelection.Select(start,
-            end with { Processes = [Candidate(100, 2) with { IsCritical = null }] }, sid, 1, new HashSet<int>(), 2).Count == 0);
-        var bulkStart = start with { Processes = Enumerable.Range(100, 20).Select(pid => Candidate(pid, 0,
-            CleanSelection.MinimumResidentBytes + pid)).ToArray() };
-        var bulkEnd = bulkStart with { CapturedAt = now.AddSeconds(2) };
-        var selected = CleanSelection.Select(bulkStart, bulkEnd, sid, 1, new HashSet<int>(), 2);
-        check("selección limita diez y prioriza quienes más RAM ocupan", selected.Count == 10
-            && selected.Select(p => p.Pid).SequenceEqual(Enumerable.Range(110, 10).Reverse()));
-        check("recortes paran cuando desaparece presión física y conservan aviso del kernel",
-            !CleanSelection.ShouldContinue(before with { PhysicalLoad = 84, LowMemory = false })
-            && CleanSelection.ShouldContinue(before with { PhysicalLoad = 85, LowMemory = false })
-            && CleanSelection.ShouldContinue(before with { PhysicalLoad = 70, LowMemory = true }));
-        check("selección tolera solo contadores de CPU válidos", !CleanSelection.LowActivity(2, 1, 2)
-            && !CleanSelection.LowActivity(0, 0, 0) && !CleanSelection.LowActivity(0, double.NaN, 2));
     }
     private static bool Throws(Action action)
     {

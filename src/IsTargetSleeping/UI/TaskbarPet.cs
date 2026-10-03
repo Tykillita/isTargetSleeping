@@ -10,7 +10,7 @@ using static IsTargetSleeping.L10n;
 namespace IsTargetSleeping.UI;
 
 /// La mascota junto a Inicio: opcional, en su propia ventana (Explorer no se toca).
-/// Junta las piezas: lo que pasa en Ollama (`PetBrain`), cómo se mueve (`PetAnimations`,
+/// Junta las piezas: lo que pasa en Ollama (`PetBrain`), cómo se mueve (su perfil de `PetProfiles`,
 /// `PetWalker`), dónde va (`TaskbarLocator`, `TaskbarPetLayout`), cómo se ve (la especie
 /// elegida de `PetCatalog`), cómo se anima (`PetDirector`: transiciones, gestos,
 /// reacciones, partículas, a 60 fps con `PetClock`) y la ventana (`PetSurface`). El logo de Windows es parte de su
@@ -24,7 +24,7 @@ public sealed class TaskbarPet : IDisposable
     private readonly PetBrain brain = new();
     private PetWalker walker = new(Environment.TickCount);
     private readonly Stopwatch clock = Stopwatch.StartNew();
-    private readonly DispatcherTimer poll;
+    private readonly DispatcherTimer poll, raiseAgain;
     private readonly PetClock petClock;
     private PetDirector director;
     private PixelCanvas? canvas;
@@ -65,6 +65,8 @@ public sealed class TaskbarPet : IDisposable
         prefs = supervisor.Prefs;
         poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         poll.Tick += (_, _) => Refresh();
+        raiseAgain = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
+        raiseAgain.Tick += (_, _) => { raiseAgain.Stop(); if (!disposed) KeepOnTop(); };
         petClock = new PetClock(Render);
         director = new PetDirector(species.Anchors, Environment.TickCount, species.Animations);
         foregroundProc = OnForeground;
@@ -137,6 +139,7 @@ public sealed class TaskbarPet : IDisposable
     {
         generation++;
         poll.Stop();
+        raiseAgain.Stop();
         petClock.Stop();
         if (foregroundHook != IntPtr.Zero) Win32.UnhookWinEvent(foregroundHook);
         foregroundHook = IntPtr.Zero;
@@ -166,6 +169,14 @@ public sealed class TaskbarPet : IDisposable
             _ => PetPressure.Normal,
         };
         double now = Now;
+        // Se reserva el final antes de actualizar las señales: una limpieza larga ya
+        // cumplió el mínimo y Cleaning=false la sacaría de Sweeping antes del destello.
+        if (supervisor.LastClean?.At is { } cleaned && cleaned != lastClean)
+        {
+            lastClean = cleaned;
+            if (supervisor.LastClean?.Freed > 0 && !supervisor.Game.Active)
+                brain.React(PetReaction.Sparkle, now, finale: true);
+        }
         brain.Update(new PetSignals(
             Up: ollama.Power == Power.On,
             Starting: ollama.Power == Power.Starting,
@@ -179,11 +190,6 @@ public sealed class TaskbarPet : IDisposable
             Game: supervisor.Game.Active), now);
 
         // Reacciones por lo que acaba de pasar.
-        if (supervisor.LastClean?.At is { } cleaned && cleaned != lastClean)
-        {
-            lastClean = cleaned;
-            if (supervisor.LastClean?.Freed > 0) brain.React(PetReaction.Sparkle, now);
-        }
         if (ollama.AutoReleased?.At is { } napped && napped != lastNap)
         {
             lastNap = napped;
@@ -205,8 +211,22 @@ public sealed class TaskbarPet : IDisposable
     {
         if (disposed || surface is null || snapshot is not { } s) return;
         snapshot = s with { Suppressed = TaskbarLocator.Suppressed(s.Monitor) };
-        if (TaskbarLocator.TaskbarInFront()) { surface.BringToTop(); lights?.BringToTop(); }
+        KeepOnTop();
         Render();
+        // La barra se pone delante un momento después del cambio de ventana: se mira otra vez.
+        if (!raiseAgain.IsEnabled) raiseAgain.Start();
+    }
+
+    /// Por encima de la barra de tareas, que también es «siempre encima» y se pone delante
+    /// sola (al tocarla, al cerrar o minimizar ventanas).
+    private void KeepOnTop()
+    {
+        if (surface?.Visible != true) return;
+        if (TaskbarLocator.TaskbarInFront() || surface.Behind(Win32.FindWindow("Shell_TrayWnd", null)))
+        {
+            surface.BringToTop();
+            lights?.BringToTop();
+        }
     }
 
     // MARK: dónde va
@@ -248,7 +268,7 @@ public sealed class TaskbarPet : IDisposable
             prefs.TaskbarPetError = found.StartMissing ? tr("No pude localizar el botón Inicio en esta barra de tareas.")
                 : spot is { Fallback: true } ? tr("No hay sitio a la izquierda de Inicio con esta barra: se muestra sobre él.")
                 : null;
-            if (surface?.Visible == true && TaskbarLocator.TaskbarInFront()) { surface.BringToTop(); lights?.BringToTop(); }
+            KeepOnTop();
             Render();
         }
         catch
@@ -308,14 +328,17 @@ public sealed class TaskbarPet : IDisposable
 
         // Esperando a que arranque un modelo: escondida tras el logo, asomándose (cada una a
         // su manera: la llama por arriba, el gato con las orejas primero; la capibara no se
-        // esconde, espera apoyada en él).
-        bool hiding = logo is not null && activity is PetActivity.WakingUp or PetActivity.Drowsy
+        // esconde, espera apoyada en él). Mientras Ollama arranca, la capibara no espera: llega
+        // su cocodrilo y se da un paseo.
+        bool hiding = logo is not null
+                      && (activity == PetActivity.Drowsy || activity == PetActivity.WakingUp && species.Animations.HidesBehindLogo)
                       && prefs.PetPlacement == PetPlacement.Left && !place.Fallback && species.Size.HideRight > 0;
 
         var frame = director.Step(now, dt, new PetSituation(
             activity, reaction, brain.ReactionSince, brain.Pressure, still, hiding,
             walking, walker.Distance / n, walker.Facing, walker.Lean, walker.Turning,
-            hovered, hoverX * 2.0 / width - 1, hoverY * 2.0 / height - 1));
+            hovered, hoverX * 2.0 / width - 1, hoverY * 2.0 / height - 1, brain.ReactionDuring,
+            brain.ActivityFrom, brain.ReactionFrom));
         var pose = frame.Pose;
 
         // Dónde va: su sitio (o detrás del logo) y, si cambia, se desliza hasta él con frenada

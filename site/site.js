@@ -12,7 +12,9 @@ const EN = {
   'tema.aOscuro': 'Switch to dark mode',
   'tema.aClaro': 'Switch to light mode',
 
-  'hero.eyebrow': 'New · Version 1.4.0, explore your processes',
+  'hero.eyebrow': 'Available: 1.4.0 · In development: 1.5.0',
+  'release.avance': 'Explore 1.5.0 in development: memory now, new cleanup rules and renewed pets. Downloads are still 1.4.0.',
+  'release.pendiente': 'Coming in 1.5.0 · in development',
   'hero.titulo': 'Your models work when you talk to them. The rest of the time, they sleep.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock. It turns Ollama on and off in one click, puts the model to sleep when it stops generating and gives you your RAM and VRAM back.',
   'hero.meta': 'Free and open source · Version 1.4.0 · Windows 10 and 11 · x64 and ARM64',
@@ -47,15 +49,15 @@ const EN = {
   'atajo.s': 'puts the model to sleep',
   'atajo.l': 'frees RAM',
 
-  'pets.eyebrow': 'New in 1.3 · Pets',
+  'pets.eyebrow': 'Pets with personality',
   'pets.titulo': 'Someone tells you what Ollama is up to.',
   'pets.texto': 'Mira, a llama, a capybara or an orange kitten moves into your taskbar, right by the Start button. Drawn pixel by pixel, crisp at any scale.',
-  'pets.novedades': 'Everything new in 1.3',
+  'pets.novedades': 'Everything new in 1.5 in development',
   'pets.desliza': 'Swipe to see them all →',
   'pets.l1': 'They sleep in their bed while Ollama is off and eat while a model loads.',
-  'pets.l2': 'They type on a tiny laptop while it generates and sweep while RAM is freed.',
-  'pets.l3': 'Each one reacts to your clicks and cursor in its own way. Off by default.',
-  'pets.alt': 'The four pets in six states: sleeping, eating, typing, carrying a box, sweeping and hearts',
+  'pets.l2': 'They type on a tiny laptop while it generates and, while RAM is freed, each one cleans up in its own way: Mira scans the taskbar with her eye and compacts the loose data, the capybara scoots her bottom along the floor (or, if she was asleep, climbs out of her tub and wrings out her fur), the kitten washes and the llama shakes her wool.',
+  'pets.l3': 'Each one reacts to your clicks and cursor in its own way; asleep, without leaving its bed. When Ollama starts, the capybara arrives riding her crocodile. Off by default.',
+  'pets.alt': 'The four pets in six states: sleeping, eating, typing, carrying a box, cleaning up in their own way and hearts',
 
   'estado.eyebrow': 'In the tray',
   'estado.titulo': 'Status at a glance.',
@@ -94,8 +96,8 @@ const EN = {
   'juego.propios': '· and any you add',
 
   'ram.eyebrow': 'Free RAM',
-  'ram.titulo': 'Selective cleanup when it is needed.',
-  'ram.texto': 'With high physical pressure, trims RAM from low-activity processes while protecting models, games and your foreground application. Manual cleanup retains Mem Reduct’s advanced areas.',
+  'ram.titulo': 'Cleans when you decide.',
+  'ram.texto': 'Over the percentage you choose, every few minutes or under critical pressure, with the same areas as Mem Reduct. It protects models, the game and the app you’re using.',
   'ram.antes': 'Before',
   'ram.despues': 'After',
   'ram.nota': 'illustrative example · observe changes immediately and at 5 and 30 seconds',
@@ -121,7 +123,7 @@ const EN = {
 
   'quien.eyebrow': 'Activity',
   'quien.titulo': 'You know who woke it up.',
-  'quien.texto': 'Which app loaded the model, from its connection to Ollama’s port. Plus your week: GB reclaimed, naps and hours with a model.',
+  'quien.texto': 'Which app loaded the model, from its connection to Ollama’s port. Plus your week: GB reclaimed, naps and hours with a model, next to memory right now: physical RAM, committed, page files and system cache.',
   'quien.o': '3 times · 12 min ago',
   'quien.oc': 'once · 3 h ago',
   'quien.c': 'once · Sep 29',
@@ -179,7 +181,7 @@ const EN = {
   'priv.c2t': 'No analytics either. Your 90-day history stays in <code>%LOCALAPPDATA%</code>.',
   'priv.c3': 'One optional way out',
   'priv.c3t': 'Checking GitHub for updates, without credentials. Turn it off in Settings; it never uploads models, prompts or settings.',
-  'priv.admin': 'Admin rights are used only by the memory agent, only to free RAM, and only after you turn it on.',
+  'priv.admin': 'UAC is requested when enabling or updating the RAM agent, when controlling Ollama as a service if needed, or when you choose to retry process termination as administrator.',
 
   'inst.eyebrow': 'Install',
   'inst.titulo': 'One minute. No admin.',
@@ -192,6 +194,11 @@ const EN = {
   'inst.zip': 'Portable x64 (.zip)',
   'inst.arm': 'ARM64 installer',
   'inst.armZip': 'Portable ARM64 (.zip)',
+  'inst.x64': 'x64 installer',
+  'dl.titulo': 'Your download has started',
+  'dl.otra': 'Didn’t start? Try again',
+  'dl.pasos': 'See the steps',
+  'dl.cerrar': 'Close notice',
   'inst.meta': '~65 MB · Windows 10 (2004+) or 11 · requires Ollama · downloads from GitHub Releases',
   'inst.verificar': 'Verify the download (optional)',
   'inst.copiar': 'Copy',
@@ -261,7 +268,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Version 1.4.0',
+  'pie.version': 'Available: 1.4.0 · In development: 1.5.0',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -280,6 +287,40 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
+  'nov.v1_5_0.fecha': "In development",
+  'nov.v1_5_0.resumen': "Memory now in Activity, cleanup rules that follow your percentage and renewed pets: each one cleans up in its own way and reacts in its bed.",
+  'nov.v1_5_0.nuevo1t': "Each one cleans up its own way",
+  'nov.v1_5_0.nuevo1d': "Freeing RAM no longer has all four sweeping: Mira scans the taskbar with a beam from her eye and compacts the loose data into a cube that bursts into sparkles, the llama shakes the dust out of her wool, the kitten washes itself and the capybara scoots her bottom along the floor until she’s gleaming.",
+  'nov.v1_5_0.nuevo2t': "Out of bed to clean",
+  'nov.v1_5_0.nuevo2d': "If it was asleep with Ollama off, it first gets out of its bed and goes back when it’s done. The capybara climbs out of her tub and wrings the water out of her fur.",
+  'nov.v1_5_0.nuevo3t': "Reactions in bed",
+  'nov.v1_5_0.nuevo3d': "Asleep, a click, a pat or a watchdog alert no longer gets it up: it half opens an eye, twitches an ear or lets out a bubble, and the Windows logo stays dark.",
+  'nov.v1_5_0.cambios5t': "Mira and the llama, renewed",
+  'nov.v1_5_0.cambios5d': "Mira moves with more craft: she crouches before jumping, bounces on landing, boots up calibrating her eye and patrols with her radar. The llama no longer has arms: she eats with her muzzle, types by pecking to the beat of her hooves and speaks with her neck, ears and a tail that finally moves.",
+  'nov.v1_5_0.cambios2t': "One-click download",
+  'nov.v1_5_0.cambios2d': "Every “Download” button on the site gets the installer right away, without opening GitHub — the ARM64 one if your PC is ARM.",
+  'nov.v1_5_0.cambios3t': "Full automatic cleanup",
+  'nov.v1_5_0.cambios3d': "Cleanups by percentage, by time, under critical pressure and when gaming clean the same as the button, with the areas you choose. New minimum pause: if RAM stays above your percentage, it repeats at most every 1 to 30 minutes.",
+  'nov.v1_5_0.cambios4t': "No Mem Reduct",
+  'nov.v1_5_0.cambios4d': "The Mem Reduct card is gone from Settings: isTargetSleeping cleans with its own agent and doesn’t need it.",
+  'nov.v1_5_0.arreglos3t': "Your percentage rules",
+  'nov.v1_5_0.arreglos3d': "Since 1.4.0, automatic rules only acted above 85 % load even if you chose 70 %, and didn’t repeat while RAM stayed high. Now they act when your percentage is reached, even before the interval.",
+  'nov.v1_5_0.nuevo4t': "The capybara, on a crocodile",
+  'nov.v1_5_0.nuevo4d': "While Ollama starts, her crocodile arrives: she waits for it standing, jumps onto its back and sits down for the ride; once it's on, she jumps off. The ride always finishes even if Ollama starts sooner. And with nothing to do, she now sits.",
+  'nov.v1_5_0.nuevo5t': "Memory now",
+  'nov.v1_5_0.nuevo5d': "Activity shows physical RAM, committed memory, page files and the system cache, like Mem Reduct, each with its own bar.",
+  'nov.v1_5_0.arreglos4t': "Closing the process window",
+  'nov.v1_5_0.arreglos4d': "It has a button to close it (Esc works too) that takes you back to the isTargetSleeping panel.",
+  'nov.v1_5_0.arreglos6t': "They wake up just once",
+  'nov.v1_5_0.arreglos6d': "While Ollama started, the kitten, the llama and Mira closed their eyes and stretched again and again. Now they stretch when leaving their bed and then stay awake.",
+  'nov.v1_5_0.arreglos5t': "The pet no longer vanishes",
+  'nov.v1_5_0.arreglos5d': "Taskbar previews, Alt+Tab or a Snipping Tool capture hid it as if they were a full-screen game, and sometimes it didn't come back even on the desktop. Now it only hides for real full-screen apps and moves back in front of the taskbar.",
+  'nov.v1_5_0.arreglos1t': "Free RAM frees RAM again",
+  'nov.v1_5_0.arreglos1d': "Since 1.4.0, pressing it from the tray skipped almost everything you had opened from Start. Now only models, the game and the app you’re using are protected.",
+  'nov.v1_5_0.arreglos2t': "No needless “partial”",
+  'nov.v1_5_0.arreglos2d': "Protected Windows processes, like the antivirus, are skipped quietly instead of marking every cleanup as partial.",
+  'nov.v1_5_0.cambios1t': "Sparkles at the end",
+  'nov.v1_5_0.cambios1d': "The “RAM freed” sparkles arrive once you’ve seen it cleaning, including long cleanups; only then does it go back to what it was doing.",
   'nov.v1_4_0.fecha': "Oct 1, 2026",
   'nov.v1_4_0.resumen': "Process explorer, confirmed termination and selective automatic cleanup. The website and app tour accompany this version.",
   'nov.v1_4_0.nuevo1t': "Official website",
@@ -443,6 +484,7 @@ function aplicarIdioma(lang) {
   });
 
   pintarBotonTema();
+  pintarAviso();
   if ($('siesta')) actualizarSiesta();
   if ($('reloj')) actualizarReloj();
 }
@@ -600,5 +642,61 @@ if ('IntersectionObserver' in window) {
 } else {
   revelables.forEach((el) => el.classList.add('visible'));
 }
+
+// ---------- Descargas ----------
+// Los botones «Descargar» son enlaces directos a los archivos de GitHub Releases: GitHub responde con el archivo
+// y el navegador lo descarga sin salir de la web (también sin JS). Aquí solo se elige ARM64 si el equipo lo es
+// y se avisa de que la descarga ha empezado. Versión y arquitectura salen del propio enlace.
+
+function describirDescarga(href) {
+  const m = /isTargetSleeping-(\d+\.\d+\.\d+)-(setup|win)-(x64|arm64)\.(exe|zip)$/.exec(href);
+  if (!m) return '';
+  const tipo = m[2] === 'setup'
+    ? (idioma === 'es' ? 'instalador' : 'installer')
+    : (idioma === 'es' ? 'portable (.zip)' : 'portable (.zip)');
+  return `isTargetSleeping ${m[1]} · ${tipo} ${m[3] === 'arm64' ? 'ARM64' : 'x64'}`;
+}
+
+function pintarAviso() {
+  const aviso = $('aviso-descarga');
+  if (aviso?.dataset.href) $('aviso-archivo').textContent = describirDescarga(aviso.dataset.href);
+}
+
+let cierreAviso = 0;
+function cerrarAviso() {
+  clearTimeout(cierreAviso);
+  $('aviso-descarga').classList.remove('visible');
+  cierreAviso = setTimeout(() => { $('aviso-descarga').hidden = true; }, 250);
+}
+
+function avisarDescarga(href) {
+  const aviso = $('aviso-descarga');
+  if (!aviso) return;
+  clearTimeout(cierreAviso);
+  aviso.dataset.href = href;
+  $('aviso-otra').href = href;
+  pintarAviso();
+  aviso.hidden = false;
+  void aviso.offsetWidth;   // aplica el estado inicial para que entre con su transición
+  aviso.classList.add('visible');
+  cierreAviso = setTimeout(cerrarAviso, 9000);
+}
+
+document.querySelectorAll('[data-descarga]').forEach((a) => {
+  a.addEventListener('click', () => avisarDescarga(a.href));   // sin preventDefault: la descarga es la del enlace
+});
+$('aviso-otra')?.addEventListener('click', (e) => avisarDescarga(e.currentTarget.href));
+$('aviso-pasos')?.addEventListener('click', cerrarAviso);
+$('aviso-cerrar')?.addEventListener('click', cerrarAviso);
+
+// En Windows ARM, los botones principales bajan el instalador ARM64 y el x64 pasa a las alternativas.
+navigator.userAgentData?.getHighEntropyValues?.(['architecture']).then(({ architecture }) => {
+  if (architecture !== 'arm') return;
+  document.querySelectorAll('[data-descarga="setup"]').forEach((a) => {
+    a.href = a.href.replace('-setup-x64.exe', '-setup-arm64.exe');
+  });
+  document.querySelectorAll('[data-descarga="setup-arm64"]').forEach((a) => { a.hidden = true; });
+  document.querySelectorAll('[data-descarga="setup-x64"]').forEach((a) => { a.hidden = false; });
+}).catch(() => { /* sin datos de arquitectura: x64 */ });
 
 aplicarIdioma(leerPreferencia());

@@ -268,8 +268,7 @@ Section("Liberar RAM: orden para el agente");
 var spec = new CleanSpec(CleanAreas.Default, [1234, 5678]);
 Check("formato compacto", spec.Format() == "a=e7;k=1234,5678");
 var parsed = CleanSpec.Parse(spec.Format());
-Check("ida y vuelta", parsed is { Areas: CleanAreas.Default, CloseMemReduct: false } && parsed.Value.Keep.SequenceEqual([1234, 5678]));
-Check("cerrar Mem Reduct sin zonas", CleanSpec.Parse(new CleanSpec(CleanAreas.None, [], true).Format()) is { Areas: CleanAreas.None, CloseMemReduct: true, Keep.Count: 0 });
+Check("ida y vuelta", parsed is { Areas: CleanAreas.Default } && parsed.Value.Keep.SequenceEqual([1234, 5678]));
 Check("rechaza zonas desconocidas, PIDs raros, claves repetidas o inventadas",
     CleanSpec.Parse("a=1ff") is null && CleanSpec.Parse("a=e7;k=12a") is null && CleanSpec.Parse("a=e7;k=-1") is null
     && CleanSpec.Parse("a=e7;a=01") is null && CleanSpec.Parse("a=e7;cmd=calc") is null && CleanSpec.Parse("a=e7;x=calc") is null
@@ -279,32 +278,34 @@ Check("códigos de salida del agente", AgentExit.IsDone(AgentExit.Done | 0x08) &
     && !AgentExit.IsDone(AgentExit.NotElevated) && !AgentExit.IsDone(0));
 
 Section("Liberar RAM: reglas");
-var rules = new CleanRuleTracker(t0) { ThresholdPercent = 60 };
-Check("por debajo del umbral, nada", rules.Sample(55, false, At(300)) is null);
-Check("al pasar del 60 % limpia", rules.Sample(62, false, At(310)) == CleanReason.Threshold);
-rules.Cleaned(At(310));
-Check("sigue alto (modelo cargado): no limpia en bucle", rules.Sample(70, false, At(310 + 600)) is null);
-rules.Sample(56, false, At(1000));
-Check("bajar 4 puntos no rearma", rules.Sample(61, false, At(1010)) is null);
-rules.Sample(54, false, At(1020));
-Check("bajar 5 puntos rearma", rules.Sample(61, false, At(1030)) == CleanReason.Threshold);
-rules.Cleaned(At(1030));
-rules.Sample(40, false, At(1040));
-Check("mínimo 3 min entre limpiezas automáticas", rules.Sample(65, false, At(1030 + 170)) is null && rules.Sample(65, false, At(1030 + 180)) == CleanReason.Threshold);
+var rules = new CleanRuleTracker(t0) { ThresholdPercent = 70, ThresholdCooldownMinutes = 5, IntervalMinutes = 30 };
+Check("por debajo del umbral, nada", rules.Sample(65, false, At(60)) is null);
+Check("al pasar del 70 % limpia aunque no toque el intervalo", rules.Sample(72, false, At(70)) == CleanReason.Threshold);
+rules.Cleaned(At(70));
+Check("sigue por encima: espera la pausa mínima", rules.Sample(75, false, At(70 + 299)) is null);
+Check("sigue por encima: repite tras la pausa mínima", rules.Sample(75, false, At(70 + 300)) == CleanReason.Threshold);
+rules.Cleaned(At(370));
+rules.ThresholdCooldownMinutes = 2;
+Check("la pausa mínima se configura", rules.Sample(75, false, At(370 + 119)) is null && rules.Sample(75, false, At(370 + 120)) == CleanReason.Threshold);
+rules.Cleaned(At(490));
+rules.ThresholdPercent = 0;
+Check("sin umbral, solo el intervalo", rules.Sample(99, false, At(490 + 600)) is null && rules.Sample(99, false, At(490 + 1800)) == CleanReason.Interval);
 
 var every = new CleanRuleTracker(t0) { IntervalMinutes = 6 };
 Check("intervalo: a los 5 min no", every.Sample(30, false, At(300)) is null);
-Check("intervalo: a los 6 min sí", every.Sample(30, false, At(360)) == CleanReason.Interval);
+Check("intervalo: a los 6 min sí, aunque haya poca RAM en uso", every.Sample(30, false, At(360)) == CleanReason.Interval);
 every.Cleaned(At(360));
 every.Cleaned(At(500));   // una limpieza manual reinicia el intervalo
 Check("una limpieza manual reinicia el intervalo", every.Sample(30, false, At(720)) is null && every.Sample(30, false, At(860)) == CleanReason.Interval);
 
-var crit = new CleanRuleTracker(t0) { OnCritical = true };
-Check("presión crítica: una vez por episodio", crit.Sample(97, true, At(200)) == CleanReason.Critical);
+var crit = new CleanRuleTracker(t0) { OnCritical = true, ThresholdCooldownMinutes = 5 };
+Check("presión crítica: actúa al empezar", crit.Sample(97, true, At(200)) == CleanReason.Critical);
 crit.Cleaned(At(200));
-Check("sigue crítica: no repite", crit.Sample(97, true, At(600)) is null);
-crit.Sample(80, false, At(700));
-Check("tras volver a normal, vuelve a actuar", crit.Sample(97, true, At(800)) == CleanReason.Critical);
+Check("sigue crítica: espera la pausa mínima", crit.Sample(97, true, At(260)) is null);
+Check("sigue crítica: repite tras la pausa mínima", crit.Sample(97, true, At(500)) == CleanReason.Critical);
+crit.Cleaned(At(500));
+crit.Sample(80, false, At(570));
+Check("una crisis nueva actúa sin esperar la pausa", crit.Sample(97, true, At(580)) == CleanReason.Critical);
 Check("todo apagado: nunca", new CleanRuleTracker(t0).Sample(99, true, At(9999)) is null);
 
 Section("Coordinación de limpieza y compatibilidad");
@@ -313,33 +314,36 @@ Section("Procesos y finalización");
 ProcessTests.Run(Check);
 Section("Informes y protocolo del agente");
 MemoryAgentTests.Run(Check);
-Section("Mem Reduct");
-var ini = """
-[memreduct]
-CheckUpdatesLast=1790734368
-AutoreductEnable=true
-AutoreductIntervalEnable=true
-HotkeyCleanEnable=true
-AutoreductValue=60
-AutoreductIntervalValue=6
-BalloonCleanResults=false
-[memreduct\window]
-Position=3010,243
-""";
-var mr = MemReduct.ParseIni(ini);
-Check("importa 60 % y cada 6 min", mr is { AutoEnabled: true, AutoPercent: 60, IntervalEnabled: true, IntervalMinutes: 6, NotifyResults: false });
-Check("sin ReductMask2: sus zonas por defecto", mr.Areas == CleanAreas.Default && (int)CleanAreas.Default == 0xE7);
-var masked = MemReduct.ParseIni("[memreduct]\r\nReductMask2=13\r\n");
-Check("ReductMask2 = 13: memoria de trabajo, prioridad baja y lista en espera",
-    masked.Areas == (CleanAreas.WorkingSets | CleanAreas.StandbyLowPriority | CleanAreas.Standby) && !masked.AutoEnabled);
-Check("la sección de la ventana no se confunde", MemReduct.ParseIni("[memreduct\\window]\nAutoreductEnable=true\n").AutoEnabled == false);
-var edited = MemReduct.SetIniValues(ini.Replace("\n", "\r\n"), new Dictionary<string, string> { ["AutoreductEnable"] = "false", ["AutoreductIntervalEnable"] = "false", ["Nueva"] = "1" });
-var reparsed = MemReduct.ParseIni(edited);
-Check("apagar su limpieza automática sin tocar lo demás",
-    !reparsed.AutoEnabled && !reparsed.IntervalEnabled && reparsed.AutoPercent == 60
-    && edited.Contains("Position=3010,243") && edited.IndexOf("Nueva=1") < edited.IndexOf("[memreduct\\window]"));
-Check("sin sección [memreduct], la crea", MemReduct.ParseIni(MemReduct.SetIniValues("", new Dictionary<string, string> { ["AutoreductEnable"] = "true" })).AutoEnabled);
+Section("Memoria ahora");
+// Dos archivos de paginación (12 GB cada uno, 1 y 2 GB en uso) en el formato de SYSTEM_PAGEFILE_INFORMATION.
+var pageBuffer = System.Runtime.InteropServices.Marshal.AllocHGlobal(64);
+try
+{
+    void Entry(int at, int next, uint total, uint inUse)
+    {
+        System.Runtime.InteropServices.Marshal.WriteInt32(pageBuffer, at, next);
+        System.Runtime.InteropServices.Marshal.WriteInt32(pageBuffer, at + 4, (int)total);
+        System.Runtime.InteropServices.Marshal.WriteInt32(pageBuffer, at + 8, (int)inUse);
+        System.Runtime.InteropServices.Marshal.WriteInt32(pageBuffer, at + 12, 0);
+    }
+    const long gb = 1L << 30, page = 4096;
+    Entry(0, 32, (uint)(12 * gb / page), (uint)(gb / page));
+    Entry(32, 0, (uint)(12 * gb / page), (uint)(2 * gb / page));
+    Check("suma todos los archivos de paginación", MemoryBreakdown.ParsePageFiles(pageBuffer, 64, page) == (3 * gb, 24 * gb));
+    Check("no lee más allá de lo devuelto", MemoryBreakdown.ParsePageFiles(pageBuffer, 40, page) == (gb, 12 * gb)
+        && MemoryBreakdown.ParsePageFiles(pageBuffer, 0, page) == (0, 0));
+}
+finally { System.Runtime.InteropServices.Marshal.FreeHGlobal(pageBuffer); }
+var memNow = MemoryBreakdown.Current();
+Check("lee la memoria de este PC", memNow.PhysicalTotal > 0 && memNow.PhysicalAvailable <= memNow.PhysicalTotal
+    && memNow.CommitLimit >= memNow.PhysicalTotal && memNow.PageFileUsed <= memNow.PageFileTotal
+    && memNow.CacheCurrent >= 0 && memNow.CommitFraction is >= 0 and <= 1);
+Check("sin datos, fracciones en cero", new MemoryBreakdown().PhysicalFraction == 0 && new MemoryBreakdown().CacheFraction == 0);
 
+Section("Liberar RAM: zonas y estadísticas");
+// Los bits de las zonas son los de `ReductMask2` de Mem Reduct; su predeterminado es 0xE7.
+Check("zonas por defecto como las de Mem Reduct", (int)CleanAreas.Default == 0xE7
+    && (int)(CleanAreas.WorkingSets | CleanAreas.StandbyLowPriority | CleanAreas.Standby) == 13);
 var cleanStats = new StatsStore(null);
 cleanStats.Add(new StatEvent(now.AddDays(-1), StatKind.Nap, "qwen", 5_000_000_000, "auto"));
 cleanStats.Add(new StatEvent(now.AddHours(-2), StatKind.Clean, null, 1_500_000_000, "threshold"));
@@ -451,49 +455,50 @@ Check("sin bucle se queda en la última", once.At(5).Eye == 1);
 Check("la pose de reposo: ojo abierto y bracitos en cruz", new PetPose() is { Eye: 1, ArmL: PetArm.Out, ArmR: PetArm.Out, Sit: 0 });
 
 Section("Mascota: animación continua");
+var miraProfile = PetProfiles.Mira;
 // Lo más que puede cambiar una pose entre fotogramas a 60 fps sin que se vea un salto
 // (los parpadeos y los golpes rápidos llegan a 0,35; el resto va muy por debajo).
 double Jump(PetClip clip, double seconds) =>
     Enumerable.Range(0, (int)(seconds * 60)).Max(i => PetPose.Distance(clip.At(i / 60.0), clip.At((i + 1) / 60.0)));
-var clips = Enum.GetValues<PetActivity>().Select(a => (a.ToString(), PetAnimations.For(a)))
-    .Concat(Enum.GetValues<PetReaction>().Select(r => (r.ToString(), PetAnimations.For(r))))
-    .Concat(Enum.GetValues<PetGesture>().Select(g => (g.ToString(), PetAnimations.Gesture(g))))
-    .Append(("Peek", PetAnimations.Peek)).ToList();
+var clips = Enum.GetValues<PetActivity>().Select(a => (a.ToString(), miraProfile.For(a)))
+    .Concat(Enum.GetValues<PetReaction>().Select(r => (r.ToString(), miraProfile.For(r, PetActivity.Alert))))
+    .Concat(Enum.GetValues<PetGesture>().Select(g => (g.ToString(), miraProfile.Gesture(g))))
+    .Append(("Peek", miraProfile.Peek)).ToList();
 var rough = clips.Where(c => Jump(c.Item2, c.Item2.Length * 2 + 0.1) > 0.35).Select(c => c.Item1).ToList();
 Check($"ninguna animación salta entre fotogramas a 60 fps{(rough.Count > 0 ? ": " + string.Join(", ", rough) : "")}", rough.Count == 0);
 Check("cada reacción cabe en su duración", Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
-    .All(r => PetAnimations.For(r).Length <= PetBrain.Duration(r) + 1e-9));
+    .All(r => miraProfile.For(r, PetActivity.Alert).Length <= PetBrain.Duration(r) + 1e-9));
 Check("dormida: en su cama, con el ojo cerrado (también sin movimiento)",
-    Enumerable.Range(0, 34).Select(i => PetAnimations.For(PetActivity.DeepSleep).At(i / 10.0)).All(p => p.Eye == 0 && p.BedIn == 1)
-    && PetAnimations.Still(PetActivity.DeepSleep) is { Eye: 0, BedIn: 1 });
-Check("el bostezo acaba en la cama", PetAnimations.For(PetActivity.Yawning).At(60) == PetAnimations.Asleep);
-var alertClip = PetAnimations.For(PetActivity.Alert);
+    Enumerable.Range(0, 34).Select(i => miraProfile.For(PetActivity.DeepSleep).At(i / 10.0)).All(p => p.Eye == 0 && p.BedIn == 1)
+    && miraProfile.Still(PetActivity.DeepSleep) is { Eye: 0, BedIn: 1 });
+Check("el bostezo acaba en la cama", miraProfile.For(PetActivity.Yawning).At(60) == miraProfile.Still(PetActivity.DeepSleep));
+var alertClip = miraProfile.For(PetActivity.Alert);
 var alertEyes = Enumerable.Range(0, (int)(alertClip.Length * 60)).Select(i => alertClip.At(i / 60.0).Eye).ToList();
 int longestBlink = 0, run = 0;
 foreach (var e in alertEyes) { run = e < 0.5 ? run + 1 : 0; longestBlink = Math.Max(longestBlink, run); }
 Check("alerta: casi siempre con el ojo abierto y parpadeos rápidos (< 0,2 s cerrado)",
     alertEyes.Count(e => e > 0.95) >= alertEyes.Count * 0.85 && longestBlink > 0 && longestBlink / 60.0 < 0.2);
 Check("esperando un modelo: tras el logo, asomándose de 0 a 3 píxeles y sonrojándose",
-    Enumerable.Range(0, 160).Select(i => PetAnimations.Peek.At(i / 20.0)).All(p => p.Behind && p.Peek is >= -0.01 and <= 3.01)
-    && Enumerable.Range(0, 160).Max(i => PetAnimations.Peek.At(i / 20.0).Blush) > 0.9 && PetAnimations.PeekStill.Behind);
-var arc = Enumerable.Range(0, 31).Select(i => PetAnimations.Motion(PetReaction.Jump, i / 60.0).Dy).ToList();
+    Enumerable.Range(0, 160).Select(i => miraProfile.Peek.At(i / 20.0)).All(p => p.Behind && p.Peek is >= -0.01 and <= 3.01)
+    && Enumerable.Range(0, 160).Max(i => miraProfile.Peek.At(i / 20.0).Blush) > 0.9 && miraProfile.PeekStill.Behind);
+var arc = Enumerable.Range(0, 31).Select(i => miraProfile.Motion(PetReaction.Jump, i / 60.0, PetActivity.Alert).Dy).ToList();
 Check("el salto es una parábola que vuelve al suelo", arc.Min() < -4.5 && arc[0] == 0 && arc[^1] == 0);
-var walkPoses = Enumerable.Range(0, 120).Select(i => PetAnimations.Walk(i * 0.1, 1, 0, false)).ToList();
+var walkPoses = Enumerable.Range(0, 120).Select(i => miraProfile.Walk(i * 0.1, 1, 0, false)).ToList();
 Check("al caminar el paso va con la distancia (dos pasos cada 6 píxeles)",
     walkPoses.Count(p => p.Feet == PetFeet.StepLeft) > 10 && walkPoses.Count(p => p.Feet == PetFeet.StepRight) > 10
-    && PetAnimations.Walk(0, 1, 0, false).Feet == PetAnimations.Walk(6, 1, 0, false).Feet);
+    && miraProfile.Walk(0, 1, 0, false).Feet == miraProfile.Walk(6, 1, 0, false).Feet);
 
 Section("Mascota: transiciones y mezclas");
-var wake = PetAnimations.Transition(PetActivity.DeepSleep, PetActivity.WakingUp, false, false)!;
-Check("al despertar sale de la cama", wake.At(0) == PetAnimations.Asleep && wake.At(wake.Length).BedIn < 0.05 && wake.At(wake.Length).Sit < 0.05);
-var laptop = PetAnimations.Transition(PetActivity.Alert, PetActivity.Working, false, false)!;
+var wake = miraProfile.Transition(PetActivity.DeepSleep, PetActivity.WakingUp, false, false)!;
+Check("al despertar sale de la cama", wake.At(0) == miraProfile.Still(PetActivity.DeepSleep) && wake.At(wake.Length).BedIn < 0.05 && wake.At(wake.Length).Sit < 0.05);
+var laptop = miraProfile.Transition(PetActivity.Alert, PetActivity.Working, false, false)!;
 Check("al ponerse a trabajar saca el portátil", laptop.At(0) is { Prop: PetProp.Laptop, PropIn: 0 } && laptop.At(laptop.Length).PropIn == 1);
-var close = PetAnimations.Transition(PetActivity.Working, PetActivity.Alert, false, false)!;
-Check("y al acabar lo guarda", close.At(close.Length) is { PropIn: < 0.01 });
+var close = miraProfile.Transition(PetActivity.Working, PetActivity.Alert, false, false)!;
+Check("y al acabar lo guarda", close.At(close.Length) is { Prop: PetProp.None } || close.At(close.Length) is { PropIn: < 0.01 });
 Check("salir de detrás del logo y meterse detrás tienen su animación",
-    PetAnimations.Transition(PetActivity.Drowsy, PetActivity.Eating, true, false) is { } emerge && emerge.At(0).Behind && !emerge.At(emerge.Length).Behind
-    && PetAnimations.Transition(PetActivity.WakingUp, PetActivity.Drowsy, false, true) is { } duck && duck.At(duck.Length).Behind);
-Check("sin transición propia, nada (se mezclan las poses)", PetAnimations.Transition(PetActivity.Alert, PetActivity.Drowsy, false, false) is null);
+    miraProfile.Transition(PetActivity.Drowsy, PetActivity.Eating, true, false) is { } emerge && emerge.At(0).Behind && !emerge.At(emerge.Length).Behind
+    && miraProfile.Transition(PetActivity.WakingUp, PetActivity.Drowsy, false, true) is { } duck && duck.At(duck.Length).Behind);
+Check("sin transición propia, nada (se mezclan las poses)", miraProfile.Transition(PetActivity.Alert, PetActivity.Drowsy, false, false) is null);
 
 var anchors = new PetAnchors(13.5, 6, 13.5, 15.5, 13.5, 14.5, 23.5);
 PetFrame[] Run(PetDirector d, Func<double, PetSituation> at, double from, double to)
@@ -512,7 +517,7 @@ Check("las reacciones entran y salen mezclándose, con corazones",
     PetPose.Distance(switched[^1].Pose, reacting[0].Pose) < 0.35 && director.Particles.Live.Any(p => p.Kind == ParticleKind.Heart));
 var calmPose = new PetDirector(anchors).Step(0, 1 / 60.0, new PetSituation(PetActivity.Working, Still: true));
 Check("con movimiento reducido: pose fija, sin partículas ni reloj",
-    calmPose.Pose == PetAnimations.Still(PetActivity.Working) && calmPose.Fps == 0);
+    calmPose.Pose == miraProfile.Still(PetActivity.Working) && calmPose.Fps == 0);
 var dozing = new PetDirector(anchors);
 var sleepy = Run(dozing, _ => new PetSituation(PetActivity.DeepSleep), 0, 4);
 Check("dormida: suben las Z, a menos fotogramas", dozing.Particles.Live.Any(p => p.Kind == ParticleKind.Z) && sleepy[^1].Fps == 20);
@@ -650,6 +655,25 @@ var sideBar = TaskbarPetLayout.Place(PetPlacement.Walk, R(0, 0, 48, 1080), R(0, 
 Check("barra vertical: al lado, sin paseo", sideBar.X == 48 - 4 && sideBar.MinX == sideBar.MaxX);
 var big = TaskbarPetLayout.Place(PetPlacement.Left, R(0, 1008, 1920, 1080), R(700, 1008, 772, 1080), null, screen, 144, mira);
 Check("a la izquierda a 150 %: el cuerpo cabe en el alto de la barra", big.Scale == 3 && big.Y + 6 * 3 >= 1008 && big.Y + big.Height <= 1080);
+
+// Pantalla completa: solo una app de verdad que tapa el monitor oculta la mascota.
+ForegroundWindow Fg(string process, string cls, Win32.RECT rect, long ex = 0, bool visible = true, bool cloaked = false, bool minimized = false) =>
+    new(process, cls, rect, ex, visible, cloaked, minimized);
+Check("pantalla completa: un juego o vídeo sin bordes la oculta",
+    TaskbarPetLayout.FullscreenApp(Fg("game", "UnityWndClass", screen), screen)
+    && TaskbarPetLayout.FullscreenApp(Fg("chrome", "Chrome_WidgetWin_1", R(-1, -1, 1921, 1081)), screen));
+Check("pantalla completa: una ventana maximizada no (la barra sigue a la vista)",
+    !TaskbarPetLayout.FullscreenApp(Fg("claude", "Chrome_WidgetWin_1", R(-8, -8, 1928, 1040)), screen));
+Check("pantalla completa: vistas previas de la barra, Alt+Tab y Recortes no la ocultan",
+    !TaskbarPetLayout.FullscreenApp(Fg("explorer", "XamlExplorerHostIslandWindow", screen), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("SnippingTool", "XamlWindow", screen), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("explorer", "WorkerW", screen), screen));
+Check("pantalla completa: ventanas ocultas, minimizadas o capas transparentes no cuentan",
+    !TaskbarPetLayout.FullscreenApp(Fg("app", "X", screen, visible: false), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("app", "X", screen, cloaked: true), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("app", "X", screen, minimized: true), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("overlay", "X", screen, Win32.WS_EX_LAYERED | Win32.WS_EX_TRANSPARENT), screen)
+    && !TaskbarPetLayout.FullscreenApp(Fg("overlay", "X", screen, Win32.WS_EX_NOACTIVATE), screen));
 
 Section("Colección y personalidades de mascotas");
 PetTests.Run(Check);

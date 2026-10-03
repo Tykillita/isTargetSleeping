@@ -168,6 +168,7 @@ public partial class App : Application
                 async () => { await supervisor.InstallAgent(); return supervisor.AgentError; },
                 () => supervisor.Agent, supervisor.GetProcessProtectionPids);
             processes.Closed += (_, _) => processes = null;
+            processes.BackRequested += () => ShowPanel(PanelView.Activity);
         }
         processes.Show();
         if (processes.WindowState == WindowState.Minimized) processes.WindowState = WindowState.Normal;

@@ -2,8 +2,7 @@ using static IsTargetSleeping.L10n;
 
 namespace IsTargetSleeping;
 
-/// Liberar RAM (lo que hacía Mem Reduct): el agente con privilegios, las reglas
-/// automáticas y la convivencia con Mem Reduct.
+/// Liberar RAM (lo que hacía Mem Reduct): el agente con privilegios y las reglas automáticas.
 public sealed partial class Supervisor
 {
     public AgentStatus Agent { get; private set; } = AgentStatus.NotInstalled;
@@ -14,11 +13,6 @@ public sealed partial class Supervisor
     public CleanResult? LastCleanResult { get; private set; }
     private readonly CancellationTokenSource cleaningLifetime = new();
     private int gameCleanGeneration;
-
-    public bool MemReductInstalled { get; private set; }
-    public bool MemReductRunning { get; private set; }
-    public bool MemReductReplaced { get; private set; }
-    public MemReductConfig? MemReductConfig { get; private set; }
 
     private readonly CleanRuleTracker rules = new(DateTime.Now);
     private bool cleanDemo;
@@ -41,31 +35,33 @@ public sealed partial class Supervisor
         set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanInterval, value); rules.ResetInterval(DateTime.Now); Changed?.Invoke(); }
     }
 
+    /// Pausa mínima entre limpiezas por porcentaje mientras la RAM siga por encima (min).
+    public int CleanCooldown
+    {
+        get => cleanDemo || !Defaults.Has(PrefKeys.CleanCooldown) ? CleanRuleTracker.DefaultCooldownMinutes
+            : Math.Max(1, Defaults.GetInt(PrefKeys.CleanCooldown));
+        set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanCooldown, Math.Max(1, value)); Changed?.Invoke(); }
+    }
+
     public void ToggleArea(CleanAreas area) => Areas ^= area;
 
-    /// Estado del agente y de Mem Reduct (disco, registro y COM: fuera del hilo de la interfaz).
+    /// Estado del agente (disco y COM: fuera del hilo de la interfaz).
     public async Task RefreshCleaner()
     {
         if (cleanDemo) return;
-        var (agent, installed, running, replaced, config) = await Task.Run(() =>
-            (MemoryAgent.Status(), MemReduct.Installed, MemReduct.Running, MemReduct.Replaced, MemReduct.Config()));
-        Agent = agent;
-        MemReductInstalled = installed;
-        MemReductRunning = running;
-        MemReductReplaced = replaced;
-        MemReductConfig = config;
+        Agent = await Task.Run(MemoryAgent.Status);
         Changed?.Invoke();
     }
 
     // MARK: agente
 
-    public async Task InstallAgent(bool closeMemReduct = false)
+    public async Task InstallAgent()
     {
         if (AgentBusy) return;
         AgentBusy = true;
         AgentError = null;
         Changed?.Invoke();
-        var error = await Task.Run(() => MemoryAgent.Install(closeMemReduct));
+        var error = await Task.Run(MemoryAgent.Install);
         AgentError = error;
         AgentBusy = false;
         AppLog.Write(error is null ? "agente de memoria instalado" : $"agente de memoria: {error}");
@@ -106,9 +102,7 @@ public sealed partial class Supervisor
             return;
         }
         Cleaning = true;
-        var initial = SystemMemory.Current();
-        rules.Attempted(DateTime.Now, initial.Total > 0 ? 100.0 * initial.Used / initial.Total : 0,
-            initial.PhysicalPressure == SystemMemory.Level.Critical);
+        rules.Attempted(DateTime.Now);
         bool completed = false;
         Changed?.Invoke();
         try
@@ -118,13 +112,14 @@ public sealed partial class Supervisor
                 await Ollama.ReleaseAll();
                 foreach (var e in Engines.Where(e => e.Power == Power.On && e.Model is not null)) await e.Sleep();
             }
-            var areas = reason == CleanReason.Manual ? Areas : CleanAreas.WorkingSets;
+            // Las automáticas limpian lo mismo que el botón: las zonas elegidas en Ajustes.
+            var areas = Areas;
             var before = MemoryReading(SystemMemory.Current());
             var keep = await Task.Run(ProtectedPids);
             var identitySample = await new ProcessMonitor().CaptureAsync(keep.ToHashSet());
             var spec = new CleanSpec(areas, keep)
             {
-                RequestId = Guid.NewGuid(), Selective = reason != CleanReason.Manual,
+                RequestId = Guid.NewGuid(),
                 KeepIdentities = identitySample.Processes.Where(p => keep.Contains(p.Pid) && p.Identity.IsValid)
                     .Select(p => p.Identity).ToArray(),
             };
@@ -210,12 +205,12 @@ public sealed partial class Supervisor
     {
         if (Agent != AgentStatus.Ready || Cleaning || Processing || Ollama.IsDemo) return;
         rules.ThresholdPercent = CleanThreshold;
+        rules.ThresholdCooldownMinutes = CleanCooldown;
         rules.IntervalMinutes = CleanInterval;
         rules.OnCritical = Prefs.Switch(PrefKeys.CleanOnCritical);
         var mem = SystemMemory.Current();
         double used = mem.Total > 0 ? 100.0 * mem.Used / mem.Total : 0;
-        if (rules.Sample(used, mem.PhysicalPressure == SystemMemory.Level.Critical, DateTime.Now,
-            mem.PhysicalPressure != SystemMemory.Level.Normal) is { } reason)
+        if (rules.Sample(used, mem.PhysicalPressure == SystemMemory.Level.Critical, DateTime.Now) is { } reason)
             await Clean(reason);
     }
 
@@ -249,7 +244,7 @@ public sealed partial class Supervisor
                         }
                         if (Ollama.IsPowerActionRunning || Ollama.Power is Power.On or Power.Starting or Power.Stopping
                             || Engines.Any(e => e.IsBusy || e.Power is Power.On or Power.Starting or Power.Stopping)) return;
-                        if (SystemMemory.Current().PhysicalPressure != SystemMemory.Level.Normal) await Clean(reason);
+                        await Clean(reason);
                         return;
                     }
                     await Task.Delay(500, cleaningLifetime.Token);
@@ -260,48 +255,10 @@ public sealed partial class Supervisor
         }
     }
 
-    // MARK: Mem Reduct
-
-    /// Copia sus reglas y zonas (su % y su intervalo solo si los tenía activados).
-    public void ImportMemReduct()
-    {
-        if (MemReduct.Config() is not { } c) return;
-        Areas = c.Areas;
-        CleanThreshold = c.AutoEnabled ? c.AutoPercent : 0;
-        CleanInterval = c.IntervalEnabled ? c.IntervalMinutes : 0;
-        Prefs.SetSwitch(Notice.Clean.Key(), c.NotifyResults);
-        AppLog.Write($"importado de Mem Reduct: {CleanThreshold} %, cada {CleanInterval} min, zonas {c.Areas}");
-        Changed?.Invoke();
-    }
-
-    /// Importa, lo quita del inicio, apaga su limpieza automática y lo cierra (lo
-    /// cierra el agente: Mem Reduct corre como administrador).
-    public async Task ReplaceMemReduct()
-    {
-        ImportMemReduct();
-        await Task.Run(MemReduct.Replace);
-        if (Agent == AgentStatus.Ready)
-            await Task.Run(() => MemoryAgent.Run(new CleanSpec(CleanAreas.None, [], CloseMemReduct: true)));
-        else
-            await InstallAgent(closeMemReduct: true);
-        AppLog.Write("Mem Reduct reemplazado");
-        await RefreshCleaner();
-    }
-
-    public async Task RestoreMemReduct()
-    {
-        await Task.Run(MemReduct.Restore);
-        AppLog.Write("vuelta a Mem Reduct");
-        await RefreshCleaner();
-    }
-
     private void LoadCleanDemo()
     {
         cleanDemo = true;
         Agent = AgentStatus.Ready;
         LastClean = (1_900_000_000, DateTime.Now.AddMinutes(-2), CleanReason.Threshold);
-        MemReductInstalled = true;
-        MemReductRunning = true;
-        MemReductConfig = new MemReductConfig(true, 60, true, 6, CleanAreas.Default, false);
     }
 }

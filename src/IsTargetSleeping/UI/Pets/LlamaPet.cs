@@ -4,8 +4,9 @@ using static IsTargetSleeping.UI.Pets.AnimalDrawing;
 namespace IsTargetSleeping.UI.Pets;
 
 /// La llama, orgullosa: pestañas largas y copete, un cuello que se estira e inclina hacia
-/// lo que le interesa (`Stretch`, `Lean`), la mandíbula que rumia de lado (`Jaw`), las
-/// patas recogidas al sentarse y la caja con su manta tejida en el lomo (`Saddle`).
+/// lo que le interesa (`Stretch`, `Lean`), la mandíbula que rumia de lado (`Jaw`), una cola
+/// lanuda que se levanta y se agita (`Tail`), las patas recogidas al sentarse y la caja con
+/// su manta tejida en el lomo (`Saddle`). Sin brazos: lo que coge, lo lleva en el hocico.
 public sealed class LlamaPet : IPetSpecies
 {
     public string Id => "llama";
@@ -24,15 +25,20 @@ public sealed class LlamaPet : IPetSpecies
         double head = 14.8 + p.Bob + p.Sit * 4.2 - p.Stretch * 2 + s * 0.4;
         double body = 23.5 + p.Bob + p.Sit * 0.6;
         // El cuello se inclina hacia donde mira: la cabeza va más lejos que el cuerpo.
-        double hx = x + p.Lean * 1.4, jaw = Math.Clamp(p.Jaw, -1, 1) * 0.7;
+        double hx = x + p.Lean * 1.4 - p.Shake * 0.5, jaw = Math.Clamp(p.Jaw, -1, 1) * 0.7;
         PetBeds.Draw(c, n, PetBed.Llama, p.BedIn, false);
         Feet(c, n, p, x, hoof, hoof);
-        // Una cola lanuda corta, un cuello largo y un cuerpo de bordes esponjosos.
-        c.Line((x + 5) * n, body * n, (x + 7.3) * n, (body - 2.5) * n, 2.4 * n, Ink);
-        c.Line((x + 5) * n, body * n, (x + 7.3) * n, (body - 2.5) * n, 1.2 * n, wool);
+        // Una cola lanuda corta (se levanta con `Tail` > 0 y cae con < 0), un cuello largo y
+        // un cuerpo de bordes esponjosos.
+        double tail = Math.Clamp(p.Tail, -1, 1), angle = (-47 - 38 * tail) * Math.PI / 180, reach = 3.4 + 0.3 * Math.Abs(tail);
+        double tipX = x + 5 + Math.Cos(angle) * reach, tipY = body + Math.Sin(angle) * reach;
+        c.Line((x + 5) * n, body * n, tipX * n, tipY * n, 2.4 * n, Ink);
+        c.Line((x + 5) * n, body * n, tipX * n, tipY * n, 1.2 * n, wool);
         double Neck(double py) => hx + (x - hx) * Math.Clamp((py - head) / Math.Max(1, body - head), 0, 1);
+        // Al sacudirse, la lana del cuerpo ondula de lado a lado.
+        double Wave(double py) => p.Shake * 0.9 * Math.Sin(py * 1.4);
         bool Shape(double px, double py) =>
-            InOval(px, py, x, body, 6.4 + s * 0.4, 4.7 - s * 0.3)
+            InOval(px - (py > head + 3 ? Wave(py) : 0), py, x, body, 6.4 + s * 0.4, 4.7 - s * 0.3)
             || InOval(px, py, x - 4.8, body - 1.8, 2.1, 2.5)
             || InOval(px, py, x + 4.7, body - 1.7, 2.1, 2.6)
             || py >= head + 1 && py <= body + 3.1 && Math.Abs(px - Neck(py)) <= 3.2;
@@ -72,9 +78,8 @@ public sealed class LlamaPet : IPetSpecies
         // Mechones y pezuñas aportan textura sin llenar de ruido el dibujo pequeño.
         c.Line((x - 4.6) * n, (body - 0.6) * n, (x - 3.7) * n, body * n, 0.5 * n, shade);
         c.Line((x + 3.4) * n, (body + 0.2) * n, (x + 4.3) * n, (body - 0.3) * n, 0.5 * n, shade);
-        Paw(c, n, x - 4.7, 23 + p.Bob, p.ArmL, -1, wool);
-        var hand = Paw(c, n, x + 4.7, 23 + p.Bob, p.ArmR, 1, wool, p.OneArm);
-        Props(c, n, p, x, head - 7.6, hand);
+        // Sin brazos: el bocado va en el hocico y el portátil, en el suelo delante de las pezuñas.
+        Props(c, n, p, x, head - 7.6, (hx + jaw + 0.3, head + 4.9));
         PetBeds.Draw(c, n, PetBed.Llama, p.BedIn, true);
     }
 

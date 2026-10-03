@@ -100,22 +100,26 @@ public sealed class TaskbarLocator
         }
     }
 
-    /// Presentaciones, pantalla completa, sesión bloqueada, Inicio o Búsqueda abiertos, y
-    /// juegos o vídeos sin bordes que cubren la pantalla.
+    /// Presentaciones, Direct3D exclusivo, Inicio o Búsqueda abiertos, y juegos o vídeos sin
+    /// bordes que cubren la pantalla. El «ocupado» de Windows (QUNS_BUSY) no basta: lo dan
+    /// también las ventanas invisibles de Explorer que cubren la pantalla (vistas previas de
+    /// la barra, Alt+Tab), y con ellas la mascota desaparecía hasta cambiar de ventana.
     public static bool Suppressed(Win32.RECT monitor)
     {
-        if (Win32.SHQueryUserNotificationState(out int state) == 0 && state is 2 or 3 or 4) return true;
+        if (Win32.SHQueryUserNotificationState(out int state) == 0 && state is 3 or 4) return true;
         var foreground = Win32.GetForegroundWindow();
         if (foreground == IntPtr.Zero) return false;
         Win32.GetWindowThreadProcessId(foreground, out int pid);
+        if (pid == Environment.ProcessId) return false;
         string? name = Procs.Name(pid);
         if (name is "StartMenuExperienceHost" or "SearchHost" or "SearchApp") return true;
         var className = new StringBuilder(128);
         Win32.GetClassName(foreground, className, className.Capacity);
-        if (className.ToString() is "Progman" or "WorkerW" or "Shell_TrayWnd") return false;
-        return pid != Environment.ProcessId && Win32.GetWindowRect(foreground, out var rect)
-            && rect.Left <= monitor.Left && rect.Top <= monitor.Top
-            && rect.Right >= monitor.Right && rect.Bottom >= monitor.Bottom;
+        if (!Win32.GetWindowRect(foreground, out var rect)) return false;
+        bool cloaked = Win32.DwmGetWindowAttribute(foreground, Win32.DWMWA_CLOAKED, out int cloak, sizeof(int)) == 0 && cloak != 0;
+        return TaskbarPetLayout.FullscreenApp(new ForegroundWindow(
+            name, className.ToString(), rect, Win32.GetWindowLongPtr(foreground, Win32.GWL_EXSTYLE).ToInt64(),
+            Win32.IsWindowVisible(foreground), cloaked, Win32.IsIconic(foreground)), monitor);
     }
 
     /// La ventana de primer plano es la barra de tareas (al tocarla puede quedar delante de la mascota).

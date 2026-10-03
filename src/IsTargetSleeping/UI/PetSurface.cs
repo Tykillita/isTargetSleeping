@@ -91,6 +91,17 @@ public sealed class PetSurface : IDisposable
         if (Visible) Win32.SetWindowPos(hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOMOVE | Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
     }
 
+    /// Si `other` está por delante en el orden Z (la barra de tareas se pone delante sola al
+    /// tocarla, cerrar o minimizar ventanas, sin pasar siempre a primer plano).
+    public bool Behind(IntPtr other)
+    {
+        if (!Visible || other == IntPtr.Zero) return false;
+        int guard = 0;
+        for (var w = Win32.GetWindow(hwnd, Win32.GW_HWNDPREV); w != IntPtr.Zero && guard < 4096; w = Win32.GetWindow(w, Win32.GW_HWNDPREV), guard++)
+            if (w == other) return true;
+        return false;
+    }
+
     private void EnsureDib(int width, int height)
     {
         if (dib != IntPtr.Zero && width == dibWidth && height == dibHeight) return;

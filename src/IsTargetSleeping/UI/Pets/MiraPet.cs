@@ -9,7 +9,8 @@ namespace IsTargetSleeping.UI.Pets;
 /// parpadean sin saltos) con un contorno de un píxel de rejilla, y las marcas y los
 /// accesorios con aspecto de pixel art. Rejilla de 27×24: el cuerpo ocupa las 18 filas
 /// de abajo y encima quedan las Z, los corazones y los destellos. Vigilante: un anillo de
-/// radar sale de su ojo (`Scan`) y, con el ratón encima, fija una retícula (`Lock`).
+/// radar sale de su ojo (`Scan`) y, con el ratón encima, fija una retícula (`Lock`). Para
+/// limpiar, su ojo proyecta un haz de escáner (`Beam`) y compacta los datos en un cubito.
 public sealed class MiraPet : IPetSpecies
 {
     public string Id => "mira";
@@ -25,8 +26,10 @@ public sealed class MiraPet : IPetSpecies
     private const uint Outline = 0xFF132C44, White = 0xFFF4F8FF, Pupil = 0xFF0B1A2A, Shine = 0xFFB9DCFF;
     private const uint Pink = 0xFFFF6FA0, MouthInside = 0xFFB23A5B, Blush = 0xFFFF8FB1;
     private const uint GrayLight = 0xFFC9D1DB, GrayDark = 0xFF4A5260, Cardboard = 0xFFC98A4B, Tape = 0xFFE8C170;
-    private const uint Handle = 0xFFA5703A, Amber = 0xFFF5BD57, AmberDark = 0xFFC98A2E;
+    private const uint Amber = 0xFFF5BD57, AmberDark = 0xFFC98A2E;
     private const uint Radar = 0xFF6CC0FF, Target = 0xFFFF4F5E;
+    /// El escáner y lo que recoge: aguamarina, para que se distinga del cuerpo azul.
+    private const uint Scanner = 0xFF7FF2E6, CubeTop = 0xFFB8FFF6, CubeSide = 0xFF3FBFB4, CubeData = 0xFF2F7FD6;
 
     private static (uint Fill, uint Shade) Body(PetTint tint) => tint switch
     {
@@ -61,20 +64,49 @@ public sealed class MiraPet : IPetSpecies
             c.Ellipse((cx + 4.3) * n, (cy + 1.6) * n, 1.1 * n, 0.5 * n, Blush, p.Blush * 0.85);
         }
 
-        // Antena (la marca de arriba): se queda atrás al moverse, con su muelle.
+        // Antena (la marca de arriba): se queda atrás al moverse, con su muelle. La baliza
+        // de la punta se enciende mientras escanea, emite o fija la retícula.
         double top = cy - ry;
         if (p.Prop != PetProp.Box || p.PropIn < 0.5)
-            c.Line(cx * n, (top + 0.4) * n, (cx + p.Antenna * 1.6) * n, (top - 2.0) * n, n, Tick);
+        {
+            double tipX = cx + p.Antenna * 1.6, tipY = top - 2.0;
+            c.Line(cx * n, (top + 0.4) * n, tipX * n, tipY * n, n, Tick);
+            double beacon = Math.Clamp(Math.Max(Math.Max(p.Beam, p.Lock), PetPose.Ring(p.Scan) * 1.5), 0, 1);
+            c.Ellipse(tipX * n, tipY * n, 0.75 * n, 0.75 * n, Outline);
+            c.Ellipse(tipX * n, tipY * n, 0.45 * n, 0.45 * n, beacon > 0.05 ? Radar : Tick);
+            if (beacon > 0.05) c.Ellipse(tipX * n, tipY * n, 1.3 * n, 1.3 * n, Radar, beacon * 0.35);
+        }
 
         // Bracitos (las marcas de los lados), girando cada uno a su ángulo.
         var right = Arm(c, n, cx + rx - 0.3, cy + 0.2, p.ArmR, 1, p.OneArm);
         Arm(c, n, cx - rx + 0.3, cy + 0.2, p.ArmL, -1, false);
 
+        if (p.Beam > 0.01) Beam(c, n, cx + p.Lean * 0.4, cy - 1, p);
         Props(c, n, p, cx, cy, top, right);
         PetBeds.Draw(c, n, PetBed.Mira, p.BedIn, true);
         double ring = PetPose.Ring(p.Scan);
         if (ring > 0.01) Ring(c, n, cx + p.Lean * 0.4, cy - 1, 3.8 + p.Scan * 8.5, ring);
         if (p.Lock > 0.01) Reticle(c, n, cx + p.Lean * 0.4, cy - 1, Math.Clamp(p.Lock, 0, 1));
+    }
+
+    /// El haz de escáner: un cono tenue desde la pupila hasta el suelo, hacia donde mira, con
+    /// un rayo nítido en el centro y una franja brillante donde toca.
+    private static void Beam(PixelCanvas c, int n, double ex, double ey, PetPose p)
+    {
+        double beam = Math.Clamp(p.Beam, 0, 1);
+        double sx = ex + Math.Clamp(p.LookX, -1, 1) * 1.1, sy = ey + Math.Clamp(p.LookY, -1, 1) * 0.9;
+        double fx = ex + Math.Clamp(p.LookX, -1, 1) * 10, fy = 23.2, half = 2.2;
+        for (int y = (int)Math.Floor(sy * n); y <= (int)Math.Ceiling(fy * n); y++)
+        {
+            double k = (y + 0.5 - sy * n) / ((fy - sy) * n);
+            if (k is < 0 or > 1) continue;
+            double mid = (sx + (fx - sx) * k) * n, w = (0.3 + (half - 0.3) * k) * n;
+            for (int x = (int)Math.Floor(mid - w); x <= (int)Math.Ceiling(mid + w); x++)
+                if (Math.Abs(x + 0.5 - mid) <= w) c.Set(x, y, Scanner, beam * (0.1 + 0.2 * k));
+        }
+        c.Line(sx * n, sy * n, fx * n, fy * n, 0.5 * n, Scanner, beam * 0.8);
+        c.Line((fx - half) * n, fy * n, (fx + half) * n, fy * n, 0.8 * n, Scanner, beam);
+        c.Line((fx - half * 0.4) * n, fy * n, (fx + half * 0.4) * n, fy * n, 0.8 * n, White, beam);
     }
 
     /// El anillo de radar: un círculo fino que crece desde el ojo y se apaga.
@@ -158,23 +190,33 @@ public sealed class MiraPet : IPetSpecies
         }
     }
 
-    /// Un bracito desde el hombro: `side` −1 izquierda, 1 derecha. Devuelve dónde acaba la mano.
+    /// Un bracito desde el hombro, la marca de la cruz con contorno y la mano redonda:
+    /// `side` −1 izquierda, 1 derecha. Devuelve dónde acaba la mano.
     private static (double X, double Y) Arm(PixelCanvas c, int n, double sx, double sy, double angle, int side, bool hidden)
     {
-        double a = angle * Math.PI / 180, length = Math.Abs(angle) > 100 ? 3.6 : 2.3;
+        double a = angle * Math.PI / 180, length = Math.Abs(angle) > 100 ? 3.6 : angle < -60 ? 3.0 : 2.6;
         double hx = sx + side * Math.Cos(a) * length, hy = sy + Math.Sin(a) * length;
-        if (!hidden) c.Line(sx * n, sy * n, hx * n, hy * n, n, Tick);
+        if (!hidden)
+        {
+            c.Line(sx * n, sy * n, hx * n, hy * n, 2.2 * n, Outline);
+            c.Ellipse(hx * n, hy * n, 1.15 * n, 1.15 * n, Outline);
+            c.Line(sx * n, sy * n, hx * n, hy * n, 1.1 * n, Tick);
+            c.Ellipse(hx * n, hy * n, 0.6 * n, 0.6 * n, Tick);
+        }
         return (hx, hy);
     }
 
     private static void Feet(PixelCanvas c, int n, PetPose p, double bottom)
     {
         if (p.Sit >= 0.95) return;
-        // Se recogen bajo el cuerpo al sentarse (y el cuerpo las tapa).
+        // Se recogen bajo el cuerpo al sentarse (y el cuerpo las tapa); el que da el paso se levanta.
         double y = 23 - p.Sit * 2;
         double left = p.Feet == PetFeet.StepLeft ? y - 1 : y, right = p.Feet == PetFeet.StepRight ? y - 1 : y;
-        c.FillRect((Cx - 3.5) * n, left * n, (Cx - 1.5) * n, (left + 1) * n, Tick);
-        c.FillRect((Cx + 1.5) * n, right * n, (Cx + 3.5) * n, (right + 1) * n, Tick);
+        foreach (var (fx, fy) in new[] { (Cx - 2.6, left), (Cx + 2.6, right) })
+        {
+            c.Ellipse(fx * n, fy * n, 1.7 * n, 1.05 * n, Outline);
+            c.Ellipse(fx * n, (fy - 0.1) * n, 1.05 * n, 0.5 * n, Tick);
+        }
     }
 
     private static void Props(PixelCanvas c, int n, PetPose p, double cx, double cy, double top, (double X, double Y) hand)
@@ -194,8 +236,9 @@ public sealed class MiraPet : IPetSpecies
                 ], k => k switch { 'g' => GrayLight, 'b' => 0xFF4DA3FF, 'k' => GrayDark, _ => Outline }, n, into);
                 break;
             case PetProp.Box:
-                // La caja baja hasta la cabeza.
-                c.Stamp((cx - 3.5) * n, (top - 5.4 - (1 - into) * 4) * n, [
+            {
+                // La caja baja hasta la cabeza y se apoya en ella (los brazos en alto la sujetan).
+                c.Stamp((cx - 3.5) * n, (top - 5.0 - (1 - into) * 4) * n, [
                     "ooooooo",
                     "obbybbo",
                     "obbybbo",
@@ -203,6 +246,7 @@ public sealed class MiraPet : IPetSpecies
                     "ooooooo",
                 ], k => k switch { 'b' => Cardboard, 'y' => Tape, _ => Outline }, n, into);
                 break;
+            }
             case PetProp.Crumb:
                 // Un bocado de datos, ámbar como lo que cambia, en la mano levantada.
                 c.Stamp((hand.X - 2) * n, (hand.Y - 3.2) * n, [
@@ -212,20 +256,24 @@ public sealed class MiraPet : IPetSpecies
                     ".ooo.",
                 ], k => k switch { 'y' => Amber, 'A' => AmberDark, _ => Outline }, n, into);
                 break;
-            case PetProp.Broom:
+            case PetProp.Cube:
             {
-                // El palo va de la mano al suelo, de un lado a otro; el cepillo, abajo.
-                double s = Math.Clamp(p.Sway, -1, 1);
-                double x0 = cx + 5 * s, y0 = cy + 0.5, x1 = cx + 10.5 * s, y1 = 21.6;
-                c.Line(x0 * n, y0 * n, x1 * n, y1 * n, n, Handle, into);
-                c.Stamp((x1 - 2.5) * n, (y1 - 0.4) * n, [
-                    ".ooo.",
-                    "oyyyo",
-                    "oyoyo",
-                ], k => k == 'y' ? Tape : Outline, n, into);
+                // El cubito de datos compactados, flotando delante con su halo: crece con
+                // `PropIn` (de un punto al cubo entero) y al compactarse encoge hasta desaparecer.
+                string[] cube = into switch
+                {
+                    < 0.4 => ["ooo", "owo", "ooo"],
+                    < 0.75 => ["ooooo", "ottto", "ofbso", "offso", "ooooo"],
+                    _ => ["ooooooo", "ottttto", "offffso", "ofbbfso", "ofbbfso", "offffso", "ooooooo"],
+                };
+                double side = cube.Length, bottom = 22.4;
+                c.Ellipse(cx * n, (bottom - side / 2) * n, (side * 0.75 + 0.8) * n, (side * 0.75 + 0.8) * n, Scanner, 0.3 * into);
+                c.Stamp((cx - side / 2) * n, (bottom - side) * n, cube, k => k switch
+                {
+                    't' => CubeTop, 'f' or 'w' => White, 's' => CubeSide, 'b' => CubeData, _ => Outline,
+                }, n);
                 break;
             }
         }
     }
-
 }

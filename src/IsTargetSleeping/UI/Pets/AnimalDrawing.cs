@@ -142,11 +142,6 @@ internal static class AnimalDrawing
                 c.Stamp((hand.X - 1.5) * n, (hand.Y - 2.2) * n,
                     [".oo.", "oyyo", "oyyo", ".oo."], k => k == 'y' ? 0xFFF5BD57 : Ink, n, a);
                 break;
-            case PetProp.Broom:
-                double x1 = x + 10 * p.Sway;
-                c.Line(hand.X * n, hand.Y * n, x1 * n, 27 * n, n * 0.9, 0xFFA5703A, a);
-                c.Stamp((x1 - 2) * n, 26 * n, [".ooo.", "oyyyo", "oyoyo"], k => k == 'y' ? 0xFFE8C170 : Ink, n, a);
-                break;
         }
     }
 }

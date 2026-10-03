@@ -27,6 +27,10 @@ public static class PetHiding
         (logo.Right - (grid.HideRight + peek) * scale, (logo.Top + logo.Bottom) / 2 - grid.HideMiddle * scale);
 }
 
+/// Lo que importa de la ventana de primer plano para saber si es pantalla completa.
+public readonly record struct ForegroundWindow(
+    string? Process, string ClassName, Win32.RECT Rect, long ExStyle, bool Visible, bool Cloaked, bool Minimized);
+
 public readonly record struct PetSpot(int X, int Y, int Width, int Height, int Scale, int MinX, int MaxX, bool Fallback = false);
 
 public static class TaskbarPetLayout
@@ -38,6 +42,27 @@ public static class TaskbarPetLayout
         return Math.Min(bar.Right, monitor.Right) - Math.Max(bar.Left, monitor.Left) >= minimum
             && Math.Min(bar.Bottom, monitor.Bottom) - Math.Max(bar.Top, monitor.Top) >= minimum;
     }
+
+    /// Si la ventana de primer plano es una app a pantalla completa (juego, vídeo,
+    /// presentación sin bordes) que tapa el monitor de la barra: entonces la mascota se oculta.
+    /// No cuentan las del propio Windows que ocupan la pantalla sin verse: vistas previas de
+    /// la barra, Alt+Tab, Vista de tareas, escritorio (todas de Explorer) y la captura de
+    /// Recortes; ni las ocultas, minimizadas o capas que dejan pasar los clics.
+    public static bool FullscreenApp(ForegroundWindow window, Win32.RECT monitor)
+    {
+        if (window.Process is null || ShellProcesses.Contains(window.Process)) return false;
+        if (window.ClassName is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return false;
+        if (!window.Visible || window.Cloaked || window.Minimized) return false;
+        const long clickThrough = Win32.WS_EX_LAYERED | Win32.WS_EX_TRANSPARENT;
+        if ((window.ExStyle & clickThrough) == clickThrough || (window.ExStyle & Win32.WS_EX_NOACTIVATE) != 0) return false;
+        var r = window.Rect;
+        return r.Left <= monitor.Left && r.Top <= monitor.Top && r.Right >= monitor.Right && r.Bottom >= monitor.Bottom;
+    }
+
+    private static readonly HashSet<string> ShellProcesses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "explorer", "ShellExperienceHost", "SnippingTool", "ScreenClippingHost",
+    };
 
     /// Cuántos píxeles físicos mide cada píxel de la rejilla: 2 a 100 %, 3 a 150 %, 4 a 200 %…
     public static int PixelScale(uint dpi) => Math.Max(1, (int)Math.Round(2 * Scale(dpi), MidpointRounding.AwayFromZero));

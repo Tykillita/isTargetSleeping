@@ -16,14 +16,17 @@ internal static class PetTests
         {
             string id = pet.Id;
             var profile = pet.Animations;
+            // Las reacciones de pie, en la cama y al final de una limpieza.
+            var contexts = new[] { PetActivity.Alert, PetActivity.DeepSleep, PetActivity.Sweeping };
+            var reactions = Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None).SelectMany(r => contexts.Select(a => (R: r, A: a))).ToArray();
             var allClips = Enum.GetValues<PetActivity>().Select(profile.For)
-                .Concat(Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None).Select(profile.For))
+                .Concat(reactions.Select(x => profile.For(x.R, x.A)))
                 .Concat(Enum.GetValues<PetGesture>().Where(g => g != PetGesture.None).Select(profile.Gesture)).Append(profile.Peek).ToArray();
             check($"{id}: clips reutilizados y tiempos finitos", allClips.All(c => c.Length > 0 && double.IsFinite(c.Length)) && ReferenceEquals(profile.For(PetActivity.Alert), profile.For(PetActivity.Alert)));
             check($"{id}: continuidad a 60 fps", allClips.All(c =>
                 Enumerable.Range(0, (int)Math.Ceiling(c.Length * 60) + 1).All(i => PetPose.Distance(c.At(i / 60.0), c.At((i + 1) / 60.0)) < 0.36)));
-            check($"{id}: reacciones duran hasta su última clave", Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
-                .All(r => !profile.For(r).Loop && Math.Abs(profile.ReactionDuration(r) - profile.For(r).Length) < 1e-9));
+            check($"{id}: reacciones duran hasta su última clave", reactions
+                .All(x => !profile.For(x.R, x.A).Loop && Math.Abs(profile.ReactionDuration(x.R, x.A) - profile.For(x.R, x.A).Length) < 1e-9));
             check($"{id}: bostezo termina en su postura de dormir", profile.For(PetActivity.Yawning).At(100) == profile.Still(PetActivity.DeepSleep));
 
             var bed = id switch { "llama" => PetBed.Llama, "capybara" => PetBed.Capybara, "orange-cat" => PetBed.OrangeCat, _ => PetBed.Mira };
@@ -62,7 +65,7 @@ internal static class PetTests
                 && fixedPose.Pose == stopped.Pose && fixedPose.Fps == 0);
             brain.Update(new(Up: true, ModelLoaded: true), 0);
             brain.React(PetReaction.Jump, 1);
-            double end = 1 + profile.ReactionDuration(PetReaction.Jump);
+            double end = 1 + profile.ReactionDuration(PetReaction.Jump, PetActivity.Alert);
             brain.Expire(end - 0.001);
             bool lasts = brain.Reaction == PetReaction.Jump;
             brain.Expire(end + 0.001);
@@ -145,10 +148,23 @@ internal static class PetTests
         capybara.Draw(capyNormal, capyRest, 4);
         capybara.Draw(capyArms, capyRest with { ArmL = PetArm.Up, ArmR = PetArm.Rub, OneArm = true }, 4);
         check("capibara: las poses de brazos no dibujan extremidades extra", capyNormal.Pixels.SequenceEqual(capyArms.Pixels));
+        var llama = PetCatalog.Find("llama");
+        var llamaRest = llama.Animations.Still(PetActivity.Alert);
+        var llamaNormal = new PixelCanvas(128, 120);
+        var llamaArms = new PixelCanvas(128, 120);
+        llama.Draw(llamaNormal, llamaRest, 4);
+        llama.Draw(llamaArms, llamaRest with { ArmL = PetArm.Up, ArmR = PetArm.Rub, OneArm = true }, 4);
+        check("llama: sin brazos (las poses de brazos no dibujan nada)", llamaNormal.Pixels.SequenceEqual(llamaArms.Pixels));
+        var llamaClips = Enum.GetValues<PetActivity>().Select(llama.Animations.For)
+            .Concat(Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
+                .SelectMany(r => new[] { PetActivity.Alert, PetActivity.DeepSleep, PetActivity.Sweeping }.Select(a => llama.Animations.For(r, a))))
+            .Concat(Enum.GetValues<PetGesture>().Select(llama.Animations.Gesture)).Append(llama.Animations.Peek)
+            .SelectMany(c => Enumerable.Range(0, 41).Select(i => c.At(c.Length * i / 40))).ToList();
+        check("llama: ningún clip usa brazos y mueve la cola", llamaClips.All(p => p.ArmL == PetArm.Out && p.ArmR == PetArm.Out && !p.OneArm)
+            && llamaClips.Max(p => p.Tail) > 0.9 && llamaClips.Min(p => p.Tail) < -0.9);
         check("personalidades: velocidades y esperas acordadas", PetProfiles.Llama.WalkSpeed == 14 && PetProfiles.Llama.MinWait == 6 && PetProfiles.Llama.MaxWait == 12
             && PetProfiles.Capybara.WalkSpeed == 7 && PetProfiles.Capybara.MinWait == 12 && PetProfiles.Capybara.MaxWait == 22
             && PetProfiles.OrangeCat.WalkSpeed == 18 && PetProfiles.OrangeCat.MinWait == 4 && PetProfiles.OrangeCat.MaxWait == 9);
-        check("Mira conserva los clips originales", Enum.GetValues<PetActivity>().All(a => PetProfiles.Mira.For(a).Keys.SequenceEqual(PetAnimations.For(a).Keys)));
         Personalities(check);
     }
 
@@ -158,9 +174,9 @@ internal static class PetTests
         var profiles = PetCatalog.All.Select(p => (p.Id, P: p.Animations, p.Anchors)).ToList();
 
         // Distintas entre sí.
-        var clicks = profiles.Select(p => p.P.For(PetReaction.Jump)).ToList();
+        var clicks = profiles.Select(p => p.P.For(PetReaction.Jump, PetActivity.Alert)).ToList();
         check("clic: cada una reacciona con su propio clip y duración",
-            profiles.Select(p => Math.Round(p.P.ReactionDuration(PetReaction.Jump), 3)).Distinct().Count() == 4
+            profiles.Select(p => Math.Round(p.P.ReactionDuration(PetReaction.Jump, PetActivity.Alert), 3)).Distinct().Count() == 4
             && clicks.Select(c => string.Join(';', c.Keys)).Distinct().Count() == 4);
         foreach (var (id, profile, _) in profiles)
         {
@@ -307,7 +323,282 @@ internal static class PetTests
         // El anillo de radar: de 1 a 0 no se ve el salto; mientras crece, sí se ve.
         check("el anillo de radar se apaga al terminar", PetPose.Ring(0) == 0 && PetPose.Ring(1) == 0 && PetPose.Ring(0.3) > 0.5
             && PetPose.Distance(new(Scan: 1), new(Scan: 0)) == 0 && PetPose.Distance(new(Scan: 0.3), new(Scan: 0)) > 0.3);
-        check("campos nuevos: se interpolan", PetPose.Lerp(new(), new(Jaw: 1, Arch: 1, Curl: 1, Pupil: 1, Bath: 1, Bird: 1, PeekY: 2, Lock: 1), 0.5)
-            is { Jaw: 0.5, Arch: 0.5, Curl: 0.5, Pupil: 0.5, Bath: 0.5, Bird: 0.5, PeekY: 1, Lock: 0.5 });
+        check("campos nuevos: se interpolan", PetPose.Lerp(new(), new(Jaw: 1, Arch: 1, Curl: 1, Pupil: 1, Bath: 1, Bird: 1, PeekY: 2, Lock: 1, Shake: 1, Wet: 1), 0.5)
+            is { Jaw: 0.5, Arch: 0.5, Curl: 0.5, Pupil: 0.5, Bath: 0.5, Bird: 0.5, PeekY: 1, Lock: 0.5, Shake: 0.5, Wet: 0.5 }
+            && PetPose.Distance(new(), new(Wet: 1)) > 0 && PetPose.Distance(new(), new(Shake: 1)) > 0);
+        var drops = new PetParticles(spot, 4);
+        drops.Emit(ParticleKind.Drop, 6);
+        var flung = drops.Live.ToArray();
+        for (int i = 0; i < 20; i++) drops.Update(1 / 60.0);
+        check("las gotas salen despedidas a los lados y caen", flung.All(p => Math.Sign(p.Vx) == Math.Sign(p.X - spot.CenterX) && Math.Abs(p.Vx) >= 4)
+            && drops.Live.Count == flung.Length && drops.Live.Zip(flung).All(p => p.First.Vy > p.Second.Vy));
+
+        Cleaning(check);
+        Crocodile(check);
+        Waking(check);
+    }
+
+    /// Cada una limpia a su manera y desde donde esté: dormida sale de su cama (la capibara,
+    /// de la tina) y el destello llega al final; dormida reacciona sin salir de la cama.
+    private static void Cleaning(Action<string, bool> check)
+    {
+        IEnumerable<PetPose> Sample(PetClip clip, int steps = 60) => Enumerable.Range(0, steps + 1).Select(i => clip.At(clip.Length * i / steps));
+        foreach (var pet in PetCatalog.All)
+        {
+            var profile = pet.Animations;
+            var sweeping = Sample(profile.For(PetActivity.Sweeping))
+                .Concat(Enum.GetValues<PetActivity>().SelectMany(from => profile.Transition(from, PetActivity.Sweeping, false, false) is { } t ? Sample(t) : []))
+                .Append(profile.Still(PetActivity.Sweeping)).ToList();
+            bool scans = sweeping.Any(p => p.Beam > 0.9) && sweeping.Any(p => p.Prop == PetProp.Cube && p.PropIn > 0.9);
+            check($"{pet.Id}: limpia a su manera ({(pet.Id == "mira" ? "escanea y compacta" : "sin escáner")})",
+                pet.Id == "mira" ? scans : sweeping.All(p => p.Beam == 0 && p.Prop != PetProp.Cube));
+
+            if (profile.Transition(PetActivity.DeepSleep, PetActivity.Sweeping, false, false) is { } wake)
+                check($"{pet.Id}: para limpiar sale de la cama", wake.At(0).BedIn > 0.9 && wake.At(wake.Length).BedIn < 0.05);
+            else check($"{pet.Id}: para limpiar sale de la cama", false);
+
+            // Dormida: ninguna reacción la saca de la cama ni la mueve de su sitio.
+            var inBed = Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
+                .All(r => Sample(profile.For(r, PetActivity.DeepSleep)).All(p => p.BedIn >= 0.8)
+                    && Enumerable.Range(0, 40).All(i => profile.Motion(r, i * 0.05, PetActivity.DeepSleep) == (0, 0))
+                    && profile.Still(r, PetActivity.DeepSleep).BedIn >= 0.8);
+            check($"{pet.Id}: dormida reacciona sin salir de la cama", inBed);
+            var director = new PetDirector(pet.Anchors, 5, profile);
+            var poses = new List<PetFrame>();
+            for (double t = 0; t < 3; t += 1 / 60.0)
+                poses.Add(director.Step(t, 1 / 60.0, new(PetActivity.DeepSleep, PetReaction.Jump, 0.5, ReactionDuring: PetActivity.DeepSleep)));
+            check($"{pet.Id}: un clic dormida no enciende el logo ni la levanta", poses.All(f => f.Glow.Dark && f.Pose.BedIn >= 0.8));
+        }
+
+        // La capibara: recién salida de la tina se escurre; despierta, se frota el trasero.
+        var capy = PetProfiles.Capybara;
+        var capyPet = PetCatalog.Find("capybara");
+        var afterTub = new PetContext(PetActivity.Sweeping, PetActivity.DeepSleep);
+        var fromTub = capy.Transition(PetActivity.DeepSleep, PetActivity.Sweeping, false, false)!;
+        check("capibara: sale de la tina mojada", fromTub.At(fromTub.Length).Wet > 0.5 && fromTub.At(fromTub.Length) == capy.For(afterTub).At(0));
+        var wring = Sample(capy.For(afterTub)).ToList();
+        check("capibara: tras la tina se escurre sacudiéndose", wring.Min(p => p.Shake) < -0.9 && wring.Max(p => p.Shake) > 0.9 && wring.All(p => p.Wet > 0.5)
+            && capy.For(new PetContext(PetActivity.Sweeping, PetActivity.Yawning)) == capy.For(afterTub));
+        var sitDown = capy.Transition(PetActivity.Alert, PetActivity.Sweeping, false, false)!;
+        var scoot = Sample(capy.For(PetActivity.Sweeping)).ToList();
+        check("capibara: despierta no se mete en la tina, se sienta a frotarse",
+            Sample(sitDown).All(p => p.Bath == 0 && p.Wet == 0) && sitDown.At(sitDown.Length).Sit >= 0.9
+            && scoot.All(p => p is { Sit: >= 0.9, Bath: 0, Wet: 0, Shake: 0 }) && capy.For(new PetContext(PetActivity.Sweeping, PetActivity.Alert)) == capy.For(PetActivity.Sweeping));
+        // Se frota sin moverse de su sitio: el cuerpo se echa adelante con el trasero quieto, el
+        // trasero se arrastra y la marca de polvo se queda atrás; la mascota entera no se desplaza.
+        var motions = Enumerable.Range(0, 48).Select(i => capy.Motion(new PetContext(PetActivity.Sweeping, PetActivity.Alert), i * 0.05)).ToList();
+        check("capibara: se frota el trasero sin desplazar toda la mascota", motions.All(m => m == (0, 0))
+            && scoot.Max(p => p.Drag) > 0.9 && scoot.Min(p => p.Rump) < -0.5 && scoot.Max(p => p.Rump) > 0.2
+            && scoot.Max(p => PetPose.SkidAlpha(p.Skid)) > 0.5);
+        var frames = new PetDirector(capyPet.Anchors, 5, capy);
+        var played = new List<PetPose>();
+        for (double t = 0; t < 4.8; t += 1 / 60.0) played.Add(frames.Step(t, 1 / 60.0, new(PetActivity.Sweeping, From: PetActivity.Alert)).Pose);
+        check("capibara: la marca de polvo no parpadea al volver a empezar", played.Zip(played.Skip(1))
+            .All(f => Math.Abs(PetPose.SkidAlpha(f.First.Skid) - PetPose.SkidAlpha(f.Second.Skid)) < 0.2));
+        var wide = new PixelCanvas(capyPet.Size.Width * 3, capyPet.Size.Height * 3);
+        capyPet.Draw(wide, capy.For(PetActivity.Sweeping).At(0.35), 3);
+        check("capibara: echada hacia delante no se sale del lienzo", Enumerable.Range(0, wide.Height).All(y => wide.Pixels[y * wide.Width] == 0));
+        HashSet<ParticleKind> Seen(PetActivity from)
+        {
+            var director = new PetDirector(capyPet.Anchors, 5, capy);
+            var seen = new HashSet<ParticleKind>();
+            for (double t = 0; t < 4; t += 1 / 60.0)
+            {
+                director.Step(t, 1 / 60.0, new(PetActivity.Sweeping, From: from));
+                seen.UnionWith(director.Particles.Live.Select(p => p.Kind));
+            }
+            return seen;
+        }
+        var wetDrops = Seen(PetActivity.DeepSleep);
+        var dust = Seen(PetActivity.Alert);
+        check("capibara: gotas al escurrirse, polvo al frotarse", wetDrops.Contains(ParticleKind.Drop) && !wetDrops.Contains(ParticleKind.Dust)
+            && dust.Contains(ParticleKind.Dust) && !dust.Contains(ParticleKind.Drop));
+        var finale = capy.For(PetReaction.Sparkle, PetActivity.Sweeping);
+        var wetFinale = capy.For(PetReaction.Sparkle, afterTub);
+        check("capibara: cada limpieza con su final, seca y brillante (despierta, sin levantarse)", finale != wetFinale
+            && finale != capy.For(PetReaction.Sparkle, PetActivity.Alert)
+            && finale.At(0).Sit >= 0.9 && finale.At(finale.Length) is { Sit: >= 0.7, Wet: 0 } && Sample(finale).All(p => p.Sit >= 0.7)
+            && wetFinale.At(0).Wet > 0.5 && wetFinale.At(wetFinale.Length).Wet == 0
+            && capy.Drips(PetReaction.Sparkle, PetActivity.Sweeping).Any(d => d.Kind == ParticleKind.Sparkle)
+            && capy.Drips(PetReaction.Sparkle, afterTub).Any(d => d.Kind == ParticleKind.Sparkle)
+            && capy.Burst(PetReaction.Sparkle, PetActivity.Sweeping).Any(b => b.Kind == ParticleKind.Dust)
+            && capy.Burst(PetReaction.Sparkle, afterTub).Any(b => b.Kind == ParticleKind.Drop));
+        check("capibara: en movimiento reducido, cada limpieza con su pose", capy.Still(afterTub).Wet > 0.5 && capy.Still(PetActivity.Sweeping) is { Sit: >= 0.9, Wet: 0 });
+        var wash = Sample(PetProfiles.OrangeCat.For(PetActivity.Sweeping)).ToList();
+        check("gato: se lava a lametones", wash.Any(p => p.ArmR <= PetArm.Rub + 1 && p.Mouth > 0.2));
+        var wool = Sample(PetProfiles.Llama.For(PetActivity.Sweeping)).ToList();
+        check("llama: se sacude la lana", wool.Min(p => p.Shake) < -0.9 && wool.Max(p => p.Shake) > 0.9);
+        var mira = PetProfiles.Mira;
+        var scan = Sample(mira.For(PetActivity.Sweeping)).ToList();
+        check("Mira: el haz recorre la barra de lado a lado", scan.Where(p => p.Beam > 0.9).Min(p => p.LookX) < -0.9
+            && scan.Where(p => p.Beam > 0.9).Max(p => p.LookX) > 0.9);
+        var miraPet = PetCatalog.Find("mira");
+        var vacuum = new PetDirector(miraPet.Anchors, 5, mira);
+        var fragments = new List<Particle>();
+        for (double t = 0; t < 3; t += 1 / 60.0)
+        {
+            vacuum.Step(t, 1 / 60.0, new(PetActivity.Sweeping));
+            fragments.AddRange(vacuum.Particles.Live.Where(p => p.Kind == ParticleKind.Fragment));
+        }
+        double Gap(Particle p) => Math.Abs(p.X - miraPet.Anchors.EyeX) + Math.Abs(p.Y - miraPet.Anchors.EyeY);
+        check("Mira: los fragmentos de datos vuelan hacia su ojo", fragments.Count > 0
+            && fragments.Where(p => p.Age < 0.05).Average(Gap) > 6 && fragments.Where(p => p.Age > p.Life * 0.8).Average(Gap) < 2);
+        var compact = mira.For(PetReaction.Sparkle, PetActivity.Sweeping);
+        check("Mira: el final compacta el cubo hasta que desaparece", compact.At(0) is { Prop: PetProp.Cube, PropIn: > 0.5 }
+            && Sample(compact).Any(p => p.Prop == PetProp.Cube && p.PropIn < 0.01) && compact.At(compact.Length).Prop == PetProp.None
+            && Sample(compact).Max(p => PetPose.Ring(p.Scan)) > 0.5);
+
+        // El cerebro: la limpieza se ve entera y el destello llega al final, donde limpia.
+        var brain = new PetBrain(capy);
+        brain.Update(new(), 0);
+        brain.Update(new(Cleaning: true), 10);
+        check("cerebro: limpiar dormida pasa a limpiar", brain.Activity == PetActivity.Sweeping && brain.ActivitySince == 10);
+        check("cerebro: recuerda de dónde venía", brain.ActivityFrom == PetActivity.DeepSleep);
+        double shown = capy.Transition(PetActivity.DeepSleep, PetActivity.Sweeping, false, false)!.Length + capy.For(afterTub).Length;
+        brain.Update(new(), 10.5);
+        brain.React(PetReaction.Sparkle, 10.5, finale: true);
+        check("cerebro: una limpieza corta se sigue viendo", brain.Activity == PetActivity.Sweeping && brain.Reaction == PetReaction.None);
+        brain.Expire(10 + shown - 0.01);
+        bool waited = brain.Reaction == PetReaction.None && brain.Activity == PetActivity.Sweeping;
+        brain.Expire(10 + shown + 0.01);
+        check("cerebro: el destello llega cuando se ha visto limpiar, donde limpia", waited && brain.Reaction == PetReaction.Sparkle
+            && brain.ReactionDuring == PetActivity.Sweeping && brain.ReactionFrom == PetActivity.DeepSleep && brain.Activity == PetActivity.Sweeping);
+        double end = brain.ReactionSince + capy.ReactionDuration(PetReaction.Sparkle, afterTub);
+        brain.Expire(end - 0.01);
+        bool during = brain.Activity == PetActivity.Sweeping;
+        brain.Expire(end + 0.01);
+        check("cerebro: tras el destello vuelve a dormir", during && brain.Activity == PetActivity.DeepSleep && brain.Reaction == PetReaction.None);
+        brain.React(PetReaction.Jump, 100);
+        check("cerebro: dormida, la reacción es de la cama", brain.ReactionDuring == PetActivity.DeepSleep);
+
+        var quiet = new PetBrain(capy);
+        quiet.Update(new(Up: true, ModelLoaded: true), 0);
+        quiet.Update(new(Up: true, ModelLoaded: true, Cleaning: true), 1);
+        quiet.Update(new(Up: true, ModelLoaded: true), 1.2);
+        double minimum = Math.Min(PetBrain.CleanHoldMax, (capy.Transition(PetActivity.Alert, PetActivity.Sweeping, false, false)?.Length ?? 0) + capy.For(PetActivity.Sweeping).Length);
+        check("cerebro: el mínimo de la limpieza despierta es el de frotarse", Math.Abs(capy.HoldFor(PetActivity.Alert, PetActivity.Sweeping) - minimum) < 1e-9
+            && capy.HoldFor(PetActivity.DeepSleep, PetActivity.Sweeping) == Math.Min(PetBrain.CleanHoldMax, shown));
+        quiet.Expire(1 + minimum - 0.01);
+        bool still = quiet.Activity == PetActivity.Sweeping;
+        quiet.Expire(1 + minimum + 0.01);
+        check("cerebro: sin nada liberado, vuelve al cumplir el mínimo", still && quiet.Activity == PetActivity.Alert && quiet.Reaction == PetReaction.None);
+        quiet.Update(new(Up: true, ModelLoaded: true, Cleaning: true), 20);
+        quiet.Update(new(Up: true, Game: true), 20.2);
+        check("cerebro: un juego la oculta aunque esté limpiando", quiet.Activity == PetActivity.Hidden);
+
+        // El resultado puede llegar después de cumplir el mínimo (la medición espera
+        // cinco segundos): OnState reserva el final antes de quitar Cleaning.
+        foreach (var pet in PetCatalog.All)
+        foreach (var origin in new[] { PetActivity.DeepSleep, PetActivity.Alert })
+        {
+            bool up = origin == PetActivity.Alert;
+            var late = new PetBrain(pet.Animations);
+            late.Update(new(Up: up, ModelLoaded: up), 0);
+            late.Update(new(Up: up, ModelLoaded: up, Cleaning: true), 10);
+            late.Expire(20); // más tarde que cualquier mínimo de limpieza
+            late.React(PetReaction.Sparkle, 20, finale: true);
+            late.Update(new(Up: up, ModelLoaded: up), 20);
+            bool kept = late.Activity == PetActivity.Sweeping && late.Reaction == PetReaction.Sparkle
+                && late.ReactionDuring == PetActivity.Sweeping && late.ReactionFrom == origin;
+            double finished = 20 + pet.Animations.ReactionDuration(PetReaction.Sparkle, new PetContext(PetActivity.Sweeping, origin));
+            late.Expire(finished - 0.01);
+            kept &= late.Activity == PetActivity.Sweeping;
+            late.Expire(finished + 0.01);
+            check($"{pet.Id}: el final tardío conserva el contexto desde {origin} y termina",
+                kept && late.Activity == origin && late.Reaction == PetReaction.None);
+
+            late.Update(new(Up: up, ModelLoaded: up, Cleaning: true), 30);
+            late.Update(new(Up: up, ModelLoaded: up), 40);
+            check($"{pet.Id}: sin cambio positivo, una limpieza larga sale sin destello desde {origin}",
+                late.Activity == origin && late.Reaction == PetReaction.None);
+
+            late.Update(new(Up: up, ModelLoaded: up, Cleaning: true), 50);
+            late.React(PetReaction.Sparkle, 60, finale: true);
+            late.Update(new(Up: up, ModelLoaded: up, Game: true), 60);
+            check($"{pet.Id}: el modo juego cancela también el final tardío desde {origin}",
+                late.Activity == PetActivity.Hidden && late.Reaction == PetReaction.None);
+        }
+    }
+
+    /// La capibara: sentada cuando no hace nada y, al arrancar Ollama, el paseo en cocodrilo entero.
+    private static void Crocodile(Action<string, bool> check)
+    {
+        var capy = PetProfiles.Capybara;
+        IEnumerable<PetPose> Sample(PetClip clip, int steps = 60) => Enumerable.Range(0, steps + 1).Select(i => clip.At(clip.Length * i / steps));
+        check("capibara: en reposo, sentada (también con el pajarito)", Sample(capy.For(PetActivity.Alert)).All(p => p.Sit >= 0.7)
+            && Sample(capy.Gesture(PetGesture.Bird)).All(p => p.Sit >= 0.7) && capy.Still(PetActivity.Alert).Sit >= 0.7);
+        check("capibara: camina de pie", capy.Walk(3, 1, 0, false).Sit == 0);
+
+        var mount = capy.Transition(PetActivity.DeepSleep, PetActivity.WakingUp, false, false)!;
+        check("cocodrilo: sale de la tina, llega el cocodrilo y se sube", mount.At(0) is { BedIn: > 0.9, Croc: 0 }
+            && mount.At(mount.Length) is { Ride: 1, Croc: 1, BedIn: 0 }
+            && Sample(mount).Any(p => p is { BedIn: < 0.1, Ride: < 0.1, Croc: > 0.4 and < 0.9 }));
+        // Lo espera de pie, salta de pie y se sienta ya encima; al bajar, al revés.
+        var awakeMount = capy.Transition(PetActivity.Alert, PetActivity.WakingUp, false, false)!;
+        bool Standing(PetClip clip, Func<PetPose, bool> when) => Sample(clip, 240).Where(when).All(p => p.Sit < 0.5);
+        check("cocodrilo: lo espera de pie y salta de pie", Standing(mount, p => p.Croc is > 0.05 and < 0.95 && p.BedIn < 0.1)
+            && Standing(mount, p => p.Ride is > 0.02 and < 0.98) && Standing(awakeMount, p => p.Croc is > 0.05 and < 0.95)
+            && Standing(awakeMount, p => p.Ride is > 0.02 and < 0.98)
+            && Sample(awakeMount, 240).Any(p => p is { Ride: 1, Sit: < 0.1 }) && awakeMount.At(awakeMount.Length) is { Ride: 1, Sit: >= 0.7 });
+        var ride = Sample(capy.For(PetActivity.WakingUp)).ToList();
+        check("cocodrilo: pasean, con el cocodrilo dando pasos", ride.All(p => p is { Ride: 1, Croc: 1 })
+            && ride.Min(p => p.CrocStep) < -0.9 && ride.Max(p => p.CrocStep) > 0.9);
+        var dismount = capy.Transition(PetActivity.WakingUp, PetActivity.Alert, false, false)!;
+        check("cocodrilo: se baja y el cocodrilo se va", dismount.At(0).Ride == 1
+            && dismount.At(dismount.Length) is { Ride: 0, Croc: 0 } && dismount.At(dismount.Length).Sit >= 0.7);
+        check("cocodrilo: se levanta en el lomo, baja de pie y lo ve irse de pie", Standing(dismount, p => p.Ride is > 0.02 and < 0.98)
+            && Sample(dismount, 240).Any(p => p is { Ride: 1, Sit: < 0.1 }) && Standing(dismount, p => p.Ride == 0 && p.Croc is > 0.05 and < 0.95));
+        var back = capy.Transition(PetActivity.WakingUp, PetActivity.DeepSleep, false, false)!;
+        check("cocodrilo: si Ollama no arranca, vuelve a la tina", back.At(back.Length).BedIn > 0.9 && back.At(back.Length).Croc == 0);
+        check("cocodrilo: solo la capibara", PetCatalog.All.Where(p => p.Id != "capybara")
+            .All(p => p.Animations.HoldFor(PetActivity.DeepSleep, PetActivity.WakingUp) == 0
+                && Sample(p.Animations.For(PetActivity.WakingUp)).All(q => q.Croc == 0)));
+
+        // Ollama arranca antes de que acabe el paseo: el paseo sigue hasta el final y después se baja.
+        double hold = capy.HoldFor(PetActivity.DeepSleep, PetActivity.WakingUp);
+        var brain = new PetBrain(capy);
+        brain.Update(new(), 0);
+        brain.Update(new(Starting: true), 10);
+        brain.Update(new(Up: true), 11);
+        check("cerebro: el paseo se ve entero aunque Ollama ya esté encendido", hold >= mount.Length + capy.For(PetActivity.WakingUp).Length - 1e-9
+            && brain.Activity == PetActivity.WakingUp);
+        brain.Expire(10 + hold - 0.01);
+        bool riding = brain.Activity == PetActivity.WakingUp;
+        brain.Expire(10 + hold + 0.01);
+        check("cerebro: al terminar el paseo pasa a lo que toca", riding && brain.Activity == PetActivity.Drowsy);
+        brain.Update(new(Starting: true), 100);
+        brain.Update(new(Up: true, Game: true), 100.5);
+        check("cerebro: un juego corta el paseo", brain.Activity == PetActivity.Hidden);
+
+        var pet = PetCatalog.Find("capybara");
+        var with = new PixelCanvas(pet.Size.Width * 3, pet.Size.Height * 3);
+        var without = new PixelCanvas(with.Width, with.Height);
+        pet.Draw(with, capy.Still(PetActivity.WakingUp), 3);
+        pet.Draw(without, capy.Still(PetActivity.WakingUp) with { Croc = 0 }, 3);
+        check("cocodrilo: se dibuja y la capibara va encima", !with.Pixels.SequenceEqual(without.Pixels)
+            && with.ToBgra().Chunk(4).All(px => px[0] <= px[3] && px[1] <= px[3] && px[2] <= px[3]));
+
+        // De pie en el lomo: sus patas pisan el cocodrilo (no flotan ni lo atraviesan).
+        var standing = new PixelCanvas(pet.Size.Width * 3, pet.Size.Height * 3);
+        pet.Draw(standing, capy.Still(PetActivity.Alert) with { Sit = 0, Ride = 1, Croc = 0 }, 3);   // sin el cocodrilo: solo ella
+        int lowest = Enumerable.Range(0, standing.Height).Last(y => Enumerable.Range(0, standing.Width).Any(x => standing.Pixels[y * standing.Width + x] != 0));
+        check("cocodrilo: de pie en el lomo, con las patas sobre él", lowest / 3.0 < IsTargetSleeping.UI.Pets.Crocodile.Top + 5 && lowest / 3.0 > IsTargetSleeping.UI.Pets.Crocodile.Top + 2);
+    }
+
+    /// Mientras Ollama arranca no se vuelven a dormir: el desperezo es la transición desde la
+    /// cama y el bucle ya va despierto. La capibara bosteza sentada antes de la tina.
+    private static void Waking(Action<string, bool> check)
+    {
+        IEnumerable<PetPose> Sample(PetClip clip, int steps = 120) => Enumerable.Range(0, steps + 1).Select(i => clip.At(clip.Length * i / steps));
+        foreach (var pet in PetCatalog.All.Where(p => p.Id != "capybara"))
+        {
+            var a = pet.Animations;
+            check($"{pet.Id}: mientras arranca no se vuelve a dormir", Sample(a.For(PetActivity.WakingUp)).All(p => p.Eye >= 0.1 && p.BedIn == 0));
+            check($"{pet.Id}: al despertar sale de la cama desperezándose", a.Transition(PetActivity.DeepSleep, PetActivity.WakingUp, false, false) is { } wake
+                && wake.At(0).BedIn > 0.9 && Sample(wake).Any(p => p.Mouth > 0.8) && wake.At(wake.Length) == a.For(PetActivity.WakingUp).At(0));
+        }
+        var capy = PetProfiles.Capybara;
+        var yawn = Sample(capy.For(PetActivity.Yawning)).ToList();
+        check("capibara: bosteza sentada antes de meterse en la tina", yawn.All(p => p.Sit >= 0.7) && yawn.Any(p => p.Mouth > 0.9));
     }
 }

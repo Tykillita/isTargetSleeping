@@ -5,58 +5,45 @@ internal static class CleanCoordinationTests
     public static void Run(Action<string, bool> check)
     {
         var start = new DateTime(2026, 10, 1, 10, 0, 0);
-        var critical = new CleanRuleTracker(start) { OnCritical = true, ThresholdPercent = 60, IntervalMinutes = 3 };
-        check("presión crítica se atiende desde el inicio", critical.Sample(98, true, start) == CleanReason.Critical);
-        check("no inicia otra solicitud mientras la primera está activa", critical.Sample(98, true, start.AddMinutes(10)) is null);
-        critical.Completed(start, true);
-        check("éxito consume umbral y crítica coincidentes y respeta pausa", critical.Sample(98, true, start.AddMinutes(2)) is null);
-        check("intervalo se calcula desde la limpieza completada", critical.Sample(98, true, start.AddMinutes(3)) == CleanReason.Interval);
-        critical.Completed(start.AddMinutes(3), true);
+        var busy = new CleanRuleTracker(start) { OnCritical = true, ThresholdPercent = 60, IntervalMinutes = 3 };
+        check("presión crítica se atiende desde el inicio", busy.Sample(98, true, start) == CleanReason.Critical);
+        busy.Attempted(start);
+        check("no inicia otra solicitud mientras la primera está activa", busy.Sample(98, true, start.AddMinutes(10)) is null);
+        busy.Completed(start.AddMinutes(10), true);
+        check("al menos un minuto entre dos intentos", busy.Sample(98, false, start.AddMinutes(10.9)) is null);
 
         var priority = new CleanRuleTracker(start) { OnCritical = true, ThresholdPercent = 60, IntervalMinutes = 3 };
         check("crítica tiene prioridad sobre umbral e intervalo", priority.Sample(98, true, start.AddMinutes(3)) == CleanReason.Critical);
-        priority.Completed(start.AddMinutes(3), true);
         var threshold = new CleanRuleTracker(start) { ThresholdPercent = 60, IntervalMinutes = 3 };
         check("umbral tiene prioridad sobre intervalo", threshold.Sample(86, false, start.AddMinutes(3)) == CleanReason.Threshold);
-
-        var gate = new CleanRuleTracker(start) { OnCritical = true, ThresholdPercent = 60, IntervalMinutes = 3 };
-        check("compromiso crítico sin presión física no ejecuta reglas", gate.Sample(70, true, start.AddHours(1), physicalHigh: false) is null);
-        check("presión física alta permite el umbral guardado", gate.Sample(86, false, start.AddHours(1)) == CleanReason.Threshold);
-
-        foreach (var reason in new[] { CleanReason.Critical, CleanReason.Threshold, CleanReason.Interval })
-        {
-            var disabled = new CleanRuleTracker(start)
-            { OnCritical = reason == CleanReason.Critical, ThresholdPercent = reason == CleanReason.Threshold ? 60 : 0, IntervalMinutes = reason == CleanReason.Interval ? 3 : 0 };
-            disabled.Sample(98, reason == CleanReason.Critical, start.AddMinutes(3));
-            disabled.Completed(start.AddMinutes(3), false);
-            disabled.OnCritical = false; disabled.ThresholdPercent = disabled.IntervalMinutes = 0;
-            check($"desactivar {reason} cancela su reintento", disabled.Sample(98, true, start.AddMinutes(10)) is null);
-        }
-        var escalation = new CleanRuleTracker(start) { IntervalMinutes = 3, OnCritical = true };
-        escalation.Sample(86, false, start.AddMinutes(3));
-        escalation.Completed(start.AddMinutes(3), false);
-        check("una presión crítica nueva tiene prioridad sobre el reintento de intervalo", escalation.Sample(98, true, start.AddMinutes(6)) == CleanReason.Critical);
+        check("el umbral manda aunque Windows no marque presión alta", new CleanRuleTracker(start) { ThresholdPercent = 70 }
+            .Sample(71, false, start) == CleanReason.Threshold);
 
         var retry = new CleanRuleTracker(start) { OnCritical = true };
         retry.Sample(98, true, start);
+        retry.Attempted(start);
         retry.Completed(start, false);
         check("el intento fallido no repite antes de tres minutos", retry.Sample(98, true, start.AddMinutes(2.99)) is null);
         check("el segundo intento comienza a los tres minutos", retry.Sample(98, true, start.AddMinutes(3)) == CleanReason.Critical);
+        retry.Attempted(start.AddMinutes(3));
         retry.Completed(start.AddMinutes(3), false);
-        check("el segundo fallo espera seis minutos", retry.Sample(98, true, start.AddMinutes(8.99)) is null);
-        check("el tercer intento comienza tras seis minutos", retry.Sample(98, true, start.AddMinutes(9)) == CleanReason.Critical);
+        check("el segundo fallo espera seis minutos", retry.Sample(98, true, start.AddMinutes(8.99)) is null
+            && retry.Sample(98, true, start.AddMinutes(9)) == CleanReason.Critical);
+        retry.Attempted(start.AddMinutes(9));
         retry.Completed(start.AddMinutes(9), false);
-        check("tres fallos agotan el episodio", retry.Sample(98, true, start.AddHours(2)) is null);
-        retry.Sample(80, false, start.AddHours(2), physicalHigh: false);
-        check("la recuperación física rearma tras tres fallos", retry.Sample(98, true, start.AddHours(2).AddSeconds(1)) == CleanReason.Critical);
+        check("los fallos siguientes esperan más, sin bloquear para siempre", retry.Sample(98, true, start.AddMinutes(23.99)) is null
+            && retry.Sample(98, true, start.AddMinutes(24)) == CleanReason.Critical);
 
-        var noWork = new CleanRuleTracker(start) { OnCritical = true };
+        var noWork = new CleanRuleTracker(start) { OnCritical = true, ThresholdCooldownMinutes = 5 };
         noWork.Sample(98, true, start);
+        noWork.Attempted(start);
         noWork.Completed(start, new CleanResult(0, CleanAreas.None, null) { Outcome = CleanOutcome.NoWork }.Completed);
-        check("sin trabajo consume el disparador sin entrar en bucle", noWork.Sample(98, true, start.AddHours(1)) is null);
+        check("sin trabajo cuenta como hecha: espera la pausa, sin bucle", noWork.Sample(98, true, start.AddMinutes(4.9)) is null
+            && noWork.Sample(98, true, start.AddMinutes(5)) == CleanReason.Critical);
         noWork.Attempted(start.AddHours(2));
         noWork.Completed(start.AddHours(2), true);
-        check("una petición manual completada mantiene la pausa automática", !noWork.CanAttempt(start.AddHours(2).AddSeconds(179)));
+        check("una petición manual completada mantiene la pausa automática", !noWork.CanAttempt(start.AddHours(2).AddSeconds(59))
+            && noWork.CanAttempt(start.AddHours(2).AddSeconds(60)));
 
         var game = new GameModeTracker();
         game.Sample("Test game", start); game.Sample("Test game", start.AddSeconds(5));

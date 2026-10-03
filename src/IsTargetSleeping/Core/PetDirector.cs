@@ -2,11 +2,20 @@ namespace IsTargetSleeping;
 
 /// Lo que pasa en este instante, visto desde la mascota.
 /// `Hiding`: escondida tras el logo. `HoverX`/`HoverY`: dónde está el ratón sobre ella (−1 … 1).
+/// `ReactionDuring`: la actividad en la que empezó la reacción (por defecto, la de ahora).
+/// `From`/`ReactionFrom`: de qué actividad venían la actual y la de la reacción (la misma
+/// actividad puede verse distinta según de dónde venga).
 public readonly record struct PetSituation(
     PetActivity Activity, PetReaction Reaction = PetReaction.None, double ReactionSince = 0,
     PetPressure Pressure = PetPressure.Normal, bool Still = false, bool Hiding = false,
     bool Walking = false, double WalkDistance = 0, int Facing = 1, double Lean = 0, bool Turning = false,
-    bool Hovered = false, double HoverX = 0, double HoverY = 0);
+    bool Hovered = false, double HoverX = 0, double HoverY = 0, PetActivity? ReactionDuring = null,
+    PetActivity From = PetActivity.Hidden, PetActivity? ReactionFrom = null)
+{
+    public PetActivity During => ReactionDuring ?? Activity;
+    public PetContext Context => new(Activity, From);
+    public PetContext ReactionContext => new(During, ReactionFrom ?? From);
+}
 
 /// Un fotograma: la pose, cuánto se desplaza toda la mascota (en píxeles de rejilla), las
 /// luces del logo y cada cuánto hace falta el siguiente (0: no hace falta).
@@ -63,10 +72,10 @@ public sealed class PetDirector
         double loopTime = inTransition - (transition?.Length ?? 0);
 
         PetPose pose;
-        if (s.Still) pose = s.Hiding ? animations.PeekStill : animations.Still(activity);
+        if (s.Still) pose = s.Hiding ? animations.PeekStill : animations.Still(s.Context);
         else if (transiting) pose = transition!.At(inTransition);
         else if (s.Walking) pose = animations.Walk(s.WalkDistance, s.Facing, s.Lean, s.Turning);
-        else pose = s.Hiding ? animations.Peek.At(loopTime) : animations.For(activity).At(loopTime);
+        else pose = s.Hiding ? animations.Peek.At(loopTime) : animations.For(s.Context).At(loopTime);
 
         // Gestos sueltos, solo quieta y tranquila.
         Idle.Update(now, !s.Still && !transiting && s.Reaction == PetReaction.None && !s.Walking && !s.Hovered && !s.Hiding
@@ -76,10 +85,11 @@ public sealed class PetDirector
 
         // Reacciones: entran y salen mezclándose.
         double sinceReaction = now - s.ReactionSince;
+        var during = s.ReactionContext;
         if (s.Reaction != PetReaction.None)
         {
-            var reacting = s.Still ? animations.Still(s.Reaction) : animations.For(s.Reaction).At(sinceReaction);
-            double length = animations.ReactionDuration(s.Reaction);
+            var reacting = s.Still ? animations.Still(s.Reaction, during) : animations.For(s.Reaction, during).At(sinceReaction);
+            double length = animations.ReactionDuration(s.Reaction, during);
             double weight = s.Still ? 1 : Math.Clamp(Math.Min(sinceReaction / 0.1, (length - sinceReaction) / 0.15), 0, 1);
             pose = PetPose.Lerp(pose, reacting, weight);
         }
@@ -112,10 +122,10 @@ public sealed class PetDirector
         if (s.Pressure == PetPressure.Critical && pose.Tint == PetTint.Normal) pose = pose with { Tint = PetTint.Danger };
 
         // Toda la mascota se mueve (saltos, botes, balanceos).
-        var (dx, dy) = s.Still ? (0.0, 0.0) : animations.Motion(activity, loopTime);
+        var (dx, dy) = s.Still ? (0.0, 0.0) : animations.Motion(s.Context, loopTime);
         if (!s.Still && s.Reaction != PetReaction.None)
         {
-            var r = animations.Motion(s.Reaction, sinceReaction);
+            var r = animations.Motion(s.Reaction, sinceReaction, during);
             (dx, dy) = (dx + r.Dx, dy + r.Dy);
         }
         if (gestureWeight > 0)
@@ -165,25 +175,28 @@ public sealed class PetDirector
         {
             foreach (var d in drips) Particles.Drip(d.Kind, d.Every, now);
         }
-        if (!transiting && !s.Hiding) Drip(animations.Drips(activity));
-        if (s.Reaction == PetReaction.Nap && now - s.ReactionSince > animations.ReactionDuration(PetReaction.Nap) * 0.75)
+        if (!transiting && !s.Hiding) Drip(animations.Drips(s.Context));
+        var during = s.ReactionContext;
+        if (s.Reaction == PetReaction.Nap && now - s.ReactionSince > animations.ReactionDuration(PetReaction.Nap, during) * 0.75)
             Drip(animations.Drips(PetActivity.DeepSleep));
         if (gesturing) Drip(animations.GestureParticles(Idle.Current));
         if (s.Pressure == PetPressure.High && activity != PetActivity.DeepSleep) Particles.Drip(ParticleKind.Sweat, 2.5, now);
         if (s.Reaction == PetReaction.None) { burst = null; return; }
-        Drip(animations.Drips(s.Reaction));
+        Drip(animations.Drips(s.Reaction, during));
         if (burst != (s.Reaction, s.ReactionSince))
         {
             burst = (s.Reaction, s.ReactionSince);
-            foreach (var (kind, count) in animations.Burst(s.Reaction)) Particles.Emit(kind, count);
+            foreach (var (kind, count) in animations.Burst(s.Reaction, during)) Particles.Emit(kind, count);
         }
     }
 
     /// Las luces del logo, y un fundido corto cuando cambian de origen (actividad o reacción).
+    /// Dormida, una reacción no las enciende: se quedan las de la actividad.
     private PetGlow Glow(double now, PetSituation s, PetActivity activity, double loopTime, double sinceReaction)
     {
-        double reactionTime = s.Reaction == PetReaction.None ? 0 : sinceReaction * PetBrain.Duration(s.Reaction) / animations.ReactionDuration(s.Reaction);
-        var own = s.Reaction != PetReaction.None ? PetLights.For(s.Reaction, reactionTime, s.Still) : null;
+        bool lit = s.Reaction != PetReaction.None && !s.During.InBed();
+        double reactionTime = lit ? sinceReaction * PetBrain.Duration(s.Reaction) / animations.ReactionDuration(s.Reaction, s.ReactionContext) : 0;
+        var own = lit ? PetLights.For(s.Reaction, reactionTime, s.Still) : null;
         var glow = own ?? PetLights.For(activity, loopTime, s.Still);
         var key = (activity, own is null ? PetReaction.None : s.Reaction);
         if (glowKey != key)

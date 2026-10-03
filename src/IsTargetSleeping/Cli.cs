@@ -277,7 +277,7 @@ public static class Cli
         var poses = Enum.GetValues<PetActivity>().Where(a => a != PetActivity.Hidden)
             .Select(a => (a.ToString(), Simulate(pet, new PetSituation(a), 1.0, 1).Last()))
             .Concat(Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
-                .Select(r => (r.ToString(), Simulate(pet, new PetSituation(PetActivity.Alert, r, 0.5), 0.5 + pet.Animations.ReactionDuration(r) * 0.4, 0.1).Last())))
+                .Select(r => (r.ToString(), Simulate(pet, new PetSituation(PetActivity.Alert, r, 0.5), 0.5 + pet.Animations.ReactionDuration(r, PetActivity.Alert) * 0.4, 0.1).Last())))
             .ToList();
         int cellW = (pet.Size.Width + 6) * scale, cellH = (pet.Size.Height + 8) * scale;
         int width = columns * cellW, height = (poses.Count + columns - 1) / columns * cellH;
@@ -369,12 +369,15 @@ public static class Cli
                 (PetActivity.DeepSleep, PetActivity.WakingUp, false), (PetActivity.Alert, PetActivity.Working, false),
                 (PetActivity.Working, PetActivity.Alert, false), (PetActivity.Alert, PetActivity.Downloading, false),
                 (PetActivity.Eating, PetActivity.Alert, false), (PetActivity.Alert, PetActivity.DeepSleep, false),
-                (PetActivity.Drowsy, PetActivity.Eating, true),
+                (PetActivity.Drowsy, PetActivity.Eating, true), (PetActivity.DeepSleep, PetActivity.Sweeping, false),
+                (PetActivity.Alert, PetActivity.Sweeping, false), (PetActivity.Sweeping, PetActivity.DeepSleep, false),
+                (PetActivity.WakingUp, PetActivity.Alert, false), (PetActivity.Alert, PetActivity.WakingUp, false),
+                (PetActivity.WakingUp, PetActivity.DeepSleep, false),
             ];
             foreach (var (from, to, hiding) in changes)
             {
                 double length = (pet.Animations.Transition(from, to, hiding, false)?.Length ?? 0) + 0.4;
-                rows.Add(($"{from} → {to}", Simulate(pet, new PetSituation(to), length, length / 16, new PetSituation(from, Hiding: hiding), 1)));
+                rows.Add(($"{from} → {to}", Simulate(pet, new PetSituation(to, From: from), length, length / 16, new PetSituation(from, Hiding: hiding), 1)));
             }
             // Solo los gestos de su carácter, con las partículas que sueltan.
             foreach (var g in pet.Animations.IdleGestures(false).Concat(pet.Animations.IdleGestures(true)).Select(o => o.Gesture).Distinct())
@@ -406,8 +409,20 @@ public static class Cli
                 }
                 rows.Add(("ratón", shots));
             }
-            foreach (var r in Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None))
-                rows.Add((r.ToString(), Simulate(pet, new PetSituation(PetActivity.Alert, r, 0), pet.Animations.ReactionDuration(r), pet.Animations.ReactionDuration(r) / 12)));
+            // Cada reacción de pie, dormida (en la cama) y el final de la limpieza (despierta y tras la cama).
+            foreach (var (r, during, from, label) in Enum.GetValues<PetReaction>().Where(r => r != PetReaction.None)
+                .SelectMany(r => new[] { (r, PetActivity.Alert, PetActivity.Hidden, r.ToString()), (r, PetActivity.DeepSleep, PetActivity.Hidden, $"{r} (cama)") })
+                .Append((PetReaction.Sparkle, PetActivity.Sweeping, PetActivity.Alert, "Sparkle (fin de limpieza)"))
+                .Append((PetReaction.Sparkle, PetActivity.Sweeping, PetActivity.DeepSleep, "Sparkle (fin de limpieza tras la cama)")))
+            {
+                double length = pet.Animations.ReactionDuration(r, new PetContext(during, from));
+                rows.Add((label, Simulate(pet, new PetSituation(during, r, 0, ReactionDuring: during, From: from), length, length / 12)));
+            }
+            // Limpiar recién salida de la cama (en todas, para que las hojas tengan las mismas filas).
+            {
+                double length = pet.Animations.For(new PetContext(PetActivity.Sweeping, PetActivity.DeepSleep)).Length;
+                rows.Add(("Sweeping (tras la cama)", Simulate(pet, new PetSituation(PetActivity.Sweeping, From: PetActivity.DeepSleep), length, length / 12)));
+            }
             foreach (int facing in new[] { -1, 1 })
                 rows.Add(($"Walk {facing}", Enumerable.Range(0, 12).Select(i => new PetShot(pet.Animations.Walk(i * 0.5, facing, 0, false), [], 0, 0, false)).ToList()));
             rows.Add(("Reduced motion", Enum.GetValues<PetActivity>().Where(a => a != PetActivity.Hidden)

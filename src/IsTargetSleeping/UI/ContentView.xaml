@@ -562,6 +562,26 @@
                 </StackPanel>
             </Border>
 
+            <TextBlock Text="{Binding MemoryNowTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}" Padding="11,9">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding MemoryRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:MemoryRow}">
+                                <StackPanel Margin="0,4">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" Style="{StaticResource MonoSmall}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Label}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                    <ui:MemoryBar Margin="0,5,0,0" Height="5" Used="{Binding Fraction}" Model="0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding MemoryNowHint}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
             <TextBlock Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="11,9">
                 <StackPanel>
@@ -744,6 +764,10 @@
                         <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                         <TextBlock Text="{Binding ThresholdTitle}" Style="{StaticResource Label}" />
                         <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding ThresholdSegments}" Margin="0,7,0,0" />
+                        <StackPanel Visibility="{Binding ShowCooldown, Converter={StaticResource Visible}}">
+                            <TextBlock Text="{Binding CooldownTitle}" Style="{StaticResource Label}" Margin="0,10,0,0" />
+                            <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding CooldownSegments}" Margin="0,7,0,0" />
+                        </StackPanel>
                         <TextBlock Text="{Binding IntervalTitle}" Style="{StaticResource Label}" Margin="0,10,0,0" />
                         <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IntervalSegments}" Margin="0,7,0,0" />
                         <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
@@ -755,26 +779,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Mem Reduct -->
-                <Border Style="{StaticResource CardBox}" Margin="0,8,0,0" Visibility="{Binding ShowMemReduct, Converter={StaticResource Visible}}">
-                    <StackPanel>
-                        <TextBlock Text="Mem Reduct" Style="{StaticResource Label}" />
-                        <TextBlock Text="{Binding MemReductDetail}" Style="{StaticResource Hint}" Margin="0,2,0,0" />
-                        <StackPanel Orientation="Horizontal" Margin="0,9,0,0" Visibility="{Binding ShowReplaceButtons, Converter={StaticResource Visible}}">
-                            <Button Style="{StaticResource Bordered}" Content="{Binding ImportLabel}" Command="{Binding ImportMemReduct}" />
-                            <Button Style="{StaticResource Prominent}" Content="{Binding ReplaceLabel}" Command="{Binding AskReplaceMemReduct}" Margin="8,0,0,0" />
-                        </StackPanel>
-                        <StackPanel Margin="0,9,0,0" Visibility="{Binding ConfirmingReplace, Converter={StaticResource Visible}}">
-                            <TextBlock Text="{Binding ReplaceQuestion}" FontSize="11.5" TextWrapping="Wrap" />
-                            <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
-                                <Button Style="{StaticResource Bordered}" Content="{Binding CancelLabel}" Command="{Binding CancelReplaceMemReduct}" />
-                                <Button Style="{StaticResource Prominent}" Content="{Binding ReplaceLabel}" Command="{Binding ReplaceMemReduct}" Margin="8,0,0,0" />
-                            </StackPanel>
-                        </StackPanel>
-                        <Button Style="{StaticResource Bordered}" Content="{Binding RestoreLabel}" Command="{Binding RestoreMemReduct}"
-                                HorizontalAlignment="Left" Margin="0,9,0,0" Visibility="{Binding ShowRestore, Converter={StaticResource Visible}}" />
-                    </StackPanel>
-                </Border>
             </StackPanel>
 
             <TextBlock Text="{Binding NotificationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />

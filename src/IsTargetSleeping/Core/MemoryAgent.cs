@@ -64,7 +64,7 @@ public static class MemoryAgent
 
     /// Saca el agente de la app a una carpeta temporal y lo lanza elevado para que se
     /// instale. Devuelve null si fue bien o un mensaje para el usuario.
-    public static string? Install(bool closeMemReduct)
+    public static string? Install()
     {
         string dir = Path.Combine(Path.GetTempPath(), $"{AppInfo.Name}-agent-{Guid.NewGuid():N}");
         try
@@ -78,7 +78,7 @@ public static class MemoryAgent
                 input.CopyTo(output);
             }
             using var id = WindowsIdentity.GetCurrent();
-            var args = $"--install {id.User!.Value}{(closeMemReduct ? " --close-memreduct" : "")}";
+            var args = $"--install {id.User!.Value}";
             return Elevated(exe, args);
         }
         catch (Exception e) { return e.Message; }
@@ -183,12 +183,6 @@ public static class MemoryAgent
             {
                 var busy = Failure(tr("Ya hay una limpieza de RAM en curso."));
                 initial.TrySetResult(busy); completion.TrySetResult(busy); return;
-            }
-            if (spec.Selective && (spec.OwnerSid is null || spec.SessionId < 0))
-            {
-                using var identity = WindowsIdentity.GetCurrent();
-                using var current = Process.GetCurrentProcess();
-                spec = spec with { OwnerSid = identity.User?.Value, SessionId = current.SessionId };
             }
             var task = FindTask();
             try
