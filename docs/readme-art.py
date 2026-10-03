@@ -18,7 +18,7 @@ IMAGES = os.path.join(ROOT, 'docs', 'images')
 PETS = ['mira', 'llama', 'capybara', 'orange-cat']
 SIZES = {'mira': (27, 24), 'llama': (32, 30), 'capybara': (32, 30), 'orange-cat': (32, 30)}
 FIXED = ['DeepSleep', 'WakingUp', 'Drowsy', 'Eating', 'Alert', 'Working', 'Downloading', 'Sweeping', 'Yawning', 'Peek',
-         'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10']
+         'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T13']
 # Cada reacción de pie y en la cama (`…Bed`), el final de la limpieza (despierta y tras la cama) y la
 # limpieza tras la cama.
 REACTIONS = ['Jump', 'Hearts', 'Sparkle', 'Nap', 'Dizzy', 'Sad']
@@ -333,7 +333,7 @@ def settings_previews():
         im = Image.open(src).convert('RGBA')
         h = Image.open(os.path.join(IMAGES, f'activity-{lang}.png')).height
         top = im.crop((0, 0, im.width, h))
-        fade = 260
+        fade = min(h, round(260 * im.width / 684))
         alpha = np.asarray(top.getchannel('A'), dtype=np.float32)
         alpha[h - fade:] *= np.linspace(1, 0, fade)[:, None] ** 1.6
         top.putalpha(Image.fromarray(alpha.astype(np.uint8)))

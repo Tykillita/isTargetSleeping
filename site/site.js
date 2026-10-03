@@ -28,7 +28,7 @@ const EN = {
 
   'video.eyebrow': 'Version 1.5.2, in 77 seconds',
   'video.titulo': 'Take a closer look.',
-  'video.pie': 'With sound and sample data from the current app.',
+  'video.pie': 'In 1080p, with sound, the current pets and app screenshots. Sample data.',
   'video.otro': 'Watch in Spanish',
 
   'fun.eyebrow': 'Features',
@@ -288,6 +288,11 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
+  'nov.proxima.resumen': 'Improvements to the website presentation and screenshots.',
+  'nov.proxima.videoT': 'The original presentation, refreshed',
+  'nov.proxima.videoD': 'The same script, sound, transitions and animation timing, now with the current pets and crisp screenshots. 77 seconds in English and Spanish, in 1080p.',
+  'nov.proxima.capturasT': 'More detail in every screenshot',
+  'nov.proxima.capturasD': 'Panel, Activity and Settings are rendered at four times the resolution directly from the app. The website and README files share the new images and posters.',
   'nov.v1_5_2.fecha': 'Oct 3, 2026',
   'nov.v1_5_2.resumen': 'Real Ollama service and task validation, a dedicated GitHub cover and refreshed media.',
   'nov.v1_5_2.validacionT': 'Reproducible Windows verification',

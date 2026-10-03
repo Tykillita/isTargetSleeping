@@ -1,0 +1,753 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>isTargetSleeping tour</title>
+<style>
+  :root {
+    --bg: #060709; --ink: #F2F4F7; --dim: #8A929E; --faint: #3A404A;
+    --blue: #4DA3FF; --blue2: #1A8FE8; --amber: #F5B04A; --coral: #FF7A6B; --green: #5CD69A;
+    --card: rgba(255,255,255,0.045); --line: rgba(255,255,255,0.09);
+    --sans: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --mono: "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  .bgglow { position: absolute; inset: -200px; background:
+      radial-gradient(900px 600px at var(--gx, 30%) var(--gy, 40%), rgba(77,163,255,0.13), transparent 70%),
+      radial-gradient(700px 500px at 85% 90%, rgba(77,163,255,0.06), transparent 70%); }
+  .grid { position: absolute; inset: 0; background-image:
+      radial-gradient(circle, rgba(255,255,255,0.07) 1.2px, transparent 1.6px);
+      background-size: 48px 48px; mask-image: radial-gradient(1200px 800px at 50% 50%, #000 30%, transparent 85%); }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .abs { position: absolute; }
+  .h1 { font-size: 96px; font-weight: 700; letter-spacing: -2.5px; line-height: 1.02; }
+  .h2 { font-size: 72px; font-weight: 700; letter-spacing: -1.8px; line-height: 1.05; }
+  .h3 { font-size: 44px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15; }
+  .p { font-size: 30px; color: var(--dim); line-height: 1.4; }
+  .kicker { font-family: var(--mono); font-size: 22px; letter-spacing: 3px; text-transform: uppercase; color: var(--blue); }
+  .blue { color: var(--blue); } .amber { color: var(--amber); } .coral { color: var(--coral); } .dim { color: var(--dim); }
+  .mono { font-family: var(--mono); }
+  .chip { display: inline-block; font-family: var(--mono); font-size: 24px; padding: 6px 14px; border-radius: 10px;
+          background: rgba(255,255,255,0.08); border: 1px solid var(--line); color: var(--ink); }
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.025));
+           border: 1px solid var(--line); border-radius: 28px; backdrop-filter: blur(20px);
+           box-shadow: 0 30px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06); }
+  .sprite { position: absolute; image-rendering: pixelated; background-repeat: no-repeat; }
+  .word { display: inline-block; white-space: pre; }
+  /* Memory bar */
+  .bar { position: relative; height: 34px; border-radius: 17px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .bar > div { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 17px; }
+  /* Feature cards */
+  .fcard { position: absolute; width: 400px; height: 196px; padding: 26px 28px; }
+  .fcard svg { width: 44px; height: 44px; stroke: var(--blue); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .fcard .t { font-size: 29px; font-weight: 650; margin-top: 14px; }
+  .fcard .d { font-size: 21px; color: var(--dim); margin-top: 6px; line-height: 1.3; }
+  /* Callouts */
+  .callout { position: absolute; left: 150px; width: 820px; }
+  .callout .n { font-family: var(--mono); color: var(--blue); font-size: 22px; letter-spacing: 2px; }
+  .callout .t { font-size: 50px; font-weight: 700; letter-spacing: -1px; margin-top: 6px; }
+  .callout .d { font-size: 28px; color: var(--dim); margin-top: 8px; line-height: 1.35; }
+  .ring { position: absolute; border: 3px solid var(--blue); border-radius: 18px; box-shadow: 0 0 0 6px rgba(77,163,255,0.18), 0 0 40px rgba(77,163,255,0.35); }
+  /* Toasts */
+  .toast { position: absolute; right: 60px; width: 560px; height: 118px; padding: 22px 26px; display: flex; gap: 20px; align-items: center; border-radius: 18px; }
+  .toast .ic { width: 64px; height: 64px; border-radius: 14px; background: #0C0C0E; display: grid; place-items: center; flex: none; }
+  .toast .tt { font-size: 25px; font-weight: 650; }
+  .toast .td { font-size: 21px; color: var(--dim); margin-top: 2px; }
+  /* Taskbar */
+  .taskbar { position: absolute; left: 0; right: 0; bottom: 0; height: 144px; background: rgba(32,32,36,0.92);
+             border-top: 1.5px solid rgba(255,255,255,0.08); }
+  .tbicon { position: absolute; top: 33px; width: 78px; height: 78px; border-radius: 16px; }
+  .pill { display: inline-flex; align-items: center; gap: 14px; padding: 12px 26px; border-radius: 40px; font-size: 30px; font-weight: 650; }
+  .dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bgglow" id="bgglow"></div>
+  <div class="grid"></div>
+
+  <!-- 1 · Intro -->
+  <div class="scene" id="s1">
+    <svg id="logo1" class="abs" viewBox="0 0 1024 1024" width="380" height="380" style="left:770px;top:250px">
+      <g fill="none" stroke="#4DA3FF" stroke-linecap="round" stroke-linejoin="round">
+        <circle id="l1ring" cx="512" cy="512" r="250" stroke-width="52" pathLength="1" stroke-dasharray="1" transform="rotate(-90 512 512)"/>
+        <line class="tick" x1="512" y1="148" x2="512" y2="322" stroke-width="46"/>
+        <line class="tick" x1="702" y1="512" x2="876" y2="512" stroke-width="46"/>
+        <line class="tick" x1="512" y1="702" x2="512" y2="876" stroke-width="46"/>
+        <line class="tick" x1="148" y1="512" x2="322" y2="512" stroke-width="46"/>
+        <path id="l1eye" d="M 380 496 Q 512 600 644 496" stroke-width="42" pathLength="1" stroke-dasharray="1"/>
+        <g id="l1lash">
+          <line x1="446" y1="535" x2="422" y2="590" stroke-width="36"/>
+          <line x1="512" y1="548" x2="512" y2="606" stroke-width="36"/>
+          <line x1="578" y1="535" x2="602" y2="590" stroke-width="36"/>
+        </g>
+      </g>
+    </svg>
+    <div id="zzz" class="abs mono" style="left:1040px;top:330px;font-size:46px;color:var(--blue);font-weight:700"></div>
+    <div id="title1" class="abs h1" style="left:0;right:0;top:690px;text-align:center"></div>
+    <div id="tag1" class="abs p" style="left:0;right:0;top:810px;text-align:center;font-size:34px"></div>
+  </div>
+
+  <!-- 2 · Problem -->
+  <div class="scene" id="s2">
+    <div class="abs kicker" id="s2k" style="left:200px;top:200px"></div>
+    <div class="abs h2" id="s2t" style="left:200px;top:250px;width:1500px"></div>
+    <div class="abs glass" id="s2card" style="left:200px;top:500px;width:1520px;height:330px;padding:44px 52px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="h3" style="font-size:36px" id="s2mem"></div>
+        <div id="s2press" style="font-size:28px;font-weight:600"></div>
+      </div>
+      <div class="bar" style="margin-top:28px;height:44px">
+        <div id="s2other" style="background:rgba(255,255,255,0.28)"></div>
+        <div id="s2model" style="background:linear-gradient(90deg,#fff,#cfd6df)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:26px;font-family:var(--mono);font-size:28px">
+        <div id="s2model2"></div><div id="s2gb"></div>
+      </div>
+      <div style="margin-top:18px;font-size:28px;color:var(--dim)" id="s2idle"></div>
+    </div>
+  </div>
+
+  <!-- 3 · Solution -->
+  <div class="scene" id="s3">
+    <svg class="abs" viewBox="0 0 1024 1024" width="230" height="230" style="left:200px;top:150px">
+      <g fill="none" stroke="#4DA3FF" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="512" cy="512" r="250" stroke-width="52"/>
+        <line x1="512" y1="148" x2="512" y2="322" stroke-width="46"/><line x1="702" y1="512" x2="876" y2="512" stroke-width="46"/>
+        <line x1="512" y1="702" x2="512" y2="876" stroke-width="46"/><line x1="148" y1="512" x2="322" y2="512" stroke-width="46"/>
+        <g id="s3open"><ellipse cx="512" cy="512" rx="120" ry="70" stroke-width="40"/><circle cx="512" cy="512" r="38" fill="#4DA3FF" stroke="none"/></g>
+        <g id="s3closed"><path d="M 380 496 Q 512 600 644 496" stroke-width="42"/>
+          <line x1="446" y1="535" x2="422" y2="590" stroke-width="36"/><line x1="512" y1="548" x2="512" y2="606" stroke-width="36"/><line x1="578" y1="535" x2="602" y2="590" stroke-width="36"/></g>
+      </g>
+    </svg>
+    <div class="abs h2" id="s3t" style="left:480px;top:190px;width:1300px"></div>
+    <div class="abs glass" style="left:200px;top:470px;width:1520px;height:330px;padding:44px 52px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="h3 mono" style="font-size:36px">qwen3:8b</div>
+        <div id="s3timer" class="mono" style="font-size:30px"></div>
+      </div>
+      <div class="bar" style="margin-top:28px;height:44px">
+        <div id="s3other" style="background:rgba(255,255,255,0.28)"></div>
+        <div id="s3model" style="background:linear-gradient(90deg,#fff,#cfd6df)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:26px;font-family:var(--mono);font-size:28px">
+        <div id="s3model2"></div><div id="s3gb"></div>
+      </div>
+    </div>
+    <div class="abs" id="s3big" style="left:200px;top:850px;font-size:64px;font-weight:750;letter-spacing:-1.5px"></div>
+    <div class="abs p" id="s3sub" style="left:200px;top:945px"></div>
+  </div>
+
+  <!-- 4 · Panel -->
+  <div class="scene" id="s4">
+    <div class="abs kicker" id="s4k" style="left:150px;top:110px"></div>
+    <div id="s4callouts"></div>
+    <div class="abs" id="s4panel" style="left:1260px;top:60px;width:453px;height:960px;border-radius:22px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.08)">
+      <img id="s4img" style="width:453px;display:block">
+    </div>
+    <div class="ring" id="s4ring"></div>
+  </div>
+
+  <!-- 5 · Feature grid -->
+  <div class="scene" id="s5">
+    <div class="abs h2" id="s5t" style="left:0;right:0;top:70px;text-align:center"></div>
+    <div id="s5grid"></div>
+  </div>
+
+  <!-- 6 · Game mode -->
+  <div class="scene" id="s6">
+    <div class="abs kicker" id="s6k" style="left:150px;top:150px"></div>
+    <div class="abs h2" id="s6t" style="left:150px;top:200px;width:900px"></div>
+    <div class="abs p" id="s6p" style="left:150px;top:540px;width:820px"></div>
+    <div class="abs glass" id="s6ollama" style="left:1100px;top:200px;width:660px;height:200px;padding:36px 44px">
+      <div style="display:flex;align-items:center;gap:26px">
+        <svg viewBox="0 0 100 100" width="110" height="110"><circle id="s6pw" cx="50" cy="50" r="44" fill="none" stroke-width="5"/>
+          <path id="s6pwi" d="M50 30 v18 M37 38 a18 18 0 1 0 26 0" fill="none" stroke-width="6" stroke-linecap="round"/></svg>
+        <div><div style="font-size:44px;font-weight:700" id="s6state"></div><div class="dim" style="font-size:26px" id="s6sub"></div></div>
+      </div>
+    </div>
+    <div class="abs glass" id="s6game" style="left:1100px;top:450px;width:660px;height:330px;overflow:hidden;padding:0">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,#2b1a4a,#0d2b3a 60%,#0a0f18)"></div>
+      <div id="s6stars" style="position:absolute;inset:0"></div>
+      <svg viewBox="0 0 120 80" width="190" style="position:absolute;left:235px;top:70px" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+        <path d="M30 20 h60 a22 22 0 0 1 22 22 l4 18 a12 12 0 0 1 -21 9 l-10 -12 h-50 l-10 12 a12 12 0 0 1 -21 -9 l4 -18 a22 22 0 0 1 22 -22z"/>
+        <path d="M32 36 v14 M25 43 h14"/><circle cx="84" cy="38" r="3" fill="#fff"/><circle cx="92" cy="47" r="3" fill="#fff"/></svg>
+      <div style="position:absolute;left:0;right:0;bottom:44px;text-align:center;font-size:32px;font-weight:650" id="s6gname"></div>
+    </div>
+    <div class="abs" id="s6vram" style="left:1100px;top:820px;width:660px">
+      <div style="display:flex;justify-content:space-between;font-size:26px;margin-bottom:12px"><span class="dim">VRAM · RTX 4060</span><span class="mono" id="s6vgb"></span></div>
+      <div class="bar"><div id="s6vbar" style="background:linear-gradient(90deg,#fff,#cfd6df)"></div></div>
+    </div>
+  </div>
+
+  <!-- 7 · Watchdog + notifications -->
+  <div class="scene" id="s7">
+    <div class="abs kicker" id="s7k" style="left:150px;top:200px"></div>
+    <div class="abs h2" id="s7t" style="left:150px;top:250px;width:1000px"></div>
+    <div class="abs p" id="s7p" style="left:150px;top:520px;width:900px"></div>
+    <div id="s7toasts"></div>
+  </div>
+
+  <!-- 8 · Pets -->
+  <div class="scene" id="s8">
+    <div class="abs kicker" id="s8k" style="left:0;right:0;top:110px;text-align:center"></div>
+    <div class="abs h2" id="s8t" style="left:0;right:0;top:160px;text-align:center"></div>
+    <div id="s8pets"></div>
+  </div>
+
+  <!-- 9 · Pets on the taskbar -->
+  <div class="scene" id="s9">
+    <div class="abs kicker" id="s9k" style="left:150px;top:150px"></div>
+    <div class="abs h2" id="s9t" style="left:150px;top:200px;width:1600px"></div>
+    <div class="abs" id="s9state" style="left:150px;top:420px;width:1600px"></div>
+    <div class="abs" id="s9wrap" style="inset:0;transform-origin:960px 1080px;transform:scale(1.3333)"><div class="taskbar" id="s9bar"></div></div>
+  </div>
+
+  <!-- 10 · Activity + settings -->
+  <div class="scene" id="s10">
+    <div class="abs kicker" id="s10k" style="left:150px;top:300px"></div>
+    <div class="abs h2" id="s10t" style="left:150px;top:350px;width:840px;font-size:62px"></div>
+    <div class="abs p" id="s10p" style="left:150px;top:600px;width:780px"></div>
+    <div class="abs" id="s10a" style="left:1030px;top:70px;width:420px;height:940px;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.08)"><img id="s10aimg" style="width:420px;display:block"></div>
+    <div class="abs" id="s10s" style="left:1480px;top:70px;width:420px;height:940px;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.7),0 0 0 1px rgba(255,255,255,0.08)"><img id="s10simg" style="width:420px;display:block;position:relative"></div>
+  </div>
+
+  <!-- 11 · Outro -->
+  <div class="scene" id="s11">
+    <img src="icon.svg" id="s11logo" class="abs" style="left:870px;top:190px;width:180px;height:180px">
+    <div class="abs h1" style="left:0;right:0;top:410px;text-align:center">isTargetSleeping</div>
+    <div class="abs" id="s11pills" style="left:0;right:0;top:560px;text-align:center"></div>
+    <div class="abs mono" id="s11url" style="left:0;right:0;top:690px;text-align:center;font-size:36px;color:var(--blue)">github.com/Tykillita/isTargetSleeping</div>
+    <div class="abs dim" id="s11by" style="left:0;right:0;top:900px;text-align:center;font-size:26px"></div>
+  </div>
+</div>
+
+<script>
+const LANG = new URLSearchParams(location.search).get('lang') || 'en';
+const FPS_SPRITE = 9;
+const T = {
+  en: {
+    tag: 'Watches your local models and puts them to sleep when they’re idle.',
+    s2k: 'The problem', s2t: 'Your model finished answering…<br><span class="dim">but it’s still in your RAM.</span>',
+    mem: 'PC memory', model: 'qwen3:8b', press: ['normal pressure', 'high pressure'], idle: n => `idle ${n} min · doing nothing`,
+    s3t: 'isTargetSleeping puts it to sleep.', frees: s => `frees in 0:${String(s).padStart(2, '0')}`, asleep: 'asleep · 0 GB',
+    back: g => `+${g} GB back`, s3sub: 'Ollama stays on — the model reloads with your next message.',
+    s4k: 'One panel, next to the clock',
+    callouts: [
+      ['01', 'One click', 'Turn Ollama on or off — or <span class="chip">Ctrl+Alt+O</span> from any app.'],
+      ['02', 'RAM and VRAM', 'Same figures as Task Manager, and how much of it is the model.'],
+      ['03', 'Free RAM', 'Mem Reduct’s cleanup built in — it never touches the model or your game.'],
+      ['04', 'Who wakes it', 'Obsidian, Cursor, a script… found from its connection to Ollama.'],
+      ['05', 'Every engine', 'Ollama models, llama.cpp’s llama-server and LM Studio.'],
+    ],
+    s5t: 'Everything, from the tray.',
+    feats: [
+      ['power', 'On / off', 'Any install: app, service, task or ollama serve.'],
+      ['moon', 'Idle sleep', 'Unloads after 5–60 min without generating.'],
+      ['broom', 'Free RAM', 'Working sets, file cache, standby lists.'],
+      ['pad', 'Game mode', 'Steam, Epic, Riot, EA, GOG, Xbox…'],
+      ['shield', 'Watchdog', 'Restarts Ollama if it crashes or hangs.'],
+      ['bell', 'Notifications', 'Native Windows toasts, one switch each.'],
+      ['chip', 'GPU & VRAM', 'Dedicated memory, read like Task Manager.'],
+      ['chart', 'Activity', 'GB reclaimed, naps and a 30-min chart.'],
+      ['layers', 'Models', 'Load, download or delete from the panel.'],
+      ['link', 'Links', 'istargetsleeping://sleep for Stream Deck.'],
+      ['refresh', 'Updates', 'Verified with SHA-256, automatic rollback.'],
+      ['lock', 'Private', 'No accounts, no telemetry. MIT licensed.'],
+    ],
+    s6k: 'Game mode', s6t: 'Launch a game.<br><span class="dim">Get your RAM and VRAM back.</span>',
+    s6p: 'Ollama turns off 5 s after the game opens, and comes back the same way 30 s after you quit.',
+    on: 'On', off: 'Off', onSub: 'qwen3:8b in memory', offSub: 'Playing · turned off for the game', backSub: 'Back on · game closed',
+    game: 'Your game', gameOff: 'Game closed',
+    s7k: 'Watchdog & notifications', s7t: 'If Ollama crashes,<br><span class="dim">it comes right back.</span>',
+    s7p: 'Crash or hang detected in seconds, restarted with the same mechanism — and you hear about it.',
+    toasts: [
+      ['warn', 'Ollama crashed', 'The watchdog is restarting it…'],
+      ['ok', 'Ollama is back', 'Restarted in 8 s · same mechanism'],
+      ['moon', 'qwen3:8b fell asleep', '5.2 GB of RAM freed'],
+      ['down', 'Download finished', 'gemma4:4b · 3.3 GB'],
+    ],
+    s8k: 'Optional · new', s8t: 'Meet your taskbar pets.',
+    pets: [
+      ['mira', 'Mira', 'Watchful hacker'],
+      ['llama', 'Llama', 'Proud & curious'],
+      ['capybara', 'Capybara', 'Totally zen'],
+      ['orange-cat', 'Kitten', 'Playful pouncer'],
+    ],
+    s9k: 'Beside Start', s9t: 'They act out what Ollama is doing.',
+    states: [
+      ['Ollama off', 'sleeps in its own bed'],
+      ['Loading a model', 'eats a snack'],
+      ['Generating', 'types on a tiny laptop'],
+      ['Downloading', 'carries a box'],
+      ['Freeing RAM', 'sweeps'],
+      ['You pet it', 'hearts'],
+    ],
+    s10k: 'Activity & settings', s10t: 'See what happened.<br><span class="dim">Tune how it behaves.</span>',
+    s10p: '90-day history, who woke the model, idle timers, game mode, hotkeys, links — in English and Spanish.',
+    pills: ['Native Windows', 'Private', 'Open source · MIT'], by: 'By CodeSentry - Tykillita · Not affiliated with Ollama',
+  },
+  es: {
+    tag: 'Vigila tus modelos locales y los pone a dormir cuando no trabajan.',
+    s2k: 'El problema', s2t: 'Tu modelo terminó de responder…<br><span class="dim">pero sigue en tu RAM.</span>',
+    mem: 'Memoria del PC', model: 'qwen3:8b', press: ['presión normal', 'presión alta'], idle: n => `sin uso ${n} min · sin hacer nada`,
+    s3t: 'isTargetSleeping lo pone a dormir.', frees: s => `libera en 0:${String(s).padStart(2, '0')}`, asleep: 'dormido · 0 GB',
+    back: g => `+${g} GB recuperados`, s3sub: 'Ollama sigue encendido — el modelo vuelve con tu siguiente mensaje.',
+    s4k: 'Un panel, junto al reloj',
+    callouts: [
+      ['01', 'Un clic', 'Enciende o apaga Ollama — o <span class="chip">Ctrl+Alt+O</span> desde cualquier app.'],
+      ['02', 'RAM y VRAM', 'Las mismas cifras que el Administrador de tareas, y cuánto es del modelo.'],
+      ['03', 'Liberar RAM', 'La limpieza de Mem Reduct integrada — sin tocar el modelo ni tu juego.'],
+      ['04', 'Quién lo despierta', 'Obsidian, Cursor, un script… por su conexión a Ollama.'],
+      ['05', 'Todos los motores', 'Modelos de Ollama, llama-server de llama.cpp y LM Studio.'],
+    ],
+    s5t: 'Todo, desde la bandeja.',
+    feats: [
+      ['power', 'Encender / apagar', 'App, servicio, tarea u ollama serve.'],
+      ['moon', 'Siesta automática', 'Lo descarga tras 5–60 min sin generar.'],
+      ['broom', 'Liberar RAM', 'Memoria de trabajo, caché, listas en espera.'],
+      ['pad', 'Modo juego', 'Steam, Epic, Riot, EA, GOG, Xbox…'],
+      ['shield', 'Vigilante', 'Reinicia Ollama si se cae o se cuelga.'],
+      ['bell', 'Notificaciones', 'Avisos nativos, un interruptor por tipo.'],
+      ['chip', 'GPU y VRAM', 'Memoria dedicada, como el Administrador.'],
+      ['chart', 'Actividad', 'GB recuperados, siestas y gráfica de 30 min.'],
+      ['layers', 'Modelos', 'Carga, descarga o borra desde el panel.'],
+      ['link', 'Enlaces', 'istargetsleeping://sleep para Stream Deck.'],
+      ['refresh', 'Actualizaciones', 'Verificadas con SHA-256, con vuelta atrás.'],
+      ['lock', 'Privado', 'Sin cuentas ni telemetría. Licencia MIT.'],
+    ],
+    s6k: 'Modo juego', s6t: 'Abre un juego.<br><span class="dim">Recupera tu RAM y tu VRAM.</span>',
+    s6p: 'Ollama se apaga 5 s después de abrir el juego y vuelve por el mismo camino 30 s después de salir.',
+    on: 'Encendido', off: 'Apagado', onSub: 'qwen3:8b en memoria', offSub: 'Jugando · apagado para el juego', backSub: 'Encendido otra vez · juego cerrado',
+    game: 'Tu juego', gameOff: 'Juego cerrado',
+    s7k: 'Vigilante y notificaciones', s7t: 'Si Ollama se cae,<br><span class="dim">vuelve enseguida.</span>',
+    s7p: 'Detecta caídas y cuelgues en segundos, lo reinicia con el mismo mecanismo — y te avisa.',
+    toasts: [
+      ['warn', 'Ollama se cayó', 'El vigilante lo está reiniciando…'],
+      ['ok', 'Ollama volvió', 'Reiniciado en 8 s · mismo mecanismo'],
+      ['moon', 'qwen3:8b se durmió', '5.2 GB de RAM liberados'],
+      ['down', 'Descarga terminada', 'gemma4:4b · 3.3 GB'],
+    ],
+    s8k: 'Opcional · nuevo', s8t: 'Conoce a tus mascotas de la barra.',
+    pets: [
+      ['mira', 'Mira', 'Hacker vigilante'],
+      ['llama', 'Llama', 'Orgullosa y curiosa'],
+      ['capybara', 'Capibara', 'Totalmente zen'],
+      ['orange-cat', 'Gatito', 'Juguetón'],
+    ],
+    s9k: 'Junto a Inicio', s9t: 'Cuentan lo que hace Ollama.',
+    states: [
+      ['Ollama apagado', 'duerme en su cama'],
+      ['Cargando un modelo', 'come algo'],
+      ['Generando', 'teclea en un portátil diminuto'],
+      ['Descargando', 'carga una caja'],
+      ['Liberando RAM', 'barre'],
+      ['La acaricias', 'corazones'],
+    ],
+    s10k: 'Actividad y ajustes', s10t: 'Mira qué pasó.<br><span class="dim">Ajusta cómo se comporta.</span>',
+    s10p: 'Historial de 90 días, quién despertó al modelo, siestas, modo juego, atajos y enlaces — en español e inglés.',
+    pills: ['Nativa de Windows', 'Privada', 'Código abierto · MIT'], by: 'By CodeSentry - Tykillita · No afiliado a Ollama',
+  },
+}[LANG];
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const eOut = k => 1 - Math.pow(1 - k, 3);
+const eInOut = k => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const eBack = k => { const c = 1.70158, c3 = c + 1; return 1 + c3 * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+function appear(el, t, at, dur = 0.6, dy = 30, extra = '') {
+  const k = eOut(seg(t, at, at + dur));
+  el.style.opacity = k;
+  el.style.transform = `translateY(${(1 - k) * dy}px) ${extra}`;
+  el.style.filter = k < 1 ? `blur(${(1 - k) * 8}px)` : '';
+}
+
+// Scenes: [id, start, end]
+const SCENES = [['s1', 0, 6.2], ['s2', 6, 13.2], ['s3', 13, 21.2], ['s4', 21, 31.2], ['s5', 31, 41.2],
+  ['s6', 41, 48.7], ['s7', 48.5, 54.7], ['s8', 54.5, 60.7], ['s9', 60.5, 68.7], ['s10', 68.5, 72.2], ['s11', 72, 78]];
+const DURATION = 77;
+
+// ---------- sprites ----------
+let META;
+function spriteEl(pet, scale) {
+  const d = document.createElement('div');
+  d.className = 'sprite';
+  d._pet = pet; d._scale = scale;
+  const m = META[pet];
+  d.style.width = m.w * scale + 'px'; d.style.height = m.h * scale + 'px';
+  return d;
+}
+function setSprite(d, row, frame, loop = true) {
+  const m = META[d._pet], n = m.rows[row];
+  const usable = loop && n > 12 ? n - 1 : n;
+  const f = loop ? ((frame % usable) + usable) % usable : clamp(frame, 0, n - 1);
+  const s = d._scale;
+  if (d._row !== row) {
+    d.style.backgroundImage = `url(sprites/${d._pet}-${row}.png)`;
+    d.style.backgroundSize = `${m.w * n * s}px ${m.h * s}px`;
+    d._row = row;
+  }
+  d.style.backgroundPosition = `${-Math.floor(f) * m.w * s}px 0px`;
+}
+
+// ---------- build ----------
+const ICONS = {
+  power: '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/>',
+  broom: '<path d="M19 3l-7.5 7.5"/><path d="M10 9.5l4.5 4.5-2 6.5c-3-.5-7-3-9-6.5z"/><path d="M7 15l-2 2"/>',
+  pad: '<rect x="2.5" y="7" width="19" height="11" rx="5.5"/><path d="M7.5 10.5v4M5.5 12.5h4"/><circle cx="16" cy="11.5" r=".8"/><circle cx="18" cy="13.8" r=".8"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/>',
+  chart: '<path d="M3 20h18"/><path d="M3 16l5-6 4 4 4-7 5 5"/>',
+  layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3.6-3.6a4 4 0 0 0-5.7-5.7L12 6.3"/><path d="M14 10a4 4 0 0 0-5.7 0l-3.6 3.6a4 4 0 0 0 5.7 5.7L12 17.7"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L3 9"/><path d="M3 4v5h5"/><path d="M4 13a8 8 0 0 0 14.5 4.5L21 15"/><path d="M21 20v-5h-5"/>',
+  lock: '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+};
+const TOAST_IC = {
+  warn: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#F5B04A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>',
+  ok: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#4DA3FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9"/><path d="M3 4v5h5"/><path d="M4 13a8 8 0 0 0 14.5 4.5L21 15"/><path d="M21 20v-5h-5"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z"/></svg>',
+  down: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>',
+};
+const LOGO_SM = '<svg viewBox="0 0 1024 1024" width="40" height="40"><g fill="none" stroke="#4DA3FF" stroke-linecap="round"><circle cx="512" cy="512" r="250" stroke-width="60"/><path d="M512 148v174M702 512h174M512 702v174M148 512h174" stroke-width="56"/><path d="M380 496Q512 600 644 496" stroke-width="50"/></g></svg>';
+
+function build() {
+  $('title1').innerHTML = [...'isTargetSleeping'].map(c => `<span class="word">${c}</span>`).join('');
+  $('tag1').textContent = T.tag;
+  $('s2k').textContent = T.s2k; $('s2t').innerHTML = T.s2t; $('s2mem').textContent = T.mem;
+  $('s3t').textContent = T.s3t; $('s3sub').textContent = T.s3sub;
+  $('s4k').textContent = T.s4k; $('s4img').src = `img/panel-${LANG}.png`;
+  $('s4callouts').innerHTML = T.callouts.map(([n, t, d], i) =>
+    `<div class="callout" id="co${i}"><div class="n">${n}</div><div class="t">${t}</div><div class="d">${d}</div></div>`).join('');
+  $('s5t').textContent = T.s5t;
+  $('s5grid').innerHTML = T.feats.map(([ic, t, d], i) => {
+    const col = i % 4, row = Math.floor(i / 4);
+    return `<div class="fcard glass" id="fc${i}" style="left:${130 + col * 424}px;top:${250 + row * 226}px">
+      <svg viewBox="0 0 24 24">${ICONS[ic]}</svg><div class="t">${t}</div><div class="d">${d}</div></div>`;
+  }).join('');
+  $('s6k').textContent = T.s6k; $('s6t').innerHTML = T.s6t; $('s6p').textContent = T.s6p;
+  let stars = '';
+  for (let i = 0; i < 40; i++) { const x = (i * 137.5) % 660, y = (i * 71.3) % 330, r = 1 + (i % 3);
+    stars += `<div style="position:absolute;left:${x}px;top:${y}px;width:${r}px;height:${r}px;border-radius:50%;background:#fff;opacity:${0.25 + (i % 5) * 0.12}"></div>`; }
+  $('s6stars').innerHTML = stars;
+  $('s7k').textContent = T.s7k; $('s7t').innerHTML = T.s7t; $('s7p').textContent = T.s7p;
+  $('s7toasts').innerHTML = T.toasts.map(([ic, t, d], i) =>
+    `<div class="toast glass" id="to${i}"><div class="ic">${TOAST_IC[ic]}</div><div><div class="tt">${t}</div><div class="td">${d}</div></div></div>`).join('');
+  $('s8k').textContent = T.s8k; $('s8t').textContent = T.s8t;
+  const box = $('s8pets');
+  T.pets.forEach(([id, name, desc], i) => {
+    const x = 130 + i * 420;
+    const w = document.createElement('div'); w.className = 'abs'; w.id = 'pw' + i;
+    w.style.cssText = `left:${x}px;top:330px;width:400px;height:620px`;
+    const sp = spriteEl(id, 3); sp.id = 'pet' + i;
+    sp.style.left = (400 - META[id].w * 3) / 2 + 'px'; sp.style.top = (370 - META[id].h * 3) + 'px';
+    w.appendChild(sp);
+    const plate = document.createElement('div');
+    plate.className = 'abs'; plate.style.cssText = 'left:60px;right:60px;top:340px;height:30px;border-radius:50%;background:radial-gradient(closest-side,rgba(77,163,255,0.25),transparent)';
+    w.insertBefore(plate, sp);
+    const lab = document.createElement('div'); lab.className = 'abs';
+    lab.style.cssText = 'left:0;right:0;top:400px;text-align:center';
+    lab.innerHTML = `<div style="font-size:46px;font-weight:700">${name}</div><div class="dim" style="font-size:28px;margin-top:4px">${desc}</div>`;
+    w.appendChild(lab);
+    box.appendChild(w);
+  });
+  // Taskbar
+  $('s9k').textContent = T.s9k; $('s9t').textContent = T.s9t;
+  const bar = $('s9bar');
+  const startX = 600;
+  bar.innerHTML = `
+    <div class="abs" id="winlogo" style="left:${startX}px;top:39px;width:66px;height:66px">
+      ${[0, 1, 2, 3].map(i => `<div id="wp${i}" style="position:absolute;left:${(i % 2) * 35}px;top:${Math.floor(i / 2) * 35}px;width:31px;height:31px;background:${i < 2 ? '#4CC2FF' : '#1A8FE8'}"></div>`).join('')}
+    </div>
+    <div class="abs" style="left:${startX + 110}px;top:39px;width:300px;height:66px;border-radius:33px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.08);color:#9aa;font-size:26px;line-height:64px;padding-left:70px">
+      <svg viewBox="0 0 24 24" width="30" height="30" style="position:absolute;left:24px;top:18px" fill="none" stroke="#bbb" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>${LANG === 'es' ? 'Buscar' : 'Search'}</div>
+    ${['#F2C94C,#E0A800', '#5B9DFF,#2B6BDE', '#C77DFF,#7B2FF7', '#3DDC97,#14A06B', '#FF8A65,#E64A19'].map((g, i) =>
+      `<div class="tbicon" style="left:${startX + 450 + i * 100}px;background:linear-gradient(135deg,${g})"></div>`).join('')}
+    <div class="abs" style="right:300px;top:46px">${LOGO_SM.replace('width="40" height="40"', 'width="52" height="52"')}</div>
+    <div class="abs" style="right:70px;top:34px;text-align:right;font-size:27px;line-height:1.35;color:#ddd">10:42<br><span style="font-size:23px;color:#aaa">01/10/2026</span></div>`;
+  const petT = spriteEl('mira', 1.5); petT.id = 'tbpet';
+  $('s9wrap').appendChild(petT);
+  const glow = document.createElement('div'); glow.id = 'wglow'; glow.className = 'abs';
+  glow.style.cssText = `left:${startX - 40}px;bottom:-6px;width:146px;height:146px;border-radius:50%;background:radial-gradient(closest-side,rgba(76,194,255,0.55),transparent);`;
+  bar.insertBefore(glow, bar.firstChild);
+  $('s10k').textContent = T.s10k; $('s10t').innerHTML = T.s10t; $('s10p').textContent = T.s10p;
+  $('s10aimg').src = `img/activity-${LANG}.png`; $('s10simg').src = `img/settings-${LANG}.png`;
+  $('s11pills').innerHTML = T.pills.map(p => `<span class="pill glass" style="margin:0 10px;border-radius:40px"><span class="dot" style="background:var(--blue)"></span>${p}</span>`).join('');
+  $('s11by').textContent = T.by;
+}
+
+// ---------- render ----------
+function render(t) {
+  // scene visibility with crossfade
+  for (const [id, a, b] of SCENES) {
+    const el = $(id);
+    const k = Math.min(seg(t, a, a + 0.5), 1 - seg(t, b - 0.5, b));
+    el.style.opacity = k;
+    el.style.display = k <= 0 ? 'none' : '';
+    el.style.transform = `scale(${lerp(1.03, 1, eOut(seg(t, a, a + 0.8))) * lerp(1, 0.985, seg(t, b - 0.5, b))})`;
+  }
+  $('bgglow').style.setProperty('--gx', `${30 + Math.sin(t * 0.21) * 18}%`);
+  $('bgglow').style.setProperty('--gy', `${42 + Math.cos(t * 0.17) * 14}%`);
+
+  // 1 · Intro
+  if (t < 6.5) {
+    const ring = eInOut(seg(t, 0.2, 1.4));
+    $('l1ring').style.strokeDashoffset = 1 - ring;
+    document.querySelectorAll('#logo1 .tick').forEach((el, i) => {
+      const k = eBack(seg(t, 0.9 + i * 0.12, 1.5 + i * 0.12));
+      const dir = [[0, -1], [1, 0], [0, 1], [-1, 0]][i];
+      el.style.transform = `translate(${dir[0] * (1 - k) * 160}px, ${dir[1] * (1 - k) * 160}px)`;
+      el.style.opacity = seg(t, 0.9 + i * 0.12, 1.1 + i * 0.12);
+    });
+    $('l1eye').style.strokeDashoffset = 1 - eOut(seg(t, 1.6, 2.2));
+    const lash = eBack(seg(t, 2.1, 2.5));
+    $('l1lash').style.opacity = seg(t, 2.1, 2.3);
+    $('l1lash').style.transform = `translateY(${(1 - lash) * -30}px)`;
+    const up = eInOut(seg(t, 2.6, 3.4));
+    $('logo1').style.transform = `translateY(${-up * 120}px) scale(${lerp(1, 0.8, up)})`;
+    const zk = seg(t, 2.8, 6);
+    const zs = ['z', 'zZ', 'zZz'][Math.min(2, Math.floor(zk * 4))] || '';
+    $('zzz').textContent = t > 2.8 ? zs : '';
+    $('zzz').style.transform = `translate(${zk * 40}px, ${-120 - zk * 60}px)`;
+    $('zzz').style.opacity = Math.min(seg(t, 2.8, 3.1), 1 - seg(t, 5.4, 6));
+    [...$('title1').children].forEach((c, i) => {
+      const k = eOut(seg(t, 3.0 + i * 0.035, 3.5 + i * 0.035));
+      c.style.opacity = k; c.style.transform = `translateY(${(1 - k) * 40}px)`;
+    });
+    $('title1').style.transform = `translateY(${-up * 120}px)`;
+    appear($('tag1'), t, 3.9, 0.7, 20);
+    $('tag1').style.transform += ` translateY(${-up * 120}px)`;
+  }
+
+  // 2 · Problem
+  if (t > 5.5 && t < 13.5) {
+    const l = t - 6;
+    appear($('s2k'), l, 0.3); appear($('s2t'), l, 0.5, 0.8, 40);
+    appear($('s2card'), l, 1.2, 0.8, 50);
+    const other = 4.7, model = eOut(seg(l, 1.6, 2.6)) * 9.6;
+    $('s2other').style.width = `${(other + model) / 16 * 100}%`;
+    $('s2model').style.width = `${model / 16 * 100}%`;
+    const high = l > 3.2;
+    $('s2press').innerHTML = `<span class="dot" style="background:${high ? 'var(--amber)' : 'var(--blue)'};margin-right:12px"></span><span style="color:${high ? 'var(--amber)' : 'var(--blue)'}">${T.press[high ? 1 : 0]}</span>`;
+    $('s2model2').innerHTML = `<span style="color:#fff">●</span> qwen3:8b ${model.toFixed(1)} GB`;
+    $('s2gb').textContent = `${(other + model).toFixed(1)} GB / 16 GB`;
+    const mins = Math.floor(lerp(1, 45, eInOut(seg(l, 2.5, 6.5))));
+    $('s2idle').innerHTML = `<span class="mono amber">◷</span> ${T.idle(mins)}`;
+    $('s2idle').style.opacity = seg(l, 2.4, 2.8);
+  }
+
+  // 3 · Solution
+  if (t > 12.5 && t < 21.5) {
+    const l = t - 13;
+    appear($('s3t'), l, 0.3, 0.7, 30);
+    const left = Math.max(0, Math.ceil(lerp(5, 0, seg(l, 1.2, 3.6))));
+    const asleep = l > 3.6;
+    $('s3timer').innerHTML = asleep ? `<span class="blue">☾ ${T.asleep}</span>` : `<span class="amber">${T.frees(left)}</span>`;
+    $('s3open').style.opacity = asleep ? 0 : 1; $('s3closed').style.opacity = asleep ? 1 : 0;
+    const drain = eInOut(seg(l, 3.6, 5.0));
+    const other = 4.7, model = 9.6 * (1 - drain);
+    $('s3other').style.width = `${(other + model) / 16 * 100}%`;
+    $('s3model').style.width = `${model / 16 * 100}%`;
+    $('s3model2').innerHTML = `<span style="color:#fff">●</span> ${(model).toFixed(1)} GB`;
+    $('s3gb').textContent = `${(other + model).toFixed(1)} GB / 16 GB`;
+    $('s3big').innerHTML = `<span class="blue">${T.back((9.6 * drain).toFixed(1))}</span>`;
+    appear($('s3big'), l, 3.7, 0.5, 30);
+    appear($('s3sub'), l, 5.0, 0.7, 20);
+  }
+
+  // 4 · Panel walkthrough
+  if (t > 20.5 && t < 31.5) {
+    const l = t - 21;
+    appear($('s4k'), l, 0.3);
+    const pin = eOut(seg(l, 0.2, 1.2));
+    const panel = $('s4panel');
+    panel.style.transform = `translateX(${(1 - pin) * 300}px) rotateY(${(1 - pin) * -18}deg)`;
+    panel.style.opacity = pin;
+    // Focus points in the 684x1450 screenshot: [y top, height, x, width]
+    const F = [[150, 180, 40, 290], [355, 330, 40, 604], [495, 65, 448, 186], [700, 100, 40, 604], [840, 510, 30, 625]];
+    const sc = 453 / 684;
+    const per = 1.85, start = 1.2;
+    const idx = clamp(Math.floor((l - start) / per), 0, F.length - 1);
+    T.callouts.forEach((_, i) => {
+      const el = $('co' + i);
+      const a = start + i * per;
+      const kin = eOut(seg(l, a, a + 0.5)), kout = seg(l, a + per - 0.25, a + per + 0.2);
+      const last = i === F.length - 1;
+      el.style.top = `${330}px`;
+      el.style.opacity = last ? kin : kin * (1 - kout);
+      el.style.transform = `translateY(${(1 - kin) * 40 - (last ? 0 : kout) * 40}px)`;
+      el.style.filter = `blur(${((1 - kin) + (last ? 0 : kout)) * 6}px)`;
+    });
+    // Ring glides between focus points
+    const f = l - start - idx * per;
+    const prev = F[Math.max(0, idx - 1)], cur = F[idx];
+    const g = idx === 0 ? 1 : eInOut(seg(f, 0, 0.45));
+    const box = cur.map((v, j) => lerp(prev[j], v, g));
+    const ring = $('s4ring');
+    ring.style.left = `${1260 + box[2] * sc - 8}px`; ring.style.top = `${60 + box[0] * sc - 8}px`;
+    ring.style.width = `${box[3] * sc + 16}px`; ring.style.height = `${box[1] * sc + 16}px`;
+    ring.style.opacity = seg(l, start, start + 0.4);
+  }
+
+  // 5 · Feature grid
+  if (t > 30.5 && t < 41.5) {
+    const l = t - 31;
+    appear($('s5t'), l, 0.2, 0.7);
+    T.feats.forEach((_, i) => {
+      const el = $('fc' + i);
+      const a = 0.8 + i * 0.32;
+      const k = eBack(seg(l, a, a + 0.55));
+      el.style.opacity = seg(l, a, a + 0.3);
+      el.style.transform = `translateY(${(1 - k) * 60}px) scale(${lerp(0.9, 1, k)})`;
+      // Spotlight wave once all are in
+      const w = Math.exp(-Math.pow((l - 6.2) * 3 - i * 0.45, 2));
+      el.style.borderColor = `rgba(77,163,255,${0.09 + w * 0.7})`;
+      el.style.boxShadow = `0 30px 80px rgba(0,0,0,0.55), 0 0 ${w * 40}px rgba(77,163,255,${w * 0.35})`;
+    });
+  }
+
+  // 6 · Game mode
+  if (t > 40.5 && t < 49) {
+    const l = t - 41;
+    appear($('s6k'), l, 0.3); appear($('s6t'), l, 0.5, 0.8); appear($('s6p'), l, 1.2, 0.7);
+    appear($('s6ollama'), l, 0.6, 0.7, 40);
+    const gIn = eBack(seg(l, 1.6, 2.2)), gOut = seg(l, 5.2, 5.6);
+    const gm = $('s6game');
+    gm.style.opacity = seg(l, 1.6, 1.9) * (1 - gOut * 0.6);
+    gm.style.transform = `scale(${lerp(0.85, 1, gIn) * (1 - gOut * 0.08)})`;
+    $('s6gname').textContent = l > 5.2 ? T.gameOff : T.game;
+    const off = l > 3.0 && l < 6.2;
+    const back = l >= 6.2;
+    $('s6state').textContent = off ? T.off : T.on;
+    $('s6state').style.color = off ? 'var(--dim)' : 'var(--ink)';
+    $('s6sub').textContent = off ? T.offSub : back ? T.backSub : T.onSub;
+    $('s6pw').style.stroke = off ? '#555' : '#4DA3FF'; $('s6pwi').style.stroke = off ? '#777' : '#4DA3FF';
+    const v = 1.0 + 4.3 * (l < 3 ? 1 : l < 3.8 ? 1 - eInOut(seg(l, 3, 3.8)) : l < 6.2 ? 0 : eInOut(seg(l, 6.2, 7)));
+    $('s6vbar').style.width = `${v / 8 * 100}%`;
+    $('s6vgb').textContent = `${v.toFixed(1)} GB / 8 GB`;
+    appear($('s6vram'), l, 0.9, 0.7, 30);
+  }
+
+  // 7 · Watchdog + toasts
+  if (t > 48 && t < 55) {
+    const l = t - 48.5;
+    appear($('s7k'), l, 0.3); appear($('s7t'), l, 0.5, 0.8); appear($('s7p'), l, 1.2, 0.7);
+    T.toasts.forEach((_, i) => {
+      const el = $('to' + i);
+      const a = 0.9 + i * 1.0;
+      const k = eOut(seg(l, a, a + 0.5));
+      const stackY = 760 - (T.toasts.length - 1 - i) * 0;
+      // Each new toast pushes the older ones up
+      let shift = 0;
+      for (let j = i + 1; j < T.toasts.length; j++) shift += eOut(seg(l, 0.9 + j * 1.0, 1.4 + j * 1.0)) * 140;
+      el.style.top = `${stackY - shift}px`;
+      el.style.opacity = k * (1 - seg(shift, 280, 420));
+      el.style.transform = `translateX(${(1 - k) * 620}px)`;
+    });
+  }
+
+  // 8 · Pet gallery
+  if (t > 54 && t < 61) {
+    const l = t - 54.5;
+    appear($('s8k'), l, 0.3); appear($('s8t'), l, 0.5, 0.8);
+    T.pets.forEach(([id], i) => {
+      const w = $('pw' + i);
+      const a = 1.0 + i * 0.3;
+      const k = eBack(seg(l, a, a + 0.6));
+      w.style.opacity = seg(l, a, a + 0.25);
+      w.style.transform = `translateY(${(1 - k) * 80}px)`;
+      // Each pet does its own idle gesture, then a reaction
+      const sp = $('pet' + i);
+      const lt = l - a;
+      const fr = Math.floor(lt * FPS_SPRITE);
+      if (lt < 2.2) setSprite(sp, 'Alert', fr);
+      else if (lt < 3.6) setSprite(sp, 'G' + ([0, 4, 1, 1][i]), Math.floor((lt - 2.2) * 8.5), false);
+      else setSprite(sp, 'Hearts', Math.floor((lt - 3.6) * 9), false);
+    });
+  }
+
+  // 9 · Taskbar states
+  if (t > 60 && t < 69) {
+    const l = t - 60.5;
+    appear($('s9k'), l, 0.3); appear($('s9t'), l, 0.5, 0.8);
+    const bar = $('s9bar');
+    const bk = eOut(seg(l, 0.2, 0.9));
+    bar.style.transform = `translateY(${(1 - bk) * 160}px)`;
+    const STATE_ROWS = ['DeepSleep', 'Eating', 'Working', 'Downloading', 'Sweeping', 'Hearts'];
+    const PETS = ['mira', 'llama', 'orange-cat', 'capybara', 'mira', 'orange-cat'];
+    const per = 1.2, s0 = 1.0;
+    const i = clamp(Math.floor((l - s0) / per), 0, STATE_ROWS.length - 1);
+    const li = l - s0 - i * per;
+    const pet = $('tbpet');
+    if (pet._pet !== PETS[i]) { pet._pet = PETS[i]; pet._row = null;
+      pet.style.width = META[PETS[i]].w * 1.5 + 'px'; pet.style.height = META[PETS[i]].h * 1.5 + 'px'; }
+    const row = STATE_ROWS[i];
+    setSprite(pet, row, Math.floor(Math.max(0, li) * FPS_SPRITE), row !== 'Hearts');
+    const m = META[PETS[i]];
+    pet.style.left = `${600 + 33 - m.w * 1.5 / 2}px`;
+    pet.style.top = `${1080 - 144 - m.h * 1.5 + 36 + (1 - bk) * 160}px`;
+    pet.style.opacity = seg(l, 0.7, 1.0) * (1 - seg(li, per - 0.12, per) * (i < STATE_ROWS.length - 1 ? 1 : 0)) ;
+    const [st, act] = T.states[i];
+    const kk = eOut(seg(li, 0, 0.35));
+    $('s9state').innerHTML = `<div class="pill glass" style="font-size:34px;padding:16px 30px"><span class="dot" style="background:${i === 0 ? '#666' : i === 4 ? 'var(--green)' : 'var(--blue)'}"></span>${st}</div>
+      <div style="font-size:64px;font-weight:700;letter-spacing:-1.5px;margin-top:30px">→ ${act}</div>`;
+    $('s9state').style.opacity = l < s0 ? 0 : kk;
+    $('s9state').style.transform = `translateY(${(1 - kk) * 24}px)`;
+    // Windows logo lights: off when Ollama is off, glow otherwise, flicker while typing
+    const on = i > 0;
+    const flick = row === 'Working' ? 0.6 + 0.4 * Math.abs(Math.sin(l * 13)) : 1;
+    $('wglow').style.opacity = on ? 0.9 * flick : 0;
+    for (let p = 0; p < 4; p++) {
+      const fill = row === 'Downloading' ? (seg(li, p * 0.22, p * 0.22 + 0.2) ? 1 : 0.35) : 1;
+      $('wp' + p).style.filter = on ? `brightness(${1.1 + 0.25 * fill * flick}) drop-shadow(0 0 ${8 * fill}px rgba(120,210,255,0.9))` : '';
+      $('wp' + p).style.opacity = row === 'Downloading' ? 0.55 + 0.45 * fill : 1;
+    }
+  }
+
+  // 10 · Activity + settings
+  if (t > 68 && t < 72.5) {
+    const l = t - 68.5;
+    appear($('s10k'), l, 0.2); appear($('s10t'), l, 0.4, 0.8); appear($('s10p'), l, 1.0, 0.7);
+    const a = eOut(seg(l, 0.2, 1.0)), b = eOut(seg(l, 0.5, 1.3));
+    $('s10a').style.opacity = a; $('s10a').style.transform = `translateY(${(1 - a) * 120}px)`;
+    $('s10s').style.opacity = b; $('s10s').style.transform = `translateY(${(1 - b) * 120}px)`;
+    const sh = 420 / 684 * 5318 - 940;
+    $('s10simg').style.top = `${-eInOut(seg(l, 1.2, 3.7)) * sh * 0.55}px`;
+  }
+
+  // 11 · Outro
+  if (t > 71.5) {
+    const l = t - 72;
+    const k = eBack(seg(l, 0.1, 0.8));
+    $('s11logo').style.transform = `scale(${lerp(0.5, 1, k)}) rotate(${(1 - k) * -40}deg)`;
+    $('s11logo').style.opacity = seg(l, 0.1, 0.4);
+    appear($('s11pills'), l, 0.9, 0.7);
+    appear($('s11url'), l, 1.4, 0.7);
+    appear($('s11by'), l, 1.9, 0.7);
+  }
+}
+
+window.ready = (async () => {
+  META = await (await fetch('sprites/meta.json')).json();
+  build();
+  const imgs = [...document.images].concat(
+    Object.keys(META).flatMap(p => ['Alert', 'G0', 'G1', 'G4', 'Hearts', 'DeepSleep', 'Eating', 'Working', 'Downloading', 'Sweeping']
+      .filter(r => META[p].rows[r])
+      .map(r => { const i = new Image(); i.src = `sprites/${p}-${r}.png`; return i; })));
+  await Promise.all(imgs.map(i => i.decode()));
+  await document.fonts.ready;
+  render(0);
+  return DURATION;
+})();
+window.render = render;
+</script>
+</body>
+</html>

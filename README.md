@@ -430,16 +430,19 @@ instances. No NuGet packages, no WinForms, no web view.
 .\docs\generate-images.ps1     # this README's images and the logo assets
 ```
 
-The website uses the same media sources as this README. To refresh its bilingual video with the current
-app and pet animations, install the optional media tools locally and run the generator:
+The website uses the same media sources as this README. The bilingual video preserves the original
+eleven scenes, script, transitions, animation timing and soundtrack, with current pets and native 4×
+app captures. Install the optional media tools, Chrome and the .NET 10 SDK, then run:
 
 ```powershell
 python -m pip install --target obj/tour-tooling Pillow numpy imageio-ffmpeg==0.6.0
-python docs/generate-tours.py --capture --exe build/isTargetSleeping.exe
+npm install --prefix obj/tour-tooling puppeteer-core@25.12.0
+python docs/generate-tours.py --capture
 pwsh -NoProfile -File site/build.ps1 -Out _site
 ```
 
-The tour uses real demo captures and a generated instrumental soundtrack. `_site/` is generated and ignored by Git;
+The 1080p tour uses lossless input frames and copies the original audio without re-encoding. See the
+[presentation sources and review commands](docs/tour/README.md). `_site/` is generated and ignored by Git;
 Firebase publishes it with content hashes in media URLs so browsers receive updated assets. Edit the sources
 in `site/`, `Assets/` and `docs/`, then rebuild.
 
