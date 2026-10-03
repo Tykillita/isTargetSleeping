@@ -25,9 +25,10 @@ y la web, con los SHA-256 de esos archivos, en el mismo push.
 - Capturas de panel, Actividad y Ajustes regeneradas en modo demo para ambos idiomas, junto con las
   vistas previas de Ajustes. No se usan datos del usuario en estas imágenes.
 - README inglés y español actualizados: funciones, estado de publicación, permisos, comandos, pruebas
-  y estructura del proyecto. Web: portada, tarjetas, novedades, traducciones y aviso de versión en desarrollo.
-- Web pública y cuatro descargas de 1.4.0 responden HTTP 200. Los hashes mostrados corresponden
-  a esa release publicada, no a los paquetes locales de desarrollo.
+  y estructura del proyecto. Web: portada, tarjetas, novedades y traducciones, con la versión 1.5.0
+  ya publicada en todas las descargas y sin avisos de desarrollo.
+- Web pública y cuatro descargas de 1.5.0 responden HTTP 200. Los hashes mostrados son los `.sha256`
+  de los archivos publicados, no los de los paquetes locales.
 - `git diff --check`, sintaxis JavaScript y referencias de código eliminadas comprobados.
 
 Los registros de pruebas/empaquetado están en `artifacts/tests-1.5.0.log` y `artifacts/package-1.5.0.log`.
