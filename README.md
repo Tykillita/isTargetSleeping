@@ -85,7 +85,8 @@ the model sleep when you don't need it and gives you one-click control over Olla
 
 **1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
 
-**1.5.1 is out** (October 3, 2026): pin the tray icon from Windows, and a toggle that tracks every icon entry.
+**1.5.2 is out** (October 3, 2026): verified service and task lifecycles with genuine Ollama on Windows,
+a provisional white cover, current screenshots and bilingual tours. [Validation and limits](docs/backend-validation-1.5.2.md).
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

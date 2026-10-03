@@ -79,8 +79,9 @@ como lo hayas instalado.
 **1.5.0 ya está publicada** (2 de octubre de 2026): memoria ahora en Actividad, reglas de limpieza
 automática completas y mascotas renovadas.
 
-**1.5.1 ya está publicada** (3 de octubre de 2026): fijar el ícono desde Windows y un interruptor que
-detecta todas sus entradas.
+**1.5.2 ya está publicada** (3 de octubre de 2026): encendido y apagado de servicio y tarea verificados con
+Ollama real en Windows, portada blanca provisional, capturas actuales y recorridos bilingües.
+[Validación y límites](docs/backend-validation-1.5.2.md#es).
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 

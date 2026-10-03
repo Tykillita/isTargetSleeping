@@ -3,7 +3,7 @@ name: backend-integration
 on:
   workflow_dispatch:
   push:
-    branches: [main, codex/1.5.2-release]
+    branches: [main]
     paths:
       - 'tests/BackendIntegration/**'
       - '.github/workflows/backend-integration.yml'

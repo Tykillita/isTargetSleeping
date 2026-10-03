@@ -12,10 +12,10 @@ const EN = {
   'tema.aOscuro': 'Switch to dark mode',
   'tema.aClaro': 'Switch to light mode',
 
-  'hero.eyebrow': 'Next version 1.5.2 · In development',
+  'hero.eyebrow': 'Version 1.5.2 · Native Windows',
   'hero.titulo': 'Your models work when you talk to them. The rest of the time, they sleep.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock. It turns Ollama on and off in one click, puts the model to sleep when it stops generating and gives you your RAM and VRAM back.',
-  'hero.meta': 'Free and open source · Version 1.5.1 · Windows 10 and 11 · x64 and ARM64',
+  'hero.meta': 'Free and open source · Version 1.5.2 · Windows 10 and 11 · x64 and ARM64',
   'hero.escritorio': 'The isTargetSleeping panel open on the Windows desktop',
   'hero.panelAlt': 'Panel: Ollama on, PC and GPU memory, llama.cpp and the installed models',
   'cta.windows': 'Download for Windows',
@@ -251,7 +251,7 @@ const EN = {
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
-  'cierre.meta': 'Version 1.5.1 · Windows 10 and 11 · x64 and ARM64',
+  'cierre.meta': 'Version 1.5.2 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
   'pie.novedades': 'What’s new',
@@ -269,7 +269,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Version 1.5.2 (in development)',
+  'pie.version': 'Version 1.5.2',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -288,7 +288,7 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
-  'nov.v1_5_2.fecha': 'In development',
+  'nov.v1_5_2.fecha': 'Oct 3, 2026',
   'nov.v1_5_2.resumen': 'Real Ollama service and task validation, a dedicated GitHub cover and refreshed media.',
   'nov.v1_5_2.validacionT': 'Reproducible Windows verification',
   'nov.v1_5_2.validacionD': 'Service and task passed two start/stop cycles with genuine Ollama 0.35.1 on a Windows Server 2025 x64 VM. The public report describes process exit, API verification and the limits of these checks.',
