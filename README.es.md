@@ -45,9 +45,9 @@ como lo hayas instalado.
 
 <a id="video"></a>
 
-[![El recorrido de la app actual 1.5.2](docs/images/tour-es.jpg)](https://istargetsleeping.web.app/?lang=es#video)
+https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 
-<p align="center"><sub>La app actual 1.5.2 en 77 segundos, con sonido y datos de ejemplo · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
+<p align="center"><sub>La app actual 1.5.2 en 77 segundos, con datos de ejemplo. Activa el sonido para escuchar música y efectos · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-tour-es.mp4">abrir el video</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="README.md#video">in English</a> · <a href="https://github.com/Tykillita/isTargetSleeping/raw/refs/heads/main/docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
 
 ## ✨ Funciones
 

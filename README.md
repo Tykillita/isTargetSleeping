@@ -45,9 +45,9 @@ was installed.
 
 <a id="video"></a>
 
-[![The current 1.5.2 app tour](docs/images/tour-en.jpg)](https://istargetsleeping.web.app/?lang=en#video)
+https://github.com/user-attachments/assets/0265be1e-ccd9-4e39-9741-8e1bd4d3fb88
 
-<p align="center"><sub>The current 1.5.2 app in 77 seconds, with sound and sample data · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
+<p align="center"><sub>The current 1.5.2 app in 77 seconds, with sample data. Unmute for music and sound effects · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-tour-en.mp4">open the video</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="README.es.md#video">en español</a> · <a href="https://github.com/Tykillita/isTargetSleeping/raw/refs/heads/main/docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
 
 ## Why?
 

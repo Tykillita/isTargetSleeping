@@ -34,6 +34,12 @@ Review images live in `obj/tour-work/review/`. Final videos and posters replace 
 tracked files only after a successful encode. `--chrome`, `--node` and `--dotnet`
 accept custom runtime paths. `--lang es|en` renders one language.
 
+The GitHub README players use [GitHub video attachments](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
+After regenerating a tour, upload the original MP4 as an attachment to this repository and replace its
+`https://github.com/user-attachments/assets/…` URL, on its own line, in the matching README.
+Upload the file without re-encoding so its picture and soundtrack stay identical.
+Keep the tracked MP4 in `docs/video/` as the shared source for the website and downloads.
+
 ---
 
 `index.html` conserva las once escenas originales, el guion en ambos idiomas,
@@ -54,3 +60,10 @@ permiten usar otros ejecutables o exportar un solo idioma.
 
 `verify.py` comprueba resolución, duración, cantidad de fotogramas, resolución de
 las capturas y coincidencia exacta del audio en ambos videos.
+
+Los reproductores de los README usan [videos adjuntos de GitHub](https://docs.github.com/es/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
+Tras regenerar un recorrido, sube su MP4 original como adjunto de este repositorio y sustituye su URL
+`https://github.com/user-attachments/assets/…`, en una línea independiente, en el README del idioma
+correspondiente. Sube el archivo sin volver a comprimirlo para conservar
+la imagen y el sonido exactos. El MP4 de `docs/video/` sigue siendo la fuente compartida por la web
+y las descargas.
