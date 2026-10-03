@@ -83,8 +83,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 
 **1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
 
-**1.5.1 is in development.** This README describes the current source. The latest published download is
-**1.5.0**; the tray-icon pinning help will arrive with 1.5.1.
+**1.5.1 is out** (October 3, 2026): pin the tray icon from Windows, and a toggle that tracks every icon entry.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

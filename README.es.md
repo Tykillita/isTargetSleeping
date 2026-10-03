@@ -77,8 +77,8 @@ https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
 **1.5.0 ya está publicada** (2 de octubre de 2026): memoria ahora en Actividad, reglas de limpieza
 automática completas y mascotas renovadas.
 
-**1.5.1 está en desarrollo.** Este README describe el código actual. La última descarga publicada es
-**1.5.0**; la ayuda para fijar el ícono llegará con 1.5.1.
+**1.5.1 ya está publicada** (3 de octubre de 2026): fijar el ícono desde Windows y un interruptor que
+detecta todas sus entradas.
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 

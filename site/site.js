@@ -12,11 +12,10 @@ const EN = {
   'tema.aOscuro': 'Switch to dark mode',
   'tema.aClaro': 'Switch to light mode',
 
-  'hero.eyebrow': 'Available: 1.5.0 · In development: 1.5.1',
-  'release.avance': '1.5.1 in development: pin the icon even when Windows doesn’t offer the toggle yet. Downloads are still 1.5.0.',
+  'hero.eyebrow': 'New · Version 1.5.1, the icon always at hand',
   'hero.titulo': 'Your models work when you talk to them. The rest of the time, they sleep.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock. It turns Ollama on and off in one click, puts the model to sleep when it stops generating and gives you your RAM and VRAM back.',
-  'hero.meta': 'Free and open source · Version 1.5.0 · Windows 10 and 11 · x64 and ARM64',
+  'hero.meta': 'Free and open source · Version 1.5.1 · Windows 10 and 11 · x64 and ARM64',
   'hero.escritorio': 'The isTargetSleeping panel open on the Windows desktop',
   'hero.panelAlt': 'Panel: Ollama on, PC and GPU memory, llama.cpp and the installed models',
   'cta.windows': 'Download for Windows',
@@ -251,7 +250,7 @@ const EN = {
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
-  'cierre.meta': 'Version 1.5.0 · Windows 10 and 11 · x64 and ARM64',
+  'cierre.meta': 'Version 1.5.1 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
   'pie.novedades': 'What’s new',
@@ -267,7 +266,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Available: 1.5.0 · In development: 1.5.1',
+  'pie.version': 'Version 1.5.1',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -286,7 +285,7 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
-  'nov.v1_5_1.fecha': "In development",
+  'nov.v1_5_1.fecha': "Oct 3, 2026",
   'nov.v1_5_1.resumen': "The icon, always at hand: a button pins it from the Windows settings and the toggle tracks every one of its entries.",
   'nov.v1_5_1.nuevo1t': "Pin the icon from Windows",
   'nov.v1_5_1.nuevo1d': "If the direct toggle doesn’t appear (Windows 10, or Windows 11 before registering the icon), Settings › General has a button that opens the taskbar settings to turn it on there.",
