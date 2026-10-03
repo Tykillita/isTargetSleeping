@@ -18,7 +18,7 @@
 
 <br>
 
-<img src="docs/images/panel-es.png" width="280" alt="Panel de isTargetSleeping en vidrio negro">&nbsp;&nbsp;<img src="docs/images/activity-es.png" width="280" alt="Actividad: estadísticas de la semana, gráfica de 30 min y quién despierta al modelo">&nbsp;&nbsp;<a href="docs/images/settings-es.png"><img src="docs/images/settings-preview-es.png" width="280" alt="Ajustes de isTargetSleeping (clic para verlos completos)"></a>
+<img src="docs/images/panel-es.png" width="280" alt="Panel de isTargetSleeping en vidrio negro">&nbsp;&nbsp;<img src="docs/images/activity-es.png" width="280" alt="Actividad: estadísticas de la semana, gráfica de 30 min, memoria ahora, reconocimiento de procesos y quién despierta al modelo">&nbsp;&nbsp;<a href="docs/images/settings-es.png"><img src="docs/images/settings-preview-es.png" width="280" alt="Ajustes de isTargetSleeping (clic para verlos completos)"></a>
 
 <p>
   <a href="#video">Video</a> &bull;
@@ -45,9 +45,9 @@ como lo hayas instalado.
 
 <a id="video"></a>
 
-https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
+[![El recorrido de la app actual 1.5.1](docs/images/tour-es.jpg)](https://istargetsleeping.web.app/?lang=es#video)
 
-<p align="center"><sub>El recorrido de 77 segundos, con sonido · <a href="https://github.com/user-attachments/assets/021c92dc-c600-4deb-83a6-ba3ed4b49ceb">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
+<p align="center"><sub>La app actual 1.5.1 en 77 segundos, con sonido y datos de ejemplo · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
 
 ## ✨ Funciones
 
@@ -347,6 +347,19 @@ entre instancias. Sin paquetes NuGet, WinForms ni vistas web.
 .\package.ps1 -RequireInstaller # falla si falta Inno Setup
 .\docs\generate-images.ps1     # imágenes del README y assets del logo
 ```
+
+La web usa las mismas fuentes de medios que este README. Para renovar su video bilingüe con la app y las
+animaciones actuales, instala las herramientas opcionales de medios localmente y ejecuta el generador:
+
+```powershell
+python -m pip install --target obj/tour-tooling Pillow numpy imageio-ffmpeg==0.6.0
+python docs/generate-tours.py --capture --exe build/isTargetSleeping.exe
+pwsh -NoProfile -File site/build.ps1 -Out _site
+```
+
+El recorrido usa capturas reales de la demo y una banda sonora instrumental generada. `_site/` se genera y Git lo ignora;
+Firebase lo publica con hashes de contenido en las URLs de los medios para que el navegador reciba los assets
+actualizados. Edita las fuentes en `site/`, `Assets/` y `docs/` y vuelve a generar.
 
 ### Preparar una versión en GitHub
 

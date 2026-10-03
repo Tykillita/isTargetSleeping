@@ -18,7 +18,7 @@
 
 <br>
 
-<img src="docs/images/panel-en.png" width="280" alt="isTargetSleeping panel in black glass">&nbsp;&nbsp;<img src="docs/images/activity-en.png" width="280" alt="Activity: weekly stats, 30-minute chart and who wakes the model">&nbsp;&nbsp;<a href="docs/images/settings-en.png"><img src="docs/images/settings-preview-en.png" width="280" alt="isTargetSleeping settings in black glass (click for the full page)"></a>
+<img src="docs/images/panel-en.png" width="280" alt="isTargetSleeping panel in black glass">&nbsp;&nbsp;<img src="docs/images/activity-en.png" width="280" alt="Activity: weekly stats, 30-minute chart, memory now, process explorer and who wakes the model">&nbsp;&nbsp;<a href="docs/images/settings-en.png"><img src="docs/images/settings-preview-en.png" width="280" alt="isTargetSleeping settings in black glass (click for the full page)"></a>
 
 <p>
   <a href="#video">Video</a> &bull;
@@ -45,9 +45,9 @@ was installed.
 
 <a id="video"></a>
 
-https://github.com/user-attachments/assets/021c92dc-c600-4deb-83a6-ba3ed4b49ceb
+[![The current 1.5.1 app tour](docs/images/tour-en.jpg)](https://istargetsleeping.web.app/?lang=en#video)
 
-<p align="center"><sub>The 77-second tour, with sound · <a href="https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
+<p align="center"><sub>The current 1.5.1 app in 77 seconds, with sound and sample data · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
 
 ## Why?
 
@@ -421,6 +421,19 @@ instances. No NuGet packages, no WinForms, no web view.
 .\package.ps1 -RequireInstaller # fail if Inno Setup is missing
 .\docs\generate-images.ps1     # this README's images and the logo assets
 ```
+
+The website uses the same media sources as this README. To refresh its bilingual video with the current
+app and pet animations, install the optional media tools locally and run the generator:
+
+```powershell
+python -m pip install --target obj/tour-tooling Pillow numpy imageio-ffmpeg==0.6.0
+python docs/generate-tours.py --capture --exe build/isTargetSleeping.exe
+pwsh -NoProfile -File site/build.ps1 -Out _site
+```
+
+The tour uses real demo captures and a generated instrumental soundtrack. `_site/` is generated and ignored by Git;
+Firebase publishes it with content hashes in media URLs so browsers receive updated assets. Edit the sources
+in `site/`, `Assets/` and `docs/`, then rebuild.
 
 ### Preparing a GitHub release
 

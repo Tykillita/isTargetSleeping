@@ -26,9 +26,9 @@ const EN = {
   'pill.idiomas': 'English and Spanish',
   'pill.mit': 'Open source, MIT',
 
-  'video.eyebrow': 'The tour, in 77 seconds',
+  'video.eyebrow': 'Version 1.5.1, in 77 seconds',
   'video.titulo': 'Take a closer look.',
-  'video.pie': 'With sound.',
+  'video.pie': 'With sound and sample data from the current app.',
   'video.otro': 'Watch in Spanish',
 
   'fun.eyebrow': 'Features',
@@ -59,7 +59,7 @@ const EN = {
 
   'estado.eyebrow': 'In the tray',
   'estado.titulo': 'Status at a glance.',
-  'estado.texto': 'The target next to the clock tells you how Ollama is doing without opening anything.',
+  'estado.texto': 'The target next to the clock tells you how Ollama is doing. In Settings › General you can always show it; if the toggle is unavailable, Pin the icon from Windows lets you open the taskbar settings.',
   'estado.on': 'On',
   'estado.onDet': 'blue dot',
   'estado.cambio': 'Starting or stopping',
@@ -188,7 +188,7 @@ const EN = {
   'inst.p2': 'Open it',
   'inst.p2t': 'It installs for your user in <code>%LOCALAPPDATA%\\Programs</code>. No UAC.',
   'inst.p3': 'Look by the clock',
-  'inst.p3t': 'The panel opens in the tray. If you can’t see the target, check the hidden icons (^).',
+  'inst.p3t': 'Find the target in the hidden icons (^). In Settings › General, turn on Always show in the taskbar or click Open taskbar settings to pin it from Windows.',
   'inst.zip': 'Portable x64 (.zip)',
   'inst.arm': 'ARM64 installer',
   'inst.armZip': 'Portable ARM64 (.zip)',
@@ -220,7 +220,7 @@ const EN = {
   'oss.k2': 'No NuGet packages, no WinForms, no web view.',
   'oss.k3': 'Every change passes the tests and builds for x64 and ARM64 on GitHub Actions.',
   'oss.legal': 'By CodeSentry - Tykillita. Not affiliated with Ollama.',
-  'oss.c1': '# tests of the pure logic',
+  'oss.c1': '# logic, integration and interface tests',
   'oss.c2': '# build\\isTargetSleeping.exe, a single file',
   'oss.c3': '# zip + installer for x64 and ARM64, with .sha256',
 
@@ -246,7 +246,7 @@ const EN = {
   'faq.q10': 'Does it work on Mac or Linux?',
   'faq.a10': 'No: it’s built on Win32 and WPF and only runs on Windows 10 (2004 or later) and 11, on x64 and ARM64.',
   'faq.q11': 'Where do I report a bug?',
-  'faq.a11': 'In the <a href="https://github.com/Tykillita/isTargetSleeping/issues">GitHub issues</a>. Attach the log from <code>%LOCALAPPDATA%\\isTargetSleeping\\Logs\\app.log</code> if you can.',
+  'faq.a11': 'In the <a href="https://github.com/Tykillita/isTargetSleeping/issues">GitHub issues</a>. Attach the log from <code>%LOCALAPPDATA%\\isTargetSleeping\\Logs\\app.log</code> if you can. For a vulnerability, use the <a href="https://github.com/Tykillita/isTargetSleeping/security/advisories/new">private report</a> in the security policy.',
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
@@ -263,6 +263,8 @@ const EN = {
   'pie.repo': 'GitHub repository',
   'pie.notas': 'Release notes',
   'pie.fallo': 'Report a bug',
+  'pie.contribuir': 'Contributing',
+  'pie.seguridad': 'Security policy',
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
@@ -285,6 +287,17 @@ const EN = {
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
   'nov.s.proxima': "Next version",
+  'nov.web.indice': "Website",
+  'nov.web.titulo': "Website updated",
+  'nov.web.fecha': "Oct 3, 2026",
+  'nov.web.tipo': "Website",
+  'nov.web.resumen': "The app stays at 1.5.1. We refreshed its presentation so the images and video show the current version.",
+  'nov.web.mediosT': "Current screenshots and tour",
+  'nov.web.mediosD': "Panel, Activity and Settings from 1.5.1, plus a new tour in both languages with memory now, cleanup rules and the current pets.",
+  'nov.web.cacheT': "Each image has its own version",
+  'nov.web.cacheD': "When the website is updated, the browser receives the new images and videos even if it saved the previous ones.",
+  'nov.web.guiasT': "Contributing and security",
+  'nov.web.guiasD': "The footers link to the repository’s bilingual guides, and vulnerability reports are private.",
   'nov.v1_5_1.fecha': "Oct 3, 2026",
   'nov.v1_5_1.resumen': "The icon, always at hand: a button pins it from the Windows settings and the toggle tracks every one of its entries.",
   'nov.v1_5_1.nuevo1t': "Pin the icon from Windows",
@@ -478,6 +491,9 @@ function aplicarIdioma(lang) {
     const src = el.dataset.srcLang.replace('{lang}', lang);
     if (el.getAttribute('src') !== src) el.setAttribute('src', src);
   });
+  document.querySelectorAll('[data-poster-lang]').forEach((el) => {
+    el.setAttribute('poster', el.dataset.posterLang.replace('{lang}', lang));
+  });
 
   const btn = $('idioma');
   btn.textContent = lang === 'es' ? 'EN' : 'ES';
@@ -547,6 +563,7 @@ $('video-otro')?.addEventListener('click', (e) => {
   const actual = v.getAttribute('src').includes('-es.') ? 'es' : 'en';
   const otro = actual === 'es' ? 'en' : 'es';
   v.setAttribute('src', v.dataset.srcLang.replace('{lang}', otro));
+  v.setAttribute('poster', v.dataset.posterLang.replace('{lang}', otro));
   v.play().catch(() => {});
   e.currentTarget.textContent = idioma === 'es'
     ? (otro === 'es' ? 'Ver en inglés' : 'Ver en español')

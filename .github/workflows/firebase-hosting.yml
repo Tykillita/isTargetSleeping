@@ -1,6 +1,6 @@
 name: firebase-hosting
 
-# Publica site\ en Firebase Hosting (https://istargetsleeping.web.app) en cada push a main que toque la web.
+# Genera _site\ y lo publica en Firebase Hosting en cada push a main que toque la web.
 # Necesita el secreto FIREBASE_SERVICE_ACCOUNT_ISTARGETSLEEPING (lo crea `firebase init hosting:github`);
 # sin él, el job se salta en vez de fallar.
 on:
@@ -24,6 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         if: env.HAS_SECRET == 'true'
+      - name: Generar web y validar recursos
+        if: env.HAS_SECRET == 'true'
+        shell: pwsh
+        run: ./site/build.ps1 -Out _site
       - uses: FirebaseExtended/action-hosting-deploy@v0
         if: env.HAS_SECRET == 'true'
         with:

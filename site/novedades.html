@@ -51,6 +51,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.web.indice">Web</a>
       <a href="#v1-5-1">1.5.1</a>
       <a href="#v1-5-0">1.5.0</a>
       <a href="#v1-4-0">1.4.0</a>
@@ -66,6 +67,25 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="proxima">
+      <div class="version-meta">
+        <div class="version-num" data-i18n="nov.web.titulo">Web actualizada</div>
+        <span class="version-fecha" data-i18n="nov.web.fecha">3 oct 2026</span>
+        <span class="salto salto--arreglo" data-i18n="nov.web.tipo">Web</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.web.resumen">La app sigue en 1.5.1. Renovamos su presentación para que las imágenes y el video muestren la versión actual.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.cambios">Cambios</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.web.mediosT">Capturas y recorrido al día</b><span data-i18n="nov.web.mediosD">Panel, Actividad y Ajustes de 1.5.1, más un recorrido nuevo en los dos idiomas con memoria ahora, reglas de limpieza y las mascotas actuales.</span></div>
+            <div class="novedad"><b data-i18n="nov.web.cacheT">Cada imagen tiene su versión</b><span data-i18n="nov.web.cacheD">Al actualizar la web, el navegador recibe las imágenes y videos nuevos aunque haya guardado los anteriores.</span></div>
+            <div class="novedad"><b data-i18n="nov.web.guiasT">Contribuciones y seguridad</b><span data-i18n="nov.web.guiasD">Los pies de página enlazan las guías bilingües del repositorio y el reporte de vulnerabilidades es privado.</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="version" id="v1-5-1">
       <div class="version-meta">
         <div class="version-num">1.5.1</div>
@@ -327,6 +347,8 @@
             <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.5.1" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CONTRIBUTING.md" data-i18n="pie.contribuir">Cómo contribuir</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/SECURITY.md" data-i18n="pie.seguridad">Política de seguridad</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/LICENSE" data-i18n="pie.mit">Licencia MIT</a></li>
           </ul>
         </div>
@@ -344,7 +366,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.5.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.5.1</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

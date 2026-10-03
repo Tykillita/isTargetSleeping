@@ -70,7 +70,9 @@ Al subirla, actualiza **todo a la vez**:
 ## Web (`site/`)
 
 - `site/build.ps1` copia a `site/media/` (ignorado por git) las imágenes y videos de `Assets/` y `docs/`; no dupliques
-  archivos en `site/`. Vista previa: servidor `site` de `.claude/launch.json` (puerto 8765).
+  archivos en `site/`. Vista previa: servidor `site` de `.claude/launch.json` (puerto 8765). Para publicar,
+  `site/build.ps1 -Out _site` genera el sitio completo con URLs versionadas por el contenido de sus assets;
+  Firebase publica `_site/`, también ignorado por git. No edites esa salida: modifica las fuentes y regenera.
 - Tema claro/oscuro con tokens en `:root` de `site/site.css` y `data-theme` en `<html>`; idioma con `data-i18n`.
 - Comprueba a 375, 768 y 1280 px, en claro y oscuro, en español e inglés.
 - Se publica en **Firebase Hosting** (proyecto `istargetsleeping`, https://istargetsleeping.web.app):

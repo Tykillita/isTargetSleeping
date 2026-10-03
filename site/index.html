@@ -106,13 +106,13 @@
 <section class="seccion" id="video" style="padding-top:0">
   <div class="contenedor">
     <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="video.eyebrow">El recorrido, en 77 segundos</p>
+      <p class="eyebrow" data-i18n="video.eyebrow">La versión 1.5.1, en 77 segundos</p>
       <h2 data-i18n="video.titulo">Mírala de cerca.</h2>
     </div>
     <div class="video-marco revela">
-      <video id="tour" controls preload="metadata" playsinline data-src-lang="media/isTargetSleeping-tour-{lang}.mp4" src="media/isTargetSleeping-tour-es.mp4"></video>
+      <video id="tour" controls preload="metadata" playsinline data-src-lang="media/isTargetSleeping-tour-{lang}.mp4" src="media/isTargetSleeping-tour-es.mp4" data-poster-lang="media/tour-{lang}.jpg" poster="media/tour-es.jpg"></video>
     </div>
-    <p class="video-pie"><span data-i18n="video.pie">Con sonido.</span> <a id="video-otro" href="#" data-i18n="video.otro">Ver en inglés</a></p>
+    <p class="video-pie"><span data-i18n="video.pie">Con sonido y datos de ejemplo de la app actual.</span> <a id="video-otro" href="#" data-i18n="video.otro">Ver en inglés</a></p>
   </div>
 </section>
 
@@ -177,7 +177,7 @@
       <article class="tarjeta s2 revela">
         <p class="eyebrow" data-i18n="estado.eyebrow">En la bandeja</p>
         <h3 data-i18n="estado.titulo">El estado, de un vistazo.</h3>
-        <p data-i18n="estado.texto">La mira junto al reloj te dice cómo está Ollama sin abrir nada.</p>
+        <p data-i18n="estado.texto">La mira junto al reloj te dice cómo está Ollama. En Ajustes › General puedes mostrarla siempre; si el interruptor no está disponible, Fijar el ícono desde Windows permite abrir los ajustes de la barra de tareas.</p>
         <div class="estados">
           <div class="estado">
             <span class="bandeja-mira"><img src="media/istargetsleeping-mark-white.svg" alt=""><span class="punto"></span></span>
@@ -424,7 +424,7 @@
       <div class="paso revela">
         <div class="paso-num">3</div>
         <h3 data-i18n="inst.p3">Mira junto al reloj</h3>
-        <p data-i18n="inst.p3t">El panel se abre en la bandeja. Si no ves la mira, búscala en los íconos ocultos (^).</p>
+        <p data-i18n="inst.p3t">Busca la mira en los íconos ocultos (^). En Ajustes › General, activa Mostrar siempre en la barra de tareas o pulsa Abrir ajustes de la barra de tareas para fijarla desde Windows.</p>
       </div>
     </div>
 
@@ -462,7 +462,7 @@
         </div>
         <div class="hash">
           <span class="hash-nombre">win-arm64.zip</span>
-          <div class="hash-fila"><code>ed5444d86408e7ef6ba566a573d430c0b8e6fc22e1496fb6e9509481</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
+          <div class="hash-fila"><code>ed5444d86408e7ef6ba566a573d430c0b3ecc9b4b8e6fc22e1496fb6e9509481</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
         </div>
         <p class="smartscreen" data-i18n="inst.smart">Cada archivo de la release trae su <code>.sha256</code> al lado. Si la build no está firmada, Windows SmartScreen puede pedirte confirmación: <b>Más información › Ejecutar de todos modos</b>.</p>
       </div>
@@ -530,7 +530,7 @@
 <span class="t-prompt">PS&gt;</span> cd isTargetSleeping
 <span class="t-prompt">PS&gt;</span> winget install Microsoft.DotNet.SDK.10
 <span class="t-prompt">PS&gt;</span> .\build.ps1 -Test
-<span class="t-com" data-i18n="oss.c1"># pruebas de la lógica pura</span>
+<span class="t-com" data-i18n="oss.c1"># pruebas de lógica, integración e interfaz</span>
 <span class="t-prompt">PS&gt;</span> .\build.ps1
 <span class="t-com" data-i18n="oss.c2"># build\isTargetSleeping.exe, un solo archivo</span>
 <span class="t-prompt">PS&gt;</span> .\package.ps1
@@ -588,7 +588,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q11">¿Dónde reporto un fallo?</summary>
-        <div class="respuesta"><p data-i18n="faq.a11">En los <a href="https://github.com/Tykillita/isTargetSleeping/issues">issues de GitHub</a>. Adjunta el log de <code>%LOCALAPPDATA%\isTargetSleeping\Logs\app.log</code> si puedes.</p></div>
+        <div class="respuesta"><p data-i18n="faq.a11">En los <a href="https://github.com/Tykillita/isTargetSleeping/issues">issues de GitHub</a>. Adjunta el log de <code>%LOCALAPPDATA%\isTargetSleeping\Logs\app.log</code> si puedes. Para una vulnerabilidad, usa el <a href="https://github.com/Tykillita/isTargetSleeping/security/advisories/new">reporte privado</a> de la política de seguridad.</p></div>
       </details>
     </div>
   </div>
@@ -640,6 +640,8 @@
             <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.5.1" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CONTRIBUTING.md" data-i18n="pie.contribuir">Cómo contribuir</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/SECURITY.md" data-i18n="pie.seguridad">Política de seguridad</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/LICENSE" data-i18n="pie.mit">Licencia MIT</a></li>
           </ul>
         </div>

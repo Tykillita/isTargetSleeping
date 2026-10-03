@@ -5,6 +5,14 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+### Changed
+- Website screenshots and both 77-second tours now show the 1.5.1 interface and current native pet animations.
+  The README files link to the new tours instead of immutable older video attachments.
+- The website build validates local assets and both languages, generates content-versioned URLs and publishes
+  from `_site/`. HTML revalidation prevents old pages and media from hiding future updates.
+- Website installation guidance now describes the tray pinning controls, the footers link to contribution and
+  security policies, and all four 1.5.1 download checksums match the published release.
+
 ## [1.5.1] — 2026-10-03
 
 ### Added
