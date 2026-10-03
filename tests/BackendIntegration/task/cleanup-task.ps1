@@ -3,6 +3,7 @@ param(
     [string]$OutputDirectory = (Join-Path (Get-Location).Path 'obj/backend-verification/task')
 )
 $ErrorActionPreference = 'Stop'
+$stopCleanupError = $null
 $testRoot = [IO.Path]::GetFullPath($OutputDirectory).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 $allowedOutputRoot = [IO.Path]::GetFullPath((Join-Path (Get-Location).Path 'obj')).TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 if (!$testRoot.StartsWith($allowedOutputRoot,[StringComparison]::OrdinalIgnoreCase)) { throw 'OutputDirectory must be inside the workspace obj directory' }

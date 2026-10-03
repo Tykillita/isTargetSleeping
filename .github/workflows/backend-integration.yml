@@ -60,12 +60,12 @@ jobs:
       - name: Actual Ollama service lifecycle through the published CLI
         shell: pwsh
         run: |
-          ./tests/BackendIntegration/service/verify-service.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -FixtureExe obj/backend-verification/service/bin/OllamaServiceFixture.exe -Port 59152 -Cycles 2
+          pwsh -NoLogo -NoProfile -NonInteractive -File ./tests/BackendIntegration/service/verify-service.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -FixtureExe obj/backend-verification/service/bin/OllamaServiceFixture.exe -Port 59152 -Cycles 2
           if ($LASTEXITCODE -ne 0) { throw 'Actual service lifecycle failed' }
       - name: Actual Ollama task lifecycle and descendants through the published CLI
         shell: pwsh
         run: |
-          ./tests/BackendIntegration/task/verify-task.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -Port 59153 -PrincipalMode System -Cycles 2
+          pwsh -NoLogo -NoProfile -NonInteractive -File ./tests/BackendIntegration/task/verify-task.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -Port 59153 -PrincipalMode System -Cycles 2
           if ($LASTEXITCODE -ne 0) { throw 'Actual task lifecycle failed' }
       - name: Retain evidence and fixture logs
         if: always()

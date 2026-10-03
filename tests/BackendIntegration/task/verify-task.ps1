@@ -18,7 +18,7 @@ if (!(($OutputDirectory.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::
 $runRoot = Join-Path $OutputDirectory $taskName
 $manifestPath = Join-Path $runRoot 'manifest.json'
 $events = [Collections.Generic.List[object]]::new()
-$report = [ordered]@{ Kind='Task'; TaskName=$taskName; Endpoint="http://127.0.0.1:$Port"; StartedUtc=[DateTime]::UtcNow.ToString('o'); ExpectedVersion=$ExpectedVersion; ExpectedOllamaVersion=$ExpectedOllamaVersion; CliCalls=@(); Cycles=@(); Passed=$false; Cleanup=$null }
+$report = [ordered]@{ Kind='Task'; TaskName=$taskName; Endpoint="http://127.0.0.1:$Port"; StartedUtc=[DateTime]::UtcNow.ToString('o'); ExpectedVersion=$ExpectedVersion; ExpectedOllamaVersion=$ExpectedOllamaVersion; AppExe=$null; AppDll=$null; CliCalls=@(); Cycles=@(); Passed=$false; Cleanup=$null }
 function Assert-Probe([bool]$Condition,[string]$Description) {
     if (!$Condition) { throw $Description }
     $events.Add([ordered]@{ Utc=[DateTime]::UtcNow.ToString('o'); Assert=$Description; Passed=$true })
