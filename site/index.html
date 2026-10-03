@@ -8,7 +8,11 @@
 <meta name="theme-color" content="#0C0C0E">
 <meta property="og:title" content="isTargetSleeping">
 <meta property="og:description" content="Tus modelos locales trabajan cuando les hablas. El resto del tiempo, duermen.">
-<meta property="og:image" content="media/istargetsleeping-icon-512.png">
+<meta property="og:image" content="media/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="isTargetSleeping — Let idle models sleep. Get your RAM back.">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
 <script>try{var t=localStorage.getItem('its-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="site.css">
@@ -106,7 +110,7 @@
 <section class="seccion" id="video" style="padding-top:0">
   <div class="contenedor">
     <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="video.eyebrow">La versión 1.5.1, en 77 segundos</p>
+      <p class="eyebrow" data-i18n="video.eyebrow">La versión 1.5.2, en 77 segundos</p>
       <h2 data-i18n="video.titulo">Mírala de cerca.</h2>
     </div>
     <div class="video-marco revela">
@@ -325,13 +329,13 @@
         <div class="accion"><small data-i18n="como.encender">Encender</small><code>ollama app.exe hidden</code></div>
       </div>
       <div class="mecanismo revela">
-        <span class="sello sello--gris" data-i18n="como.sinProbar">Sin probar en hardware real</span>
+        <span class="sello" data-i18n="como.probadoVM">Probado en VM Windows</span>
         <h3 data-i18n="como.servicio">Servicio de Windows</h3>
         <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.scmStop">Detener desde el SCM</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.scmStart">Iniciar desde el SCM (con UAC)</span></div>
+        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.scmStart">Iniciar desde el SCM (UAC si hace falta)</span></div>
       </div>
       <div class="mecanismo revela">
-        <span class="sello sello--gris" data-i18n="como.sinProbar">Sin probar en hardware real</span>
+        <span class="sello" data-i18n="como.probadoVM">Probado en VM Windows</span>
         <h3 data-i18n="como.tarea">Tarea programada</h3>
         <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.tareaStop">Stop en el Programador de tareas</span></div>
         <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.tareaRun">Run en el Programador de tareas</span></div>
@@ -351,6 +355,7 @@
     </div>
 
     <div class="nota-tecnica revela">
+      <p data-i18n="como.validacion">Servicio y tarea: dos ciclos con Ollama 0.35.1 real en Windows Server 2025 x64, verificando API y salida de procesos. No se cargaron modelos ni se probó UAC interactivo. <a href="https://github.com/Tykillita/isTargetSleeping/blob/main/docs/backend-validation-1.5.2.md">Ver el informe y sus límites</a>.</p>
       <p data-i18n="como.orden">Busca en este orden: la app de Ollama en marcha, un servicio, una tarea programada, un <code>ollama serve</code> suelto y lo que haya instalado. Con Ollama apagado, usa el que elegiste en Ajustes o el último con el que estuvo encendido.</p>
     </div>
 

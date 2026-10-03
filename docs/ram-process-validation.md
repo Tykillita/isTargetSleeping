@@ -42,6 +42,11 @@ El fallback de memoria se fuerza en pruebas y no se ejecuta en una instalación 
 La protección de decisiones manuales durante restauración se prueba con el estado del modo juego;
 la interacción con servicios externos reales de Ollama/LM Studio requiere prueba de integración.
 
+Actualización del 3 de octubre de 2026: servicio y tarea de Ollama ya tienen
+[validación real de integración en Windows para 1.5.2](backend-validation-1.5.2.md).
+Ese informe precisa la VM, las configuraciones y los límites; no amplía lo probado aquí
+con LM Studio ni certifica UAC interactivo o hardware ARM64.
+
 Los resultados de compilación y los bancos finales quedan en `artifacts/`, junto a los ejecutables
 de verificación. Esa carpeta está ignorada por Git. La actualización del agente se ofrece en
 **Ajustes › Liberar RAM › Actualizar**; consultas y finalización normal funcionan sin instalarlo.

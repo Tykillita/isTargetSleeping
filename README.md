@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Assets/istargetsleeping-icon-256.png" width="112" alt="isTargetSleeping icon">
+<img src="docs/images/social-preview.png" width="900" alt="isTargetSleeping: white sleeping target on a dark cover. Let idle models sleep. Get your RAM back.">
 
 # isTargetSleeping
 
@@ -45,9 +45,9 @@ was installed.
 
 <a id="video"></a>
 
-[![The current 1.5.1 app tour](docs/images/tour-en.jpg)](https://istargetsleeping.web.app/?lang=en#video)
+[![The current 1.5.2 app tour](docs/images/tour-en.jpg)](https://istargetsleeping.web.app/?lang=en#video)
 
-<p align="center"><sub>The current 1.5.1 app in 77 seconds, with sound and sample data · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
+<p align="center"><sub>The current 1.5.2 app in 77 seconds, with sound and sample data · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">en español</a> · <a href="docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
 
 ## Why?
 
@@ -207,10 +207,17 @@ From PowerShell: `start istargetsleeping://sleep`. If the app isn't running, the
 | If Ollama comes from… | Stop | Start | Verified |
 |---|---|---|:-:|
 | **Ollama app** (ollama.com installer) | Asks its windows to close, ends its process tree after 2 s, then any `ollama serve` left | `ollama app.exe hidden` (tray only, no chat window — the same flag Ollama uses at login) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
-| **Windows service** wrapping Ollama | Service Control Manager stop | SCM start | ⚠️ code path, not tested on real hardware |
-| **Scheduled task** running `ollama serve` | Task Scheduler `Stop` | Task Scheduler `Run` | ⚠️ code path, not tested on real hardware |
+| **Windows service** wrapping Ollama | Service Control Manager stop | SCM start | ✅ Windows Server 2025 x64 VM · Ollama 0.35.1 |
+| **Scheduled task** running `ollama serve` | Task Scheduler `Stop` | Task Scheduler `Run` | ✅ Windows Server 2025 x64 VM · Ollama 0.35.1 |
 | **Manual `ollama serve`** | Ends the server's process tree | Launches `ollama serve` detached, logging to `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
 | **Not installed** | — | Opens ollama.com/download | ✅ |
+
+Service and task verification uses the actual 1.5.2 executable and genuine Ollama: two start/stop cycles,
+API state, process identities, repeated actions and fixture cleanup. The service uses a native SCM test host
+under LocalService; the task runs under SYSTEM. No models were loaded. This covers those configurations on a
+Windows VM; physical GPUs, every third-party service wrapper and interactive UAC remain outside its scope.
+See the [bilingual validation report](docs/backend-validation-1.5.2.md) and
+[reproducible integration checks](tests/BackendIntegration/README.md).
 
 A service usually needs admin rights to be started or stopped: isTargetSleeping runs as a normal user and only asks
 for elevation (UAC) for that one `sc start/stop`. A service's restart-on-failure policy doesn't kick in, because the

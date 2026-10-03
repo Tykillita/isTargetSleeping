@@ -9,15 +9,18 @@ All notable changes to isTargetSleeping. The format follows
 
 ### Added
 - Reproducible Windows integration verification for Ollama service and scheduled-task backends.
-  The validation record distinguishes real OS integration from physical-PC and UAC testing.
+  Both pass two lifecycle cycles using the published app and genuine Ollama 0.35.1 on a Windows Server 2025 x64 VM.
+  The bilingual validation record distinguishes real OS integration from physical-PC, inference and UAC testing.
+- A provisional 1280 × 640 cover with the native sleeping target in white, an editable SVG and a transparent
+  white logo PNG. Both README files use the cover; website sharing uses the same image.
 
 ### Changed
-- Website screenshots and both 77-second tours now show the 1.5.1 interface and current native pet animations.
+- Website screenshots and both 77-second tours now show the 1.5.2 interface and current native pet animations.
   The README files link to the new tours instead of immutable older video attachments.
 - The website build validates local assets and both languages, generates content-versioned URLs and publishes
   from `_site/`. HTML revalidation prevents old pages and media from hiding future updates.
 - Website installation guidance now describes the tray pinning controls, the footers link to contribution and
-  security policies, and all four 1.5.1 download checksums match the published release.
+  security policies. Download checksums are taken from the corresponding published release.
 
 ## [1.5.1] — 2026-10-03
 

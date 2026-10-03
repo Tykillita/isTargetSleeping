@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Assets/istargetsleeping-icon-256.png" width="112" alt="Ícono de isTargetSleeping">
+<img src="docs/images/social-preview.png" width="900" alt="isTargetSleeping: mira dormida blanca sobre fondo oscuro. Duerme los modelos inactivos y recupera tu RAM.">
 
 # isTargetSleeping
 
@@ -45,9 +45,9 @@ como lo hayas instalado.
 
 <a id="video"></a>
 
-[![El recorrido de la app actual 1.5.1](docs/images/tour-es.jpg)](https://istargetsleeping.web.app/?lang=es#video)
+[![El recorrido de la app actual 1.5.2](docs/images/tour-es.jpg)](https://istargetsleeping.web.app/?lang=es#video)
 
-<p align="center"><sub>La app actual 1.5.1 en 77 segundos, con sonido y datos de ejemplo · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
+<p align="center"><sub>La app actual 1.5.2 en 77 segundos, con sonido y datos de ejemplo · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">in English</a> · <a href="docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
 
 ## ✨ Funciones
 
@@ -199,12 +199,32 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
 
 ## ⚙️ Cómo funciona
 
+### Apagar Ollama por su mecanismo de arranque
+
+| Si Ollama viene de… | Apagar | Encender | Verificado |
+|---|---|---|:-:|
+| **App de Ollama** (instalador de ollama.com) | Pide cerrar sus ventanas, termina su árbol tras 2 s y cualquier `ollama serve` restante | `ollama app.exe hidden` (solo bandeja, sin ventana de chat; el mismo indicador del inicio de sesión) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
+| **Servicio de Windows** que ejecuta Ollama | Detener por el Administrador de control de servicios | Iniciar por SCM | ✅ VM Windows Server 2025 x64 · Ollama 0.35.1 |
+| **Tarea programada** que ejecuta `ollama serve` | `Stop` del Programador de tareas | `Run` del Programador de tareas | ✅ VM Windows Server 2025 x64 · Ollama 0.35.1 |
+| **`ollama serve` manual** | Termina el árbol del servidor | Lo lanza desacoplado, con log en `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
+| **Sin instalar** | — | Abre ollama.com/download | ✅ |
+
+La verificación de servicio y tarea usa el ejecutable real 1.5.2 y Ollama real: dos ciclos completos,
+estado de la API, identidades de procesos, órdenes repetidas y limpieza del entorno de prueba. El servicio
+usa un host nativo SCM bajo LocalService y la tarea funciona bajo SYSTEM. No se cargaron modelos. Cubre esas
+configuraciones en una VM Windows; GPU físicas, todos los wrappers de terceros y UAC interactivo quedan fuera
+de su alcance. Consulta el [informe bilingüe](docs/backend-validation-1.5.2.md) y las
+[pruebas reproducibles](tests/BackendIntegration/README.md).
+
+Un servicio suele necesitar permisos de administrador: la app funciona como usuario normal y pide UAC
+solo para esa orden `sc start/stop`. Al detenerlo por SCM, no se dispara su política de reinicio por fallo.
+La detección busca app activa → servicio activo → tarea activa → `ollama serve` manual → lo instalado.
+Con Ollama apagado, usa lo elegido en Ajustes o el último mecanismo recordado entre sesiones.
+
+### Modelos, memoria y limpieza
+
 <p align="center"><img src="docs/images/idle-flow-es.svg" width="100%" alt="Cuatro pasos: cada 2,5 s suma el tiempo de CPU de los runners; si crece más de 0,08 s o cambia el modelo, cuenta como actividad; tras 5, 15, 30 o 60 minutos sin generar descarga el modelo, y Ollama sigue encendido y lo recarga al pedirlo."></p>
 
-- **Apagar bien:** con la app de Ollama, le pide cerrar y a los 2 s termina su árbol de procesos; la enciende con
-  `ollama app.exe hidden` (solo bandeja, sin abrir la ventana de chat). Un servicio se para y arranca por el
-  Administrador de control de servicios (pide UAC solo para esa orden si hace falta); una tarea programada, por el
-  Programador de tareas; un `ollama serve` a mano, terminando su árbol de procesos.
 - **Modelo sin uso:** cada 2,5 s suma el CPU de los runners (`llama-server.exe` en Ollama 0.34+, `ollama runner` o
   `ollama_llama_server.exe`). Medido: 0,008 s por muestra en reposo frente a decenas de segundos al generar, aunque
   el modelo esté entero en la GPU. Umbral: 0,08 s.

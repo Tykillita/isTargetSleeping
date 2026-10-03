@@ -15,7 +15,9 @@ $files = @(
     'Assets\istargetsleeping-icon-512.png',
     'Assets\istargetsleeping-mark-blue.svg',
     'Assets\istargetsleeping-mark-ink.svg',
-    'Assets\istargetsleeping-mark-white.svg'
+    'Assets\istargetsleeping-mark-white.svg',
+    'Assets\istargetsleeping-mark-white-512.png',
+    'docs\images\social-preview.png'
 )
 foreach ($lang in 'es', 'en') {
     $files += "docs\images\panel-$lang.png"
