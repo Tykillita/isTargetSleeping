@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/images/social-preview.png" width="900" alt="isTargetSleeping: mira dormida blanca sobre fondo oscuro. Duerme los modelos inactivos y recupera tu RAM.">
+<img src="Assets/istargetsleeping-icon-256.png" width="112" alt="Ícono de isTargetSleeping">
 
 # isTargetSleeping
 
