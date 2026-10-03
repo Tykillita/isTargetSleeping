@@ -1,0 +1,82 @@
+name: backend-integration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, codex/1.5.2-release]
+    paths:
+      - 'tests/BackendIntegration/**'
+      - '.github/workflows/backend-integration.yml'
+      - 'src/IsTargetSleeping/Core/Backend.cs'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-backends:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Build the actual app and SCM fixture
+        shell: pwsh
+        run: |
+          ./build.ps1 -Arch x64 -OutputDirectory obj/backend-verification/app
+          if ($LASTEXITCODE -ne 0) { throw 'App build failed' }
+          dotnet publish tests/BackendIntegration/service/OllamaServiceFixture.csproj -c Release -o obj/backend-verification/service/bin
+          if ($LASTEXITCODE -ne 0) { throw 'SCM fixture build failed' }
+      - name: Download the pinned official Ollama binary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probeRoot = Join-Path $PWD 'obj/backend-verification'
+          $archive = Join-Path $probeRoot 'ollama-windows-amd64.zip'
+          curl.exe --fail --location --retry 3 --silent --show-error --output $archive https://github.com/ollama/ollama/releases/download/v0.35.1/ollama-windows-amd64.zip
+          if ($LASTEXITCODE -ne 0) { throw 'Official Ollama download failed' }
+          $expected = 'dc50b9ca7f9023c86525012632cd1615b093d0407987444a7f62ecab617e8e93'
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Ollama archive digest mismatch' }
+          # Empty-model API tests need only the official executable, not GPU libraries.
+          $zip = [IO.Compression.ZipFile]::OpenRead($archive)
+          try {
+            $entries = @($zip.Entries | Where-Object FullName -eq 'ollama.exe')
+            if ($entries.Count -ne 1) { throw 'Official archive must contain exactly one root ollama.exe' }
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($entries[0], (Join-Path $probeRoot 'ollama.exe'), $false)
+          } finally { $zip.Dispose() }
+          $environment = [ordered]@{
+            Windows = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture
+            PowerShell = $PSVersionTable.PSVersion.ToString()
+            AppVersion = (Get-Content VERSION -Raw).Trim()
+            OllamaVersion = '0.35.1'
+            OllamaArchiveSHA256 = $expected
+            OllamaExeSHA256 = (Get-FileHash (Join-Path $probeRoot 'ollama.exe')).Hash.ToLowerInvariant()
+            AppExeSHA256 = (Get-FileHash (Join-Path $probeRoot 'app/isTargetSleeping.exe')).Hash.ToLowerInvariant()
+            Commit = '${{ github.sha }}'
+            RunURL = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          }
+          $environment | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $probeRoot 'environment.json')
+      - name: Actual Ollama service lifecycle through the published CLI
+        shell: pwsh
+        run: |
+          ./tests/BackendIntegration/service/verify-service.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -FixtureExe obj/backend-verification/service/bin/OllamaServiceFixture.exe -Port 59152 -Cycles 2
+          if ($LASTEXITCODE -ne 0) { throw 'Actual service lifecycle failed' }
+      - name: Actual Ollama task lifecycle and descendants through the published CLI
+        shell: pwsh
+        run: |
+          ./tests/BackendIntegration/task/verify-task.ps1 -OllamaPath obj/backend-verification/ollama.exe -AppExe obj/backend-verification/app/isTargetSleeping.exe -Port 59153 -PrincipalMode System -Cycles 2
+          if ($LASTEXITCODE -ne 0) { throw 'Actual task lifecycle failed' }
+      - name: Retain evidence and fixture logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-integration-evidence
+          path: |
+            obj/backend-verification/environment.json
+            obj/backend-verification/**/*report.json
+            obj/backend-verification/**/manifest.json
+            obj/backend-verification/**/*.log
+            obj/backend-verification/**/*.jsonl
+          if-no-files-found: warn
+          retention-days: 30

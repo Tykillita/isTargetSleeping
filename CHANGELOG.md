@@ -5,6 +5,12 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-10-03
+
+### Added
+- Reproducible Windows integration verification for Ollama service and scheduled-task backends.
+  The validation record distinguishes real OS integration from physical-PC and UAC testing.
+
 ### Changed
 - Website screenshots and both 77-second tours now show the 1.5.1 interface and current native pet animations.
   The README files link to the new tours instead of immutable older video attachments.
