@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.5.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -76,6 +76,10 @@ https://github.com/user-attachments/assets/cfe59892-b6e1-4e9d-bc91-9d633a2a7451
 
 **1.5.0 ya está publicada** (2 de octubre de 2026): memoria ahora en Actividad, reglas de limpieza
 automática completas y mascotas renovadas.
+
+**1.5.1 está en desarrollo.** Este README describe el código actual. La última descarga publicada es
+**1.5.0**; la ayuda para fijar el ícono llegará con 1.5.1.
+
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
 **Portable:** descarga `isTargetSleeping-<versión>-win-x64.zip` (o `-arm64`), descomprímelo donde quieras y abre
@@ -87,6 +91,8 @@ Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping
 La primera vez abre su panel junto al reloj y pregunta si abrir al iniciar sesión. Si no ves el ícono, puede estar
 entre los ocultos (`^`): activa **Mostrar siempre en la barra de tareas** en Ajustes › General de la app, arrástralo a
 la barra, o actívalo en *Configuración › Personalización › Barra de tareas › Otros iconos de la bandeja del sistema*.
+Si el interruptor no aparece (Windows 10, o Windows 11 antes de registrar el ícono), Ajustes › General trae un botón
+que abre los ajustes de la barra de tareas.
 
 **Requisitos:** Windows 10 (2004+) u 11 · x64 o ARM64 · [Ollama](https://ollama.com/download/windows).
 

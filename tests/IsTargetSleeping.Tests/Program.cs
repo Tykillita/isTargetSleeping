@@ -351,6 +351,11 @@ cleanStats.Add(new StatEvent(now.AddHours(-1), StatKind.Clean, null, 500_000_000
 var cw = cleanStats.Week(now);
 Check("la semana suma siestas y limpiezas", cw.Recovered == 7_000_000_000 && cw.Cleaned == 2_000_000_000 && cw.Cleans == 2 && cw.Naps == 1);
 
+// MARK: fijar el ícono
+
+Section("Fijar el ícono en la barra de tareas");
+TrayPinTests.Run(Check);
+
 // MARK: ícono animado
 
 Section("Ícono animado");

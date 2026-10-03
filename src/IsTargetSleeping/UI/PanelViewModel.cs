@@ -197,6 +197,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         });
         CancelPull = new Command(Ollama.CancelPull);
         ToggleTrayPin = new Command(() => { TrayPin.SetPinned(!TrayPin.Pinned); Notify(); });
+        OpenTrayFallback = new Command(() => Paths.Open("ms-settings:taskbar"));
         ToggleReducedMotion = new Command(Prefs.ToggleReducedMotion);
         ToggleTaskbarPet = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPet, false));
         TogglePetInteractive = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPetInteractive));
@@ -891,6 +892,11 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string TrayPinDetail => tr("El ícono fuera del menú ^ de íconos ocultos, junto al reloj.");
     public bool TrayPinOn => TrayPin.Pinned;
     public ICommand ToggleTrayPin { get; }
+    public bool ShowTrayFallback => !TrayPin.Available;
+    public string TrayFallbackTitle => tr("Fijar el ícono desde Windows");
+    public string TrayFallbackDetail => tr("Si queda tras la ^, actívalo en los ajustes de Windows: Personalización › Barra de tareas › Otros iconos de la bandeja del sistema (Windows 11) o Elige los iconos que aparecerán en la barra de tareas (Windows 10).");
+    public string TrayFallbackOpen => tr("Abrir ajustes de la barra de tareas");
+    public ICommand OpenTrayFallback { get; }
     public string ReducedMotionTitle => tr("Movimiento reducido");
     public string ReducedMotionDetail => tr("El ícono de la bandeja sin animaciones: punto ámbar fijo mientras Ollama cambia. Por defecto, como Windows");
     public bool ReducedMotionOn => Prefs.ReducedMotion;

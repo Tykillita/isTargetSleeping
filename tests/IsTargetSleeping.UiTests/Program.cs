@@ -62,6 +62,20 @@ internal static class Program
             Check($"{language}: ID desconocido selecciona Mira", model.PetChoices[0].IsSelected && model.PetChoices.Count(p => p.IsSelected) == 1);
             prefs.SetSwitch(PrefKeys.TaskbarPet, false);
             Check($"{language}: se puede apagar sin perder la elección", !model.TaskbarPetOn && !model.ShowPetSpecies && prefs.PetSpecies == "unknown");
+            string trayTitle = language == Language.Es ? "Fijar el ícono desde Windows" : "Pin the icon from Windows";
+            string trayOpen = language == Language.Es ? "Abrir ajustes de la barra de tareas" : "Open taskbar settings";
+            Check($"{language}: ayuda para fijar el ícono traducida",
+                model.TrayFallbackTitle == trayTitle && model.TrayFallbackOpen == trayOpen
+                && model.TrayFallbackDetail.StartsWith(language == Language.Es ? "Si queda tras la ^" : "If it stays behind the ^")
+                && model.OpenTrayFallback is not null);
+            Check($"{language}: interruptor directo o ayuda, nunca los dos",
+                model.ShowTrayPin != model.ShowTrayFallback);
+            var trayButton = Descendants(view).OfType<Button>().FirstOrDefault(b => b.Content as string == trayOpen);
+            Check($"{language}: el botón de ayuda se ve cuando no hay interruptor directo",
+                trayButton is not null && SeVe(trayButton) == model.ShowTrayFallback);
+            var pinSwitch = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(b => b.Command == model.ToggleTrayPin);
+            Check($"{language}: el interruptor directo se ve cuando Windows ya registra el ícono",
+                pinSwitch is not null && SeVe(pinSwitch) == model.ShowTrayPin);
         }
         Check("la demo no modifica ajustes guardados", originalSettings == (File.Exists(Paths.SettingsFile) ? File.ReadAllText(Paths.SettingsFile) : null));
         ProcessUiTests.Run(Check);
@@ -77,5 +91,12 @@ internal static class Program
             yield return child;
             foreach (var descendant in Descendants(child)) yield return descendant;
         }
+    }
+    // Sin ventana no hay IsVisible fiable: se ve si ningún ancestro lo oculta.
+    private static bool SeVe(DependencyObject element)
+    {
+        for (var current = element; current is not null; current = VisualTreeHelper.GetParent(current))
+            if (current is UIElement ui && ui.Visibility != Visibility.Visible) return false;
+        return true;
     }
 }

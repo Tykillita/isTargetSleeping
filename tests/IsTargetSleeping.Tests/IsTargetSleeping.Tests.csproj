@@ -31,6 +31,7 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\ProcessMonitoring.cs" Link="Core\ProcessMonitoring.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\ProcessActions.cs" Link="Core\ProcessActions.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\TrayMotion.cs" Link="Core\TrayMotion.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\TrayPin.cs" Link="Core\TrayPin.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetBrain.cs" Link="Core\PetBrain.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetAnimationProfile.cs" Link="Core\PetAnimationProfile.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetProfiles\*.cs" Link="Core\PetProfiles\%(Filename)%(Extension)" />

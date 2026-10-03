@@ -882,6 +882,13 @@
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
+                    <StackPanel Visibility="{Binding ShowTrayFallback, Converter={StaticResource Visible}}">
+                        <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                        <TextBlock Text="{Binding TrayFallbackTitle}" Style="{StaticResource Label}" />
+                        <TextBlock Text="{Binding TrayFallbackDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        <Button Style="{StaticResource Bordered}" Content="{Binding TrayFallbackOpen}" Command="{Binding OpenTrayFallback}"
+                                HorizontalAlignment="Left" Margin="0,8,0,0" />
+                    </StackPanel>
                     <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                     <DockPanel>
                         <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding TaskbarPetOn}" Command="{Binding ToggleTaskbarPet}"

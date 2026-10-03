@@ -9,36 +9,30 @@ namespace IsTargetSleeping;
 /// HKCU\Control Panel\NotifyIconSettings\&lt;id&gt; con la ruta del .exe y
 /// IsPromoted (1 = en la barra, 0 = en el menú ^). La entrada la crea el Explorador
 /// la primera vez que ve el ícono; en Windows 10 no existe y la opción no aparece.
+/// Se lee el registro en cada acceso, sin caché: el Explorador crea entradas nuevas
+/// en cualquier momento (por ejemplo al cambiar el ícono) y son pocas claves.
 public static class TrayPin
 {
     private const string Root = @"Control Panel\NotifyIconSettings";
-    private static List<string>? keys;
 
     /// Las entradas de este .exe (puede haber más de una si cambió el ícono).
-    private static List<string> Keys()
+    /// `root` y `exe` son parámetros para poder probarlo con una rama temporal.
+    public static List<string> KeysFor(string root, string? exe)
     {
-        if (keys is { Count: > 0 } known && known.All(Exists)) return known;
-        var exe = Environment.ProcessPath;
         var found = new List<string>();
         if (exe is null) return found;
         try
         {
-            using var root = Registry.CurrentUser.OpenSubKey(Root);
-            foreach (var name in root?.GetSubKeyNames() ?? [])
+            using var rootKey = Registry.CurrentUser.OpenSubKey(root);
+            foreach (var name in rootKey?.GetSubKeyNames() ?? [])
             {
-                using var key = root!.OpenSubKey(name);
+                using var key = rootKey!.OpenSubKey(name);
                 if (key?.GetValue("ExecutablePath") is string path && string.Equals(Resolve(path), exe, StringComparison.OrdinalIgnoreCase))
                     found.Add(name);
             }
         }
         catch { }
-        return keys = found;
-    }
-
-    private static bool Exists(string name)
-    {
-        try { using var key = Registry.CurrentUser.OpenSubKey($@"{Root}\{name}"); return key is not null; }
-        catch { return false; }
+        return found;
     }
 
     /// Windows abrevia las carpetas conocidas: «{6D809377-…}\isTargetSleeping\x.exe» es Program Files.
@@ -53,33 +47,47 @@ public static class TrayPin
     [DllImport("shell32.dll")]
     private static extern int SHGetKnownFolderPath([MarshalAs(UnmanagedType.LPStruct)] Guid id, uint flags, IntPtr token, out IntPtr path);
 
-    /// Windows ya tiene la entrada del ícono (Windows 11): se puede ofrecer el interruptor.
-    public static bool Available => Keys().Count > 0;
+    private static bool Promoted(string root, string name)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey($@"{root}\{name}");
+            return key?.GetValue("IsPromoted") is int v && v == 1;
+        }
+        catch { return false; }
+    }
 
+    /// Windows ya tiene la entrada del ícono (Windows 11): se puede ofrecer el interruptor.
+    public static bool Available => KeysFor(Root, Environment.ProcessPath).Count > 0;
+
+    /// Todas las entradas promovidas: solo entonces el ícono está seguro fuera del
+    /// menú ^. Basta una entrada nueva sin promover (tras cambiar el ícono, por
+    /// ejemplo) para que el interruptor marque apagado hasta reactivarlo.
     public static bool Pinned
     {
         get
         {
-            try
-            {
-                return Keys().Any(name =>
-                {
-                    using var key = Registry.CurrentUser.OpenSubKey($@"{Root}\{name}");
-                    return key?.GetValue("IsPromoted") is int v && v == 1;
-                });
-            }
-            catch { return false; }
+            var names = KeysFor(Root, Environment.ProcessPath);
+            return names.Count > 0 && names.All(name => Promoted(Root, name));
         }
     }
 
-    /// El Explorador vigila esta clave: el ícono se mueve al momento.
-    public static void SetPinned(bool on)
+    public static bool PinnedFor(string root, string? exe)
     {
-        foreach (var name in Keys())
+        var names = KeysFor(root, exe);
+        return names.Count > 0 && names.All(name => Promoted(root, name));
+    }
+
+    /// El Explorador vigila esta clave: el ícono se mueve al momento.
+    public static void SetPinned(bool on) => SetPinnedFor(Root, Environment.ProcessPath, on);
+
+    public static void SetPinnedFor(string root, string? exe, bool on)
+    {
+        foreach (var name in KeysFor(root, exe))
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey($@"{Root}\{name}", writable: true);
+                using var key = Registry.CurrentUser.OpenSubKey($@"{root}\{name}", writable: true);
                 key?.SetValue("IsPromoted", on ? 1 : 0, RegistryValueKind.DWord);
             }
             catch { }

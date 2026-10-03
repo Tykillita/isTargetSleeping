@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.5.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -82,6 +82,10 @@ the model sleep when you don't need it and gives you one-click control over Olla
 ## 📥 Install
 
 **1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
+
+**1.5.1 is in development.** This README describes the current source. The latest published download is
+**1.5.0**; the tray-icon pinning help will arrive with 1.5.1.
+
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 
 **Portable:** download `isTargetSleeping-<version>-win-x64.zip` (or `-arm64`), unzip it anywhere and run
@@ -92,7 +96,9 @@ Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/re
 
 The first time it opens its panel next to the clock and asks whether to open at login. If you can't see the icon,
 it may be in the hidden icons (`^`): turn on **Always show in the taskbar** in the app's Settings › General, drag it
-to the taskbar, or turn it on in *Settings › Personalization › Taskbar › Other system tray icons*.
+to the taskbar, or turn it on in *Settings › Personalization › Taskbar › Other system tray icons*. If the switch
+doesn't appear (Windows 10, or Windows 11 before it registers the icon), Settings › General has a button that
+opens the Windows taskbar settings for you.
 
 **Requirements:** Windows 10 (2004+) or 11 · x64 or ARM64 · [Ollama](https://ollama.com/download/windows).
 

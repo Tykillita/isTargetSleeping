@@ -5,6 +5,20 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-10-03
+
+### Added
+- **Pin the icon from Windows:** when the direct "Always show in the taskbar" switch isn't available
+  (Windows 10, or Windows 11 before Explorer registers the icon), Settings › General has a button that
+  opens the Windows taskbar settings, where the icon is turned on: Personalization › Taskbar › Other
+  system tray icons (Windows 11) or Select which icons appear on the taskbar (Windows 10).
+
+### Fixed
+- **The "Always show in the taskbar" switch tells the truth again:** if Windows created a new icon entry
+  (for example after the icon changed), the switch could show on while the icon stayed behind the `^`
+  menu. It now reads all of this `.exe`'s entries instead of a cached list, only shows on when every
+  entry is promoted, and re-promotes all of them when toggled.
+
 ## [1.5.0] — 2026-10-02
 
 ### Added
