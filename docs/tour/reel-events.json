@@ -1,0 +1,10 @@
+[
+  { "time": 21.2, "target": "tray", "from": [710, 1570], "hold": 0.25 },
+  { "time": 26.15, "target": "free-ram", "from": [790, 1420], "hold": 0.7 },
+  { "time": 42.6, "target": "launch", "from": [710, 1450], "hold": 0.6 },
+  { "time": 46.2, "target": "close", "from": [660, 1270], "hold": 0.6 },
+  { "time": 59.7, "target": "capybara", "from": [600, 1450], "hold": 0.5 },
+  { "time": 67.5, "target": "pet", "from": [730, 1460], "hold": 0.7 },
+  { "time": 69.1, "target": "activity", "from": [660, 1090], "hold": 0.25 },
+  { "time": 70.25, "target": "settings", "from": [390, 890], "hold": 0.6 }
+]

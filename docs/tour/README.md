@@ -40,6 +40,28 @@ After regenerating a tour, upload the original MP4 as an attachment to this repo
 Upload the file without re-encoding so its picture and soundtrack stay identical.
 Keep the tracked MP4 in `docs/video/` as the shared source for the website and downloads.
 
+The separate Reels edition shares this storyboard: eleven scenes, the same script,
+77 seconds, scene crossfades, logo animation, pet profiles and music. `reel.css` and
+`reel.js` compose 1080 × 1920 frames with larger text, camera moves over the native
+screenshots, three pages of feature cards and a two-column pet gallery. Content
+stays within a conservative mobile safe area; the landscape files are preserved.
+`reel-events.json` supplies both the animated cursor/ripples and the synthesized
+mouse press/release sounds. Music stays at its original gain; the mix is checked
+for clipping and encoded once as 256 kb/s AAC, then copied to both Reels.
+
+```powershell
+# Reuse the prepared current app captures and sprites; refresh with --capture above when needed.
+python docs/generate-reels.py --stills 4.5,10,18.5,23,26.3,30,33,36,39,44.5,52,58,65,70.5,75
+$env:NODE_PATH = "$PWD/obj/tour-tooling/node_modules"
+node docs/tour/verify-reel.cjs
+python docs/generate-reels.py
+python docs/tour/verify-reels.py
+```
+
+Final MP4s are `../video/isTargetSleeping-reel-{es,en}.mp4`, with covers in
+`../images/reel-{es,en}.jpg`. Stills, mouse-only/mixed WAVs and verification reports
+stay in `obj/tour-work/`. No external music or stock assets are required.
+
 ---
 
 `index.html` conserva las once escenas originales, el guion en ambos idiomas,
@@ -67,3 +89,17 @@ Tras regenerar un recorrido, sube su MP4 original como adjunto de este repositor
 correspondiente. Sube el archivo sin volver a comprimirlo para conservar
 la imagen y el sonido exactos. El MP4 de `docs/video/` sigue siendo la fuente compartida por la web
 y las descargas.
+
+La edición aparte para Reels comparte las once escenas, el guion, los 77 segundos,
+los fundidos de escena, la animación del logo, los perfiles de mascotas y la música.
+`reel.css` y `reel.js` componen 1080 × 1920 con textos ampliados, acercamientos a las
+capturas nativas, tres páginas de funciones y las mascotas en dos columnas. Los
+contenidos respetan el área visible del móvil; los videos horizontales se conservan.
+`reel-events.json` sincroniza cursor, ondas y sonidos de pulsación y liberación del
+mouse. La música conserva su volumen; se comprueba que la mezcla no sature y se
+comprime una sola vez en AAC a 256 kb/s, compartido por los dos Reels.
+
+Los comandos anteriores revisan fotogramas y generan ambos idiomas. La exportación
+solo sustituye los MP4 y portadas nuevos tras completarse correctamente. Las
+comprobaciones cubren textos, clics, resolución, fotogramas, duración, audio y
+conservación de los videos originales. No se necesitan música ni recursos externos.

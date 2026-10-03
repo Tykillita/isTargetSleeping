@@ -1,0 +1,105 @@
+/* 1080 × 1920 composition. Keep text and actions clear of mobile player controls. */
+html, body { width: 1080px; height: 1920px; }
+.grid { mask-image: radial-gradient(900px 1500px at 48% 44%, #000 20%, transparent 88%); }
+.bgglow { background: radial-gradient(800px 1150px at var(--gx) var(--gy), rgba(77,163,255,.14), transparent 70%), radial-gradient(700px 1000px at 85% 90%, rgba(77,163,255,.055), transparent 70%); }
+.h1 { font-size: 88px; }
+.h2 { font-size: 80px; line-height: 1.12; letter-spacing: -2px; }
+.p { font-size: 40px; line-height: 1.4; }
+.kicker { font-size: 30px; line-height: 1.4; letter-spacing: 2px; }
+.chip { font-size: 34px; padding: 8px 16px; }
+.scene > .kicker { left: 80px !important; right: auto !important; top: 220px !important; width: 840px !important; text-align: left !important; }
+.scene > .h2 { left: 80px !important; right: auto !important; top: 300px !important; width: 840px !important; text-align: left !important; }
+
+#logo1 { left: 280px !important; top: 490px !important; width: 440px; height: 440px; }
+#zzz { left: 590px !important; top: 580px !important; }
+#title1 { left: 80px !important; right: auto !important; top: 965px !important; width: 840px; }
+#tag1 { left: 120px !important; right: auto !important; top: 1110px !important; width: 760px; font-size: 42px !important; }
+
+#s2card { left: 80px !important; top: 850px !important; width: 840px !important; height: 560px !important; padding: 48px !important; }
+#s2card > div:first-child { flex-direction: column; gap: 20px; }
+#s2mem { font-size: 44px !important; }
+#s2press { font-size: 38px !important; }
+#s2card .bar, #s3 .bar { height: 50px !important; margin-top: 34px !important; }
+#s2card > div:nth-child(3) { flex-direction: column; gap: 12px; font-size: 36px !important; line-height: 1.4; }
+#s2idle { font-size: 38px !important; margin-top: 30px !important; }
+
+#s3 > svg { left: 390px !important; top: 175px !important; width: 220px; height: 220px; }
+#s3t { top: 420px !important; }
+#s3 > .glass { left: 80px !important; top: 815px !important; width: 840px !important; height: 350px !important; padding: 48px !important; }
+#s3 .h3 { font-size: 42px !important; }
+#s3timer { font-size: 36px !important; }
+#s3 > .glass > div:nth-child(3) { font-size: 36px !important; }
+#s3big { left: 80px !important; top: 1240px !important; width: 840px; font-size: 68px !important; }
+#s3sub { left: 80px !important; top: 1370px !important; width: 840px; }
+
+.callout { left: 80px; width: 840px; top: 325px !important; }
+.callout .n { font-size: 34px; }
+.callout .t { font-size: 70px; line-height: 1.12; margin-top: 14px; }
+.callout .d { font-size: 40px; line-height: 1.35; margin-top: 20px; }
+#s4panel { left: 80px !important; top: 770px !important; width: 840px !important; height: 730px !important; border-radius: 28px !important; }
+#s4img { position: absolute; max-width: none; }
+#s4ring { border-width: 3px; border-radius: 18px; }
+
+#s5t { top: 265px !important; }
+.fcard { width: 400px; height: 392px; padding: 30px 28px; }
+.fcard svg { width: 52px; height: 52px; }
+.fcard .t { font-size: 40px; line-height: 1.12; margin-top: 18px; }
+.fcard .d { font-size: 38px; line-height: 1.2; margin-top: 14px; overflow-wrap: anywhere; }
+#reel-pages { position: absolute; left: 80px; top: 1510px; width: 840px; display: flex; gap: 14px; }
+#reel-pages i { height: 4px; flex: 1; border-radius: 4px; background: #333b46; }
+
+#s6p { left: 80px !important; top: 660px !important; width: 840px !important; }
+#s6ollama { left: 80px !important; top: 910px !important; width: 840px !important; height: 195px !important; padding: 28px 34px !important; }
+#s6state { font-size: 46px !important; }
+#s6sub { font-size: 34px !important; line-height: 1.3; max-width: 630px; }
+#s6game { left: 80px !important; top: 1130px !important; width: 840px !important; height: 300px !important; }
+#s6game > svg { left: 325px !important; top: 62px !important; }
+#s6gname { font-size: 40px !important; bottom: 35px !important; }
+#s6vram { left: 80px !important; top: 1470px !important; width: 840px !important; }
+#s6vram > div:first-child { font-size: 34px !important; margin-bottom: 18px !important; }
+#reel-launch { position: absolute; left: 320px; top: 1225px; width: 360px; height: 100px; display: flex; gap: 22px; align-items: center; justify-content: center; font-size: 40px; font-weight: 600; border-radius: 24px; }
+#reel-launch svg { width: 58px; height: 58px; stroke: var(--blue); fill: none; stroke-width: 1.6; }
+#reel-close { position: absolute; right: 24px; top: 22px; width: 54px; height: 54px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; }
+#reel-close svg { width: 34px; height: 34px; margin: 9px; stroke: #eee; stroke-width: 2; }
+
+#s7p { left: 80px !important; top: 650px !important; width: 840px !important; }
+.toast { left: 80px; right: auto; width: 840px; height: 174px; padding: 26px; gap: 24px; }
+.toast .ic { width: 74px; height: 74px; }
+.toast .ic svg { width: 48px; height: 48px; }
+.toast .tt { font-size: 40px; line-height: 1.2; }
+.toast .td { font-size: 38px; line-height: 1.3; margin-top: 8px; }
+
+#s8t { font-size: 78px; }
+#s8pets > div { width: 400px !important; height: 420px !important; }
+#s8pets > div > div:last-child { top: 335px !important; }
+#s8pets > div > div:last-child > div:first-child { font-size: 44px !important; }
+#s8pets .dim { font-size: 36px !important; line-height: 1.25; }
+
+#s9state { left: 80px !important; top: 650px !important; width: 840px !important; }
+#s9state .pill { font-size: 44px !important; }
+#s9state > div:last-child { font-size: 66px !important; line-height: 1.15; }
+#s9wrap { transform: none !important; }
+#s9bar { left: 80px !important; right: auto !important; top: 1370px !important; bottom: auto !important; width: 840px; border-radius: 28px; box-shadow: 0 30px 90px #0008; }
+#winlogo { left: 387px !important; }
+#wglow { left: 347px !important; }
+
+#s10t { top: 295px !important; font-size: 76px !important; }
+#s10p { left: 80px !important; top: 620px !important; width: 840px !important; font-size: 38px; }
+#s10a, #s10s { left: 80px !important; top: 965px !important; width: 840px !important; height: 565px !important; border-radius: 28px !important; }
+#s10aimg, #s10simg { position: absolute !important; left: 0; width: 840px !important; }
+#reel-tabs { position: absolute; left: 80px; top: 845px; width: 840px; display: flex; gap: 24px; }
+#reel-tabs > div { display: flex; align-items: center; justify-content: center; gap: 20px; flex: 1; height: 90px; border-radius: 20px; font-size: 38px; font-weight: 600; border: 1px solid #ffffff22; background: #ffffff05; color: var(--dim); }
+#reel-tabs svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+#reel-tabs > div.selected { background: #4da3ff17; border-color: #4da3ff80; color: var(--blue); }
+
+#s11logo { left: 340px !important; top: 310px !important; width: 320px !important; height: 320px !important; }
+#s11 > .h1 { left: 80px !important; right: auto !important; top: 790px !important; width: 840px; }
+#s11pills { left: 80px !important; right: auto !important; top: 960px !important; width: 840px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+#s11pills .pill { font-size: 38px; padding: 16px 28px; }
+#s11url { left: 80px !important; right: auto !important; top: 1325px !important; width: 840px; font-size: 34px !important; }
+#s11by { left: 110px !important; right: auto !important; top: 1450px !important; width: 780px; font-size: 34px !important; line-height: 1.4; }
+
+#reel-tray { position: absolute; left: 820px; top: 1420px; width: 78px; height: 78px; padding: 6px; border-radius: 20px; background: #1b2027; border: 1px solid #ffffff22; }
+#reel-tray img { width: 100%; height: 100%; }
+#reel-cursor { position: absolute; z-index: 100; width: 54px; height: 68px; transform-origin: 3px 3px; filter: drop-shadow(0 4px 5px #0009); pointer-events: none; }
+#reel-ripple { position: absolute; z-index: 99; width: 100px; height: 100px; margin: -50px; border: 3px solid #75b9ff; border-radius: 50%; background: #4da3ff22; box-shadow: 0 0 30px #4da3ff44; pointer-events: none; }

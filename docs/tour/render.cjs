@@ -8,7 +8,7 @@ const puppeteer = require('puppeteer-core');
 
 const config = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const FPS = 30;
-const types = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const errors = [];
 const server = http.createServer((request, response) => {
   const relative = decodeURIComponent(new URL(request.url, 'http://localhost').pathname).slice(1);
@@ -31,7 +31,7 @@ const server = http.createServer((request, response) => {
     browser = await puppeteer.launch({ executablePath: config.chrome, headless: true,
       args: ['--hide-scrollbars', '--force-color-profile=srgb', '--font-render-hinting=none'] });
     const page = await browser.newPage();
-    await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+    await page.setViewport({ width: config.width || 1920, height: config.height || 1080, deviceScaleFactor: 1 });
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html?lang=${config.lang}`, { waitUntil: 'networkidle0' });
     const duration = await page.evaluate(() => window.ready);
@@ -53,13 +53,13 @@ const server = http.createServer((request, response) => {
       '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-threads', '4',
       '-pix_fmt', 'yuv420p', '-tune', 'animation', '-c:a', 'copy',
       '-t', String(duration), '-movflags', '+faststart',
-      '-metadata', `title=isTargetSleeping — ${config.lang.toUpperCase()}`,
+      '-metadata', `title=isTargetSleeping — ${config.title ? config.title + ' — ' : ''}${config.lang.toUpperCase()}`,
       config.output], { stdio: ['pipe', 'ignore', 'inherit'] });
     const complete = once(encoder, 'close');
     encoder.stdin.on('error', error => errors.push(error.message));
     const frames = duration * FPS;
-    const reviewFrames = new Set([4.5, 10, 18.5, 23, 25, 27, 29, 35, 38, 44.5, 47.5, 52, 56, 58, 59.5,
-      62, 63.5, 65, 66.5, 67.5, 70.5, 75].map(t => Math.round(t * FPS)));
+    const reviewFrames = new Set((config.reviewTimes || [4.5, 10, 18.5, 23, 25, 27, 29, 35, 38, 44.5, 47.5, 52, 56, 58, 59.5,
+      62, 63.5, 65, 66.5, 67.5, 70.5, 75]).map(t => Math.round(t * FPS)));
     for (let i = 0; i < frames; i++) {
       await page.evaluate(t => window.render(t), i / FPS);
       const frame = await page.screenshot({ type: 'png', optimizeForSpeed: true });
@@ -74,7 +74,7 @@ const server = http.createServer((request, response) => {
     encoder.stdin.end();
     const [code] = await complete;
     if (code !== 0) throw new Error(`FFmpeg exited with ${code}`);
-    console.log(`${config.lang}: 2310 frames, original audio preserved`);
+    console.log(`${config.lang}: 2310 frames, supplied audio preserved`);
   } finally {
     if (encoder && encoder.exitCode === null) encoder.kill();
     if (browser) await browser.close();

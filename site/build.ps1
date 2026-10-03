@@ -29,6 +29,8 @@ foreach ($lang in 'es', 'en') {
     $files += "docs\images\pets-states-$lang.svg"
     $files += "docs\images\tour-$lang.jpg"
     $files += "docs\video\isTargetSleeping-tour-$lang.mp4"
+    $files += "docs\images\reel-$lang.jpg"
+    $files += "docs\video\isTargetSleeping-reel-$lang.mp4"
 }
 
 # Comprueba todas las fuentes antes de sustituir una copia de la vista previa.

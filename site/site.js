@@ -30,6 +30,9 @@ const EN = {
   'video.titulo': 'Take a closer look.',
   'video.pie': 'In 1080p, with sound, the current pets and app screenshots. Sample data.',
   'video.otro': 'Watch in Spanish',
+  'video.reels': 'Also for Reels: 9:16, 77 seconds, larger text and visible, audible mouse clicks.',
+  'video.reelEs': 'Download in Spanish',
+  'video.reelEn': 'Download in English',
 
   'fun.eyebrow': 'Features',
   'fun.titulo': 'Everything Ollama doesn’t ship with.',
@@ -292,6 +295,8 @@ const EN = {
   'nov.indice': "Versions",
   'nov.g.nuevo': "New",
   'nov.g.cambios': "Changed",
+  'nov.proxima.reelT': 'A separate presentation for Reels',
+  'nov.proxima.reelD': 'The same 77-second script and music in 1080 × 1920, with the current pets, close-ups of controls, a cursor and synchronized click sounds. Downloads in English and Spanish.',
   'nov.g.arreglos': "Fixed",
   'nov.s.grande': "Major",
   'nov.s.feature': "Feature",

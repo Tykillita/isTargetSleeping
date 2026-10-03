@@ -49,6 +49,8 @@ https://github.com/user-attachments/assets/0265be1e-ccd9-4e39-9741-8e1bd4d3fb88
 
 <p align="center"><sub>The current 1.5.2 app in 77 seconds, with sample data. Unmute for music and sound effects · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-tour-en.mp4">open the video</a> · <a href="https://istargetsleeping.web.app/?lang=en#video">watch on the website</a> · <a href="README.es.md#video">en español</a> · <a href="https://github.com/Tykillita/isTargetSleeping/raw/refs/heads/main/docs/video/isTargetSleeping-tour-en.mp4">download the MP4</a></sub></p>
 
+<p align="center"><sub>Separate Reels edition: 1080 × 1920 (9:16), the same 77-second script and music, larger text, the current pets and visible mouse clicks with sound · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-reel-en.mp4">English MP4</a> · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-reel-es.mp4">MP4 en español</a></sub></p>
+
 ## Why?
 
 A 10–30 GB local model stays in memory even when you're not using it. Turning Ollama off isn't obvious either: it

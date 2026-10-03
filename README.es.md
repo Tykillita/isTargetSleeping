@@ -49,6 +49,8 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 
 <p align="center"><sub>La app actual 1.5.2 en 77 segundos, con datos de ejemplo. Activa el sonido para escuchar música y efectos · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-tour-es.mp4">abrir el video</a> · <a href="https://istargetsleeping.web.app/?lang=es#video">ver en la web</a> · <a href="README.md#video">in English</a> · <a href="https://github.com/Tykillita/isTargetSleeping/raw/refs/heads/main/docs/video/isTargetSleeping-tour-es.mp4">descargar el MP4</a></sub></p>
 
+<p align="center"><sub>Edición aparte para Reels: 1080 × 1920 (9:16), el mismo guion y música de 77 segundos, textos ampliados, las mascotas actuales y clics de mouse visibles con sonido · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-reel-es.mp4">MP4 en español</a> · <a href="https://istargetsleeping.web.app/media/isTargetSleeping-reel-en.mp4">English MP4</a></sub></p>
+
 ## ✨ Funciones
 
 | | Función | Detalle |
