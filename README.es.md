@@ -28,7 +28,9 @@
   <a href="#-uso">Uso</a> &bull;
   <a href="#como-funciona">Cómo funciona</a> &bull;
   <a href="#-privacidad">Privacidad</a> &bull;
-  <a href="#desarrollo">Desarrollo</a>
+  <a href="#desarrollo">Desarrollo</a> &bull;
+  <a href="CONTRIBUTING.md#es">Contribuir</a> &bull;
+  <a href="SECURITY.md#es">Política de seguridad</a>
 </p>
 
 <sub>By <b>CodeSentry - Tykillita</b></sub>

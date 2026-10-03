@@ -28,7 +28,9 @@
   <a href="#-usage">Usage</a> &bull;
   <a href="#how-it-works">How it works</a> &bull;
   <a href="#-privacy">Privacy</a> &bull;
-  <a href="#development">Development</a>
+  <a href="#development">Development</a> &bull;
+  <a href="CONTRIBUTING.md">Contributing</a> &bull;
+  <a href="SECURITY.md">Security policy</a>
 </p>
 
 <sub>By <b>CodeSentry - Tykillita</b></sub>
