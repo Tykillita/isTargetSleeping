@@ -88,14 +88,12 @@ the model sleep when you don't need it and gives you one-click control over Olla
 
 **1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
 
-**1.5.2 is out** (October 3, 2026): verified service and task lifecycles with genuine Ollama on Windows,
-[Validation and limits](docs/backend-validation-1.5.2.md).
+**1.5.2 is out** (October 3, 2026): verified service and task lifecycles with genuine Ollama on Windows. [Validation and limits](docs/backend-validation-1.5.2.md).
 
-**1.6.0 is in development** (not published yet; the downloads above are 1.5.2): turning Ollama off now closes only
-the servers it can prove belong to the selected backend, Activity shows VRAM per GPU, and the panel is reachable by
-keyboard with accessible names and a high-contrast theme. It also folds in the unpublished 1.5.3 fixes: the updater
-restricts ZIP entries to the expected files and checks that extraction stays inside its staging folder.
-See the [changelog](CHANGELOG.md).
+**1.6.0 is out** (October 14, 2026): turning Ollama off now closes only the servers it can prove belong to the
+selected backend, Activity shows VRAM per GPU, and the panel is reachable by keyboard with accessible names and a
+high-contrast theme. It also includes the updater fix: ZIP entries are restricted to the expected files and extraction
+stays inside its staging folder. See the [changelog](CHANGELOG.md).
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

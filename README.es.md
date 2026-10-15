@@ -86,11 +86,10 @@ automática completas y mascotas renovadas.
 Ollama real en Windows.
 [Validación y límites](docs/backend-validation-1.5.2.md#es).
 
-**1.6.0 está en desarrollo** (aún sin publicar; las descargas de arriba son 1.5.2): apagar Ollama cierra solo los
-servidores que se demuestran del backend elegido, Actividad muestra la VRAM de cada GPU y el panel se puede usar con
-teclado, con nombres accesibles y tema de alto contraste. Incluye además los arreglos de la 1.5.3 sin publicar: el
-actualizador limita las entradas del ZIP a los archivos esperados y comprueba que la extracción se mantenga dentro
-de su carpeta temporal. Consulta el [changelog](CHANGELOG.md).
+**1.6.0 ya está publicada** (14 de octubre de 2026): apagar Ollama cierra solo los servidores que se demuestran
+del backend elegido, Actividad muestra la VRAM de cada GPU y el panel se puede usar con teclado, con nombres
+accesibles y tema de alto contraste. Incluye además el arreglo del actualizador: limita las entradas del ZIP a los
+archivos esperados y mantiene la extracción dentro de su carpeta temporal. Consulta el [changelog](CHANGELOG.md).
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
