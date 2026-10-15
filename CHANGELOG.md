@@ -7,7 +7,7 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [1.6.0] — 2026-10-14
 
-In development: the release is not published yet. It folds in the unpublished 1.5.3 fixes.
+Includes the 1.5.3 fixes, which were never published as a separate release.
 
 ### Added
 - Activity shows the dedicated VRAM of every GPU separately: total, in use and the share used by models.
