@@ -98,10 +98,10 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.8.0 está en desarrollo** (aún no publicada; la última descarga es la 1.6.1): un dock tipo notch opcional en el
-borde superior de la pantalla que se abre al pasar el ratón, con un Home de widgets que eliges y ordenas (Ollama,
-sistema, reloj y calendario, Pomodoro, mantener despierto, notas, batería) y favoritos configurables. Incluye el notch
-de la 1.7.0, que no llegó a publicarse por separado.
+**1.8.0 ya está publicada** (15 de octubre de 2026): un dock tipo notch opcional en el borde superior de la pantalla
+que se abre al pasar el ratón, con un Home de widgets que eliges y ordenas (Ollama, sistema, reloj y calendario,
+Pomodoro, mantener despierto, notas, batería) y favoritos configurables. Incluye el notch de la 1.7.0, que no llegó a
+publicarse por separado.
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 

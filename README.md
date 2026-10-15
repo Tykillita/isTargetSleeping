@@ -102,10 +102,9 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.8.0 is in development** (not published yet; the latest download is 1.6.1): an optional notch dock at the top of
-the screen that opens on hover, with a Home of widgets you choose and order (Ollama, system, clock and calendar,
-Pomodoro, keep awake, notes, battery) and favorites you configure. It includes the 1.7.0 notch, which was never
-published separately.
+**1.8.0 is out** (October 15, 2026): an optional notch dock at the top of the screen that opens on hover, with a Home
+of widgets you choose and order (Ollama, system, clock and calendar, Pomodoro, keep awake, notes, battery) and
+favorites you configure. It includes the 1.7.0 notch, which was never published separately.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

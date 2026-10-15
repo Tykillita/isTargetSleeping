@@ -42,7 +42,7 @@
       <a class="icono-btn nav-github" href="https://github.com/Tykillita/isTargetSleeping" aria-label="GitHub">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       </a>
-      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.6.1/isTargetSleeping-1.6.1-setup-x64.exe" data-descarga="setup">
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.8.0/isTargetSleeping-1.8.0-setup-x64.exe" data-descarga="setup">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
         <span data-i18n="nav.descargar">Descargar</span>
       </a>
@@ -58,7 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
-      <a href="#proxima" data-i18n="nov.s.proxima">1.8.0 · En desarrollo</a>
+      <a href="#v1-8-0">1.8.0</a>
       <a href="#v1-6-1">1.6.1</a>
       <a href="#v1-6-0">1.6.0</a>
       <a href="#v1-5-2">1.5.2</a>
@@ -77,35 +77,35 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
-    <article class="version" id="proxima">
+    <article class="version" id="v1-8-0">
       <div class="version-meta">
         <div class="version-num">1.8.0</div>
-        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+        <span class="version-fecha" data-i18n="nov.v1_8_0.fecha">15 oct 2026</span>
         <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: un dock tipo notch opcional con un Home de widgets que eliges y ordenas, y favoritos que configuras. Incluye el notch de la 1.7.0, que no llegó a publicarse por separado.</p>
+        <p data-i18n="nov.v1_8_0.resumen">Un dock tipo notch opcional con un Home de widgets que eliges y ordenas, y favoritos que configuras. Incluye el notch de la 1.7.0, que no llegó a publicarse por separado.</p>
         <div class="grupo">
           <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.proxima.widgetsT">Home con widgets</b><span data-i18n="nov.proxima.widgetsD">El notch se abre en un Home de cuatro celdas con los widgets que elijas: Ollama, Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario, Pomodoro, Mantener despierto, Notas y Batería. Todo se lee en tu PC y no se envía a ningún sitio.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.peekT">Vista al pasar el ratón, a tu gusto</b><span data-i18n="nov.proxima.peekD">Lo que ves al acercar el ratón al notch ahora es su propia lista de widgets, que eliges y ordenas en la página Widgets (por defecto, Ollama, como siempre). Los botones Liberar RAM y Liberar modelo no desaparecen mientras trabajan: se apagan y dicen «Liberando…», sin mover a los demás.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.pildoraT">Pastilla a tu gusto</b><span data-i18n="nov.proxima.pildoraD">Elige hasta tres datos para la pastilla cerrada: estado, modelo, RAM, VRAM, CPU, hora, batería o el tiempo del Pomodoro, y ordénalos. Por defecto, estado, modelo y RAM, como siempre.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.adaptaT">Widgets que se adaptan</b><span data-i18n="nov.proxima.adaptaD">Cada widget cambia de vista según dónde está y quién lo acompaña: si se queda solo en su fila se ensancha y usa su vista ancha (Sistema en dos columnas, Reloj con el mes al lado, Pomodoro y Batería en una sola fila), y en la vista al pasar el ratón van más densos, sin lo secundario.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.paginaT">Página Widgets</b><span data-i18n="nov.proxima.paginaD">Enciende o apaga cada widget y súbelo o bájalo; un contador te dice cuántas celdas usas, y si uno no cabe te pide quitar otro antes.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.favT">Favoritos a tu gusto</b><span data-i18n="nov.proxima.favD">Hasta cuatro acciones de un toque junto a la navegación: encender o apagar Ollama, Liberar RAM, Liberar el modelo, Procesos, Mantener despierto y Pomodoro.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.pomoT">Pomodoro con aviso</b><span data-i18n="nov.proxima.pomoD">25 minutos de enfoque y 5 de descanso. Al acabar cada fase avisa con una notificación, que tiene su propio interruptor en Ajustes.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.notchT">Dock tipo notch</b><span data-i18n="nov.proxima.notchD">Se activa en Ajustes &gt; General. Una pastilla pegada al borde superior, en el monitor donde está el cursor: al pasar el ratón se abre una vista corta de Ollama con el estado, la RAM, la GPU y los botones Liberar RAM, Liberar modelo y Procesos; un clic abre el Home. Esc, un clic fuera o apartar el puntero lo cierran.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.dockT">Dos tiras de iconos debajo</b><span data-i18n="nov.proxima.dockD">Una para navegar (Inicio, Ollama, Actividad, Widgets y Ajustes) y otra con tus favoritos. Los favoritos funcionan sin abrir el panel.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.vidrioT">Vidrio con hombros curvos</b><span data-i18n="nov.proxima.vidrioD">Negro en el borde de la pantalla y cada vez más translúcido hacia abajo, con las esquinas superiores curvadas hacia fuera. El contenido aparece cuando la forma ya ha crecido y se respeta el movimiento reducido.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.pantallaT">Aparece donde lo necesitas</b><span data-i18n="nov.proxima.pantallaD">Sigue al cursor al tocar el borde superior de otro monitor y se oculta con un juego, un vídeo o el menú Inicio a pantalla completa. Todos sus botones tienen nombre accesible.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.widgetsT">Home con widgets</b><span data-i18n="nov.v1_8_0.widgetsD">El notch se abre en un Home de cuatro celdas con los widgets que elijas: Ollama, Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario, Pomodoro, Mantener despierto, Notas y Batería. Todo se lee en tu PC y no se envía a ningún sitio.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.peekT">Vista al pasar el ratón, a tu gusto</b><span data-i18n="nov.v1_8_0.peekD">Lo que ves al acercar el ratón al notch ahora es su propia lista de widgets, que eliges y ordenas en la página Widgets (por defecto, Ollama, como siempre). Los botones Liberar RAM y Liberar modelo no desaparecen mientras trabajan: se apagan y dicen «Liberando…», sin mover a los demás.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.pildoraT">Pastilla a tu gusto</b><span data-i18n="nov.v1_8_0.pildoraD">Elige hasta tres datos para la pastilla cerrada: estado, modelo, RAM, VRAM, CPU, hora, batería o el tiempo del Pomodoro, y ordénalos. Por defecto, estado, modelo y RAM, como siempre.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.adaptaT">Widgets que se adaptan</b><span data-i18n="nov.v1_8_0.adaptaD">Cada widget cambia de vista según dónde está y quién lo acompaña: si se queda solo en su fila se ensancha y usa su vista ancha (Sistema en dos columnas, Reloj con el mes al lado, Pomodoro y Batería en una sola fila), y en la vista al pasar el ratón van más densos, sin lo secundario.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.paginaT">Página Widgets</b><span data-i18n="nov.v1_8_0.paginaD">Enciende o apaga cada widget y súbelo o bájalo; un contador te dice cuántas celdas usas, y si uno no cabe te pide quitar otro antes.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.favT">Favoritos a tu gusto</b><span data-i18n="nov.v1_8_0.favD">Hasta cuatro acciones de un toque junto a la navegación: encender o apagar Ollama, Liberar RAM, Liberar el modelo, Procesos, Mantener despierto y Pomodoro.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.pomoT">Pomodoro con aviso</b><span data-i18n="nov.v1_8_0.pomoD">25 minutos de enfoque y 5 de descanso. Al acabar cada fase avisa con una notificación, que tiene su propio interruptor en Ajustes.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.notchT">Dock tipo notch</b><span data-i18n="nov.v1_8_0.notchD">Se activa en Ajustes &gt; General. Una pastilla pegada al borde superior, en el monitor donde está el cursor: al pasar el ratón se abre una vista corta de Ollama con el estado, la RAM, la GPU y los botones Liberar RAM, Liberar modelo y Procesos; un clic abre el Home. Esc, un clic fuera o apartar el puntero lo cierran.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.dockT">Dos tiras de iconos debajo</b><span data-i18n="nov.v1_8_0.dockD">Una para navegar (Inicio, Ollama, Actividad, Widgets y Ajustes) y otra con tus favoritos. Los favoritos funcionan sin abrir el panel.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.vidrioT">Vidrio con hombros curvos</b><span data-i18n="nov.v1_8_0.vidrioD">Negro en el borde de la pantalla y cada vez más translúcido hacia abajo, con las esquinas superiores curvadas hacia fuera. El contenido aparece cuando la forma ya ha crecido y se respeta el movimiento reducido.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.pantallaT">Aparece donde lo necesitas</b><span data-i18n="nov.v1_8_0.pantallaD">Sigue al cursor al tocar el borde superior de otro monitor y se oculta con un juego, un vídeo o el menú Inicio a pantalla completa. Todos sus botones tienen nombre accesible.</span></div>
           </div>
         </div>
         <div class="grupo">
           <h3 data-i18n="nov.g.cambios">Cambios</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.proxima.agenteT">Liberar RAM sin reinstalar el agente</b><span data-i18n="nov.proxima.agenteD">El agente de memoria ya no se pide de nuevo en cada versión: tiene su propia versión y solo hay que actualizarlo cuando cambia su código. Liberar RAM sigue funcionando al actualizar la app, sin otro permiso de administrador. Y si falta o está desactualizado, los botones del notch abren Ajustes en vez de no hacer nada.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.navT">Otra navegación en el notch</b><span data-i18n="nov.proxima.navD">El notch se abre en Inicio y su navegación es Inicio, Ollama, Actividad, Widgets y Ajustes. El panel de la bandeja no cambia.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.agenteT">Liberar RAM sin reinstalar el agente</b><span data-i18n="nov.v1_8_0.agenteD">El agente de memoria ya no se pide de nuevo en cada versión: tiene su propia versión y solo hay que actualizarlo cuando cambia su código. Liberar RAM sigue funcionando al actualizar la app, sin otro permiso de administrador. Y si falta o está desactualizado, los botones del notch abren Ajustes en vez de no hacer nada.</span></div>
+            <div class="novedad"><b data-i18n="nov.v1_8_0.navT">Otra navegación en el notch</b><span data-i18n="nov.v1_8_0.navD">El notch se abre en Inicio y su navegación es Inicio, Ollama, Actividad, Widgets y Ajustes. El panel de la bandeja no cambia.</span></div>
           </div>
         </div>
       </div>
@@ -414,7 +414,7 @@
           <span>isTargetSleeping</span>
         </a>
         <p class="pie-lema" data-i18n="pie.lema">Vigila tus modelos locales y los pone a dormir cuando no trabajan. Tu RAM, de vuelta.</p>
-        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.6.1/isTargetSleeping-1.6.1-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
+        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.8.0/isTargetSleeping-1.8.0-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
       </div>
       <nav class="pie-columnas" aria-label="Pie de página" data-i18n-aria="pie.aria">
         <div class="pie-columna">
@@ -432,7 +432,7 @@
           <h2 data-i18n="pie.oss">Código abierto</h2>
           <ul>
             <li><a href="https://github.com/Tykillita/isTargetSleeping" data-i18n="pie.repo">Repositorio en GitHub</a></li>
-            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.6.1" data-i18n="pie.notas">Notas de la versión</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.8.0" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CONTRIBUTING.md" data-i18n="pie.contribuir">Cómo contribuir</a></li>
@@ -454,7 +454,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.8.0 (en desarrollo)</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.8.0</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>
@@ -470,7 +470,7 @@
   <div class="aviso-texto">
     <b data-i18n="dl.titulo">Tu descarga ha empezado</b>
     <span id="aviso-archivo"></span>
-    <span class="aviso-acciones"><a class="enlace" id="aviso-otra" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.6.1/isTargetSleeping-1.6.1-setup-x64.exe" data-i18n="dl.otra">¿No empezó? Inténtalo de nuevo</a><a class="enlace" id="aviso-pasos" href="index.html#instalar" data-i18n="dl.pasos">Ver los pasos</a></span>
+    <span class="aviso-acciones"><a class="enlace" id="aviso-otra" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.8.0/isTargetSleeping-1.8.0-setup-x64.exe" data-i18n="dl.otra">¿No empezó? Inténtalo de nuevo</a><a class="enlace" id="aviso-pasos" href="index.html#instalar" data-i18n="dl.pasos">Ver los pasos</a></span>
   </div>
   <button class="icono-btn aviso-cerrar" id="aviso-cerrar" type="button" aria-label="Cerrar aviso" data-i18n-aria="dl.cerrar">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
