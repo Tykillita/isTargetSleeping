@@ -95,8 +95,9 @@ selected backend, Activity shows VRAM per GPU, and the panel is reachable by key
 high-contrast theme. It also includes the updater fix: ZIP entries are restricted to the expected files and extraction
 stays inside its staging folder. See the [changelog](CHANGELOG.md).
 
-**1.6.1 is in development** (not published yet; the latest download is 1.6.0): turning Ollama off also closes the
-server this app started, even if you then opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of its bed.
+**1.6.1 is out** (October 14, 2026): turning Ollama off also closes the server this app started, even if you then
+opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
+its bed.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

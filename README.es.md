@@ -91,8 +91,9 @@ del backend elegido, Actividad muestra la VRAM de cada GPU y el panel se puede u
 accesibles y tema de alto contraste. Incluye además el arreglo del actualizador: limita las entradas del ZIP a los
 archivos esperados y mantiene la extracción dentro de su carpeta temporal. Consulta el [changelog](CHANGELOG.md).
 
-**1.6.1 está en desarrollo** (aún sin publicar; la última descarga es la 1.6.0): apagar Ollama también cierra el
-servidor que arrancó esta app, aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota entre y salga de su cama.
+**1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
+aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
+entre y salga de su cama.
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
