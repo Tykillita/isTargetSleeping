@@ -5,6 +5,20 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-10-15
+
+### Added
+- Optional notch dock (Settings > General > "Notch dock (experimental)"). A pill docked to the top edge of the
+  screen on the monitor where the cursor is: hovering it opens a short view (status, RAM and GPU bars, Free RAM,
+  Free model and Processes) and a click opens the full two-column panel. Esc, a click elsewhere or leaving the
+  pointer closes it. The tray icon and its menu keep working.
+- Two strips of icon buttons below the notch, like a dock: navigation (Overview, Activity, Settings) and quick
+  actions (turn Ollama on/off, Free RAM, Processes). Quick actions act without opening the panel.
+- "Dynamic Glass" look: black at the screen edge fading to glass, curved shoulders where the notch meets the
+  edge, and a fade-in of the content after the shape has grown. Honors reduced motion.
+- The notch hides while a game, video or the Start menu is full screen, and follows the cursor to another
+  monitor when it touches that monitor's top edge. Every notch button has an accessible name.
+
 ## [1.6.1] — 2026-10-14
 
 ### Fixed

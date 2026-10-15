@@ -108,6 +108,62 @@ Check("a los 19 s de acabar sigue (Ollama aún se recupera)", gate.Active(false,
 Check("a los 20 s termina y el vigilante vuelve a actuar", !gate.Active(false, At(30)));
 Check("una limpieza larga se renueva en cada consulta", gate.Active(true, At(100)) && gate.Active(true, At(160)) && gate.Active(false, At(170)));
 
+// MARK: dock tipo notch
+Section("Dock tipo notch");
+Win32.RECT NR(int l, int t, int r, int b) => new() { Left = l, Top = t, Right = r, Bottom = b };
+var nm = NR(0, 0, 1920, 1080);
+var nw = NR(0, 0, 1920, 1040);   // barra de tareas abajo
+var nr = NotchLayout.Place(nm, nw, 1.0, 340, 600);
+Check("notch: la pastilla queda centrada y pegada al borde de arriba",
+    nr.Pill.Top == 0 && nr.Pill.Width == 230 && nr.Pill.Height == 37 && nr.Pill.Left == 960 - 115);
+Check("notch: expandida mantiene el centro y mide lo que el contenido", nr.Expanded.Width == 340 && nr.Expanded.Height == 600
+    && nr.Expanded.Left + nr.Expanded.Width / 2 == 960);
+Check("notch: la zona activa llega al borde de la pantalla y es más ancha que la pastilla",
+    nr.Hot.Top == 0 && nr.Hot.Left < nr.Pill.Left && nr.Hot.Right > nr.Pill.Right && NotchLayout.Contains(nr.Hot, 960, 0));
+Check("notch: el cursor lejos de la pastilla no la despierta", !NotchLayout.Contains(nr.Hot, 200, 5) && !NotchLayout.Contains(nr.Hot, 960, 200));
+var nTop = NotchLayout.Place(nm, NR(0, 48, 1920, 1080), 1.0, 340, 600);
+Check("notch: con la barra de tareas arriba queda justo debajo", nTop.Pill.Top == 48 && nTop.Hot.Top == 0);
+var tall = NotchLayout.Place(nm, nw, 1.0, 340, 5000);
+Check("notch: la vista expandida no se sale del área de trabajo", tall.Expanded.Bottom <= nw.Bottom);
+var hi = NotchLayout.Place(NR(0, 0, 3840, 2160), NR(0, 0, 3840, 2120), 2.0, 340, 600);
+Check("notch: a 200 % de escala todo se duplica en píxeles", hi.Pill.Width == 460 && hi.Pill.Height == 74 && hi.Expanded.Width == 680);
+var nLeft = NotchLayout.Place(NR(-1920, 0, 0, 1080), NR(-1920, 0, 0, 1040), 1.5, 340, 600);
+Check("notch: un monitor a la izquierda (origen negativo) centra en su propio ancho",
+    nLeft.Pill.Left + nLeft.Pill.Width / 2 == -960 && nLeft.Pill.Left >= -1920 && nLeft.Pill.Right <= 0);
+Check("notch: nunca es más ancha que el monitor", NotchLayout.Place(NR(0, 0, 300, 600), NR(0, 0, 300, 600), 1.0, 340, 200).Expanded.Width <= 300);
+
+var nDock = NotchLayout.DockBelow(nr.Expanded, 1.0);
+Check("notch: los botones flotantes cuelgan centrados bajo la isla, con su hueco",
+    nDock.Top == nr.Expanded.Bottom + 8 && nDock.Height == 34 && nDock.Width == 276
+    && nDock.Left + nDock.Width / 2 == nr.Expanded.Left + nr.Expanded.Width / 2);
+var nAll = NotchLayout.Union(nr.Expanded, nDock);
+Check("notch: la zona de la isla con sus botones los incluye a los dos",
+    nAll.Top == nr.Expanded.Top && nAll.Bottom == nDock.Bottom && NotchLayout.Contains(nAll, 960, nDock.Top + 5) && NotchLayout.Contains(nAll, 960, 10));
+Check("notch: a 150 % el dock crece con la escala", NotchLayout.DockBelow(NotchLayout.Place(nm, nw, 1.5, 340, 200).Expanded, 1.5).Height == 51);
+
+var ns = new NotchState();
+Check("notch: empieza colapsada", ns.Mode == NotchMode.Collapsed && !ns.Hidden);
+Check("notch: un roce no la abre", !ns.Update(true, false, false, 0) && !ns.Update(false, false, false, 0.1) && ns.Mode == NotchMode.Collapsed);
+ns.Update(true, false, false, 1);
+Check("notch: tarda 0,15 s en abrirse con el cursor encima", ns.Mode == NotchMode.Collapsed
+    && ns.Update(true, false, false, 1.16) && ns.Mode == NotchMode.Expanded);
+Check("notch: un instante fuera no la cierra", !ns.Update(false, false, false, 2) && !ns.Update(true, false, false, 2.2) && ns.Mode == NotchMode.Expanded);
+ns.Update(false, false, false, 3);
+Check("notch: tarda 0,4 s en cerrarse", ns.Mode == NotchMode.Expanded && ns.Update(false, false, false, 3.41) && ns.Mode == NotchMode.Collapsed);
+ns.Update(true, false, false, 4); ns.Update(true, false, false, 4.2);
+Check("notch: con un menú abierto no se cierra aunque el cursor salga",
+    ns.Mode == NotchMode.Expanded && !ns.Update(false, false, true, 5) && !ns.Update(false, false, true, 6) && ns.Mode == NotchMode.Expanded);
+ns.Pin();
+Check("notch: fijada, no se cierra sola ni se oculta por pantalla completa",
+    ns.Mode == NotchMode.Pinned && !ns.Update(false, true, false, 10) && ns.Mode == NotchMode.Pinned && !ns.Hidden);
+ns.Close();
+Check("notch: Esc o perder el foco la devuelven a la pastilla", ns.Mode == NotchMode.Collapsed);
+Check("notch: a pantalla completa se oculta, y no se abre con el cursor",
+    ns.Update(true, true, false, 20) && ns.Hidden && ns.Mode == NotchMode.Collapsed && !ns.Update(true, true, false, 21) && ns.Mode == NotchMode.Collapsed);
+Check("notch: al salir de pantalla completa reaparece", ns.Update(false, false, false, 22) && !ns.Hidden);
+ns.Pin(); ns.Pin();
+Check("notch: fijar dos veces es lo mismo", ns.Mode == NotchMode.Pinned);
+
 // MARK: modo juego
 
 Section("Modo juego");

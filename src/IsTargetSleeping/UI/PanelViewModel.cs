@@ -204,6 +204,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         ToggleTrayPin = new Command(() => { TrayPin.SetPinned(!TrayPin.Pinned); Notify(); });
         OpenTrayFallback = new Command(() => Paths.Open("ms-settings:taskbar"));
         ToggleReducedMotion = new Command(Prefs.ToggleReducedMotion);
+        ToggleNotchDock = new Command(() => Prefs.Toggle(PrefKeys.NotchDock, false));
         ToggleTaskbarPet = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPet, false));
         TogglePetInteractive = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPetInteractive));
         CleanNow = new Command(() =>
@@ -631,7 +632,20 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string ModelsEmptyText => P == Power.On ? tr("No hay modelos. Pulsa + para descargar uno.") : tr("Enciende Ollama para ver los modelos");
     public double ModelsOpacity => P == Power.On ? 1 : 0.55;
     /// Con más de 6 modelos la lista se desplaza en vez de crecer.
-    public double ModelsMaxHeight => Ollama.Installed.Count > 6 ? 300 : double.PositiveInfinity;
+    public double ModelsMaxHeight => Ollama.Installed.Count > (WideLayout ? 4 : 6) ? (WideLayout ? 250 : 300) : double.PositiveInfinity;
+
+    /// El dock tipo notch lo pide: dos columnas, más ancho y menos largo.
+    private bool wideLayout;
+    public bool WideLayout
+    {
+        get => wideLayout;
+        set
+        {
+            if (wideLayout == value) return;
+            wideLayout = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+        }
+    }
     public ObservableCollection<ModelRow> Models { get; } = [];
     private string modelsSignature = "";
     private string? confirmingDelete;
@@ -763,10 +777,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
                 ? tr("%@ · %@ libres de %@", Percent(m.PhysicalFraction), m.PhysicalAvailable.MemoryGB(), m.PhysicalTotal.MemoryGB())
                 : tr("No disponible"), m.PhysicalFraction, false),
             new(tr("Memoria comprometida"), m.CommitLimit > 0
-                ? tr("%@ · %@ de %@", Percent(m.CommitFraction), m.Committed.MemoryGB(), m.CommitLimit.MemoryGB())
+                ? tr("%@ · %@ de %@", Percent(m.CommitFraction), Num(m.Committed), m.CommitLimit.MemoryGB())
                 : tr("No disponible"), m.CommitFraction, true),
             new(tr("Archivos de paginación"), m.PageFileTotal > 0
-                ? tr("%@ · %@ de %@", Percent(m.PageFileFraction), m.PageFileUsed.MemoryGB(), m.PageFileTotal.MemoryGB())
+                ? tr("%@ · %@ de %@", Percent(m.PageFileFraction), Num(m.PageFileUsed), m.PageFileTotal.MemoryGB())
                 : tr("Sin archivo de paginación"), m.PageFileFraction, true),
             new(tr("Caché del sistema"), m.CachePeak > 0
                 ? tr("%@ · pico %@", m.CacheCurrent.MemoryGB(), m.CachePeak.MemoryGB())
@@ -923,6 +937,27 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string TrayFallbackDetail => tr("Si queda tras la ^, actívalo en los ajustes de Windows: Personalización › Barra de tareas › Otros iconos de la bandeja del sistema (Windows 11) o Elige los iconos que aparecerán en la barra de tareas (Windows 10).");
     public string TrayFallbackOpen => tr("Abrir ajustes de la barra de tareas");
     public ICommand OpenTrayFallback { get; }
+    public string NotchDockTitle => tr("Dock tipo notch (experimental)");
+    public string NotchDockDetail => tr("Una pastilla pegada al borde superior de la pantalla que se abre al pasar el ratón y muestra todo el panel, en lugar de salir de la bandeja. Se apaga desde aquí mismo.");
+    public bool NotchDockOn => Prefs.Switch(PrefKeys.NotchDock, false);
+    public ICommand ToggleNotchDock { get; }
+    /// Lo que enseña la pastilla colapsada: el modelo cargado (o que no hay) y la RAM en uso.
+    public string NotchModel => Ollama.Loaded.Count switch
+    {
+        0 => tr("Sin modelo"),
+        1 => Ollama.Loaded[0].Name,
+        var n => $"{Ollama.Loaded[0].Name} +{n - 1}",
+    };
+    public string NotchRam => Mem.Used.MemoryGB();
+    public string NotchTabHome => tr("Resumen");
+    public string NotchTabActivity => tr("Actividad");
+    public string NotchTabSettings => tr("Ajustes");
+    public string NotchTabProcesses => tr("Procesos");
+    public PanelView CurrentView => view;
+    public string NotchHelp => tr("%@: %@, %@. Abrir el panel", AppInfo.Name, PillText, NotchModel);
+    /// Alto máximo del cuerpo (que se desplaza) según el alto del área de trabajo, en DIP.
+    public static double BodyMaxFor(double workHeightDip, bool wide = false) =>
+        Math.Max(240, Math.Min(wide ? Math.Min(workHeightDip * 0.6, 440) : workHeightDip * 0.75, workHeightDip - 150));
     public string ReducedMotionTitle => tr("Movimiento reducido");
     public string ReducedMotionDetail => tr("El ícono de la bandeja sin animaciones: punto ámbar fijo mientras Ollama cambia. Por defecto, como Windows");
     public bool ReducedMotionOn => Prefs.ReducedMotion;

@@ -114,7 +114,7 @@
         <Grid>
 
         <!-- MARK: panel principal -->
-        <StackPanel Margin="14" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">
+        <StackPanel x:Name="MainPanel" Margin="14" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">
 
             <!-- Botón grande -->
             <Border Style="{StaticResource CardBox}">
@@ -315,7 +315,7 @@
             </Border>
 
             <!-- Otros motores -->
-            <ItemsControl ItemsSource="{Binding EngineRows}" Focusable="False" Visibility="{Binding HasEngines, Converter={StaticResource Visible}}">
+            <ItemsControl ui:ContentView.BreakBefore="True" ItemsSource="{Binding EngineRows}" Focusable="False" Visibility="{Binding HasEngines, Converter={StaticResource Visible}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type ui:EngineRow}">
                         <Border Style="{StaticResource CardBox}" Margin="0,10,0,0" Padding="12,10">
@@ -522,7 +522,7 @@
         </StackPanel>
 
         <!-- MARK: actividad -->
-        <StackPanel Margin="14" Visibility="{Binding ShowingActivity, Converter={StaticResource Visible}}">
+        <StackPanel x:Name="ActivityPanel" Margin="14" Visibility="{Binding ShowingActivity, Converter={StaticResource Visible}}">
             <TextBlock Text="{Binding WeekTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="8,11">
                 <ItemsControl ItemsSource="{Binding WeekTiles}" Focusable="False">
@@ -605,7 +605,7 @@
                 </Border>
             </StackPanel>
 
-            <TextBlock Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <TextBlock ui:ContentView.BreakBefore="True" Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="11,9">
                 <StackPanel>
                     <TextBlock Text="{Binding ProcessesHint}" Style="{StaticResource Hint}" />
@@ -684,7 +684,7 @@
         </StackPanel>
 
         <!-- MARK: ajustes -->
-        <StackPanel Margin="14" Visibility="{Binding ShowingSettings, Converter={StaticResource Visible}}">
+        <StackPanel x:Name="SettingsPanel" Margin="14" Visibility="{Binding ShowingSettings, Converter={StaticResource Visible}}">
 
             <StackPanel Orientation="Horizontal" Margin="2,0,2,6">
                 <TextBlock Text="Ollama" Style="{StaticResource Eyebrow}" />
@@ -809,7 +809,7 @@
                 <ItemsControl ItemsSource="{Binding NotificationRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
             </Border>
 
-            <TextBlock Text="{Binding IntegrationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <TextBlock ui:ContentView.BreakBefore="True" Text="{Binding IntegrationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
             <Border Style="{StaticResource CardBox}">
                 <StackPanel>
                     <TextBlock Text="{Binding LinksHint}" Style="{StaticResource Hint}" Margin="0,0,0,6" />
@@ -884,6 +884,14 @@
                         <StackPanel>
                             <TextBlock Text="{Binding LoginTitle}" Style="{StaticResource Label}" />
                             <TextBlock Text="{Binding LoginDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding NotchDockOn}" Command="{Binding ToggleNotchDock}" AutomationProperties.Name="{Binding NotchDockTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding NotchDockTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding NotchDockDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
                         </StackPanel>
                     </DockPanel>
                     <Rectangle Style="{StaticResource Divider}" Margin="0,11" />

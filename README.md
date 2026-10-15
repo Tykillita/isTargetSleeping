@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.6.1-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -77,6 +77,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
 | 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and cleans up in its own way while freeing RAM. Each one reacts to clicks and to your cursor in its own way — asleep, without leaving its bed. Off by default; [more below](#-pets). |
+| 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is. Hover it for a short view (status, RAM and GPU, Free RAM, Free model, Processes); click it for the full panel. Two icon strips below it give one-click navigation and quick actions. It hides while something is full screen. |
 | ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
@@ -98,6 +99,10 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 **1.6.1 is out** (October 14, 2026): turning Ollama off also closes the server this app started, even if you then
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
+
+**1.7.0 is in development** (not published yet; the latest download is 1.6.1): an optional notch dock at the top
+of the screen that opens on hover and shows the whole panel, with icon strips below it for navigation and quick
+actions.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

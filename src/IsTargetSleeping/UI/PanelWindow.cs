@@ -11,7 +11,7 @@ namespace IsTargetSleeping.UI;
 /// al hacer clic fuera.
 public sealed class PanelWindow : Window
 {
-    private readonly FrameworkElement view;
+    private FrameworkElement view;
     private Win32.RECT? anchor;
     private IntPtr hwnd;
 
@@ -67,6 +67,13 @@ public sealed class PanelWindow : Window
         // Al crecer o encoger (Ajustes, lista de modelos), se reancla sobre la bandeja (o
         // se mantiene donde lo dejaste, dentro de la pantalla) cuando ya tiene su tamaño nuevo.
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(Place, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    /// Vuelve a alojar la vista (el dock tipo notch la comparte: solo puede tener un padre).
+    public void Attach(FrameworkElement content)
+    {
+        view = content;
+        Content = content;
     }
 
     public void ShowAt(Win32.RECT? iconRect)
@@ -159,7 +166,7 @@ public sealed class PanelWindow : Window
         if (view.DataContext is PanelViewModel model)
         {
             double workDip = info.rcWork.Height / scale;
-            model.BodyMaxHeight = Math.Max(240, Math.Min(workDip * 0.75, workDip - 150));
+            model.BodyMaxHeight = PanelViewModel.BodyMaxFor(workDip);
         }
 
         // El tamaño sale del contenido, no de GetWindowRect: al pasar a Ajustes

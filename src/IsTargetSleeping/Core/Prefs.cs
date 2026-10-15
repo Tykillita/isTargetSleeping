@@ -67,6 +67,7 @@ public static class PrefKeys
     public const string CleanOnGame = "cleanOnGame";
     public const string TrayPercent = "trayPercent";          // ícono con el % de RAM (apagado por defecto)
     public const string MainModel = "mainModel";              // string, se carga al encender Ollama ("" = ninguno)
+    public const string NotchDock = "notchDock";              // dock tipo notch arriba, en lugar del panel de la bandeja (experimental)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
     public const string TaskbarPet = "taskbarPetEnabled";      // mascota junto a Inicio (apagada por defecto)
     public const string TaskbarPetPlacement = "taskbarPetPlacement";   // above | left | walk

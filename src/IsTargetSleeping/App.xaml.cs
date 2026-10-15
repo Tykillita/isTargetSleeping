@@ -17,6 +17,8 @@ public partial class App : Application
     private Prefs prefs = null!;
     private TrayIcon tray = null!;
     private PanelWindow panel = null!;
+    private ContentView content = null!;
+    private NotchWindow? notch;
     private PanelViewModel model = null!;
     private TrayAnimator animator = null!;
     private TaskbarPet? pet;
@@ -32,7 +34,8 @@ public partial class App : Application
 
         model = new PanelViewModel(supervisor);
         model.ProcessesRequested += ShowProcesses;
-        panel = new PanelWindow(new ContentView(model));
+        content = new ContentView(model);
+        panel = new PanelWindow(content);
 
         tray = new TrayIcon();
         tray.Click += TogglePanel;
@@ -56,6 +59,8 @@ public partial class App : Application
 
         prefs.OnHotKeyChange = ApplyHotKeys;
         prefs.Changed += Repaint;   // ícono con el % o animado
+        // Aplazado: el interruptor está dentro de la vista que va a cambiar de ventana.
+        prefs.Changed += () => Dispatcher.BeginInvoke(ApplyNotchDock);
         prefs.OpenLog = OpenLog;
         ApplyHotKeys(prefs.HotKeyEnabled);
         Links.EnsureRegistered();
@@ -66,6 +71,7 @@ public partial class App : Application
         ollama.StartPolling();
         supervisor.Start();
         pet = new TaskbarPet(supervisor);
+        ApplyNotchDock();
 
         if (pending is not null)
         {
@@ -87,6 +93,7 @@ public partial class App : Application
     {
         supervisor?.Stop();
         processes?.Close();
+        notch?.Stop();
         model?.SetPanelVisible(false);
         HotKey.Power.Unregister();
         HotKey.Sleep.Unregister();
@@ -157,7 +164,29 @@ public partial class App : Application
         ProcessMonitor.GetForegroundPid();
         _ = ollama.Refresh();
         if (view is { } v) model.Show(v);
-        panel.ShowAt(tray.Rect());
+        if (notch is not null) notch.Reveal();
+        else panel.ShowAt(tray.Rect());
+    }
+
+    /// El dock tipo notch (experimental) comparte la vista del panel: solo una ventana la aloja a la vez.
+    private void ApplyNotchDock()
+    {
+        bool want = prefs.Switch(PrefKeys.NotchDock, false);
+        if (want == (notch is not null)) return;
+        if (want)
+        {
+            panel.HidePanel();
+            panel.Content = null;
+            notch = new NotchWindow(model, content);
+            notch.Start();
+        }
+        else
+        {
+            notch!.Stop();
+            notch.Close();
+            notch = null;
+            panel.Attach(content);
+        }
     }
 
     private void ShowProcesses()
@@ -177,6 +206,7 @@ public partial class App : Application
 
     private void TogglePanel()
     {
+        if (notch is not null) { notch.Toggle(); return; }
         if (panel.IsVisible) { panel.HidePanel(); return; }
         // El clic en el ícono ya cerró el panel al quitarle el foco: no se reabre.
         if ((DateTime.Now - panel.LastHidden).TotalMilliseconds < 350) return;
@@ -188,6 +218,7 @@ public partial class App : Application
     private void ShowMenu()
     {
         panel.HidePanel();
+        notch?.Collapse();
         var menu = new ContextMenu { Placement = PlacementMode.MousePoint };
 
         if (ollama.Power == Power.Missing)

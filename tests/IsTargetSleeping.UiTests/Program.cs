@@ -76,6 +76,66 @@ internal static class Program
             var pinSwitch = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(b => b.Command == model.ToggleTrayPin);
             Check($"{language}: el interruptor directo se ve cuando Windows ya registra el ícono",
                 pinSwitch is not null && SeVe(pinSwitch) == model.ShowTrayPin);
+            // Dock tipo notch: interruptor en Ajustes y pastilla con nombre accesible; la vista vuelve libre al apagarlo.
+            Check($"{language}: el interruptor del notch empieza apagado y cambia la preferencia",
+                !model.NotchDockOn && model.NotchDockTitle.Length > 0
+                && model.NotchDockTitle == (language == Language.Es ? "Dock tipo notch (experimental)" : "Notch dock (experimental)"));
+            model.ToggleNotchDock.Execute(null);
+            Check($"{language}: encenderlo lo recuerda (en la demo, sin tocar el archivo)", model.NotchDockOn && prefs.Switch(PrefKeys.NotchDock, false));
+            model.ToggleNotchDock.Execute(null);
+            var notchView = new ContentView(model);
+            var notch = new NotchWindow(model, notchView);
+            var notchPill = Descendants((DependencyObject)notch.Content).OfType<Button>().FirstOrDefault();
+            string? pillName = notchPill is null ? null : System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(notchPill)?.GetName();
+            Check($"{language}: la pastilla del notch tiene nombre accesible con la app y el estado",
+                pillName is not null && pillName.Contains(AppInfo.Name) && pillName.Contains(model.PillText) && pillName.Contains(model.NotchModel));
+            Check($"{language}: la pastilla resume el modelo y la RAM", model.NotchModel.Length > 0 && model.NotchRam.Length > 0);
+            // Diseño ancho del notch: dos columnas, más ancho y menos largo, y se deshace sin perder nada.
+            foreach (var wideView in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })
+            {
+                model.Show(wideView);
+                model.BodyMaxHeight = double.PositiveInfinity;
+                var tall = new ContentView(model);
+                tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                double tallHeight = tall.DesiredSize.Height;
+                model.WideLayout = true;
+                tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                Check($"{language}/{wideView}: en ancho mide 640 y es más bajo que en estrecho",
+                    tall.DesiredSize.Width == 640 && tall.DesiredSize.Height < tallHeight);
+                model.WideLayout = false;
+                tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                Check($"{language}/{wideView}: al volver a estrecho recupera su tamaño", tall.DesiredSize.Width == 340 && Math.Abs(tall.DesiredSize.Height - tallHeight) < 1);
+            }
+            model.Show(PanelView.Settings);
+            // Versión corta (hover): más baja que el panel entero, y todos sus botones y los del dock tienen nombre.
+            var peekView = new NotchPeek(model);
+            peekView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            model.WideLayout = true;
+            model.Show(PanelView.Main);
+            var fullView = new ContentView(model);
+            fullView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            Check($"{language}: el hover enseña una versión corta (más baja que el panel entero)",
+                peekView.DesiredSize.Width == 640 && peekView.DesiredSize.Height > 80 && peekView.DesiredSize.Height < fullView.DesiredSize.Height - 100);
+            model.WideLayout = false;
+            // Los de la versión corta solo resuelven sus bindings con la ventana viva: se muestra un instante, fuera de pantalla.
+            var peekHost = new Window { Content = peekView, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 300 };
+            peekHost.Show();
+            static bool InPeek(DependencyObject d)
+            {
+                for (; d is not null; d = VisualTreeHelper.GetParent(d)) if (d is NotchPeek) return true;
+                return false;
+            }
+            var notchButtons = Descendants((DependencyObject)notch.Content).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => !InPeek(b))
+                .Concat(Descendants(peekView).OfType<System.Windows.Controls.Primitives.ButtonBase>()).ToArray();
+            var unnamedNotch = notchButtons.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { } n
+                || n.Where(c => c is < '' or > '').All(char.IsWhiteSpace)).ToArray();
+            foreach (var b in unnamedNotch) Console.WriteLine($"   sin nombre: {b.GetType().Name} content={b.Content?.GetType().Name}");
+            peekHost.Close();
+            Check($"{language}: los botones del notch ({notchButtons.Length}: pastilla, versión corta y dock) tienen nombre accesible",
+                notchButtons.Length >= 8 && unnamedNotch.Length == 0);
+            notch.Stop();
+            Check($"{language}: al apagar el notch la vista queda libre para volver a la bandeja", LogicalTreeHelper.GetParent(notchView) is null);
+            notch.Close();
             foreach (var panelView in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })
             {
                 var screen = new ContentView(new PanelViewModel(supervisor, panelView));

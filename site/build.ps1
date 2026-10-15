@@ -21,6 +21,7 @@ $files = @(
 )
 foreach ($lang in 'es', 'en') {
     $files += "docs\images\panel-$lang.png"
+    $files += "docs\images\notch-$lang.png"
     $files += "docs\images\activity-$lang.png"
     $files += "docs\images\settings-preview-$lang.png"
     $files += "docs\images\idle-flow-$lang.svg"

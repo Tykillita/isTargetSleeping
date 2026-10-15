@@ -58,6 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.s.proxima">1.7.0 · En desarrollo</a>
       <a href="#v1-6-1">1.6.1</a>
       <a href="#v1-6-0">1.6.0</a>
       <a href="#v1-5-2">1.5.2</a>
@@ -76,6 +77,26 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.7.0</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+        <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: un dock tipo notch opcional que se abre al pasar el ratón y muestra todo el panel.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.notchT">Dock tipo notch</b><span data-i18n="nov.proxima.notchD">Se activa en Ajustes &gt; General. Una pastilla pegada al borde superior, en el monitor donde está el cursor: al pasar el ratón se abre una vista corta con el estado, la RAM, la GPU y los botones Liberar RAM, Liberar y Procesos; un clic abre el panel entero en dos columnas. Esc, un clic fuera o apartar el puntero lo cierran.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.dockT">Dos tiras de iconos debajo</b><span data-i18n="nov.proxima.dockD">Una para navegar (Resumen, Actividad, Ajustes) y otra con acciones rápidas: encender o apagar Ollama, Liberar RAM y Procesos. Las acciones rápidas funcionan sin abrir el panel.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.vidrioT">Vidrio con hombros curvos</b><span data-i18n="nov.proxima.vidrioD">Negro en el borde de la pantalla y cada vez más translúcido hacia abajo, con las esquinas superiores curvadas hacia fuera. El contenido aparece cuando la forma ya ha crecido y se respeta el movimiento reducido.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.pantallaT">Aparece donde lo necesitas</b><span data-i18n="nov.proxima.pantallaD">Sigue al cursor al tocar el borde superior de otro monitor y se oculta con un juego, un vídeo o el menú Inicio a pantalla completa. Todos sus botones tienen nombre accesible.</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="version" id="v1-6-1">
       <div class="version-meta">
         <div class="version-num">1.6.1</div>
@@ -419,7 +440,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.6.1</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.7.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>
