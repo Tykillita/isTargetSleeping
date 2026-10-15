@@ -444,18 +444,21 @@ public static class Switch
     {
         string? failure = null;
         List<Procs.Identity> claim;
+        // El `ollama serve` que arrancó esta app también es suyo, venga el backend de donde venga
+        // (p. ej. se encendió desde aquí y luego se abrió la app de Ollama).
+        int[] started = BinaryServerRoot() is { } own ? [own.Pid] : [];
         switch (backend.Kind)
         {
             case BackendKind.Service:
                 return Services.Stop(backend.Id);
             case BackendKind.Task:
-                claim = Claim(ScheduledTasks.RunningPids(backend.Id));
+                claim = Claim(ScheduledTasks.RunningPids(backend.Id).Concat(started));
                 failure = ScheduledTasks.Stop(backend.Id);
                 break;
             case BackendKind.App:
                 if (Detector.RunningAppPid() is { } pid)
                 {
-                    claim = Claim([pid]);
+                    claim = Claim(started.Append(pid));
                     if (!force)
                     {
                         // Primero se le pide que cierre, como «Quit Ollama» en su menú; si
@@ -464,10 +467,10 @@ public static class Switch
                         for (int i = 0; i < 20 && Procs.Alive(pid); i++) Thread.Sleep(100);
                     }
                 }
-                else claim = [];
+                else claim = Claim(started);
                 break;
             case BackendKind.Binary:
-                claim = Claim(BinaryServerRoot() is { } root ? [root.Pid] : []);
+                claim = Claim(started);
                 break;
             default:
                 return null;
@@ -475,7 +478,7 @@ public static class Switch
         foreach (var id in claim)
             if (Procs.Alive(id)) Procs.KillTree(id.Pid);
         for (int i = 0; i < 30 && claim.Any(Procs.Alive); i++) Thread.Sleep(100);
-        if (backend.Kind == BackendKind.Binary) Defaults.Remove(BinaryServerKey);
+        if (started.Length > 0) Defaults.Remove(BinaryServerKey);
         if (failure is not null) return failure;
         var claimed = claim.Select(id => id.Pid).ToHashSet();
         return Detector.ServerPids().Any(p => !claimed.Contains(p))

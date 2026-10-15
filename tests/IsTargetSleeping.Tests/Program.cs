@@ -98,6 +98,16 @@ limit.Sample(true, true, true, At(1000));
 Check("si Ollama vuelve a responder, se rearma", !limit.GaveUp
     && limit.Sample(true, false, false, At(1300)) == WatchdogAction.None && limit.Sample(true, false, false, At(1302.5)) == WatchdogAction.Restart);
 
+// MARK: mantenimiento (limpieza de RAM)
+
+Section("Mantenimiento");
+var gate = new MaintenanceGate();
+Check("sin limpieza no hay mantenimiento", !gate.Active(false, At(0)));
+Check("durante la limpieza sí", gate.Active(true, At(10)));
+Check("a los 19 s de acabar sigue (Ollama aún se recupera)", gate.Active(false, At(29)));
+Check("a los 20 s termina y el vigilante vuelve a actuar", !gate.Active(false, At(30)));
+Check("una limpieza larga se renueva en cada consulta", gate.Active(true, At(100)) && gate.Active(true, At(160)) && gate.Active(false, At(170)));
+
 // MARK: modo juego
 
 Section("Modo juego");

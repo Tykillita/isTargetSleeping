@@ -14,7 +14,7 @@ const EN = {
   'tema.oscuro': 'Dark theme',
   'tema.sistema': 'System theme',
 
-  'hero.eyebrow': 'Version 1.6.0 · Native Windows',
+  'hero.eyebrow': 'Version 1.6.1 in development · Native Windows',
   'hero.titulo': 'Your models work when you talk to them. The rest of the time, they sleep.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock. It turns Ollama on and off in one click, puts the model to sleep when it stops generating and gives you your RAM and VRAM back.',
   'hero.meta': 'Free and open source · Latest published version: 1.6.0 · Windows 10 and 11 · x64 and ARM64',
@@ -265,7 +265,7 @@ const EN = {
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
-  'cierre.meta': 'Version 1.6.0 · Windows 10 and 11 · x64 and ARM64',
+  'cierre.meta': 'Version 1.6.1 in development · available download: 1.6.0 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
   'pie.novedades': 'What’s new',
@@ -283,7 +283,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Version 1.6.0',
+  'pie.version': 'Version 1.6.1 (in development)',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -301,6 +301,13 @@ const EN = {
   'nov.s.grande': "Major",
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
+  'nov.s.proxima': '1.6.1 · In development',
+  'nov.proxima.estado': 'In development',
+  'nov.proxima.resumen': 'This version is in development and not published yet: turning Ollama off also closes the server the app started and freeing RAM no longer causes restarts or pet glitches.',
+  'nov.proxima.limpiezaT': 'Freeing RAM without a scare',
+  'nov.proxima.limpiezaD': 'While Windows trims memory, Ollama can answer slowly. The app took that for a hang: it restarted Ollama and the capybara went into its tub, came out to wash and went back in. Now the panel stays on, the models stay in view and the watchdog waits during the cleanup and for 20 s afterwards.',
+  'nov.proxima.apagadoT': 'Turning off closes the server the app started',
+  'nov.proxima.apagadoD': 'If you turned Ollama on from isTargetSleeping and then opened the Ollama app, turning it off left a server running and the panel kept showing “On” with an incomplete-shutdown notice. Now the server the app started is closed too, whichever mechanism is selected; servers launched by other programs are left untouched.',
   'nov.v1_6_0.fecha': 'Oct 14, 2026',
   'nov.v1_6_0.resumen': 'Turning Ollama off respects other servers, Activity shows the VRAM of each GPU and the panel works with the keyboard and a screen reader. It also includes the updater fix.',
   'nov.v1_6_0.vramT': 'VRAM of each GPU',

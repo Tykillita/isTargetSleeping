@@ -99,6 +99,10 @@ public sealed class OllamaController
     private bool releasing;
     /// Si el usuario quiere Ollama encendido: lo decide él, no una caída.
     private bool wantOn;
+    /// Quien libera RAM o cierra procesos avisa de que Ollama puede tardar en responder.
+    public Func<bool> MaintenanceRunning { get; set; } = () => false;
+    private readonly MaintenanceGate maintenance = new();
+    private bool InMaintenance => maintenance.Active(MaintenanceRunning(), DateTime.Now);
     private bool externalTermination;
     private int powerIntentGeneration;
     private Task? powerOperation;
@@ -157,7 +161,7 @@ public sealed class OllamaController
                 var list = await i;
                 if (list.Count > 0 || Installed.Count == 0) Installed = list;
             }
-            else Loaded = [];
+            else if (!InMaintenance) Loaded = [];   // en mantenimiento, la API muda no vacía el panel
 
             Memory = SystemMemory.Current();
             var runners = Loaded.Count > 0 ? await Task.Run(ProcessCpu.RunnerPids) : [];
@@ -197,7 +201,7 @@ public sealed class OllamaController
     private async Task Watch(bool up)
     {
         if (up && Power == Power.On && transition is null && !externalTermination) wantOn = true;
-        bool armed = wantOn && WatchdogEnabled && !GameMode && transition is null;
+        bool armed = wantOn && WatchdogEnabled && !GameMode && transition is null && !InMaintenance;
         bool serverAlive = false;
         if (!up && armed)
         {
@@ -358,6 +362,8 @@ public sealed class OllamaController
             }
         }
         if (up) return Power.On;
+        // Sin respuesta durante la limpieza: sigue encendido (la mascota no se mete en su cama por un tropiezo).
+        if (Power == Power.On && InMaintenance) return Power.On;
         return Backend.Kind == BackendKind.Missing ? Power.Missing : Power.Off;
     }
 

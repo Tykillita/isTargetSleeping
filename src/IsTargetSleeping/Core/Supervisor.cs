@@ -56,6 +56,7 @@ public sealed partial class Supervisor
     {
         Ollama = ollama;
         Prefs = prefs;
+        ollama.MaintenanceRunning = () => Cleaning || Processing;
         LlamaCpp = new LlamaCppEngine();
         LmStudio = new LmStudioEngine();
         Engines = [LlamaCpp, LmStudio];

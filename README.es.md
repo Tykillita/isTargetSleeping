@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.6.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -90,6 +90,9 @@ Ollama real en Windows.
 del backend elegido, Actividad muestra la VRAM de cada GPU y el panel se puede usar con teclado, con nombres
 accesibles y tema de alto contraste. Incluye además el arreglo del actualizador: limita las entradas del ZIP a los
 archivos esperados y mantiene la extracción dentro de su carpeta temporal. Consulta el [changelog](CHANGELOG.md).
+
+**1.6.1 está en desarrollo** (aún sin publicar; la última descarga es la 1.6.0): apagar Ollama también cierra el
+servidor que arrancó esta app, aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota entre y salga de su cama.
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 

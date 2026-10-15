@@ -71,6 +71,19 @@ try {
     Check 'binario: B y el manual siguen en marcha' ((Fake-Alive $procs.B) -and (Fake-Alive $manual))
     $message = Stop-Backend $binary
     Check 'binario: sin PID propio no cierra ninguno y avisa' ((Fake-Alive $manual) -and [bool]$message)
+
+    # --- el servidor que arrancó la app se cierra con cualquier backend (p. ej. se encendió aquí y luego se abrió otra cosa) ---
+    $exeOwn = Fake-Server 'ownBinary'
+    $ownBackend = New-Backend 'Binary' $exeOwn 'binary'
+    $err = $switch.GetMethod('Start', [Type[]]@($backendType)).Invoke($null, @($ownBackend))
+    Start-ScheduledTask -TaskName $names[0]
+    Start-Sleep -Seconds 3
+    $own = Get-Process ollama | Where-Object { $_.Path -eq $exeOwn }
+    $taskProc = Get-Process ollama | Where-Object { $_.Path -eq $exeA }
+    Check 'mixto: el binario de la app y la tarea A están en marcha' ($null -eq $err -and $own -and $taskProc)
+    $message = Stop-Backend $backendA
+    Check 'mixto: apagar la tarea cierra su servidor y el que arrancó la app' ((Wait-Dead $taskProc) -and (Wait-Dead $own))
+    Check 'mixto: B y el manual siguen en marcha' ((Fake-Alive $procs.B) -and (Fake-Alive $manual))
 }
 finally {
     foreach ($n in $names) { Unregister-ScheduledTask -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue }

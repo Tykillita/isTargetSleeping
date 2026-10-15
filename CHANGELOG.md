@@ -5,6 +5,17 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.6.1] — 2026-10-14
+
+### Fixed
+- Turning Ollama off also closes the `ollama serve` this app started, whichever backend is selected. Starting
+  Ollama from the app and then opening the Ollama app used to leave that server running and report it as
+  another program's, so the panel kept showing "on" with an "incomplete shutdown" notice.
+- Freeing RAM while Ollama is on no longer confuses the watchdog or the pet. Ollama can answer slowly while
+  Windows trims memory; that was read as a hang, so the watchdog killed and restarted it and the capybara went
+  into its tub, came out to wash, and went back in. Now the panel stays on, the loaded models stay listed and
+  the watchdog waits during the cleanup and for 20 s afterwards.
+
 ## [1.6.0] — 2026-10-14
 
 Includes the 1.5.3 fixes, which were never published as a separate release.

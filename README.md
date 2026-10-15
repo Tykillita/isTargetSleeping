@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.6.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -94,6 +94,9 @@ the model sleep when you don't need it and gives you one-click control over Olla
 selected backend, Activity shows VRAM per GPU, and the panel is reachable by keyboard with accessible names and a
 high-contrast theme. It also includes the updater fix: ZIP entries are restricted to the expected files and extraction
 stays inside its staging folder. See the [changelog](CHANGELOG.md).
+
+**1.6.1 is in development** (not published yet; the latest download is 1.6.0): turning Ollama off also closes the
+server this app started, even if you then opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of its bed.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 

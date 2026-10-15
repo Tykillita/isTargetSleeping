@@ -58,6 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.s.proxima">1.6.1 · En desarrollo</a>
       <a href="#v1-6-0">1.6.0</a>
       <a href="#v1-5-2">1.5.2</a>
       <a href="#v1-5-1">1.5.1</a>
@@ -75,6 +76,23 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.6.1</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: apagar Ollama cierra también el servidor que arrancó la app y liberar RAM ya no provoca reinicios ni saltos de la mascota.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.arreglos">Arreglos</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.limpiezaT">Liberar RAM sin sobresaltos</b><span data-i18n="nov.proxima.limpiezaD">Mientras Windows recorta memoria, Ollama puede tardar en responder. La app lo tomaba por un cuelgue: lo reiniciaba y la capibara se metía en su tina, salía a lavarse y volvía a entrar. Ahora el panel sigue en «On», los modelos siguen a la vista y el vigilante espera durante la limpieza y 20 s después.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.apagadoT">Apagar cierra el servidor que arrancó la app</b><span data-i18n="nov.proxima.apagadoD">Si encendías Ollama desde isTargetSleeping y luego abrías la app de Ollama, al apagar se quedaba un servidor en marcha y el panel seguía en «On» con un aviso de apagado incompleto. Ahora se cierra también el servidor que arrancó la app, sea cual sea el mecanismo elegido; los lanzados por otros programas siguen intactos.</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="version" id="v1-6-0">
       <div class="version-meta">
         <div class="version-num">1.6.0</div>
@@ -400,7 +418,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.6.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.6.1 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

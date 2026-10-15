@@ -62,3 +62,17 @@ public sealed class Watchdog
         return wanted;
     }
 }
+
+/// Mientras se libera RAM, Ollama puede tardar en responder (Windows le recorta memoria): eso no es una
+/// caída ni un cuelgue. Cuenta como «en mantenimiento» durante la tarea y unos segundos después.
+public sealed class MaintenanceGate
+{
+    public static readonly TimeSpan Grace = TimeSpan.FromSeconds(20);
+    private DateTime last = DateTime.MinValue;
+
+    public bool Active(bool running, DateTime now)
+    {
+        if (running) last = now;
+        return running || now - last < Grace;
+    }
+}
