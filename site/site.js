@@ -9,13 +9,15 @@ const EN = {
   'nav.preguntas': 'FAQ',
   'nav.descargar': 'Download',
   'nav.novedades': 'What’s new',
-  'tema.aOscuro': 'Switch to dark mode',
-  'tema.aClaro': 'Switch to light mode',
+  'tema.grupo': 'Color theme',
+  'tema.claro': 'Light theme',
+  'tema.oscuro': 'Dark theme',
+  'tema.sistema': 'System theme',
 
-  'hero.eyebrow': 'Version 1.5.2 · Native Windows',
+  'hero.eyebrow': 'Version 1.6.0 in development · Native Windows',
   'hero.titulo': 'Your models work when you talk to them. The rest of the time, they sleep.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock. It turns Ollama on and off in one click, puts the model to sleep when it stops generating and gives you your RAM and VRAM back.',
-  'hero.meta': 'Free and open source · Version 1.5.2 · Windows 10 and 11 · x64 and ARM64',
+  'hero.meta': 'Free and open source · Latest published version: 1.5.2 · Windows 10 and 11 · x64 and ARM64',
   'hero.escritorio': 'The isTargetSleeping panel open on the Windows desktop',
   'hero.panelAlt': 'Panel: Ollama on, PC and GPU memory, llama.cpp and the installed models',
   'cta.windows': 'Download for Windows',
@@ -72,7 +74,7 @@ const EN = {
 
   'mem.eyebrow': 'Memory',
   'mem.titulo': 'RAM and VRAM, no guessing.',
-  'mem.texto': 'How much is the model and how much is everything else. The same figure as Task Manager.',
+  'mem.texto': 'How much is the model and how much is everything else, on each dedicated GPU. The same figure as Task Manager.',
   'mem.pc': 'PC memory',
   'mem.presion': 'normal pressure',
   'mem.modelo': 'Model 5.5',
@@ -153,15 +155,15 @@ const EN = {
   'como.apagar': 'Stop',
   'como.encender': 'Start',
   'como.app': 'Ollama app',
-  'como.appOff': 'Closes its windows and its process tree',
+  'como.appOff': 'Closes its windows and the processes that hang from the app',
   'como.servicio': 'Windows service',
   'como.scmStop': 'Stop through the SCM',
   'como.scmStart': 'Start through the SCM (UAC if needed)',
   'como.tarea': 'Scheduled task',
-  'como.tareaStop': 'Stop in Task Scheduler',
+  'como.tareaStop': 'Stop in Task Scheduler; only closes that task’s processes',
   'como.tareaRun': 'Run in Task Scheduler',
   'como.manual': 'Manual <code>ollama serve</code>',
-  'como.manualOff': 'Ends the server’s process tree',
+  'como.manualOff': 'Ends only the server the app started',
   'como.manualOn': 'Launches it detached, with a log',
   'como.noInst': 'Not installed',
   'como.nada': 'Nothing to stop',
@@ -210,7 +212,7 @@ const EN = {
   'dl.otra': 'Didn’t start? Try again',
   'dl.pasos': 'See the steps',
   'dl.cerrar': 'Close notice',
-  'inst.meta': '~65 MB · Windows 10 (2004+) or 11 · requires Ollama · downloads from GitHub Releases',
+  'inst.meta': '~65 MB · Windows 10 (2004+) or 11 · requires Ollama · latest published version: 1.5.2 · GitHub Releases',
   'inst.verificar': 'Verify the download (optional)',
   'inst.copiar': 'Copy',
   'inst.smart': 'Every file in the release has its <code>.sha256</code> next to it. If the build isn’t signed, Windows SmartScreen may ask you to confirm: <b>More info › Run anyway</b>.',
@@ -263,7 +265,7 @@ const EN = {
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
-  'cierre.meta': 'Version 1.5.2 · Windows 10 and 11 · x64 and ARM64',
+  'cierre.meta': 'Version 1.6.0 in development · available download: 1.5.2 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
   'pie.novedades': 'What’s new',
@@ -281,7 +283,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Version 1.5.2',
+  'pie.version': 'Version 1.6.0 (in development)',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -295,32 +297,27 @@ const EN = {
   'nov.indice': "Versions",
   'nov.g.nuevo': "New",
   'nov.g.cambios': "Changed",
-  'nov.proxima.reelT': 'A separate presentation for Reels',
-  'nov.proxima.reelD': 'The same 77-second script and music in 1080 × 1920, with the current pets, close-ups of controls, a cursor and synchronized click sounds. Downloads in English and Spanish.',
   'nov.g.arreglos': "Fixed",
   'nov.s.grande': "Major",
   'nov.s.feature': "Feature",
   'nov.s.arreglo': "Fix",
-  'nov.s.proxima': "Next version",
-  'nov.proxima.resumen': 'Improvements to the website presentation and screenshots.',
-  'nov.proxima.videoT': 'The original presentation, refreshed',
-  'nov.proxima.videoD': 'The same script, sound, transitions and animation timing, now with the current pets and crisp screenshots. 77 seconds in English and Spanish, in 1080p.',
-  'nov.proxima.capturasT': 'More detail in every screenshot',
-  'nov.proxima.capturasD': 'Panel, Activity and Settings are rendered at four times the resolution directly from the app. The website and README files share the new images and posters.',
-  'nov.proxima.juegoT': 'A readable game-mode timeline',
-  'nov.proxima.juegoD': 'The four steps line up on desktop and stack vertically on mobile. Text stays readable, with no overlapping labels, in both languages.',
+  'nov.s.proxima': '1.6.0 · In development',
+  'nov.proxima.estado': 'In development',
+  'nov.proxima.resumen': 'This version is in development and not published yet: turning Ollama off respects other servers, Activity shows the VRAM of each GPU and the panel works with the keyboard and a screen reader. It also includes the updater fix.',
+  'nov.proxima.vramT': 'VRAM of each GPU',
+  'nov.proxima.vramD': 'Activity lists every dedicated GPU with its total, what is in use and the share used by models. If Windows or the driver does not provide a value, it shows as unavailable instead of an estimate. It only informs; it never turns anything off on its own.',
+  'nov.proxima.apagadoT': 'Turning off without taking others with it',
+  'nov.proxima.apagadoD': 'When Ollama is turned off, only the servers the app can prove belong to the chosen mechanism are closed: its task’s instance, what hangs from the Ollama app, or the binary the app started. Another task or a server started by hand keeps running and the app reports that the shutdown was incomplete.',
+  'nov.proxima.tecladoT': 'Panel usable with keyboard and screen reader',
+  'nov.proxima.tecladoD': 'Every button and switch can be reached with Tab and shows where focus is. Icon-only buttons have their own name for Narrator, in English too.',
+  'nov.proxima.contrasteT': 'High contrast',
+  'nov.proxima.contrasteD': 'If you turn on a Windows high-contrast theme, the panel uses your system colors instead of the black glass.',
+  'nov.proxima.seguridadT': 'Safer update extraction',
+  'nov.proxima.seguridadD': 'The updater accepts only the expected ZIP files, writes them under fixed names and checks that no path leaves its staging folder.',
   'nov.v1_5_2.fecha': 'Oct 3, 2026',
-  'nov.v1_5_2.resumen': 'Real Ollama service and task validation, a dedicated GitHub cover and refreshed media.',
+  'nov.v1_5_2.resumen': 'Real validation of Ollama services and scheduled tasks.',
   'nov.v1_5_2.validacionT': 'Reproducible Windows verification',
   'nov.v1_5_2.validacionD': 'Service and task passed two start/stop cycles with genuine Ollama 0.35.1 on a Windows Server 2025 x64 VM. The public report describes process exit, API verification and the limits of these checks.',
-  'nov.v1_5_2.portadaT': 'A cover with the white symbol',
-  'nov.v1_5_2.portadaD': 'A dedicated image for GitHub previews, with the provisional white logo on a dark background.',
-  'nov.v1_5_2.mediosT': 'Current screenshots and tour',
-  'nov.v1_5_2.mediosD': 'Panel, Activity and Settings from 1.5.2, plus a 77-second tour in both languages with memory now, cleanup rules and the current pets.',
-  'nov.v1_5_2.cacheT': 'Each image has its own version',
-  'nov.v1_5_2.cacheD': 'The browser receives the new images and videos even if it saved the previous ones. We also refreshed the image for shared links.',
-  'nov.v1_5_2.guiasT': 'Contributing and security',
-  'nov.v1_5_2.guiasD': 'Bilingual guides explain how to contribute and report vulnerabilities privately; they are linked from the README files and website.',
   'nov.v1_5_1.fecha': "Oct 3, 2026",
   'nov.v1_5_1.resumen': "The icon, always at hand: a button pins it from the Windows settings and the toggle tracks every one of its entries.",
   'nov.v1_5_1.nuevo1t': "Pin the icon from Windows",
@@ -337,8 +334,6 @@ const EN = {
   'nov.v1_5_0.nuevo3d': "Asleep, a click, a pat or a watchdog alert no longer gets it up: it half opens an eye, twitches an ear or lets out a bubble, and the Windows logo stays dark.",
   'nov.v1_5_0.cambios5t': "Mira and the llama, renewed",
   'nov.v1_5_0.cambios5d': "Mira moves with more craft: she crouches before jumping, bounces on landing, boots up calibrating her eye and patrols with her radar. The llama no longer has arms: she eats with her muzzle, types by pecking to the beat of her hooves and speaks with her neck, ears and a tail that finally moves.",
-  'nov.v1_5_0.cambios2t': "One-click download",
-  'nov.v1_5_0.cambios2d': "Every “Download” button on the site gets the installer right away, without opening GitHub — the ARM64 one if your PC is ARM.",
   'nov.v1_5_0.cambios3t': "Full automatic cleanup",
   'nov.v1_5_0.cambios3d': "Cleanups by percentage, by time, under critical pressure and when gaming clean the same as the button, with the areas you choose. New minimum pause: if RAM stays above your percentage, it repeats at most every 1 to 30 minutes.",
   'nov.v1_5_0.cambios4t': "No Mem Reduct",
@@ -362,11 +357,7 @@ const EN = {
   'nov.v1_5_0.cambios1t': "Sparkles at the end",
   'nov.v1_5_0.cambios1d': "The “RAM freed” sparkles arrive once you’ve seen it cleaning, including long cleanups; only then does it go back to what it was doing.",
   'nov.v1_4_0.fecha': "Oct 1, 2026",
-  'nov.v1_4_0.resumen': "Process explorer, confirmed termination and selective automatic cleanup. The website and app tour accompany this version.",
-  'nov.v1_4_0.nuevo1t': "Official website",
-  'nov.v1_4_0.nuevo1d': "This site, live at istargetsleeping.web.app: features, how it works, install, FAQ, this what’s-new page and light or dark mode.",
-  'nov.v1_4_0.nuevo2t': "Video tour",
-  'nov.v1_4_0.nuevo2d': "77 seconds through the app, in English and Spanish, with an original soundtrack.",
+  'nov.v1_4_0.resumen': 'Process explorer, confirmed shutdowns and selective automatic cleanup.',
   'nov.v1_4_0.nuevo3t': "Process explorer",
   'nov.v1_4_0.nuevo3d': "The five applications using the most RAM in Activity, plus a window with every process, filters, sorting and PID details.",
   'nov.v1_4_0.nuevo4t': "You choose what to close",
@@ -541,42 +532,48 @@ document.querySelectorAll('.pie-idioma [data-lang]').forEach((b) => {
   b.addEventListener('click', () => elegirIdioma(b.dataset.lang));
 });
 
-// ---------- Tema claro / oscuro ----------
-// Sin preferencia guardada sigue a Windows; el <head> ya puso data-theme antes del CSS para que no parpadee.
+// ---------- Tema claro / oscuro / sistema ----------
+// Sin preferencia guardada sigue a Windows; el <head> aplica las preferencias guardadas antes del CSS.
 
 const oscuroDelSistema = matchMedia('(prefers-color-scheme: dark)');
 
 function temaGuardado() {
   try {
     const t = localStorage.getItem('its-theme');
-    return t === 'light' || t === 'dark' ? t : null;
+    return t === 'light' || t === 'dark' || t === 'system' ? t : null;
   } catch (e) { return null; }
 }
 
+let temaTemporal = null;
+
+function temaElegido() {
+  return temaTemporal || temaGuardado() || 'system';
+}
+
 function temaActual() {
-  return temaGuardado() || (oscuroDelSistema.matches ? 'dark' : 'light');
+  const elegido = temaElegido();
+  return elegido === 'system' ? (oscuroDelSistema.matches ? 'dark' : 'light') : elegido;
 }
 
 function pintarBotonTema() {
-  const oscuro = temaActual() === 'dark';
-  const b = $('tema');
-  const es = idioma === 'es';
-  b.setAttribute('aria-label', oscuro
-    ? (es ? 'Cambiar a modo claro' : EN['tema.aClaro'])
-    : (es ? 'Cambiar a modo oscuro' : EN['tema.aOscuro']));
-  b.setAttribute('aria-pressed', oscuro ? 'true' : 'false');
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', oscuro ? '#0A0A0C' : '#FFFFFF');
+  const elegido = temaElegido();
+  document.querySelectorAll('[data-theme-choice]').forEach((b) => {
+    b.setAttribute('aria-pressed', b.dataset.themeChoice === elegido ? 'true' : 'false');
+  });
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', temaActual() === 'dark' ? '#0A0A0C' : '#FFFFFF');
 }
 
-$('tema').addEventListener('click', () => {
-  const nuevo = temaActual() === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = nuevo;
+[...document.querySelectorAll('[data-theme-choice]')].forEach((b) => b.addEventListener('click', () => {
+  const nuevo = b.dataset.themeChoice;
+  temaTemporal = nuevo;
+  if (nuevo === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = nuevo;
   try { localStorage.setItem('its-theme', nuevo); } catch (e) { /* sin almacenamiento: dura hasta recargar */ }
   pintarBotonTema();
-});
+}));
 
 oscuroDelSistema.addEventListener('change', () => {
-  if (!temaGuardado()) { delete document.documentElement.dataset.theme; pintarBotonTema(); }
+  if (temaElegido() === 'system') pintarBotonTema();
 });
 
 // El video en el otro idioma, sin cambiar el resto de la página

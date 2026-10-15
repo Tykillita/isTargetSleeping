@@ -29,6 +29,8 @@ public sealed class OllamaController
     public long ModelMemory { get; private set; }
     /// VRAM en uso y la parte de los runners (null sin GPU dedicada).
     public GpuUsage? Gpu { get; private set; }
+    /// VRAM por GPU dedicada, solo para mostrar en Actividad: ninguna regla automática la usa.
+    public IReadOnlyList<AdapterUsage> GpuAdapters { get; private set; } = [];
     /// Segundos sin uso del modelo cargado (null si no hay modelo o no se mide).
     public double? IdleSeconds { get; private set; }
     /// Última liberación automática, para contarlo en el panel.
@@ -160,7 +162,7 @@ public sealed class OllamaController
             Memory = SystemMemory.Current();
             var runners = Loaded.Count > 0 ? await Task.Run(ProcessCpu.RunnerPids) : [];
             ModelMemory = runners.Count > 0 ? await Task.Run(() => runners.Sum(pid => Procs.PrivateBytes(pid) ?? 0)) : 0;
-            Gpu = await Task.Run(() => IsTargetSleeping.Gpu.Read(runners));
+            (Gpu, GpuAdapters) = await Task.Run(() => (IsTargetSleeping.Gpu.Read(runners), IsTargetSleeping.Gpu.ReadAll(runners)));
             var (all, pref) = await Task.Run(() => (Detector.Available(), Detector.Preferred));
             Mechanisms = all;
             Preferred = pref;
@@ -240,8 +242,7 @@ public sealed class OllamaController
         {
             var failure = await Task.Run(() =>
             {
-                if (kill) foreach (var pid in Detector.ServerPids()) Procs.KillTree(pid);
-                Switch.Stop(target);
+                Switch.Stop(target, force: kill);
                 return Switch.Start(target);
             });
             if (failure is not null)
@@ -455,7 +456,12 @@ public sealed class OllamaController
         Memory = real with { Used = model + other, Pressure = SystemMemory.Level.Normal };
         // La GPU real si la hay; el uso, de ejemplo (modelo ~55 %, resto ~10 %).
         if (IsTargetSleeping.Gpu.Adapter is { } gpu && modelLoaded)
+        {
             Gpu = new GpuUsage((long)(gpu.Total * 0.65), (long)(gpu.Total * 0.55));
+            GpuAdapters = IsTargetSleeping.Gpu.Adapters.Select(a => a == gpu
+                ? new AdapterUsage(a, Gpu.Value.Used, Gpu.Value.Model)
+                : new AdapterUsage(a, (long)(a.Total * 0.1), 0)).ToList();
+        }
         idleReleaseMinutes = 30;
         IdleSeconds = modelLoaded ? 7 * 60 + 12 : null;
         error = null;

@@ -6,6 +6,13 @@
     "predeploy": ["pwsh -NoProfile -File site/build.ps1 -Out _site"],
     "headers": [
       {
+        "source": "/novedades.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" },
+          { "key": "Access-Control-Allow-Origin", "value": "*" }
+        ]
+      },
+      {
         "source": "**/*.html",
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },

@@ -92,14 +92,14 @@
                 </StackPanel>
             </Border>
             <!-- Al lado: la otra vista (Actividad o Ajustes). En la esquina: Ajustes, o la X para volver. -->
-            <Button Grid.Column="3" Style="{StaticResource Plain}" Command="{Binding SideCommand}" ToolTip="{Binding SideHelp}"
+            <Button Grid.Column="3" Style="{StaticResource Plain}" Command="{Binding SideCommand}" AutomationProperties.Name="{Binding SideHelp}" ToolTip="{Binding SideHelp}"
                     VerticalAlignment="Center" Margin="0,0,2,0">
                 <Border Width="26" Height="24" CornerRadius="6" Background="Transparent">
                     <TextBlock Text="{Binding SideGlyph}" FontFamily="{StaticResource Icons}" FontSize="13"
                                Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
             </Button>
-            <Button Grid.Column="4" Style="{StaticResource Plain}" Command="{Binding CornerCommand}" ToolTip="{Binding CornerHelp}"
+            <Button Grid.Column="4" Style="{StaticResource Plain}" Command="{Binding CornerCommand}" AutomationProperties.Name="{Binding CornerHelp}" ToolTip="{Binding CornerHelp}"
                     VerticalAlignment="Center">
                 <Border Width="26" Height="24" CornerRadius="6" Background="{Binding CornerBackground}">
                     <TextBlock Text="{Binding CornerGlyph}" FontFamily="{StaticResource Icons}" FontSize="13"
@@ -123,7 +123,7 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Button Style="{StaticResource Plain}" Command="{Binding TogglePower}" IsEnabled="{Binding CanToggle}"
+                    <Button Style="{StaticResource Plain}" Command="{Binding TogglePower}" AutomationProperties.Name="{Binding HeroHelp}" IsEnabled="{Binding CanToggle}"
                             ToolTip="{Binding HeroHelp}" Width="72" Height="72">
                         <Grid Width="72" Height="72">
                             <Ellipse x:Name="Halo" Fill="{Binding HeroFill}" RenderTransformOrigin="0.5,0.5">
@@ -192,7 +192,7 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="{StaticResource Icons}" FontSize="13"
                                Foreground="{DynamicResource Warm}" Margin="0,1,8,0" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissError}" VerticalAlignment="Top" Margin="6,2,0,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissError}" AutomationProperties.Name="{Binding DismissLabel}" VerticalAlignment="Top" Margin="6,2,0,0">
                         <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
                     </Button>
                     <TextBox Text="{Binding ErrorText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" BorderThickness="0"
@@ -204,7 +204,7 @@
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="{StaticResource Icons}" FontSize="13"
                                Foreground="{DynamicResource Warm}" Margin="0,1,8,0" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissHotKeyError}" VerticalAlignment="Top" Margin="6,2,0,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding DismissHotKeyError}" AutomationProperties.Name="{Binding DismissLabel}" VerticalAlignment="Top" Margin="6,2,0,0">
                         <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
                     </Button>
                     <TextBlock Text="{Binding HotKeyErrorText}" TextWrapping="Wrap" FontSize="11.5" />
@@ -252,7 +252,7 @@
                     <!-- Liberar RAM (lo que hacía Mem Reduct) -->
                     <DockPanel Margin="0,10,0,0" Visibility="{Binding ShowCleanButton, Converter={StaticResource Visible}}">
                         <Grid DockPanel.Dock="Right" VerticalAlignment="Center">
-                            <Button Style="{StaticResource Bordered}" Command="{Binding CleanNow}" ToolTip="{Binding CleanHelp}"
+                            <Button Style="{StaticResource Bordered}" Command="{Binding CleanNow}" AutomationProperties.Name="{Binding CleanLabel}" ToolTip="{Binding CleanHelp}"
                                     Visibility="{Binding CleanIdle, Converter={StaticResource Visible}}">
                                 <Button.ContextMenu>
                                     <ContextMenu>
@@ -289,7 +289,7 @@
 
                     <DockPanel Visibility="{Binding HasLoaded, Converter={StaticResource Visible}}">
                         <Grid DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0">
-                            <Button Style="{StaticResource Bordered}" Command="{Binding FreeModel}" IsEnabled="{Binding FreeEnabled}"
+                            <Button Style="{StaticResource Bordered}" Command="{Binding FreeModel}" AutomationProperties.Name="{Binding FreeLabel}" IsEnabled="{Binding FreeEnabled}"
                                     ToolTip="{Binding FreeHelp}" Visibility="{Binding FreeIdle, Converter={StaticResource Visible}}">
                                 <StackPanel Orientation="Horizontal">
                                     <Path Data="M 5.5,0.5 L 10.5,6.5 H 0.5 Z M 0.5,8.5 H 10.5" Stroke="{DynamicResource Fg}" StrokeThickness="1.2"
@@ -348,7 +348,7 @@
             <!-- Modelos instalados -->
             <StackPanel Margin="0,10,0,0" Visibility="{Binding ShowModels, Converter={StaticResource Visible}}">
                 <DockPanel Margin="2,0,0,6">
-                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding ToggleAddModel}" IsEnabled="{Binding CanAddModel}"
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding ToggleAddModel}" AutomationProperties.Name="{Binding AddModelHelp}" IsEnabled="{Binding CanAddModel}"
                             ToolTip="{Binding AddModelHelp}" VerticalAlignment="Center">
                         <Border Width="22" Height="20" CornerRadius="5" Background="{DynamicResource ButtonBg}">
                             <TextBlock Text="{Binding AddModelGlyph}" FontFamily="{StaticResource Icons}" FontSize="10.5"
@@ -464,7 +464,7 @@
                                                 </Border>
                                                 <Button x:Name="load" Style="{StaticResource Tinted}" Content="{Binding LoadLabel}" Command="{Binding Load}"
                                                         ToolTip="{Binding LoadHelp}" Visibility="Collapsed" />
-                                                <Button x:Name="trash" Style="{StaticResource Bordered}" Command="{Binding AskDelete}" ToolTip="{Binding DeleteHelp}"
+                                                <Button x:Name="trash" Style="{StaticResource Bordered}" Command="{Binding AskDelete}" AutomationProperties.Name="{Binding DeleteHelp}" ToolTip="{Binding DeleteHelp}"
                                                         Padding="6,3" Margin="6,0,0,0" Visibility="Collapsed">
                                                     <TextBlock Text="&#xE74D;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Secondary}" />
                                                 </Button>
@@ -581,6 +581,29 @@
                     <TextBlock Text="{Binding MemoryNowHint}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0" />
                 </StackPanel>
             </Border>
+
+            <StackPanel Visibility="{Binding HasGpuRows, Converter={StaticResource Visible}}">
+                <TextBlock Text="{Binding GpuAdaptersTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+                <Border Style="{StaticResource CardBox}" Padding="11,9">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding GpuRows}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type ui:GpuRow}">
+                                    <StackPanel Margin="0,4" AutomationProperties.Name="{Binding Spoken}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" Style="{StaticResource MonoSmall}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Name}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                        <ui:MemoryBar Margin="0,5,0,0" Height="5" Used="{Binding Fraction}" Model="{Binding ModelFraction}" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource MonoSmall}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding GpuAdaptersHint}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
 
             <TextBlock Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="11,9">
@@ -718,7 +741,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type ui:GameRow}">
                                     <DockPanel Margin="0,3" ToolTip="{Binding Path}">
-                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Remove}" ToolTip="{Binding RemoveHelp}"
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Remove}" AutomationProperties.Name="{Binding RemoveHelp}" ToolTip="{Binding RemoveHelp}"
                                                 VerticalAlignment="Center" Margin="8,0,2,0">
                                             <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Muted}" />
                                         </Button>
@@ -794,7 +817,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type ui:LinkRow}">
                                 <DockPanel x:Name="link" Background="Transparent" Margin="0,2">
-                                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Copy}" ToolTip="{Binding CopyHelp}"
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Copy}" AutomationProperties.Name="{Binding CopyHelp}" ToolTip="{Binding CopyHelp}"
                                             VerticalAlignment="Center" Margin="8,0,2,0">
                                         <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Muted}" />
                                     </Button>
@@ -957,13 +980,13 @@
 
             <StackPanel Orientation="Horizontal" Margin="2,10,2,0">
                 <TextBlock Text="{Binding LogsTitle}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" />
-                <Button Style="{StaticResource Plain}" Command="{Binding OpenLog}" IsEnabled="{Binding LogEnabled}" Margin="14,0,0,0">
+                <Button Style="{StaticResource Plain}" Command="{Binding OpenLog}" AutomationProperties.Name="{Binding OpenLogLabel}" IsEnabled="{Binding LogEnabled}" Margin="14,0,0,0">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{Binding LogBrush}" VerticalAlignment="Center" />
                         <TextBlock Text="Ollama" Margin="5,0,0,0" FontSize="11.5" FontWeight="Medium" Foreground="{Binding LogBrush}" />
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource Plain}" Command="{Binding OpenEngineLog}" Margin="14,0,0,0"
+                <Button Style="{StaticResource Plain}" Command="{Binding OpenEngineLog}" AutomationProperties.Name="{Binding OpenEngineLogLabel}" Margin="14,0,0,0"
                         Visibility="{Binding ShowEngineLog, Converter={StaticResource Visible}}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE8A5;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Accent}" VerticalAlignment="Center" />

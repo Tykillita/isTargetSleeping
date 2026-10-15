@@ -141,6 +141,11 @@ public sealed record HistoryRow(string Glyph, string Text, string Time, Brush Gl
 public sealed record StatTile(string Value, string Label);
 /// Una fila de «Memoria ahora»: qué es, cuánto y su barra (0 … 1).
 public sealed record MemoryRow(string Label, string Value, double Fraction, bool ShowDivider);
+public sealed record GpuRow(string Name, string Value, string Detail, double Fraction, double ModelFraction, bool ShowDivider)
+{
+    /// Lo que lee un lector de pantalla: la fila entera como una frase, no sus tres textos sueltos.
+    public string Spoken => $"{Name}: {Value}. {Detail}";
+}
 public sealed record ProcessSummaryRow(string Name, string Memory, string Count, ImageSource? Icon);
 
 /// Todo lo que muestra el panel, calculado a partir del estado: la interfaz
@@ -437,7 +442,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         _ => tr("No lo encuentro en este PC. Pulsa para descargarlo de ollama.com."),
     };
 
-    public string HeroHelp => P == Power.On ? tr("Apagar Ollama") : P == Power.Missing ? tr("Descargar Ollama") : tr("Encender Ollama");
+    public string DismissLabel => tr("Cerrar aviso");
+    public string OpenLogLabel => tr("Abrir el log de Ollama");
+    public string OpenEngineLogLabel => tr("Abrir el log de llama.cpp");
+    public string HeroHelp =>P == Power.On ? tr("Apagar Ollama") : P == Power.Missing ? tr("Descargar Ollama") : tr("Encender Ollama");
 
     // MARK: avisos
 
@@ -666,6 +674,10 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public string ChartModel => tr("Modelo");
     public string MemoryNowTitle => tr("Memoria ahora");
     public List<MemoryRow> MemoryRows { get; private set; } = [];
+    public string GpuAdaptersTitle => tr("GPU por adaptador");
+    public List<GpuRow> GpuRows { get; private set; } = [];
+    public bool HasGpuRows => GpuRows.Count > 0;
+    public string GpuAdaptersHint => tr("VRAM dedicada de cada GPU y la parte de los modelos. «No disponible»: Windows o el controlador no entregan el dato. Solo informa; no activa ningún apagado.");
     public string MemoryNowHint => tr("Comprometida: lo que los programas tienen reservado entre la RAM y los archivos de paginación. Si llega al límite, Windows no puede dar más memoria aunque quede RAM libre.");
     public string ClientsTitle => tr("Quién lo despierta");
     public List<ClientRow> ClientRows { get; private set; } = [];
@@ -725,7 +737,21 @@ public sealed class PanelViewModel : INotifyPropertyChanged
             AppIcons.For(c.Path), i > 0)).ToList();
         HistoryRows = Ollama.Stats.Recent(12).Select(Describe).ToList();
         MemoryRows = MemoryNow(MemoryBreakdown.Current());
+        GpuRows = GpuAdapterRows(Ollama.GpuAdapters);
     }
+
+    /// Una fila por GPU dedicada: lo que no se pudo medir se dice, no se estima.
+    internal static List<GpuRow> GpuAdapterRows(IReadOnlyList<AdapterUsage> adapters) => adapters.Select((a, i) =>
+    {
+        long total = a.Adapter.Total;
+        string totalText = $"{Math.Round(total / 1_073_741_824.0)} GB";
+        string value = a.Used is { } used ? $"{used.MemoryGB()} / {totalText}" : tr("No disponible · %@ en total", totalText);
+        string detail = a.Used is { } u && a.Model is { } m
+            ? $"{tr("Modelo")} {Num(m)} · {tr("Resto")} {Num(Math.Max(0, u - m))}"
+            : tr("Modelo: no disponible");
+        return new GpuRow(a.Adapter.ShortName, value, detail, a.Used is { } f ? (double)f / total : 0,
+            a.Used is not null && a.Model is { } mf ? (double)mf / total : 0, i > 0);
+    }).ToList();
 
     /// Lo que también enseña Mem Reduct (física, paginación y caché del sistema) más la comprometida.
     internal static List<MemoryRow> MemoryNow(MemoryBreakdown m)

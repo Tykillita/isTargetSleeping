@@ -220,20 +220,31 @@ public static class Updater
             {
                 long expanded = 0;
                 var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var files = new List<(ZipArchiveEntry Entry, string Name)>();
+                string exeName = $"{AppInfo.Name}.exe";
                 foreach (var entry in archive.Entries)
                 {
-                    string name = entry.FullName;
-                    if (name is not ("isTargetSleeping.exe" or "LICENSE") || !names.Add(name)
+                    // Map archive names to fixed output names; never use the ZIP path as a filesystem path.
+                    string? name = entry.FullName == exeName ? exeName
+                        : entry.FullName == "LICENSE" ? "LICENSE" : null;
+                    if (name is null || !names.Add(name)
                         || (entry.ExternalAttributes >> 16 & 0xF000) == 0xA000 || entry.Length > MaxExtracted
                         || (expanded += entry.Length) > MaxExtracted)
                         throw new InvalidDataException(tr("El paquete de actualización no es válido."));
+                    files.Add((entry, name));
                 }
-                if (!names.Contains($"{AppInfo.Name}.exe")) throw new InvalidDataException(tr("El paquete no trae %@.exe.", AppInfo.Name));
-                foreach (var entry in archive.Entries)
+                if (!names.Contains(exeName)) throw new InvalidDataException(tr("El paquete no trae %@.exe.", AppInfo.Name));
+                string root = Path.GetFullPath(extracted);
+                string rootPrefix = Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar;
+                var pathComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                foreach (var (entry, name) in files)
                 {
                     ct.ThrowIfCancellationRequested();
                     await using var input = entry.Open();
-                    await using var output = File.Create(Path.Combine(extracted, entry.FullName));
+                    string outputPath = Path.GetFullPath(Path.Combine(rootPrefix, name));
+                    if (!outputPath.StartsWith(rootPrefix, pathComparison))
+                        throw new InvalidDataException(tr("El paquete de actualización no es válido."));
+                    await using var output = File.Create(outputPath);
                     var buffer = new byte[81920];
                     long written = 0;
                     int count;

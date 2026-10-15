@@ -26,7 +26,6 @@ public sealed class BrandSwitch : ButtonBase
         track.Child = knob;
         Content = track;   // la plantilla (App.xaml) es solo un ContentPresenter
         Cursor = Cursors.Hand;
-        Focusable = false;
         VerticalAlignment = VerticalAlignment.Center;
         Loaded += (_, _) => Update(false);
     }

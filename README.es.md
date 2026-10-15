@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.5.2-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -63,7 +63,7 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🎮 | **Modo juego** | Abres un juego de Steam, Epic, Riot, EA, GOG, Rockstar o Xbox (o uno que añadas) y Ollama se apaga para dejarle la RAM y la VRAM; al salir vuelve a encenderse por el mismo camino. |
 | 🛟 | **Vigilante** | Si Ollama se cae o se cuelga, lo reinicia con el mismo mecanismo (hasta 3 veces en 10 minutos). |
 | 🔔 | **Notificaciones** | Avisos nativos de Windows cuando un modelo se duerme, Ollama se cae, la memoria llega a crítica, empieza un juego o termina una descarga; cada uno con su interruptor. |
-| 📊 | **Memoria del PC y de la GPU** | RAM en uso (la misma cifra que el Administrador de tareas), **VRAM** dedicada de tu GPU, cuánto de cada una es del modelo y la presión de memoria. |
+| 📊 | **Memoria del PC y de la GPU** | RAM en uso (la misma cifra que el Administrador de tareas), **VRAM** dedicada de tu GPU, cuánto de cada una es del modelo y la presión de memoria. Con varias GPU, Actividad lista cada una (total, en uso, modelos); un dato que Windows no entrega se muestra como no disponible. |
 | 👀 | **Quién lo despierta** | Qué app cargó el modelo (Obsidian, Cursor, un script…), por su conexión al puerto de Ollama. |
 | 📈 | **Actividad** | Esta semana: GB recuperados, siestas, horas con modelo cargado, reinicios; gráfica de 30 min, **memoria ahora** (RAM física, memoria comprometida, archivos de paginación y caché del sistema, como Mem Reduct) y los últimos eventos. |
 | 🗂️ | **Modelos** | Tamaño, cuantización y etiquetas *visión* / *herramientas*. Cárgalos, **descárgalos** (con progreso y cancelable) o **bórralos** desde el panel. |
@@ -71,9 +71,10 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🔗 | **Enlaces** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<modelo>`… para Stream Deck, PowerToys o scripts. |
 | 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
 | 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y se asea a su manera mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera — dormida, sin salir de la cama. Apagadas por defecto; [más abajo](#-mascotas). |
+| ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
-| 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256 y con vuelta atrás automática si algo falla. |
+| 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256, solo extrae archivos ZIP permitidos en su carpeta temporal y vuelve atrás automáticamente si algo falla. |
 | 🔒 | **Privado** | Habla con tus motores de modelos locales. Sin cuentas, telemetría ni analítica. La búsqueda opcional de actualizaciones y sus descargas contactan con GitHub; los datos de procesos se quedan en tu PC. |
 
 ## 📥 Instalar
@@ -82,8 +83,14 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 automática completas y mascotas renovadas.
 
 **1.5.2 ya está publicada** (3 de octubre de 2026): encendido y apagado de servicio y tarea verificados con
-Ollama real en Windows, portada blanca provisional, capturas actuales y recorridos bilingües.
+Ollama real en Windows.
 [Validación y límites](docs/backend-validation-1.5.2.md#es).
+
+**1.6.0 está en desarrollo** (aún sin publicar; las descargas de arriba son 1.5.2): apagar Ollama cierra solo los
+servidores que se demuestran del backend elegido, Actividad muestra la VRAM de cada GPU y el panel se puede usar con
+teclado, con nombres accesibles y tema de alto contraste. Incluye además los arreglos de la 1.5.3 sin publicar: el
+actualizador limita las entradas del ZIP a los archivos esperados y comprueba que la extracción se mantenga dentro
+de su carpeta temporal. Consulta el [changelog](CHANGELOG.md).
 
 Las descargas están en [Releases](https://github.com/Tykillita/isTargetSleeping/releases).
 
@@ -206,10 +213,10 @@ app. Desde PowerShell: `start istargetsleeping://sleep`. Si la app no está abie
 
 | Si Ollama viene de… | Apagar | Encender | Verificado |
 |---|---|---|:-:|
-| **App de Ollama** (instalador de ollama.com) | Pide cerrar sus ventanas, termina su árbol tras 2 s y cualquier `ollama serve` restante | `ollama app.exe hidden` (solo bandeja, sin ventana de chat; el mismo indicador del inicio de sesión) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
+| **App de Ollama** (instalador de ollama.com) | Pide cerrar sus ventanas y termina su árbol tras 2 s, incluido el `ollama serve` que lanzó | `ollama app.exe hidden` (solo bandeja, sin ventana de chat; el mismo indicador del inicio de sesión) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
 | **Servicio de Windows** que ejecuta Ollama | Detener por el Administrador de control de servicios | Iniciar por SCM | ✅ VM Windows Server 2025 x64 · Ollama 0.35.1 |
-| **Tarea programada** que ejecuta `ollama serve` | `Stop` del Programador de tareas | `Run` del Programador de tareas | ✅ VM Windows Server 2025 x64 · Ollama 0.35.1 |
-| **`ollama serve` manual** | Termina el árbol del servidor | Lo lanza desacoplado, con log en `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
+| **Tarea programada** que ejecuta `ollama serve` | `Stop` del Programador de tareas y termina lo que quede del proceso de esa tarea (no el de otras) | `Run` del Programador de tareas | ✅ VM Windows Server 2025 x64 · Ollama 0.35.1 |
+| **`ollama serve` manual** | Termina el servidor que arrancó la app (lo recuerda por PID y hora de inicio); uno lanzado por ti se deja en marcha | Lo lanza desacoplado, con log en `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
 | **Sin instalar** | — | Abre ollama.com/download | ✅ |
 
 La verificación de servicio y tarea usa el ejecutable real 1.5.2 y Ollama real: dos ciclos completos,
@@ -218,6 +225,11 @@ usa un host nativo SCM bajo LocalService y la tarea funciona bajo SYSTEM. No se 
 configuraciones en una VM Windows; GPU físicas, todos los wrappers de terceros y UAC interactivo quedan fuera
 de su alcance. Consulta el [informe bilingüe](docs/backend-validation-1.5.2.md) y las
 [pruebas reproducibles](tests/BackendIntegration/README.md).
+
+Solo se cierran los servidores que se demuestran del backend elegido. Si después sigue en marcha otro
+`ollama serve` (otra tarea o uno lanzado a mano), se deja como está y la app avisa de un apagado incompleto en vez
+de terminarlo. La prueba `tests/BackendIntegration/isolation` lo comprueba con un `ollama.exe` de mentira (dos
+tareas programadas y un servidor manual); no usa el Ollama real.
 
 Un servicio suele necesitar permisos de administrador: la app funciona como usuario normal y pide UAC
 solo para esa orden `sc start/stop`. Al detenerlo por SCM, no se dispara su política de reinicio por fallo.
@@ -321,9 +333,11 @@ Con Ollama apagado, usa lo elegido en Ajustes o el último mecanismo recordado e
   de versiones publicadas.
 - Solo ofrece versiones estables superiores y el paquete correspondiente al proceso x64/ARM64. Muestra versión
   actual, nueva y **Ver novedades**. Al pulsar **Actualizar**, descarga con progreso y cancelación, comprueba
-  SHA-256, rutas del ZIP y versión/arquitectura del ejecutable. Un auxiliar espera el cierre normal, reemplaza el
-  archivo en su ubicación actual y conserva un respaldo hasta que arranca la nueva bandeja. Si falla, restaura
-  y abre la versión anterior. Conserva ajustes e historial; si no puedes escribir en la carpeta, ofrece descarga
+  SHA-256; el ZIP solo puede contener el ejecutable esperado y `LICENSE`. Esas entradas se asignan a nombres fijos y
+  se comprueba que la extracción no salga de su carpeta temporal. También se valida la versión y arquitectura del
+  ejecutable. Un auxiliar espera el cierre normal, reemplaza el archivo en su ubicación actual y conserva un respaldo
+  hasta que arranca la nueva bandeja. Si falla, restaura y abre la versión anterior. Conserva ajustes e historial;
+  si no puedes escribir en la carpeta, ofrece descarga
   manual. El agente de memoria se actualiza por separado, con su permiso de administrador.
 - Las instalaciones anteriores a 1.3.0 sin repositorio configurado necesitan una primera actualización manual.
 

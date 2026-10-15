@@ -470,5 +470,13 @@
   "Sin archivo de paginación": "No page file",
   "Caché del sistema": "System cache",
   "%@ · pico %@": "%@ · peak %@",
-  "Cerrar y volver a isTargetSleeping": "Close and go back to isTargetSleeping"
+  "Cerrar y volver a isTargetSleeping": "Close and go back to isTargetSleeping",
+  "Cerrar aviso": "Dismiss message",
+  "Abrir el log de Ollama": "Open the Ollama log",
+  "Abrir el log de llama.cpp": "Open the llama.cpp log",
+  "Apagado incompleto: hay otro Ollama en marcha que esta app no inició, así que lo dejo como está.": "Shutdown incomplete: another Ollama is running that this app did not start, so I left it as it is.",
+  "GPU por adaptador": "GPU by adapter",
+  "No disponible · %@ en total": "Unavailable · %@ total",
+  "Modelo: no disponible": "Model: unavailable",
+  "VRAM dedicada de cada GPU y la parte de los modelos. «No disponible»: Windows o el controlador no entregan el dato. Solo informa; no activa ningún apagado.": "Dedicated VRAM of each GPU and the share used by models. “Unavailable” means Windows or the driver does not provide the value. Informational only; it never triggers a shutdown."
 }

@@ -54,11 +54,23 @@
             <Setter Property="Foreground" Value="{DynamicResource Muted}" />
         </Style>
 
+        <!-- Anillo de foco de teclado (Tab): visible en todos los botones e interruptores. -->
+        <Style x:Key="FocusRing">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Border BorderThickness="1.5" CornerRadius="7" Margin="-2" BorderBrush="{DynamicResource Accent}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Botón sin adornos. -->
         <Style x:Key="Plain" TargetType="ButtonBase">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ButtonBase">
@@ -87,7 +99,8 @@
             <Setter Property="Padding" Value="9,3" />
             <Setter Property="MinHeight" Value="24" />
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Focusable" Value="True" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -172,7 +185,7 @@
 
         <!-- Selector segmentado con la marca. -->
         <DataTemplate x:Key="SegmentTemplate" DataType="{x:Type ui:Segment}">
-            <Button Command="{Binding Pick}" Style="{StaticResource Plain}">
+            <Button Command="{Binding Pick}" Style="{StaticResource Plain}" AutomationProperties.Name="{Binding Title}">
                 <Border x:Name="pill" CornerRadius="6" Padding="4,6" Background="Transparent">
                     <TextBlock x:Name="text" Text="{Binding Title}" FontFamily="{StaticResource Sans}" FontSize="11.5"
                                HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Secondary}" />

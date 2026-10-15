@@ -96,27 +96,44 @@ code, kbd, pre { font-family: var(--mono); }
   border-bottom: 1px solid var(--linea-suave);
 }
 .nav .contenedor { display: flex; align-items: center; gap: 24px; height: 60px; max-width: 1200px; }
-.marca { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; text-decoration: none; letter-spacing: -.01em; }
+.marca { display: flex; flex: none; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; text-decoration: none; letter-spacing: -.01em; white-space: nowrap; }
 .marca img { width: 28px; height: 28px; border-radius: 7px; }
-.nav-links { display: flex; gap: 26px; margin: 0 auto; font-size: 14px; color: var(--muted); }
+.nav-links { display: flex; flex: 1 1 auto; justify-content: center; gap: clamp(14px, 2vw, 26px); min-width: 0; margin: 0; font-size: 14px; color: var(--muted); white-space: nowrap; }
 .nav-links a { text-decoration: none; transition: color .15s; }
 .nav-links a:hover { color: var(--tinta); }
-.nav-acciones { display: flex; align-items: center; gap: 14px; margin-left: auto; }
-@media (min-width: 901px) { .nav-links + .nav-acciones { margin-left: 0; } }
+.nav-acciones { display: flex; flex: none; align-items: center; gap: 14px; margin-left: auto; }
+.nav-acciones > * { flex: none; }
 .icono-btn { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; border: 0; background: none; cursor: pointer; color: var(--tinta-2); text-decoration: none; }
 .icono-btn:hover { background: var(--gris); }
 .icono-btn svg { width: 18px; height: 18px; }
 .idioma-btn { font-size: 13px; font-weight: 600; letter-spacing: .02em; width: auto; padding: 0 10px; }
-@media (max-width: 900px) { .nav-links { display: none; } }
+@media (max-width: 1024px) { .nav-links { display: none; } }
 @media (max-width: 600px) {
   .nav .contenedor { gap: 12px; }
   .nav-acciones { gap: 6px; }
-  .nav-github { display: none; }
   .marca { flex: none; white-space: nowrap; }
 }
 @media (max-width: 440px) {
   .nav .btn--chico { width: 36px; padding: 0; justify-content: center; }
   .nav .btn--chico span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+@media (max-width: 400px) {
+  .nav .contenedor { gap: 6px; }
+  .nav-acciones { gap: 4px; }
+}
+@media (max-width: 480px) { .marca span { display: none; } }
+@media (max-width: 300px) {
+  .nav .contenedor { gap: 4px; }
+  .nav-acciones { gap: 2px; }
+  .icono-btn { width: 28px; height: 30px; }
+  .idioma-btn { min-width: 24px; padding: 0 4px; }
+  .nav .btn--chico { width: 28px; height: 30px; }
+  .tema-switch { gap: 1px; padding: 2px; }
+  .tema-opcion { width: 20px; height: 20px; }
+}
+@media (max-width: 228px) {
+  .nav .contenedor { height: auto; min-height: 60px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+  .nav-acciones { width: 100%; justify-content: flex-end; flex-wrap: wrap; row-gap: 2px; }
 }
 
 /* ---------- Botones ---------- */
@@ -542,15 +559,17 @@ h2 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -.03e
   .radar { animation: none; }
 }
 
-/* ---------- Tema: botón sol / luna ---------- */
+/* ---------- Selector de tema claro / oscuro / sistema ---------- */
 
-.tema-btn .sol { display: none; }
-:root[data-theme="dark"] .tema-btn .sol { display: block; }
-:root[data-theme="dark"] .tema-btn .luna { display: none; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .tema-btn .sol { display: block; }
-  :root:not([data-theme="light"]) .tema-btn .luna { display: none; }
-}
+.tema-switch { display: flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid var(--linea); border-radius: 999px; background: var(--fondo); }
+.tema-opcion { display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; transition: background-color .16s, color .16s; }
+.tema-opcion svg { width: 16px; height: 16px; }
+.tema-opcion:hover:not([aria-pressed="true"]) { background: var(--gris); color: var(--tinta); }
+.tema-opcion[aria-pressed="true"] { background: var(--tinta); color: var(--fondo); }
+.tema-opcion:focus-visible { outline: 2px solid var(--azul-txt); outline-offset: 2px; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+@media (prefers-reduced-motion: reduce) { .tema-opcion { transition: none; } }
 
 /* ---------- Atajo en tablet: a todo el ancho y en horizontal ---------- */
 

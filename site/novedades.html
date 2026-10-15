@@ -14,9 +14,9 @@
 
 <header class="nav">
   <div class="contenedor">
-    <a class="marca" href="index.html">
+    <a class="marca" href="index.html" aria-label="isTargetSleeping">
       <img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28">
-      isTargetSleeping
+      <span>isTargetSleeping</span>
     </a>
     <nav class="nav-links" aria-label="Secciones">
       <a href="index.html#funciones" data-i18n="nav.funciones">Funciones</a>
@@ -27,14 +27,21 @@
       <a href="novedades.html" aria-current="page" data-i18n="nav.novedades">Novedades</a>
     </nav>
     <div class="nav-acciones">
+      <div class="tema-switch" role="group" aria-label="Tema de color" data-i18n-aria="tema.grupo">
+        <button class="tema-opcion" type="button" data-theme-choice="light" aria-label="Tema claro" data-i18n-aria="tema.claro" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+        </button>
+        <button class="tema-opcion" type="button" data-theme-choice="dark" aria-label="Tema oscuro" data-i18n-aria="tema.oscuro" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        </button>
+        <button class="tema-opcion" type="button" data-theme-choice="system" aria-label="Tema del sistema" data-i18n-aria="tema.sistema" aria-pressed="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M2 21h20M8 21l1-4m7 4-1-4"/></svg>
+        </button>
+      </div>
+      <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
       <a class="icono-btn nav-github" href="https://github.com/Tykillita/isTargetSleeping" aria-label="GitHub">
         <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
       </a>
-      <button class="icono-btn tema-btn" id="tema" type="button" aria-label="Cambiar a modo oscuro">
-        <svg class="luna" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-        <svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-      </button>
-      <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
       <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.5.2/isTargetSleeping-1.5.2-setup-x64.exe" data-descarga="setup">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
         <span data-i18n="nav.descargar">Descargar</span>
@@ -51,7 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
-      <a href="#proxima" data-i18n="nov.s.proxima">Próxima versión</a>
+      <a href="#proxima" data-i18n="nov.s.proxima">1.6.0 · En desarrollo</a>
       <a href="#v1-5-2">1.5.2</a>
       <a href="#v1-5-1">1.5.1</a>
       <a href="#v1-5-0">1.5.0</a>
@@ -70,17 +77,29 @@
   <div class="linea-tiempo">
     <article class="version" id="proxima">
       <div class="version-meta">
-        <div class="version-num" data-i18n="nov.s.proxima">Próxima versión</div>
+        <div class="version-num">1.6.0</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.proxima.resumen">Mejoras en la presentación y las capturas de la web.</p>
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: apagar Ollama respeta a los demás servidores, Actividad muestra la VRAM de cada GPU y el panel se maneja con teclado y lector de pantalla. Incluye también el arreglo del actualizador.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.vramT">VRAM de cada GPU</b><span data-i18n="nov.proxima.vramD">Actividad lista cada GPU dedicada con su total, lo que usa y la parte de los modelos. Si Windows o el controlador no dan un dato, se muestra como no disponible en vez de inventarlo. Solo informa: no apaga nada por sí sola.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.arreglos">Arreglos</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.seguridadT">Extracción segura de actualizaciones</b><span data-i18n="nov.proxima.seguridadD">El actualizador solo acepta los archivos esperados del ZIP, los escribe con nombres fijos y comprueba que ninguna ruta salga de su carpeta temporal.</span></div>
+          </div>
+        </div>
         <div class="grupo">
           <h3 data-i18n="nov.g.cambios">Cambios</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.proxima.videoT">La presentación original, renovada</b><span data-i18n="nov.proxima.videoD">El mismo guion, sonido, transiciones y tiempos de animación, ahora con las mascotas actuales y capturas nítidas. 77 segundos en español e inglés, en 1080p.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.capturasT">Más detalle en cada captura</b><span data-i18n="nov.proxima.capturasD">Panel, Actividad y Ajustes se renderizan al cuádruple de resolución desde la app. La web y los README comparten las imágenes y portadas nuevas.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.juegoT">Modo juego legible en móvil</b><span data-i18n="nov.proxima.juegoD">Los cuatro pasos se alinean en escritorio y pasan a una columna en móvil. El texto conserva un tamaño legible, sin etiquetas superpuestas, en los dos idiomas.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.reelT">Una presentación aparte para Reels</b><span data-i18n="nov.proxima.reelD">El mismo guion y música de 77 segundos en 1080 × 1920, con las mascotas actuales, acercamientos a los controles, cursor y sonidos de clic sincronizados. Descargas en español e inglés.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.apagadoT">Apagar sin llevarse a los demás</b><span data-i18n="nov.proxima.apagadoD">Al apagar Ollama solo se cierran los servidores que la app puede demostrar que son del mecanismo elegido: la instancia de su tarea, lo que cuelga de la app de Ollama o el binario que ella arrancó. Otra tarea o un servidor lanzado a mano siguen en marcha y la app avisa de que el apagado quedó incompleto.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.tecladoT">Panel accesible con teclado y lector de pantalla</b><span data-i18n="nov.proxima.tecladoD">Todos los botones e interruptores se alcanzan con Tab y muestran dónde está el foco. Los de solo ícono tienen nombre propio para Narrator, también en inglés.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.contrasteT">Alto contraste</b><span data-i18n="nov.proxima.contrasteD">Si activas un tema de alto contraste en Windows, el panel usa sus colores del sistema en lugar del vidrio negro.</span></div>
           </div>
         </div>
       </div>
@@ -93,15 +112,11 @@
         <span class="salto salto--arreglo" data-i18n="nov.s.arreglo">Arreglo</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.v1_5_2.resumen">Validación real de servicios y tareas de Ollama, una portada propia para GitHub y medios actualizados.</p>
+        <p data-i18n="nov.v1_5_2.resumen">Validación real de servicios y tareas de Ollama.</p>
         <div class="grupo">
           <h3 data-i18n="nov.g.cambios">Cambios</h3>
           <div class="novedades">
             <div class="novedad"><b data-i18n="nov.v1_5_2.validacionT">Pruebas reproducibles en Windows</b><span data-i18n="nov.v1_5_2.validacionD">Servicio y tarea superaron dos ciclos de encendido y apagado con Ollama 0.35.1 real en una VM Windows Server 2025 x64. El informe público detalla la salida de procesos, la API y los límites de estas pruebas.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_5_2.portadaT">Portada con el símbolo blanco</b><span data-i18n="nov.v1_5_2.portadaD">Una imagen propia para las vistas previas de GitHub, con el logo blanco provisional sobre fondo oscuro.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_5_2.mediosT">Capturas y recorrido al día</b><span data-i18n="nov.v1_5_2.mediosD">Panel, Actividad y Ajustes de 1.5.2, más un recorrido de 77 segundos en los dos idiomas con memoria ahora, reglas de limpieza y las mascotas actuales.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_5_2.cacheT">Cada imagen tiene su versión</b><span data-i18n="nov.v1_5_2.cacheD">El navegador recibe las imágenes y videos nuevos aunque haya guardado los anteriores. También renovamos la imagen de los enlaces compartidos.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_5_2.guiasT">Contribuciones y seguridad</b><span data-i18n="nov.v1_5_2.guiasD">Las guías bilingües explican cómo contribuir y comunicar vulnerabilidades en privado; están enlazadas en los README y la web.</span></div>
           </div>
         </div>
       </div>
@@ -154,7 +169,6 @@
             <div class="novedad novedad--ancha"><b data-i18n="nov.v1_5_0.cambios5t">Mira y la llama, renovadas</b><span data-i18n="nov.v1_5_0.cambios5d">Mira se mueve con más oficio: se agacha antes de saltar, rebota al caer, arranca calibrando el ojo y patrulla con su radar. La llama ya no tiene brazos: come con el hocico, teclea picoteando al ritmo de sus pezuñas y se expresa con el cuello, las orejas y una cola que por fin se mueve.</span></div>
             <div class="novedad novedad--ancha"><b data-i18n="nov.v1_5_0.cambios3t">Limpieza automática completa</b><span data-i18n="nov.v1_5_0.cambios3d">Las limpiezas por porcentaje, por tiempo, por presión crítica y al jugar limpian lo mismo que el botón, con las zonas que elijas. Nueva pausa mínima: si la RAM sigue por encima de tu porcentaje, repite como mucho cada 1 a 30 minutos.</span></div>
             <div class="novedad"><b data-i18n="nov.v1_5_0.cambios4t">Sin Mem Reduct</b><span data-i18n="nov.v1_5_0.cambios4d">Desaparece la tarjeta de Mem Reduct de Ajustes: isTargetSleeping limpia con su propio agente y no lo necesita.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_5_0.cambios2t">Descarga con un clic</b><span data-i18n="nov.v1_5_0.cambios2d">Cualquier botón «Descargar» de la web baja el instalador al momento, sin abrir GitHub, y el de ARM64 si tu equipo lo es.</span></div>
             <div class="novedad"><b data-i18n="nov.v1_5_0.cambios1t">El destello, al final</b><span data-i18n="nov.v1_5_0.cambios1d">Los destellos de «RAM liberada» llegan cuando ya la has visto limpiar, también en limpiezas largas; solo después vuelve a lo que estaba haciendo.</span></div>
           </div>
         </div>
@@ -179,12 +193,10 @@
         <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.v1_4_0.resumen">Reconocimiento de procesos, cierres confirmados y limpieza automática selectiva. La web y el recorrido de la app acompañan esta versión.</p>
+        <p data-i18n="nov.v1_4_0.resumen">Reconocimiento de procesos, cierres confirmados y limpieza automática selectiva.</p>
         <div class="grupo">
           <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo1t">Web oficial</b><span data-i18n="nov.v1_4_0.nuevo1d">Esta web, publicada en istargetsleeping.web.app: funciones, cómo funciona, instalación, preguntas, esta página de novedades y modo claro u oscuro.</span></div>
-            <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo2t">Video del recorrido</b><span data-i18n="nov.v1_4_0.nuevo2d">77 segundos por la app, en español y en inglés, con banda sonora original.</span></div>
             <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo3t">Reconocimiento de procesos</b><span data-i18n="nov.v1_4_0.nuevo3d">Las cinco aplicaciones que más RAM usan en Actividad y una ventana con todos los procesos, filtros, ordenación y detalles por PID.</span></div>
             <div class="novedad"><b data-i18n="nov.v1_4_0.nuevo4t">Tú eliges qué cerrar</b><span data-i18n="nov.v1_4_0.nuevo4d">Finaliza una aplicación, un PID o su árbol, siempre con confirmación. Si Windows deniega el acceso, puedes reintentar con UAC. Los procesos críticos y los propios quedan bloqueados.</span></div>
           </div>
@@ -387,7 +399,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.5.2</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.6.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

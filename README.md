@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.5.2-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.6.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -69,7 +69,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🎮 | **Game mode** | Open a game from Steam, Epic, Riot, EA, GOG, Rockstar or Xbox (or one you add) and Ollama turns off to give it the RAM and VRAM; quit and it comes back the same way. |
 | 🛟 | **Watchdog** | If Ollama crashes or hangs, it restarts it with the same mechanism (up to 3 times in 10 minutes). |
 | 🔔 | **Notifications** | Native Windows notifications when a model falls asleep, Ollama crashes, memory runs critical, a game starts or a download finishes — each one with its own switch. |
-| 📊 | **PC and GPU memory** | RAM in use (same figure as Task Manager), dedicated **VRAM** of your GPU, how much of each is the model, and memory pressure. |
+| 📊 | **PC and GPU memory** | RAM in use (same figure as Task Manager), dedicated **VRAM** of your GPU, how much of each is the model, and memory pressure. With several GPUs, Activity lists each one (total, in use, models); a value Windows doesn't provide shows as unavailable. |
 | 👀 | **Who wakes it** | Shows which app loaded the model (Obsidian, Cursor, a script…) from its connection to Ollama's port. |
 | 📈 | **Activity** | This week: GB reclaimed, naps, hours with a model loaded, restarts; a 30-minute chart, **memory now** (physical RAM, committed memory, page files and system cache, like Mem Reduct) and the latest events. |
 | 🗂️ | **Models** | Size, quantization and *vision* / *tools* tags. Load, **download** (with progress, cancellable) or **delete** them from the panel. |
@@ -77,9 +77,10 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
 | 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and cleans up in its own way while freeing RAM. Each one reacts to clicks and to your cursor in its own way — asleep, without leaving its bed. Off by default; [more below](#-pets). |
+| ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
-| 🔄 | **Updates** | Checks GitHub for new stable releases, shows the release notes and installs only when you click **Update** — verified with SHA-256, with automatic rollback if anything fails. |
+| 🔄 | **Updates** | Checks GitHub for new stable releases, shows the release notes and installs only when you click **Update** — verified with SHA-256, extracts only allowed ZIP files into its staging folder and rolls back automatically if anything fails. |
 | 🔒 | **Private** | Talks to your local model engines. No accounts, telemetry or analytics. Optional update checks and downloads contact GitHub; process data stays on your PC. |
 | 🧾 | **Open source** | MIT licensed. |
 
@@ -88,7 +89,13 @@ the model sleep when you don't need it and gives you one-click control over Olla
 **1.5.0 is out** (October 2, 2026): memory now in Activity, full automatic cleanup rules and renewed pets.
 
 **1.5.2 is out** (October 3, 2026): verified service and task lifecycles with genuine Ollama on Windows,
-a provisional white cover, current screenshots and bilingual tours. [Validation and limits](docs/backend-validation-1.5.2.md).
+[Validation and limits](docs/backend-validation-1.5.2.md).
+
+**1.6.0 is in development** (not published yet; the downloads above are 1.5.2): turning Ollama off now closes only
+the servers it can prove belong to the selected backend, Activity shows VRAM per GPU, and the panel is reachable by
+keyboard with accessible names and a high-contrast theme. It also folds in the unpublished 1.5.3 fixes: the updater
+restricts ZIP entries to the expected files and checks that extraction stays inside its staging folder.
+See the [changelog](CHANGELOG.md).
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 
@@ -209,10 +216,10 @@ From PowerShell: `start istargetsleeping://sleep`. If the app isn't running, the
 
 | If Ollama comes from… | Stop | Start | Verified |
 |---|---|---|:-:|
-| **Ollama app** (ollama.com installer) | Asks its windows to close, ends its process tree after 2 s, then any `ollama serve` left | `ollama app.exe hidden` (tray only, no chat window — the same flag Ollama uses at login) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
+| **Ollama app** (ollama.com installer) | Asks its windows to close and ends its process tree after 2 s, including any `ollama serve` it started | `ollama app.exe hidden` (tray only, no chat window — the same flag Ollama uses at login) | ✅ 0.34.1 / 0.34.4 / 0.35.0 |
 | **Windows service** wrapping Ollama | Service Control Manager stop | SCM start | ✅ Windows Server 2025 x64 VM · Ollama 0.35.1 |
-| **Scheduled task** running `ollama serve` | Task Scheduler `Stop` | Task Scheduler `Run` | ✅ Windows Server 2025 x64 VM · Ollama 0.35.1 |
-| **Manual `ollama serve`** | Ends the server's process tree | Launches `ollama serve` detached, logging to `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
+| **Scheduled task** running `ollama serve` | Task Scheduler `Stop`, then ends what is left of that task's own process (not other tasks) | Task Scheduler `Run` | ✅ Windows Server 2025 x64 VM · Ollama 0.35.1 |
+| **Manual `ollama serve`** | Ends the server the app started (remembered by PID and start time); one you launched yourself is left running | Launches `ollama serve` detached, logging to `%LOCALAPPDATA%\isTargetSleeping\Logs\ollama.log` | ✅ |
 | **Not installed** | — | Opens ollama.com/download | ✅ |
 
 Service and task verification uses the actual 1.5.2 executable and genuine Ollama: two start/stop cycles,
@@ -221,6 +228,11 @@ under LocalService; the task runs under SYSTEM. No models were loaded. This cove
 Windows VM; physical GPUs, every third-party service wrapper and interactive UAC remain outside its scope.
 See the [bilingual validation report](docs/backend-validation-1.5.2.md) and
 [reproducible integration checks](tests/BackendIntegration/README.md).
+
+Only servers that can be proven to belong to the selected backend are closed. If another `ollama serve` is still
+running afterwards — another task, or one started by hand — it is left alone and the app reports an incomplete
+shutdown instead of ending it. The `tests/BackendIntegration/isolation` check exercises this with a stand-in
+`ollama.exe` (two scheduled tasks and a manual server); it does not use the real Ollama.
 
 A service usually needs admin rights to be started or stopped: isTargetSleeping runs as a normal user and only asks
 for elevation (UAC) for that one `sc start/stop`. A service's restart-on-failure policy doesn't kick in, because the
@@ -384,9 +396,11 @@ tray menu works even with automatic checks off. GitHub rate-limit waiting times 
 
 Only newer stable releases are offered, using the ZIP and SHA-256 for the process architecture (x64 or ARM64).
 The panel shows your current version, the new version and **Release notes**. Nothing installs until you click
-**Update**. Downloads show progress and can be cancelled; packages are checked for SHA-256, safe ZIP paths and the
-expected executable's architecture/version. A background copy of the app waits for normal shutdown, replaces the
-executable in its current location and keeps a backup until the new tray starts. Failed replacement/startup
+**Update**. Downloads show progress and can be cancelled; packages are checked for SHA-256, and ZIPs can contain
+only the expected executable and `LICENSE`. Those entries map to fixed filenames, and extraction is checked to stay
+inside its staging folder. The expected executable's architecture/version is checked too. A background copy of the
+app waits for normal shutdown, replaces the executable in its current location and keeps a backup until the new tray
+starts. Failed replacement/startup
 restores and reopens the previous version. Settings and history are preserved. Without folder write permission,
 the app offers a manual GitHub download. Updating the memory agent remains a separate action with its UAC prompt.
 

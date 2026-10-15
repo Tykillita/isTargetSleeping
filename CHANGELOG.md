@@ -5,22 +5,38 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.6.0] — 2026-10-14
+
+In development: the release is not published yet. It folds in the unpublished 1.5.3 fixes.
+
+### Added
+- Activity shows the dedicated VRAM of every GPU separately: total, in use and the share used by models.
+  Values Windows or the driver do not provide read "Unavailable" instead of an estimate. The summary on the
+  main panel is unchanged and these readings never trigger a shutdown.
+- Keyboard focus ring and a high-contrast theme that follows the Windows setting.
+- Isolation check with a stand-in `ollama.exe` (`tests/BackendIntegration/isolation/verify-isolation.ps1`):
+  stopping one scheduled task or the app-started binary leaves another task and a manual server running.
+
+### Changed
+- Turning Ollama off no longer closes every `ollama serve` process. It closes only what it can prove belongs to
+  the selected backend: the running instance of the scheduled task, the children of the Ollama app, or the
+  binary the app started (identified by PID and start time, so a reused PID is never hit). Any other server is
+  left running and the app reports an incomplete shutdown. The watchdog's restart of a hung server uses the
+  same path.
+- Every button, including icon-only ones, segmented selectors and the log links, has an accessible name, and
+  all of them (and the switches) can be reached with Tab. A UI test covers it in Spanish and English.
+
+### Fixed
+- Updater extraction maps accepted archive entries to fixed filenames and verifies each resolved destination
+  stays inside its staging directory (previously listed as 1.5.3).
+- Build workflow limits `GITHUB_TOKEN` to `contents: read` (previously listed as 1.5.3).
+
 ## [1.5.2] — 2026-10-03
 
 ### Added
 - Reproducible Windows integration verification for Ollama service and scheduled-task backends.
   Both pass two lifecycle cycles using the published app and genuine Ollama 0.35.1 on a Windows Server 2025 x64 VM.
   The bilingual validation record distinguishes real OS integration from physical-PC, inference and UAC testing.
-- A provisional 1280 × 640 cover with the native sleeping target in white, an editable SVG and a transparent
-  white logo PNG. Both README files use the cover; website sharing uses the same image.
-
-### Changed
-- Website screenshots and both 77-second tours now show the 1.5.2 interface and current native pet animations.
-  The README files link to the new tours instead of immutable older video attachments.
-- The website build validates local assets and both languages, generates content-versioned URLs and publishes
-  from `_site/`. HTML revalidation prevents old pages and media from hiding future updates.
-- Website installation guidance now describes the tray pinning controls, the footers link to contribution and
-  security policies. Download checksums are taken from the corresponding published release.
 
 ## [1.5.1] — 2026-10-03
 
@@ -81,7 +97,6 @@ All notable changes to isTargetSleeping. The format follows
   going back to the requested activity, instead of arriving after the pet was already back in bed.
 - Pet animation profiles take the activity a reaction started in (`For`, `ReactionDuration`, `Still`, `Motion`,
   `Drips`, `Burst`); `ProfileKit` adds per-activity reaction tables and `InBed`.
-- `docs/readme-art.py` follows the new `--export-pet` rows; the pet states illustration shows each pet's own cleanup.
 - **Mira's animations redone** on `ProfileKit` like the other three (`MiraProfile`; the original `PetAnimations`
   clips are gone, `PetMotion.cs` keeps the logo lights and the walker): anticipation before jumps, overshoot on
   landing, arms out of sync, a "boot" wake-up that calibrates her reticle, a radar sweep while on patrol, the box on
@@ -169,8 +184,7 @@ All notable changes to isTargetSleeping. The format follows
   when the game ends, the option changes or shutdown fails.
 - Process sampling runs every two seconds while visible; pause, refresh, virtualized rows, cached icons/metadata
   and stable identities limit work and preserve selection. The window retains size, position and sorting.
-- Public website and bilingual video tour accompany the 1.4.0 notes. Existing settings and history are preserved;
-  the memory agent is updated through the existing UAC installation flow.
+- Existing settings and history are preserved; the memory agent is updated through the existing UAC installation flow.
 
 ### Fixed
 - Ending a process that Windows was already closing (for example a console host exiting with its console) is no
@@ -264,10 +278,6 @@ All notable changes to isTargetSleeping. The format follows
   doesn't hide at all — she leans on the logo.
 - New particles: steam, bubbles, falling leaves, music notes, purrs, snort clouds, 0/1 bits and antenna signals.
 - `--export-pet` sheets now show each pet's own gestures (with their particles) and a mouse row, at 2× and 3×.
-- Video tour of the app in English and Spanish with an original soundtrack (`docs/video/`), presented in both
-  READMEs with an inline player. The READMEs gain a **Pets** section, animated pixel-art SVGs made from the real sprites
-  (every pet in six states, asleep above Start and peeking behind the Windows logo), infographics for idle
-  detection and game mode, and a navigation bar. `docs/readme-art.py` regenerates them from `--export-pet`.
 
 ### Changed
 - Each pet has its own animation profile instead of one shared animal choreography with speed switches.

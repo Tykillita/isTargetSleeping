@@ -13,6 +13,7 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Activity.cs" Link="Core\Activity.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Processes.cs" Link="Core\Processes.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Win32.cs" Link="Core\Win32.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Gpu.cs" Link="Core\Gpu.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryBreakdown.cs" Link="Core\MemoryBreakdown.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Watchdog.cs" Link="Core\Watchdog.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Games.cs" Link="Core\Games.cs" />

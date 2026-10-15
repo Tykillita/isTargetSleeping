@@ -25,15 +25,21 @@ public sealed record GpuAdapter(string Name, long Total, uint LuidLow, int LuidH
 /// VRAM en uso: toda la del adaptador y la parte de unos procesos (el modelo).
 public readonly record struct GpuUsage(long Used, long Model);
 
+/// VRAM de un adaptador. Un dato que Windows o el controlador no entregan es null («no disponible»), nunca una estimación.
+public sealed record AdapterUsage(GpuAdapter Adapter, long? Used, long? Model);
+
 /// Todo nativo: DXGI por su tabla de métodos COM (sin interop generado) y PDH para
 /// los contadores `\GPU Adapter Memory(*)\Dedicated Usage` y
 /// `\GPU Process Memory(*)\Dedicated Usage`, los mismos que usa el Administrador de tareas.
 public static unsafe class Gpu
 {
-    private static readonly Lazy<GpuAdapter?> adapter = new(FindAdapter);
+    private static readonly Lazy<IReadOnlyList<GpuAdapter>> adapters = new(FindAdapters);
+
+    /// Todas las GPU dedicadas (≥ 1 GB de VRAM propia), sin la integrada ni la de software.
+    public static IReadOnlyList<GpuAdapter> Adapters => adapters.Value;
 
     /// La de más memoria dedicada (la RTX, no la gráfica integrada), o null si no hay.
-    public static GpuAdapter? Adapter => adapter.Value;
+    public static GpuAdapter? Adapter => Adapters.MaxBy(a => a.Total);
 
     // MARK: DXGI
 
@@ -58,12 +64,12 @@ public static unsafe class Gpu
     private static void Release(IntPtr unknown) =>
         ((delegate* unmanaged[Stdcall]<IntPtr, uint>)(*(IntPtr**)unknown)[2])(unknown);
 
-    private static GpuAdapter? FindAdapter()
+    private static IReadOnlyList<GpuAdapter> FindAdapters()
     {
+        var found = new List<GpuAdapter>();
         try
         {
-            if (CreateDXGIFactory1(IID_IDXGIFactory1, out var factory) != 0 || factory == IntPtr.Zero) return null;
-            GpuAdapter? best = null;
+            if (CreateDXGIFactory1(IID_IDXGIFactory1, out var factory) != 0 || factory == IntPtr.Zero) return found;
             try
             {
                 // IDXGIFactory1::EnumAdapters1 es el método 12 de su tabla (IUnknown 3 + IDXGIObject 4 + IDXGIFactory 5).
@@ -80,17 +86,17 @@ public static unsafe class Gpu
                         if (getDesc1(item, &desc) != 0 || (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0) continue;
                         long dedicated = (long)desc.DedicatedVideoMemory;
                         // Menos de 1 GB dedicado es una gráfica integrada con su reserva de arranque.
-                        if (dedicated < (1L << 30) || (best is not null && best.Total >= dedicated)) continue;
+                        if (dedicated < (1L << 30)) continue;
                         var name = new string(desc.Description).TrimEnd('\0').Trim();
-                        best = new GpuAdapter(name, dedicated, desc.LuidLow, desc.LuidHigh);
+                        found.Add(new GpuAdapter(name, dedicated, desc.LuidLow, desc.LuidHigh));
                     }
                     finally { Release(item); }
                 }
             }
             finally { Release(factory); }
-            return best;
+            return found;
         }
-        catch { return null; }
+        catch { return found; }
     }
 
     // MARK: PDH
@@ -127,6 +133,34 @@ public static unsafe class Gpu
         }
     }
 
+    /// Uso de cada GPU dedicada y la parte de `pids` (los runners): lo que el sistema no entrega sale null.
+    public static List<AdapterUsage> ReadAll(IEnumerable<int> pids)
+    {
+        if (Adapters.Count == 0) return [];
+        lock (gate)
+        {
+            bool ok = Collect();
+            return Summarize(Adapters, ok ? Values(adapterCounter) : null, ok ? Values(processCounter) : null, pids.ToHashSet());
+        }
+    }
+
+    /// Reparte los contadores por adaptador (por su LUID). `null` = el contador no existe;
+    /// un adaptador sin instancia en él queda «no disponible» en vez de 0.
+    internal static List<AdapterUsage> Summarize(IEnumerable<GpuAdapter> adapters, IReadOnlyList<(string Name, long Value)>? adapterCounters,
+        IReadOnlyList<(string Name, long Value)>? processCounters, ISet<int> pids)
+    {
+        var list = new List<AdapterUsage>();
+        foreach (var gpu in adapters)
+        {
+            var own = adapterCounters?.Where(v => v.Name.StartsWith(gpu.Luid, StringComparison.OrdinalIgnoreCase)).ToList();
+            long? used = own is { Count: > 0 } ? Math.Min(own.Sum(v => v.Value), gpu.Total) : null;
+            long? model = processCounters is null || used is null ? null
+                : Math.Min(PidValues(processCounters, gpu).Where(p => pids.Contains(p.Pid)).Sum(p => p.Value), used.Value);
+            list.Add(new AdapterUsage(gpu, used, model));
+        }
+        return list;
+    }
+
     /// VRAM dedicada de un proceso (para los otros motores).
     public static long ProcessUsage(int pid)
     {
@@ -154,9 +188,11 @@ public static unsafe class Gpu
         return PdhCollectQueryData(query) == 0;
     }
 
-    private static IEnumerable<(int Pid, long Value)> ProcessValues(GpuAdapter gpu)
+    private static IEnumerable<(int Pid, long Value)> ProcessValues(GpuAdapter gpu) => PidValues(Values(processCounter), gpu);
+
+    private static IEnumerable<(int Pid, long Value)> PidValues(IEnumerable<(string Name, long Value)> counters, GpuAdapter gpu)
     {
-        foreach (var (name, value) in Values(processCounter))
+        foreach (var (name, value) in counters)
         {
             // «pid_1234_luid_0x…_phys_0»
             if (!name.StartsWith("pid_", StringComparison.OrdinalIgnoreCase) || !name.Contains(gpu.Luid, StringComparison.OrdinalIgnoreCase)) continue;

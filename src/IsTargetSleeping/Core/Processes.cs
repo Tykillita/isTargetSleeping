@@ -180,6 +180,45 @@ public static class Procs
         finally { Win32.CloseHandle(h); }
     }
 
+    /// Un proceso y su hora de inicio: si Windows reutiliza el PID, ya no es el mismo.
+    public readonly record struct Identity(int Pid, long Started);
+
+    public static Identity? IdentityOf(int pid)
+    {
+        var h = Win32.OpenProcess(Win32.PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+        if (h == IntPtr.Zero) return null;
+        try
+        {
+            if (!Win32.GetExitCodeProcess(h, out var code) || code != 259) return null;
+            return Win32.GetProcessTimes(h, out long created, out _, out _, out _) ? new Identity(pid, created) : null;
+        }
+        finally { Win32.CloseHandle(h); }
+    }
+
+    public static bool Alive(Identity id) => IdentityOf(id.Pid) == id;
+
+    /// ¿Cuelga `pid` de alguna de las `roots`? Sube por los padres; el tope evita ciclos de PIDs reutilizados.
+    public static bool Descends(int pid, IReadOnlySet<int> roots, Func<int, int?> parent)
+    {
+        for (int i = 0; i < 32 && pid > 0; i++)
+        {
+            if (roots.Contains(pid)) return true;
+            if (parent(pid) is not { } up || up == pid) return false;
+            pid = up;
+        }
+        return false;
+    }
+
+    /// De los servidores en marcha, los que se demuestran hijos de `roots` (se pueden cerrar)
+    /// y los demás (de otra tarea o lanzados a mano: no se tocan).
+    public static (List<int> Owned, List<int> Foreign) SplitOwned(IEnumerable<int> servers, IReadOnlySet<int> roots, Func<int, int?> parent)
+    {
+        var owned = new List<int>();
+        var foreign = new List<int>();
+        foreach (var pid in servers) (Descends(pid, roots, parent) ? owned : foreign).Add(pid);
+        return (owned, foreign);
+    }
+
     /// El proceso y sus descendientes (el servidor arrastra a sus runners).
     public static void KillTree(int pid)
     {

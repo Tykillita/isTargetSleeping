@@ -233,6 +233,19 @@ public static class ScheduledTasks
         try { return Get(path) is { } task && (int)task.State == 4; } catch { return false; }   // TASK_STATE_RUNNING
     }
 
+    /// PIDs de las instancias en marcha de esta tarea (IRunningTask.EnginePID: el proceso de su acción).
+    public static List<int> RunningPids(string path)
+    {
+        var pids = new List<int>();
+        try
+        {
+            foreach (dynamic running in Connect().GetRunningTasks(1))   // 1 = incluye las ocultas
+                if (string.Equals((string)running.Path, path, StringComparison.OrdinalIgnoreCase)) pids.Add((int)running.EnginePID);
+        }
+        catch { }
+        return pids;
+    }
+
     public static string? Start(string path)
     {
         try
@@ -410,49 +423,92 @@ public static class Switch
                 }
                 catch (Exception e) { return e.Message; }
             case BackendKind.Binary:
-                return StartDetached(backend.Id, "serve");
+                return StartDetached(backend.Id, "serve", started: pid =>
+                {
+                    // Para poder apagarlo luego sin tocar otros `ollama serve`.
+                    if (Procs.IdentityOf(pid) is { } id) Defaults.Set(BinaryServerKey, $"{id.Pid}:{id.Started}");
+                });
             default:
                 return tr("Ollama no está instalado.");
         }
     }
 
-    public static string? Stop(Backend backend)
+    private const string BinaryServerKey = "binaryServer";
+
+    /// Solo se cierra lo que se demuestra de este backend (instancia de la tarea, hijos de la app, el
+    /// binario que arrancó esta app); cualquier otro `ollama serve` se deja en marcha y se avisa.
+    /// `force` salta el cierre amable de la app (servidor colgado).
+    public static string? Stop(Backend backend) => Stop(backend, force: false);
+
+    public static string? Stop(Backend backend, bool force)
     {
+        string? failure = null;
+        List<Procs.Identity> claim;
         switch (backend.Kind)
         {
             case BackendKind.Service:
                 return Services.Stop(backend.Id);
             case BackendKind.Task:
-                var failure = ScheduledTasks.Stop(backend.Id);
-                KillServers();
-                return failure;
+                claim = Claim(ScheduledTasks.RunningPids(backend.Id));
+                failure = ScheduledTasks.Stop(backend.Id);
+                break;
             case BackendKind.App:
-                if (Detector.RunningAppPid() is not { } pid) { KillServers(); return null; }
-                // Primero se le pide que cierre, como «Quit Ollama» en su menú; si
-                // en 2 s sigue viva, se termina con su árbol de procesos.
-                Procs.CloseWindows(pid);
-                for (int i = 0; i < 20 && Procs.Alive(pid); i++) Thread.Sleep(100);
-                if (Procs.Alive(pid)) Procs.KillTree(pid);
-                KillServers();
-                return null;
+                if (Detector.RunningAppPid() is { } pid)
+                {
+                    claim = Claim([pid]);
+                    if (!force)
+                    {
+                        // Primero se le pide que cierre, como «Quit Ollama» en su menú; si
+                        // en 2 s sigue viva, se termina con su árbol de procesos.
+                        Procs.CloseWindows(pid);
+                        for (int i = 0; i < 20 && Procs.Alive(pid); i++) Thread.Sleep(100);
+                    }
+                }
+                else claim = [];
+                break;
             case BackendKind.Binary:
-                KillServers();
-                return null;
+                claim = Claim(BinaryServerRoot() is { } root ? [root.Pid] : []);
+                break;
             default:
                 return null;
         }
+        foreach (var id in claim)
+            if (Procs.Alive(id)) Procs.KillTree(id.Pid);
+        for (int i = 0; i < 30 && claim.Any(Procs.Alive); i++) Thread.Sleep(100);
+        if (backend.Kind == BackendKind.Binary) Defaults.Remove(BinaryServerKey);
+        if (failure is not null) return failure;
+        var claimed = claim.Select(id => id.Pid).ToHashSet();
+        return Detector.ServerPids().Any(p => !claimed.Contains(p))
+            ? tr("Apagado incompleto: hay otro Ollama en marcha que esta app no inició, así que lo dejo como está.")
+            : null;
     }
 
-    private static void KillServers()
+    /// Las raíces y los `ollama serve` que cuelgan de ellas, con su hora de inicio (los huérfanos
+    /// tras cerrar la raíz siguen siendo nuestros).
+    private static List<Procs.Identity> Claim(IEnumerable<int> roots)
     {
-        foreach (var pid in Detector.ServerPids()) Procs.KillTree(pid);
+        var set = roots.ToHashSet();
+        var claim = new List<Procs.Identity>();
+        if (set.Count == 0) return claim;
+        foreach (var pid in set.Concat(Procs.SplitOwned(Detector.ServerPids(), set, Procs.ParentPid).Owned))
+            if (Procs.IdentityOf(pid) is { } id && !claim.Contains(id)) claim.Add(id);
+        return claim;
+    }
+
+    /// El `ollama serve` que arrancó esta app, si sigue siendo el mismo proceso.
+    private static Procs.Identity? BinaryServerRoot()
+    {
+        var parts = Defaults.GetString(BinaryServerKey)?.Split(':');
+        if (parts is not [var pid, var started] || !int.TryParse(pid, out var p) || !long.TryParse(started, out var s)) return null;
+        var id = new Procs.Identity(p, s);
+        return Procs.Alive(id) ? id : null;
     }
 
     /// Arranca desacoplado de esta app, sin ventana y con la salida en el log propio:
     /// sigue vivo aunque la app se cierre. Solo hereda el handle del log: si
     /// heredara todos, se llevaría también la tubería de la terminal que lanzó
     /// la app y esa terminal esperaría hasta que Ollama se apagara.
-    public static string? StartDetached(string exe, string args, string? logPath = null, string? directory = null)
+    public static string? StartDetached(string exe, string args, string? logPath = null, string? directory = null, Action<int>? started = null)
     {
         IntPtr attributes = IntPtr.Zero, handles = IntPtr.Zero;
         try
@@ -493,6 +549,7 @@ public static class Switch
                       || Win32.CreateProcessEx(null, new StringBuilder($"\"{exe}\" {args}"), IntPtr.Zero, IntPtr.Zero, true,
                           flags, IntPtr.Zero, dir, ref si, out pi);
             if (!ok) return new Win32Exception().Message;
+            started?.Invoke(pi.dwProcessId);
             Win32.CloseHandle(pi.hThread);
             Win32.CloseHandle(pi.hProcess);
             return null;

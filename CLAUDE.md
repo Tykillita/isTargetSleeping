@@ -61,7 +61,9 @@ Al subirla, actualiza **todo a la vez**:
 
 - Cada versión nueva lleva su `<article class="version" id="vX-Y-Z">` con fecha, tipo de salto
   (`Grande` / `Feature` / `Arreglo`) y sus features en tarjetas agrupadas en **Nuevo**, **Cambios** y **Arreglos**.
-- Cada feature nueva (de la app o de la web) se añade en el mismo commit que la introduce. Si aún no hay
+- Solo se documentan cambios de la app. Los cambios de la web, los README, los medios (capturas, videos, portada) y las guías
+  no van en novedades ni en `CHANGELOG.md`: no son desarrollo de la app.
+- Cada feature nueva de la app se añade en el mismo commit que la introduce. Si aún no hay
   versión nueva, va al bloque `#proxima` ("Próxima versión"), que pasa a ser la versión al subirla.
 - Bilingüe: español en el HTML con `data-i18n="nov.…"`, inglés en el diccionario `EN` de `site/site.js`.
   Ninguna clave `data-i18n` puede quedar sin traducir.

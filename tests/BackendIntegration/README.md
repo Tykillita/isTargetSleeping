@@ -24,6 +24,13 @@ This verifies the tested OS, architecture and fixture configuration. It does not
 certify every NSSM/WinSW configuration, physical GPUs, inference workloads or
 interactive UAC acceptance/cancellation. A CI Windows VM is not the user's PC.
 
+### Isolation check
+
+`isolation/verify-isolation.ps1 -AppDll <isTargetSleeping.dll>` registers two real scheduled tasks and starts a
+manual server, all running a stand-in `ollama.exe` that only sleeps (the real Ollama is never touched). It checks
+that stopping one task, or the binary the app started, ends only that server and leaves the other task and the
+manual server running, including when the target is already stopped. It needs no elevation and removes its tasks.
+
 ## Español
 
 Estas pruebas de integración optativas ejecutan `--status`, `--on` y `--off` de
@@ -48,3 +55,10 @@ siendo la suite habitual y no instala estos recursos.
 Esto verifica el sistema, arquitectura y configuración probados. No certifica
 todas las configuraciones NSSM/WinSW, GPU físicas, inferencias ni la aceptación
 o cancelación interactiva de UAC. La VM Windows de CI no es el PC del usuario.
+
+### Prueba de aislamiento
+
+`isolation/verify-isolation.ps1 -AppDll <isTargetSleeping.dll>` registra dos tareas programadas reales y lanza un
+servidor manual, todos con un `ollama.exe` de mentira que solo duerme (nunca toca el Ollama real). Comprueba que
+apagar una tarea, o el binario que arrancó la app, termina solo ese servidor y deja en marcha la otra tarea y el
+servidor manual, también cuando el objetivo ya estaba detenido. No necesita elevación y elimina sus tareas.

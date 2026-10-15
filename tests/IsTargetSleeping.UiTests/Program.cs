@@ -76,6 +76,21 @@ internal static class Program
             var pinSwitch = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(b => b.Command == model.ToggleTrayPin);
             Check($"{language}: el interruptor directo se ve cuando Windows ya registra el ícono",
                 pinSwitch is not null && SeVe(pinSwitch) == model.ShowTrayPin);
+            foreach (var panelView in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })
+            {
+                var screen = new ContentView(new PanelViewModel(supervisor, panelView));
+                screen.Measure(new Size(340, double.PositiveInfinity));
+                screen.Arrange(new Rect(screen.DesiredSize));
+                screen.UpdateLayout();
+                var controls = Descendants(screen).OfType<System.Windows.Controls.Primitives.ButtonBase>().ToArray();
+                // Un nombre accesible real: ni vacío ni solo el glifo de la fuente de íconos (que Narrator no lee).
+                var unnamed = controls.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { } n
+                    || n.Where(c => c is < '' or > '').All(char.IsWhiteSpace)).ToArray();
+                foreach (var b in unnamed)
+                    Console.WriteLine($"   sin nombre: {b.GetType().Name} {(b.Content as FrameworkElement)?.GetType().Name ?? b.Content?.GetType().Name} ctx={b.DataContext?.GetType().Name} cmd={b.Command}");
+                Check($"{language}/{panelView}: todos los botones e interruptores ({controls.Length}) tienen nombre accesible", controls.Length > 0 && unnamed.Length == 0);
+                Check($"{language}/{panelView}: todos se alcanzan con el teclado", controls.All(b => b.Focusable));
+            }
         }
         Check("la demo no modifica ajustes guardados", originalSettings == (File.Exists(Paths.SettingsFile) ? File.ReadAllText(Paths.SettingsFile) : null));
         ProcessUiTests.Run(Check);

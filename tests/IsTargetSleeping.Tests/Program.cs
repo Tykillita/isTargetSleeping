@@ -683,6 +683,57 @@ Check("pantalla completa: ventanas ocultas, minimizadas o capas transparentes no
 Section("Colección y personalidades de mascotas");
 PetTests.Run(Check);
 
+// MARK: apagado aislado por backend
+Section("Apagado aislado");
+// Tarea A (envoltorio 100 → servidor 101), tarea B (200 → 201) y un servidor manual (400, padre 50).
+var parents = new Dictionary<int, int> { [100] = 4, [101] = 100, [200] = 4, [201] = 200, [400] = 50, [301] = 999 };
+int? ParentOf(int pid) => parents.TryGetValue(pid, out var up) ? up : null;
+var servers = new[] { 101, 201, 400 };
+var (ownedA, foreignA) = Procs.SplitOwned(servers, new HashSet<int> { 100 }, ParentOf);
+Check("apagar A: solo su servidor es suyo; B y el manual siguen",
+    ownedA.SequenceEqual([101]) && foreignA.SequenceEqual([201, 400]));
+var (ownedNone, foreignNone) = Procs.SplitOwned(servers, new HashSet<int>(), ParentOf);
+Check("con A ya detenida no se toca ninguno", ownedNone.Count == 0 && foreignNone.Count == 3);
+Check("un servidor huérfano (padre desconocido) no se atribuye a nadie",
+    !Procs.Descends(301, new HashSet<int> { 100, 200 }, ParentOf));
+parents[1] = 2; parents[2] = 1;
+Check("un ciclo de PIDs reutilizados termina sin colgarse", !Procs.Descends(1, new HashSet<int> { 100 }, ParentOf));
+Check("el propio servidor como raíz cuenta como suyo (binario arrancado por la app)",
+    Procs.Descends(400, new HashSet<int> { 400 }, ParentOf));
+var self = Procs.IdentityOf(Environment.ProcessId);
+Check("la identidad de un proceso vivo incluye su hora de inicio y no coincide con otro PID reutilizado",
+    self is { Started: > 0 } me && Procs.Alive(me) && !Procs.Alive(me with { Started = me.Started + 1 }));
+
+// MARK: VRAM por adaptador
+Section("VRAM por adaptador");
+const long GB = 1L << 30;
+var gpuRtx = new GpuAdapter("NVIDIA GeForce RTX 4060 Laptop GPU", 8 * GB, 0x16062, 0);
+var gpuArc = new GpuAdapter("Intel(R) Arc(TM) A770", 16 * GB, 0x2a001, 0);
+var gpuCounters = new List<(string Name, long Value)> { (gpuRtx.Luid + "_phys_0", 3 * GB), (gpuArc.Luid + "_phys_0", 5 * GB) };
+var gpuProcess = new List<(string Name, long Value)>
+{
+    ($"pid_10_{gpuRtx.Luid}_phys_0", 2 * GB), ($"pid_11_{gpuRtx.Luid}_phys_0", GB / 2), ($"pid_10_{gpuArc.Luid}_phys_0", GB),
+    ($"pid_99_{gpuRtx.Luid}_phys_0", GB / 4),
+};
+var gpuNone = Gpu.Summarize([], gpuCounters, gpuProcess, new HashSet<int> { 10 });
+Check("cero adaptadores: sin filas", gpuNone.Count == 0);
+var gpuOne = Gpu.Summarize([gpuRtx], gpuCounters, gpuProcess, new HashSet<int> { 10, 11 });
+Check("un adaptador: total, uso y parte de los modelos", gpuOne.Count == 1 && gpuOne[0].Used == 3 * GB && gpuOne[0].Model == 2 * GB + GB / 2);
+var two = Gpu.Summarize([gpuRtx, gpuArc], gpuCounters, gpuProcess, new HashSet<int> { 10 });
+Check("dos adaptadores: cada uno con su LUID, sin mezclar procesos",
+    two[0].Used == 3 * GB && two[0].Model == 2 * GB && two[1].Used == 5 * GB && two[1].Model == GB);
+var noCounter = Gpu.Summarize([gpuRtx], null, null, new HashSet<int> { 10 });
+Check("contadores ausentes: no disponible, no 0", noCounter[0].Used is null && noCounter[0].Model is null);
+var noProcess = Gpu.Summarize([gpuRtx], gpuCounters, null, new HashSet<int> { 10 });
+Check("sin contador por proceso: el uso se muestra y el modelo no", noProcess[0].Used == 3 * GB && noProcess[0].Model is null);
+var missingOne = Gpu.Summarize([gpuRtx, gpuArc], [(gpuRtx.Luid + "_phys_0", GB)], gpuProcess, new HashSet<int> { 10 });
+Check("un adaptador sin instancia en el contador queda no disponible", missingOne[0].Used == GB && missingOne[1].Used is null && missingOne[1].Model is null);
+var noRunners = Gpu.Summarize([gpuRtx], gpuCounters, gpuProcess, new HashSet<int>());
+Check("sin runners cargados: modelo 0 (medido), no desconocido", noRunners[0].Model == 0);
+var capped = Gpu.Summarize([gpuRtx], [(gpuRtx.Luid + "_phys_0", 20 * GB)], gpuProcess, new HashSet<int> { 10 });
+Check("un contador mayor que la VRAM se limita al total", capped[0].Used == 8 * GB);
+Check("sin controladores, Adapters no falla", Gpu.Adapters is not null);
+
 // MARK: actualizaciones
 Section("Actualizaciones");
 await UpdateTests.Run(Check);

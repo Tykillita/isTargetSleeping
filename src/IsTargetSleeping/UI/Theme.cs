@@ -38,7 +38,17 @@ public sealed record Theme(
         ButtonHover: Argb(0x33, 0xFFFFFF),
         Popup: Argb(0xF2, 0x121214));      // menús y tooltips (sin acrílico de DWM)
 
-    public static Theme Current { get; } = Glass;
+    /// Alto contraste de Windows: los colores del sistema, sin vidrio ni transparencias.
+    public static Theme HighContrast => new(
+        Bg: SystemColors.WindowColor, Card: SystemColors.WindowColor, Line: SystemColors.WindowTextColor,
+        Fg: SystemColors.WindowTextColor, Secondary: SystemColors.WindowTextColor, Muted: SystemColors.GrayTextColor,
+        Accent: SystemColors.HighlightColor, AccentSoft: SystemColors.WindowColor, OnAccent: SystemColors.HighlightTextColor,
+        On: SystemColors.HotTrackColor, OnSoft: SystemColors.WindowColor,
+        Warm: SystemColors.WindowTextColor, WarmSoft: SystemColors.WindowColor, Danger: SystemColors.WindowTextColor,
+        Track: SystemColors.WindowColor, Button: SystemColors.ControlColor, ButtonHover: SystemColors.ControlColor,
+        Popup: SystemColors.WindowColor);
+
+    public static Theme Current => SystemParameters.HighContrast ? HighContrast : Glass;
     public static bool IsDark => true;
     public static event Action? Changed;
 
@@ -79,6 +89,8 @@ public sealed record Theme(
         catch { return false; }
     }
 
+    private static bool watchingContrast;
+
     /// Publica los colores como recursos: la interfaz los usa con DynamicResource.
     public static void Apply(ResourceDictionary? resources = null)
     {
@@ -102,10 +114,19 @@ public sealed record Theme(
         // Vidrio negro: el tinte del panel (opaco si no hay acrílico), tarjetas de
         // vidrio neutro con un canto fino, y ninguna luz de color: la profundidad la
         // da una sombra negra que cae hacia abajo, no un brillo.
-        r["PanelTint"] = BackdropSupported ? Brush(t.Bg) : Brush(Hex(0x0A0A0B));
-        r["CardFill"] = Gradient(Argb(0x0F, 0xFFFFFF), Argb(0x06, 0xFFFFFF));
-        r["CardStroke"] = Gradient(Argb(0x24, 0xFFFFFF), Argb(0x0A, 0xFFFFFF), 70);
-        r["Sheen"] = Gradient(Argb(0x00, 0x000000), Argb(0x59, 0x000000));
+        bool contrast = SystemParameters.HighContrast;
+        r["PanelTint"] = contrast ? Brush(t.Bg) : BackdropSupported ? Brush(t.Bg) : Brush(Hex(0x0A0A0B));
+        r["CardFill"] = contrast ? Brush(t.Card) : Gradient(Argb(0x0F, 0xFFFFFF), Argb(0x06, 0xFFFFFF));
+        r["CardStroke"] = contrast ? Brush(t.Line) : Gradient(Argb(0x24, 0xFFFFFF), Argb(0x0A, 0xFFFFFF), 70);
+        r["Sheen"] = contrast ? Brush(Colors.Transparent) : Gradient(Argb(0x00, 0x000000), Argb(0x59, 0x000000));
+        if (!watchingContrast)
+        {
+            watchingContrast = true;
+            SystemParameters.StaticPropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SystemParameters.HighContrast)) Application.Current?.Dispatcher.Invoke(() => Apply());
+            };
+        }
         Changed?.Invoke();
     }
 }
