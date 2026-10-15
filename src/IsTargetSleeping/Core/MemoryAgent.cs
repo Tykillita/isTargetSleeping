@@ -55,7 +55,9 @@ public static class MemoryAgent
         try
         {
             var installed = FileVersionInfo.GetVersionInfo(InstalledExe).ProductVersion?.Split('+')[0];
-            return installed == AppInfo.Version ? AgentStatus.Ready : AgentStatus.Outdated;
+            // Vale el agente de esa versión o uno más nuevo: reinstalarlo (con su permiso de administrador) solo cuando cambia su código.
+            return Version.TryParse(installed, out var have) && Version.TryParse(AppInfo.AgentVersion, out var need) && have >= need
+                ? AgentStatus.Ready : AgentStatus.Outdated;
         }
         catch { return AgentStatus.Outdated; }
     }

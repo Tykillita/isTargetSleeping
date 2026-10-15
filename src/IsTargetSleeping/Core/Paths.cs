@@ -20,6 +20,11 @@ public static class AppInfo
     /// Proyecto en cuya idea se basa (créditos de «Acerca de»).
     public const string CreditsUrl = "https://github.com/eriktaveras/modelnap";
 
+    /// La versión del agente de memoria que trae esta app (AGENT_VERSION). Un agente instalado de esa versión sigue valiendo
+    /// aunque la app sea más nueva: pedir otro permiso de administrador en cada versión no tiene sentido.
+    public static string AgentVersion { get; } =
+        typeof(AppInfo).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "AgentVersion")?.Value ?? "dev";
+
     public static string Version { get; } =
         (Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev")
         .Split('+')[0];

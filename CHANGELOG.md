@@ -5,19 +5,50 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
-## [1.7.0] — 2026-10-15
+## [1.8.0] — 2026-10-15
+
+Includes the 1.7.0 notch dock, which was never published as a separate release.
 
 ### Added
+- Widgets for the notch. Its new Home page holds up to four cells of widgets, in the order you choose: Ollama
+  (status, memory, GPU, Free RAM, Free), System (CPU, RAM, VRAM, disk and network), Clock and calendar, Pomodoro
+  (25 min focus, 5 min break, with a notice when a phase ends), Keep awake (stops Windows from sleeping the PC and
+  the screen until you turn it off or quit), Notes (plain text saved on its own in `notes.txt` next to the
+  settings) and Battery. Everything is read locally; nothing is sent anywhere.
+- Customizable hover view: what the notch shows when you move the pointer over it is now its own list of widgets,
+  chosen and ordered on the Widgets page (Ollama by default, as before). The Free RAM and Free model buttons stay in
+  place while they work, dimmed and reading "Freeing…", instead of vanishing and shifting the others.
+- Customizable closed pill: choose up to three items from status, model, RAM, VRAM, CPU, clock, battery and the
+  Pomodoro timer, and put them in order, on the Widgets page (status, model and RAM by default, as before).
+- Widgets adapt to where they are and who keeps them company: a one-cell widget that has no partner in its row
+  widens to two cells and switches to its wide view (System in two columns, Clock with the month beside the time,
+  Pomodoro and Battery in one row), and in the hover view widgets are denser (System without disk and network,
+  Clock without the month, shorter Notes).
+- Widgets page: turn each widget on or off and move it up or down, with a counter of the cells in use. A widget
+  that doesn't fit asks you to remove another first.
+- Configurable favorites: up to four one-tap actions next to the dock navigation, chosen from turn Ollama on/off,
+  Free RAM, Free the model, Processes, Keep awake and Pomodoro. The default stays turn on/off, Free RAM and
+  Processes.
+- Notifications has a new "Pomodoro finished" switch.
 - Optional notch dock (Settings > General > "Notch dock (experimental)"). A pill docked to the top edge of the
-  screen on the monitor where the cursor is: hovering it opens a short view (status, RAM and GPU bars, Free RAM,
-  Free model and Processes) and a click opens the full two-column panel. Esc, a click elsewhere or leaving the
-  pointer closes it. The tray icon and its menu keep working.
-- Two strips of icon buttons below the notch, like a dock: navigation (Overview, Activity, Settings) and quick
-  actions (turn Ollama on/off, Free RAM, Processes). Quick actions act without opening the panel.
+  screen on the monitor where the cursor is: hovering it opens a short view of Ollama (status, RAM and GPU bars,
+  Free RAM, Free model and Processes) and a click opens the full two-column panel. Esc, a click elsewhere or
+  leaving the pointer closes it. The tray icon and its menu keep working.
+- Two strips of icon buttons below the notch, like a dock: navigation and quick actions that act without opening
+  the panel.
 - "Dynamic Glass" look: black at the screen edge fading to glass, curved shoulders where the notch meets the
   edge, and a fade-in of the content after the shape has grown. Honors reduced motion.
 - The notch hides while a game, video or the Start menu is full screen, and follows the cursor to another
   monitor when it touches that monitor's top edge. Every notch button has an accessible name.
+
+### Changed
+- The memory agent behind Free RAM is no longer reinstalled with every release. It has its own version
+  (`AGENT_VERSION`) and only needs updating when its code changes, so Free RAM keeps working after updating the
+  app, without another administrator prompt. A test fails if the agent code changes without bumping it.
+- Free RAM and Free from the notch, when the agent is missing or outdated, open the notch on Settings instead of
+  doing nothing.
+- In the notch, the dock navigation is Home, Ollama, Activity, Widgets and Settings, and the notch opens on Home.
+  The tray panel is unchanged: it has no Home or Widgets pages.
 
 ## [1.6.1] — 2026-10-14
 

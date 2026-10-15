@@ -52,6 +52,8 @@ public sealed class NotchWindow : Window
     private (NotchMode Mode, Win32.RECT Window, Size Shell)? painted;
     private Size lastDesired, lastPeek;
     private Win32.RECT activeRect;
+    private double dockWidth = NotchLayout.DockWidth;
+    private string dockSignature = "";
 
     public NotchWindow(PanelViewModel model, FrameworkElement view)
     {
@@ -109,8 +111,18 @@ public sealed class NotchWindow : Window
         // Solo si el contenido cambió de tamaño de verdad: mientras la animación encoge o agranda el negro, la vista
         // también cambia de tamaño visible, y reaccionar a eso reiniciaría la animación una y otra vez.
         view.SizeChanged += (_, _) => { if (state.Mode != NotchMode.Collapsed) Dispatcher.BeginInvoke(RelayoutIfContentChanged, DispatcherPriority.Background); };
+        peek.IsVisibleChanged += (_, _) => model.SetPeekVisible(peek.IsVisible);
         peek.SizeChanged += (_, _) => { if (state.Mode != NotchMode.Collapsed) Dispatcher.BeginInvoke(RelayoutIfContentChanged, DispatcherPriority.Background); };
-        model.PropertyChanged += (_, _) => PaintTabs();
+        model.AttentionRequested += OnAttention;
+        model.Hub.Ticked += RefreshPill;
+        model.PropertyChanged += (_, _) =>
+        {
+            if (DockSignature() != dockSignature) RebuildDock();
+            RefreshPill();
+            PaintTabs();
+            // La vista y la corta ya no cambian de tamaño solas (la ventana las recorta): se vuelve a medir con cada cambio.
+            if (state.Mode != NotchMode.Collapsed) Dispatcher.BeginInvoke(RelayoutIfContentChanged, DispatcherPriority.Background);
+        };
     }
 
     // MARK: ciclo de vida
@@ -119,13 +131,21 @@ public sealed class NotchWindow : Window
     {
         new WindowInteropHelper(this).EnsureHandle();
         model.WideLayout = true;
+        model.Show(PanelView.Home);
         PickMonitor(Win32.MonitorFromPoint(default, 1 /* MONITOR_DEFAULTTOPRIMARY */));
         Apply();
         timer.Start();
     }
 
+    private void OnAttention()
+    {
+        if (state.Mode != NotchMode.Pinned) Pin();
+    }
+
     public void Stop()
     {
+        model.AttentionRequested -= OnAttention;
+        model.Hub.Ticked -= RefreshPill;
         timer.Stop();
         Theme.Changed -= PaintShell;
         generation++;
@@ -133,6 +153,7 @@ public sealed class NotchWindow : Window
         holder.Children.Remove(view);   // la vista vuelve al panel de la bandeja
         if (view is System.Windows.Controls.Control control) control.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, "PanelTint");
         model.WideLayout = false;
+        if (model.ShowingHome || model.ShowingWidgets) model.Show(PanelView.Main);   // la bandeja no tiene Home ni Widgets
     }
 
     /// Abrirlo y dejarlo abierto (clic en el ícono de la bandeja, un enlace, un aviso…).
@@ -214,8 +235,17 @@ public sealed class NotchWindow : Window
         if (view.DesiredSize != lastDesired || peek.DesiredSize != lastPeek) Apply();
     }
 
+    private bool closing;
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        closing = true;   // al cerrarse, perder el foco no debe volver a mostrarla
+        base.OnClosing(e);
+    }
+
     private void Apply()
     {
+        if (closing) return;
         if (state.Hidden)
         {
             if (IsVisible) Hide();
@@ -236,7 +266,7 @@ public sealed class NotchWindow : Window
         if (!IsVisible) Show();
 
         int ear = (int)Math.Round(EarDip * scale);
-        var dockRect = NotchLayout.DockBelow(rects.Expanded, scale);
+        var dockRect = NotchLayout.DockBelow(rects.Expanded, scale, dockWidth);
         var pillRect = Wings(rects.Pill, ear);
         var openRect = NotchLayout.Union(Wings(rects.Expanded, ear), dockRect);
         activeRect = open ? NotchLayout.Union(rects.Expanded, dockRect) : rects.Pill;
@@ -277,7 +307,7 @@ public sealed class NotchWindow : Window
                 view.Visibility = Visibility.Hidden;
                 peek.Visibility = Visibility.Hidden;
                 pill.Visibility = Visibility.Visible;
-                if (model.ShowingMain == false) model.Show(PanelView.Main);   // la próxima vez se abre en Principal
+                if (!model.ShowingHome) model.Show(PanelView.Home);   // la próxima vez se abre en el Home
             });
         }
         shownOpen = open;
@@ -295,8 +325,21 @@ public sealed class NotchWindow : Window
 
     // MARK: los botones flotantes
 
+    /// Lo que cambia el dock: qué favoritos hay y el idioma (los nombres accesibles).
+    private string DockSignature() => $"{string.Join(",", model.FavoriteIds)}#{L10n.Effective}";
+
+    private void RebuildDock()
+    {
+        BuildDock();
+        painted = null;   // el ancho del dock cambió: hay que recolocar la ventana
+        if (laidOut) Apply();
+    }
+
     private void BuildDock()
     {
+        dockSignature = DockSignature();
+        tabs.Clear();
+        dockPills.Clear();
         var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(5, 4, 5, 4) };
         var favorites = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(5, 4, 5, 4) };
         void Tab(StackPanel row, string glyph, string nameProperty, PanelView? target, Action click)
@@ -314,22 +357,29 @@ public sealed class NotchWindow : Window
             row.Children.Add(button);
             tabs.Add((back, text, target));
         }
-        // Navegación: un clic abre esa vista entera. Favoritos: actúan sin fijar el notch.
-        Tab(navigation, "\uE80F", nameof(PanelViewModel.NotchTabHome), PanelView.Main, () => Go(PanelView.Main));
-        Tab(navigation, "\uE9D2", nameof(PanelViewModel.NotchTabActivity), PanelView.Activity, () => Go(PanelView.Activity));
-        Tab(navigation, "\uE713", nameof(PanelViewModel.NotchTabSettings), PanelView.Settings, () => Go(PanelView.Settings));
-        Tab(favorites, "\uE7E8", nameof(PanelViewModel.HeroHelp), null, () => model.TogglePower.Execute(null));
-        Tab(favorites, "\uEA99", nameof(PanelViewModel.CleanLabel), null, () => model.CleanNow.Execute(null));
-        Tab(favorites, "\uE9D9", nameof(PanelViewModel.NotchTabProcesses), null, () => model.OpenProcesses.Execute(null));
+        // Navegación: un clic abre esa página entera. Favoritos: actúan sin fijar el notch.
+        Tab(navigation, "", nameof(PanelViewModel.NotchTabHome), PanelView.Home, () => Go(PanelView.Home));
+        Tab(navigation, "", nameof(PanelViewModel.NotchTabOllama), PanelView.Main, () => Go(PanelView.Main));
+        Tab(navigation, "", nameof(PanelViewModel.NotchTabActivity), PanelView.Activity, () => Go(PanelView.Activity));
+        Tab(navigation, "", nameof(PanelViewModel.NotchTabWidgets), PanelView.Widgets, () => Go(PanelView.Widgets));
+        Tab(navigation, "", nameof(PanelViewModel.NotchTabSettings), PanelView.Settings, () => Go(PanelView.Settings));
+        foreach (var id in model.FavoriteIds)
+            if (FavoriteCatalog.Find(id) is { } favorite)
+                Tab(favorites, favorite.Glyph, PanelViewModel.FavoriteNameProperty(id), null, () => model.RunFavorite(id));
         Border Pill(StackPanel row, double left)
         {
             var pillBorder = new Border { CornerRadius = new CornerRadius(14), Child = row, Margin = new Thickness(left, 0, 0, 0) };
             dockPills.Add(pillBorder);
             return pillBorder;
         }
-        dock.Child = new StackPanel { Orientation = Orientation.Horizontal, Children = { Pill(navigation, 0), Pill(favorites, 8) } };
+        var strips = new StackPanel { Orientation = Orientation.Horizontal, Children = { Pill(navigation, 0) } };
+        if (favorites.Children.Count > 0) strips.Children.Add(Pill(favorites, 8));
+        dock.Child = strips;
         dock.Margin = new Thickness(0, NotchLayout.DockGap, 0, 0);
         dock.Height = NotchLayout.DockHeight;
+        strips.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        dockWidth = Math.Ceiling(strips.DesiredSize.Width);
+        PaintShell();
     }
 
     private void Go(PanelView target)
@@ -449,32 +499,57 @@ public sealed class NotchWindow : Window
 
     // MARK: la pastilla
 
+    private readonly StackPanel pillRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly Dictionary<string, TextBlock> pillTexts = [];
+    private Ellipse? pillDot;
+    private string pillSignature = "";
+
+    /// Los datos de la pastilla cerrada son los que elija el usuario (página Widgets): se reconstruyen si cambia la lista y se repintan con cada dato nuevo.
+    private void RefreshPill()
+    {
+        var ids = model.PillIds;
+        var signature = string.Join(",", ids);
+        if (signature != pillSignature)
+        {
+            pillSignature = signature;
+            pillRow.Children.Clear();
+            pillTexts.Clear();
+            pillDot = null;
+            foreach (var id in ids)
+            {
+                var text = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+                switch (id)
+                {
+                    case "state": text.FontWeight = FontWeights.SemiBold; text.SetResourceReference(TextBlock.ForegroundProperty, "Fg"); break;
+                    case "model": text.MaxWidth = 92; text.SetResourceReference(TextBlock.ForegroundProperty, "Secondary"); break;
+                    case "clock": text.SetResourceReference(TextBlock.ForegroundProperty, "Fg"); break;
+                    default:
+                        text.FontSize = 10.5;
+                        text.FontFamily = (FontFamily)Application.Current.FindResource("Mono");
+                        text.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+                        break;
+                }
+                var item = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(pillRow.Children.Count == 0 ? 0 : 10, 0, 0, 0) };
+                if (id == "state")
+                {
+                    pillDot = new Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) };
+                    item.Children.Add(pillDot);
+                }
+                item.Children.Add(text);
+                pillRow.Children.Add(item);
+                pillTexts[id] = text;
+            }
+        }
+        foreach (var (id, text) in pillTexts) text.Text = model.PillValue(id);
+        if (pillDot is not null) pillDot.Fill = model.PillForeground;
+    }
+
     private Button BuildPill()
     {
-        var dot = new Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
-        dot.SetBinding(Shape.FillProperty, new Binding(nameof(PanelViewModel.PillForeground)) { Source = model });
-        var status = new TextBlock { FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-        status.SetBinding(TextBlock.TextProperty, new Binding(nameof(PanelViewModel.PillText)) { Source = model });
-        status.SetResourceReference(TextBlock.ForegroundProperty, "Fg");
-        var name = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(8, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-        name.SetBinding(TextBlock.TextProperty, new Binding(nameof(PanelViewModel.NotchModel)) { Source = model });
-        name.SetResourceReference(TextBlock.ForegroundProperty, "Secondary");
-        var ram = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center };
-        ram.SetBinding(TextBlock.TextProperty, new Binding(nameof(PanelViewModel.NotchRam)) { Source = model });
-        ram.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
-
-        var row = new DockPanel { Margin = new Thickness(14, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center, LastChildFill = true };
-        DockPanel.SetDock(dot, Dock.Left);
-        DockPanel.SetDock(status, Dock.Left);
-        DockPanel.SetDock(ram, Dock.Right);
-        row.Children.Add(dot);
-        row.Children.Add(status);
-        row.Children.Add(ram);
-        row.Children.Add(name);
-
+        RefreshPill();
         var button = new Button
         {
-            Content = row, Width = NotchLayout.PillWidth, Height = NotchLayout.PillHeight,
+            Content = pillRow, Width = NotchLayout.PillWidth, Height = NotchLayout.PillHeight,
             Style = (Style)Application.Current.FindResource("Plain"),
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
         };

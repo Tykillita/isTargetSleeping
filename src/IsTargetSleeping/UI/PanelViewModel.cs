@@ -22,7 +22,7 @@ public sealed class ParamCommand(Action<object?> action) : ICommand
     public void Execute(object? parameter) => action(parameter);
 }
 
-public enum PanelView { Main, Activity, Settings }
+public enum PanelView { Main, Activity, Settings, Home, Widgets }
 
 /// Una opción del selector segmentado.
 public sealed record Segment(string Title, bool IsSelected, ICommand Pick);
@@ -150,7 +150,7 @@ public sealed record ProcessSummaryRow(string Name, string Memory, string Count,
 
 /// Todo lo que muestra el panel, calculado a partir del estado: la interfaz
 /// (ContentView.xaml) solo se enlaza a estas propiedades.
-public sealed class PanelViewModel : INotifyPropertyChanged
+public sealed partial class PanelViewModel : INotifyPropertyChanged
 {
     public Supervisor Supervisor { get; }
     public OllamaController Ollama { get; }
@@ -168,7 +168,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         Supervisor.Changed += Notify;
         Theme.Changed += Notify;
 
-        CornerCommand = new Command(() => Show(this.view == PanelView.Main ? PanelView.Settings : PanelView.Main));
+        CornerCommand = new Command(() => Show(ShowingBrand ? PanelView.Settings : BackView));
         SideCommand = new Command(() => Show(this.view == PanelView.Activity ? PanelView.Settings : PanelView.Activity));
         OpenProcesses = new Command(() => ProcessesRequested?.Invoke());
         processSummaryTimer.Tick += async (_, _) => await RefreshProcessSummary();
@@ -210,7 +210,13 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         CleanNow = new Command(() =>
         {
             if (Supervisor.Agent == AgentStatus.Ready) _ = Supervisor.Clean(CleanReason.Manual, fromPanel: true);
-            else Show(PanelView.Settings);
+            else
+            {
+                // Sin el agente (o desactualizado) no hay nada que limpiar: se enseña dónde activarlo. En el notch, que no
+                // se vea nada al pulsar el botón de la versión corta o del dock sería como si no funcionara.
+                Show(PanelView.Settings);
+                AttentionRequested?.Invoke();
+            }
         });
         CleanAndSleep = new Command(() => _ = Supervisor.Clean(CleanReason.Manual, fromPanel: true, sleepModels: true));
         AgentAction = new Command(() => _ = Supervisor.InstallAgent());
@@ -218,6 +224,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         PullSuggestions = new[] { "llama3.2", "qwen3", "gemma3", "phi4" }
             .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; Notify(); })))
             .ToList();
+        InitWidgets();
         Rebuild();
     }
 
@@ -236,6 +243,8 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     }
 
     public event Action? ProcessesRequested;
+    /// Algo pide que se vea el panel entero (el notch se abre y se fija).
+    public event Action? AttentionRequested;
     public ICommand OpenProcesses { get; }
     private readonly ProcessMonitor processSummaryMonitor = new();
     private readonly System.Windows.Threading.DispatcherTimer processSummaryTimer = new() { Interval = TimeSpan.FromSeconds(2) };
@@ -259,6 +268,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
 
     private void UpdateProcessSampling()
     {
+        Hub.SetVisible(panelVisible && ShowingHome || peekVisible);
         if (ProcessSamplingActive) { processSummaryTimer.Start(); _ = RefreshProcessSummary(); }
         else processSummaryTimer.Stop();
     }
@@ -339,16 +349,22 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public bool ShowingMain => view == PanelView.Main;
     public bool ShowingActivity => view == PanelView.Activity;
     public bool ShowingSettings => view == PanelView.Settings;
-    public bool ShowingSecondary => !ShowingMain;
+    public bool ShowingSecondary => !ShowingBrand;
 
     public string HeaderTitle => view switch
     {
         PanelView.Settings => tr("Ajustes"),
         PanelView.Activity => tr("Actividad"),
+        PanelView.Widgets => tr("Widgets"),
         _ => AppInfo.Name,
     };
 
-    public string HeaderGlyph => view == PanelView.Settings ? "" : "";   // Settings / AreaChart
+    public string HeaderGlyph => view switch
+    {
+        PanelView.Settings => "",   // Settings
+        PanelView.Widgets => "",
+        _ => "",   // AreaChart
+    };
     public Brush LogoBrush => B(P == Power.On ? T.On : T.Muted);
 
     public string Subtitle
@@ -357,6 +373,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         {
             if (view == PanelView.Settings) return $"v{AppInfo.Version}";
             if (view == PanelView.Activity) return tr("Historial de %d días, en este PC", StatsStore.KeepDays);
+            if (view == PanelView.Widgets) return tr("Elige y ordena lo que ve el notch");
             if (Ollama.Version is { } v) return $"v{v} · {Ollama.Backend.Summary}";
             return Ollama.Backend.Summary;
         }
@@ -366,12 +383,13 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     // la vista principal y la X (volver) en Actividad y en Ajustes. El de al lado lleva
     // a la otra vista: Actividad desde la principal y desde Ajustes, Ajustes desde Actividad.
     private const string SettingsGlyph = "", ChartGlyph = "", CloseGlyph = "";
-    public string CornerGlyph => ShowingMain ? SettingsGlyph : CloseGlyph;
-    public Brush CornerBackground => ShowingMain ? Brushes.Transparent : B(T.Track);
+    public string CornerGlyph => ShowingBrand ? SettingsGlyph : CloseGlyph;
+    public Brush CornerBackground => ShowingBrand ? Brushes.Transparent : B(T.Track);
     public string CornerHelp => view switch
     {
         PanelView.Settings => tr("Cerrar ajustes"),
         PanelView.Activity => tr("Cerrar actividad"),
+        PanelView.Widgets => tr("Cerrar widgets"),
         _ => tr("Ajustes"),
     };
     public string SideGlyph => ShowingActivity ? SettingsGlyph : ChartGlyph;
@@ -557,6 +575,11 @@ public sealed class PanelViewModel : INotifyPropertyChanged
     public bool FreeBusy => Ollama.Loaded.FirstOrDefault() is { } m && Ollama.BusyModel == m.Name;
     public bool FreeIdle => !FreeBusy;
     public bool FreeEnabled => Ollama.BusyModel is null;
+    /// Los botones de la versión corta y de los widgets no desaparecen mientras trabajan (los de al lado saltarían): se apagan y cambian de texto.
+    public bool FreeCanClick => FreeEnabled && FreeIdle;
+    public string FreeModelLabel => tr("Liberar modelo");   // sin el nombre del modelo al lado, «Liberar» a secas no se entiende
+    public string FreeButtonText => FreeBusy ? tr("Liberando…") : FreeModelLabel;
+    public string CleanButtonText => IsCleaning ? tr("Liberando…") : CleanLabel;
     public string FreeLabel => tr("Liberar");
     public string FreeHelp => tr("Saca el modelo de la memoria sin apagar Ollama");
 
@@ -949,7 +972,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         var n => $"{Ollama.Loaded[0].Name} +{n - 1}",
     };
     public string NotchRam => Mem.Used.MemoryGB();
-    public string NotchTabHome => tr("Resumen");
+    public string NotchTabHome => tr("Inicio");
     public string NotchTabActivity => tr("Actividad");
     public string NotchTabSettings => tr("Ajustes");
     public string NotchTabProcesses => tr("Procesos");
@@ -1021,6 +1044,7 @@ public sealed class PanelViewModel : INotifyPropertyChanged
         if (confirmingDelete is not null && !Ollama.Installed.Any(m => m.Name == confirmingDelete)) confirmingDelete = null;
         var signature = string.Join("|", Ollama.Installed.Select(m => $"{m.Name}:{m.Bytes}:{loaded.Contains(m.Name)}"))
                         + $"#{busy}#{P}#{L10n.Effective}#{confirmingDelete}#{Ollama.Pulling?.Name}#{Prefs.MainModel}";
+        RebuildWidgets();
         if (signature != modelsSignature)
         {
             Models.Clear();

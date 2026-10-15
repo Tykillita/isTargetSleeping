@@ -5,74 +5,21 @@
              Width="640" Foreground="{DynamicResource Fg}"
              FontFamily="{StaticResource Sans}" FontSize="12"
              TextOptions.TextFormattingMode="Ideal" UseLayoutRounding="True" SnapsToDevicePixels="True">
-  <!-- La versión corta del notch (al pasar el ratón): estado, memoria y las acciones de siempre. Un clic la abre entera. -->
   <UserControl.Resources>
-    <!-- El aro de foco del teclado, redondo: el cuadrado de siempre rodeaba un botón circular y se veía mal hecho. -->
-    <Style x:Key="PowerFocus">
-      <Setter Property="Control.Template">
-        <Setter.Value>
-          <ControlTemplate>
-            <Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="1.5" Margin="-1" />
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
+    <!-- Dentro de la isla los widgets van sin tarjeta propia: integrados en el vidrio, como la vista corta de siempre.
+         Las plantillas piden CardBox como DynamicResource, así que este estilo local manda aquí y no en el Home. -->
+    <Style x:Key="CardBox" TargetType="Border">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="12,10" />
     </Style>
   </UserControl.Resources>
-  <Grid Margin="24,14,24,20" MinHeight="76">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="Auto" />
-      <ColumnDefinition Width="*" />
-      <ColumnDefinition Width="Auto" />
-    </Grid.ColumnDefinitions>
-
-    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-      <Button Style="{StaticResource Plain}" FocusVisualStyle="{StaticResource PowerFocus}" Command="{Binding TogglePower}" AutomationProperties.Name="{Binding HeroHelp}"
-              IsEnabled="{Binding CanToggle}" ToolTip="{Binding HeroHelp}" Width="56" Height="56" Margin="4">
-        <!-- Un solo círculo con el aro dentro (sin halo ni escala): nada que recortar. -->
-        <Grid Width="56" Height="56">
-          <Ellipse Width="52" Height="52" Fill="{Binding HeroFill}" Stroke="{Binding HeroTint}" StrokeThickness="2" />
-          <Path Data="{Binding HeroIcon}" Stroke="{Binding HeroTint}" StrokeThickness="2.4" Width="20" Height="20"
-                StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
-                HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Grid>
-      </Button>
-      <StackPanel Margin="12,0,0,0" VerticalAlignment="Center" Width="136">
-        <TextBlock Text="{Binding HeroTitle}" FontSize="17" FontWeight="SemiBold" Foreground="{Binding HeroTitleBrush}" />
-        <TextBlock Text="{Binding NotchModel}" Margin="0,2,0,0" FontFamily="{StaticResource Mono}" FontSize="11"
-                   Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" />
-      </StackPanel>
-    </StackPanel>
-
-    <StackPanel Grid.Column="1" Margin="14,0,22,0" VerticalAlignment="Center">
-      <DockPanel>
-        <TextBlock DockPanel.Dock="Right" Text="{Binding UsedLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
-        <TextBlock Text="{Binding MemoryTitle}" Style="{StaticResource Eyebrow}" />
-      </DockPanel>
-      <ui:MemoryBar Margin="0,7,0,0" Height="6" Used="{Binding UsedFraction}" Model="{Binding ModelFraction}" />
-      <StackPanel Margin="0,14,0,0" Visibility="{Binding ShowGpu, Converter={StaticResource Visible}}">
-        <DockPanel>
-          <TextBlock DockPanel.Dock="Right" Text="{Binding GpuUsedLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
-          <TextBlock Text="{Binding GpuTitle}" Style="{StaticResource Eyebrow}" TextTrimming="CharacterEllipsis" />
-        </DockPanel>
-        <ui:MemoryBar Margin="0,7,0,0" Height="6" Used="{Binding GpuUsedFraction}" Model="{Binding GpuModelFraction}" />
-      </StackPanel>
-    </StackPanel>
-
-    <StackPanel Grid.Column="2" VerticalAlignment="Center" Width="140">
-      <Button Style="{StaticResource Bordered}" Command="{Binding CleanNow}" AutomationProperties.Name="{Binding CleanLabel}" ToolTip="{Binding CleanHelp}"
-              Visibility="{Binding CleanIdle, Converter={StaticResource Visible}}" Margin="0,0,0,6">
-        <StackPanel Orientation="Horizontal">
-          <TextBlock Text="&#xEA99;" FontFamily="{StaticResource Icons}" FontSize="11.5" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding CleanLabel}" Margin="6,0,0,0" />
-        </StackPanel>
-      </Button>
-      <Button Style="{StaticResource Bordered}" Command="{Binding FreeModel}" AutomationProperties.Name="{Binding FreeLabel}" ToolTip="{Binding FreeHelp}"
-              IsEnabled="{Binding FreeEnabled}" Visibility="{Binding FreeIdle, Converter={StaticResource Visible}}" Margin="0,0,0,6">
-        <TextBlock Text="{Binding FreeLabel}" />
-      </Button>
-      <Button Style="{StaticResource Bordered}" Command="{Binding OpenProcesses}" AutomationProperties.Name="{Binding OpenProcessesLabel}">
-        <TextBlock Text="{Binding OpenProcessesLabel}" />
-      </Button>
-    </StackPanel>
-  </Grid>
+  <!-- La versión corta del notch (al pasar el ratón): los widgets que elijas en la página Widgets. Un clic abre el Home. -->
+  <StackPanel Margin="8,6,8,8" MinHeight="60">
+    <ItemsControl ItemsSource="{Binding PeekWidgets}" Focusable="False" HorizontalAlignment="Center">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+    <TextBlock Text="{Binding PeekEmpty}" Style="{StaticResource Hint}" Margin="14,12" TextWrapping="Wrap"
+               Visibility="{Binding NoPeekWidgets, Converter={StaticResource Visible}}" />
+  </StackPanel>
 </UserControl>

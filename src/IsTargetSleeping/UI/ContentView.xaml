@@ -74,7 +74,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <ui:LogoView Width="22" Height="22" Color="{Binding LogoBrush}" VerticalAlignment="Center"
-                         Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}" />
+                         Visibility="{Binding ShowingBrand, Converter={StaticResource Visible}}" />
             <TextBlock Text="{Binding HeaderGlyph}" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="{DynamicResource Accent}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        Visibility="{Binding ShowingSecondary, Converter={StaticResource Visible}}" />
@@ -84,7 +84,7 @@
                            Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
             <Border Grid.Column="2" CornerRadius="10" Padding="8,3,9,3" VerticalAlignment="Center" Margin="0,0,6,0"
-                    Background="{Binding PillBackground}" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">
+                    Background="{Binding PillBackground}" Visibility="{Binding ShowingBrand, Converter={StaticResource Visible}}">
                 <StackPanel Orientation="Horizontal">
                     <Ellipse Width="6" Height="6" Fill="{Binding PillForeground}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding PillText}" Margin="5,0,0,0" FontSize="11" FontWeight="SemiBold"
@@ -112,6 +112,51 @@
 
         <ScrollViewer x:Name="BodyScroll" MaxHeight="{Binding BodyMaxHeight}" VerticalScrollBarVisibility="Auto" Focusable="False">
         <Grid>
+
+        <!-- MARK: Home del notch: los widgets elegidos, en su orden -->
+        <StackPanel x:Name="HomePanel" Margin="8" Visibility="{Binding ShowingHome, Converter={StaticResource Visible}}">
+          <ItemsControl ItemsSource="{Binding HomeWidgets}" Focusable="False" HorizontalAlignment="Center">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          </ItemsControl>
+          <TextBlock Text="{Binding WidgetsEmpty}" Style="{StaticResource Hint}" Margin="6,10"
+                     Visibility="{Binding NoHomeWidgets, Converter={StaticResource Visible}}" />
+        </StackPanel>
+
+        <!-- MARK: Widgets: elegir y ordenar lo del Home y los favoritos del dock -->
+        <StackPanel x:Name="WidgetsPanel" Margin="14" Visibility="{Binding ShowingWidgets, Converter={StaticResource Visible}}">
+          <Border Style="{StaticResource CardBox}">
+            <StackPanel>
+              <TextBlock Text="{Binding WidgetsIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding WidgetsCells}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,4,0,12" />
+              <ItemsControl ItemsSource="{Binding WidgetRows}" Focusable="False" />
+              <TextBlock Text="{Binding WidgetsFull}" Style="{StaticResource Hint}" Margin="0,10,0,0"
+                         Visibility="{Binding WidgetsAreFull, Converter={StaticResource Visible}}" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
+            <StackPanel>
+              <TextBlock Text="{Binding PillTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding PillIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,4" />
+              <TextBlock Text="{Binding PillCount}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,12" />
+              <ItemsControl ItemsSource="{Binding PillRows}" Focusable="False" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
+            <StackPanel>
+              <TextBlock Text="{Binding PeekTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding PeekIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,4" />
+              <TextBlock Text="{Binding PeekCells}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,12" />
+              <ItemsControl ItemsSource="{Binding PeekRows}" Focusable="False" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
+            <StackPanel>
+              <TextBlock Text="{Binding FavoritesTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding FavoritesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+              <ItemsControl ItemsSource="{Binding FavoriteRows}" Focusable="False" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
 
         <!-- MARK: panel principal -->
         <StackPanel x:Name="MainPanel" Margin="14" Visibility="{Binding ShowingMain, Converter={StaticResource Visible}}">

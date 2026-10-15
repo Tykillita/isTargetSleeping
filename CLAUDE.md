@@ -43,6 +43,12 @@ versión según el tamaño del cambio:
 Un solo salto por commit (el mayor que aplique). Los commits que solo tocan docs, la web o el CI no suben la
 versión.
 
+**El agente de memoria** (el único proceso que corre como administrador, instalado en Program Files) tiene su propia
+versión, `AGENT_VERSION`, que **no** se sube con la app: solo cuando cambia su código (`src/IsTargetSleeping.Agent/` o
+los archivos de `Core` que comparte). Así «Liberar RAM» sigue funcionando al actualizar la app, sin otro permiso de
+administrador. La prueba «Agente de memoria» calcula el hash de esas fuentes y falla si cambian sin subir
+`AGENT_VERSION` y actualizar el hash en el mismo commit.
+
 Al subirla, actualiza **todo a la vez**:
 
 - `VERSION` — única fuente: los `.csproj` leen `<Version>` de este archivo y el instalador la recibe de `package.ps1`.
@@ -54,6 +60,24 @@ Al subirla, actualiza **todo a la vez**:
   `releases/download/vX.Y.Z/isTargetSleeping-X.Y.Z-…` (también los botones «Descargar» de `site/novedades.html`) y el de "Notas de la versión" (`releases/tag/vX.Y.Z`). Los SHA-256 de `site/index.html` solo
   cambian cuando hay paquetes nuevos en `dist/` (`.sha256` junto a cada archivo).
 - `site/novedades.html` (ver abajo).
+
+## Widgets nuevos: variantes y combinaciones, obligatorias
+
+Un widget nuevo del notch (`Core/Widgets/WidgetCatalog.cs`) no está terminado hasta que pasa por esto:
+
+1. **Variantes.** Su plantilla (`WidgetXxxWidget` en `App.xaml`, elegida por `WidgetTemplateSelector`) tiene vista de **una celda**
+   y vista de **dos celdas** (`Compact` / `Wide` de `WidgetSlot`; un widget de una celda que se queda solo en su fila se
+   ensancha), y su versión **densa** para la vista al pasar el ratón (`Peek` / `Full`: sin lo secundario). Si no necesita una
+   variante distinta, se dice en un comentario del propio widget.
+2. **Combinaciones.** Se prueba con todos los demás widgets, en el Home y en la vista corta: la prueba «combinaciones de
+   widgets» de `tests/IsTargetSleeping.UiTests` recorre el catálogo y falla si algo no cabe, queda cortado, no se pinta o tiene
+   un botón sin nombre. Al añadir un widget cambia el número total de combinaciones (hoy 349): actualiza esa cifra en la prueba
+   y corre `ITS_ALL_COMBOS=1 ./build.ps1 -Test` para recorrerlas **todas** (tarda varios minutos; la ejecución normal solo
+   revisa una de cada siete).
+3. **Vistazo.** Mira capturas del widget solo, con compañeros de una y de dos celdas, y en la vista corta, en español e inglés.
+4. **Pastilla y favoritos.** Si el widget tiene un dato corto o una acción de un toque, añádelos a `PillCatalog` o a
+   `FavoriteCatalog` con sus pruebas.
+5. Documentarlo como el resto de funciones (README, web, novedades, CHANGELOG, traducciones).
 
 ## Página de novedades: cada versión o feature nueva se documenta
 

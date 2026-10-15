@@ -356,5 +356,366 @@
                 </Setter.Value>
             </Setter>
         </Style>
+    <!-- MARK: widgets. Cada tipo tiene su plantilla y la ranura (WidgetSlot) decide la variante: una o dos celdas
+         (si hay compañero en la fila o se queda solo), y Home o vista al pasar el ratón (más denso). -->
+    <ui:WidgetTemplateSelector x:Key="WidgetSelector" />
+    <DataTemplate DataType="{x:Type ui:WidgetSlot}">
+      <ContentControl Content="{Binding}" ContentTemplateSelector="{StaticResource WidgetSelector}" IsTabStop="False" Focusable="False" />
+    </DataTemplate>
+    <DataTemplate x:Key="WidgetHeader">
+      <DockPanel Margin="0,0,0,8">
+        <TextBlock DockPanel.Dock="Left" Text="{Binding Model.Glyph}" FontFamily="{StaticResource Icons}" FontSize="12"
+                   Foreground="{DynamicResource Secondary}" Margin="0,1,7,0" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Model.Title}" Style="{StaticResource Eyebrow}" VerticalAlignment="Center" />
+      </DockPanel>
+    </DataTemplate>
+
+    <!-- Ollama: siempre ocupa una fila entera. -->
+    <DataTemplate x:Key="WidgetOllamaWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <Grid DataContext="{Binding Model.Panel}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Style="{StaticResource Plain}" FocusVisualStyle="{x:Null}" Command="{Binding TogglePower}" AutomationProperties.Name="{Binding HeroHelp}"
+                    IsEnabled="{Binding CanToggle}" ToolTip="{Binding HeroHelp}" Width="56" Height="56" Margin="2">
+              <Grid Width="56" Height="56">
+                <Ellipse Width="52" Height="52" Fill="{Binding HeroFill}" Stroke="{Binding HeroTint}" StrokeThickness="2" />
+                <Path Data="{Binding HeroIcon}" Stroke="{Binding HeroTint}" StrokeThickness="2.4" Width="20" Height="20"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Button>
+            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center" Width="132">
+              <TextBlock Text="{Binding HeroTitle}" FontSize="17" FontWeight="SemiBold" Foreground="{Binding HeroTitleBrush}" />
+              <TextBlock Text="{Binding NotchModel}" Margin="0,2,0,0" FontFamily="{StaticResource Mono}" FontSize="11"
+                         Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding UsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="{Binding MemoryTitle}" Style="{StaticResource Eyebrow}" />
+            </DockPanel>
+            <ui:MemoryBar Margin="0,7,0,0" Height="6" Used="{Binding UsedFraction}" Model="{Binding ModelFraction}" />
+            <StackPanel Margin="0,12,0,0" Visibility="{Binding ShowGpu, Converter={StaticResource Visible}}">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding GpuUsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding GpuTitle}" Style="{StaticResource Eyebrow}" TextTrimming="CharacterEllipsis" />
+              </DockPanel>
+              <ui:MemoryBar Margin="0,7,0,0" Height="6" Used="{Binding GpuUsedFraction}" Model="{Binding GpuModelFraction}" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="2" VerticalAlignment="Center" Width="140">
+            <!-- Los botones no desaparecen mientras trabajan: si no, los de al lado saltan de sitio. -->
+            <Button Style="{StaticResource Bordered}" Command="{Binding CleanNow}" AutomationProperties.Name="{Binding CleanLabel}" ToolTip="{Binding CleanHelp}"
+                    IsEnabled="{Binding CleanIdle}" Margin="0,0,0,6">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xEA99;" FontFamily="{StaticResource Icons}" FontSize="11.5" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CleanButtonText}" Margin="6,0,0,0" />
+              </StackPanel>
+            </Button>
+            <Button Style="{StaticResource Bordered}" Command="{Binding FreeModel}" AutomationProperties.Name="{Binding FreeModelLabel}" ToolTip="{Binding FreeHelp}"
+                    IsEnabled="{Binding FreeCanClick}" Margin="0,0,0,6">
+              <TextBlock Text="{Binding FreeButtonText}" />
+            </Button>
+            <Button Style="{StaticResource Bordered}" Command="{Binding OpenProcesses}" AutomationProperties.Name="{Binding OpenProcessesLabel}">
+              <TextBlock Text="{Binding OpenProcessesLabel}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </DataTemplate>
+
+    <!-- Sistema: una celda = una columna (en la vista corta, sin disco ni red); dos celdas = dos columnas. -->
+    <DataTemplate x:Key="WidgetSystemWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Model.CpuLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="{Binding Model.CpuTitle}" Style="{StaticResource Eyebrow}" />
+            </DockPanel>
+            <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.CpuFraction}" />
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Model.Panel.UsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+              <TextBlock Text="RAM" Style="{StaticResource Eyebrow}" />
+            </DockPanel>
+            <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.Panel.UsedFraction}" Model="{Binding Model.Panel.ModelFraction}" />
+            <StackPanel Visibility="{Binding Model.Panel.ShowGpu, Converter={StaticResource Visible}}">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Model.Panel.GpuUsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="VRAM" Style="{StaticResource Eyebrow}" />
+              </DockPanel>
+              <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.Panel.GpuUsedFraction}" Model="{Binding Model.Panel.GpuModelFraction}" />
+            </StackPanel>
+            <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Model.DiskLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding Model.DiskTitle}" Style="{StaticResource Eyebrow}" />
+              </DockPanel>
+              <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.DiskFraction}" />
+              <DockPanel>
+                <TextBlock Text="{Binding Model.NetTitle}" Style="{StaticResource Eyebrow}" DockPanel.Dock="Left" Margin="0,0,10,0" />
+                <TextBlock Text="{Binding Model.NetLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Right" TextAlignment="Right" />
+              </DockPanel>
+            </StackPanel>
+          </StackPanel>
+          <Grid Visibility="{Binding Wide, Converter={StaticResource Visible}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,0,14,0">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Model.CpuLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="{Binding Model.CpuTitle}" Style="{StaticResource Eyebrow}" />
+              </DockPanel>
+              <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.CpuFraction}" />
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Model.Panel.UsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                <TextBlock Text="RAM" Style="{StaticResource Eyebrow}" />
+              </DockPanel>
+              <ui:MemoryBar Margin="0,6,0,2" Height="6" Used="{Binding Model.Panel.UsedFraction}" Model="{Binding Model.Panel.ModelFraction}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="14,0,0,0">
+              <StackPanel Visibility="{Binding Model.Panel.ShowGpu, Converter={StaticResource Visible}}">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding Model.Panel.GpuUsedLabel}" Margin="8,0,0,0" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                  <TextBlock Text="VRAM" Style="{StaticResource Eyebrow}" />
+                </DockPanel>
+                <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.Panel.GpuUsedFraction}" Model="{Binding Model.Panel.GpuModelFraction}" />
+              </StackPanel>
+              <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Right" Text="{Binding Model.DiskLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
+                  <TextBlock Text="{Binding Model.DiskTitle}" Style="{StaticResource Eyebrow}" />
+                </DockPanel>
+                <ui:MemoryBar Margin="0,6,0,10" Height="6" Used="{Binding Model.DiskFraction}" />
+                <DockPanel>
+                  <TextBlock Text="{Binding Model.NetTitle}" Style="{StaticResource Eyebrow}" DockPanel.Dock="Left" Margin="0,0,10,0" />
+                  <TextBlock Text="{Binding Model.NetLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Right" TextAlignment="Right" />
+                </DockPanel>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type ui:CalendarDay}">
+      <Border x:Name="day" Height="19" CornerRadius="9" Background="Transparent" Opacity="{Binding Alpha}">
+        <TextBlock x:Name="num" Text="{Binding Text}" FontSize="10.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding Today}" Value="True">
+          <Setter TargetName="day" Property="Background" Value="{DynamicResource Accent}" />
+          <Setter TargetName="num" Property="Foreground" Value="{DynamicResource OnAccent}" />
+          <Setter TargetName="num" Property="FontWeight" Value="SemiBold" />
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- Reloj: el mes entero solo en el Home; en la vista corta, la hora y la fecha. Con dos celdas, la hora a un lado y el mes al otro. -->
+    <DataTemplate x:Key="WidgetClockWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding Model.Time}" FontSize="26" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Model.DateText}" Style="{StaticResource Hint}" />
+            <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}" Margin="0,8,0,0">
+              <ItemsControl ItemsSource="{Binding Model.Weekdays}" Focusable="False" Foreground="{DynamicResource Muted}" FontSize="10">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl ItemsSource="{Binding Model.Days}" Focusable="False" Margin="0,2,0,0">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </StackPanel>
+          </StackPanel>
+          <Grid Visibility="{Binding Wide, Converter={StaticResource Visible}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding Model.Time}" FontSize="34" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Model.DateText}" Style="{StaticResource Hint}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Width="250" Margin="20,0,0,0" Visibility="{Binding Full, Converter={StaticResource Visible}}">
+              <ItemsControl ItemsSource="{Binding Model.Weekdays}" Focusable="False" Foreground="{DynamicResource Muted}" FontSize="10">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl ItemsSource="{Binding Model.Days}" Focusable="False" Margin="0,2,0,0">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <!-- Pomodoro: con dos celdas, el tiempo, la barra y los botones en una sola fila. -->
+    <DataTemplate x:Key="WidgetPomodoroWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <DockPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+              <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
+                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource ButtonBg}">
+                  <TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Button>
+              <Button Style="{StaticResource Plain}" Command="{Binding Model.Reset}" AutomationProperties.Name="{Binding Model.ResetHelp}" ToolTip="{Binding Model.ResetHelp}" Margin="6,0,0,0">
+                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource ButtonBg}">
+                  <TextBlock Text="&#xE777;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Button>
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Text="{Binding Model.Remaining}" FontSize="26" FontWeight="SemiBold" FontFamily="{StaticResource Mono}" />
+              <TextBlock Text="{Binding Model.PhaseLabel}" Style="{StaticResource Hint}" />
+            </StackPanel>
+          </DockPanel>
+          <ui:MemoryBar Margin="0,10,0,0" Height="6" Used="{Binding Model.Progress}" Visibility="{Binding Compact, Converter={StaticResource Visible}}" />
+          <Grid Visibility="{Binding Wide, Converter={StaticResource Visible}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="{Binding Model.Remaining}" FontSize="34" FontWeight="SemiBold" FontFamily="{StaticResource Mono}" />
+              <TextBlock Text="{Binding Model.PhaseLabel}" Style="{StaticResource Hint}" />
+            </StackPanel>
+            <ui:MemoryBar Grid.Column="1" Margin="24,0" Height="6" Used="{Binding Model.Progress}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+              <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
+                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource ButtonBg}">
+                  <TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Button>
+              <Button Style="{StaticResource Plain}" Command="{Binding Model.Reset}" AutomationProperties.Name="{Binding Model.ResetHelp}" ToolTip="{Binding Model.ResetHelp}" Margin="6,0,0,0">
+                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource ButtonBg}">
+                  <TextBlock Text="&#xE777;" FontFamily="{StaticResource Icons}" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+              </Button>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <DataTemplate x:Key="WidgetStayAwakeWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <DockPanel>
+            <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding Model.On, Mode=OneWay}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.Title}" Margin="10,0,0,0" />
+            <TextBlock Text="{Binding Model.State}" Style="{StaticResource Hint}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </DockPanel>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <!-- Notas: más bajas en la vista corta, y sin la pista. -->
+    <DataTemplate x:Key="WidgetNotesWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <TextBox Text="{Binding Model.Text, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Model.Title}"
+                   AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource Sans}" FontSize="12">
+            <TextBox.Style>
+              <Style TargetType="TextBox" BasedOn="{StaticResource Field}">
+                <Setter Property="Height" Value="92" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Peek}" Value="True"><Setter Property="Height" Value="52" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBox.Style>
+          </TextBox>
+          <TextBlock Text="{Binding Model.Hint}" Style="{StaticResource Hint}" Margin="0,6,0,0" Visibility="{Binding Full, Converter={StaticResource Visible}}" />
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <!-- Batería: con dos celdas, el porcentaje y la barra en una fila. -->
+    <DataTemplate x:Key="WidgetBatteryWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+        <StackPanel>
+          <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <StackPanel Visibility="{Binding Model.HasBattery, Converter={StaticResource Visible}}">
+            <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+              <TextBlock Text="{Binding Model.Label}" FontSize="26" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Model.State}" Style="{StaticResource Hint}" />
+              <ui:MemoryBar Margin="0,10,0,0" Height="6" Used="{Binding Model.Fraction}" />
+            </StackPanel>
+            <Grid Visibility="{Binding Wide, Converter={StaticResource Visible}}">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding Model.Label}" FontSize="34" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Model.State}" Style="{StaticResource Hint}" />
+              </StackPanel>
+              <ui:MemoryBar Grid.Column="1" Margin="24,0,0,0" Height="6" Used="{Binding Model.Fraction}" VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+          <TextBlock Text="{Binding Model.Missing}" TextWrapping="Wrap">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock" BasedOn="{StaticResource Hint}">
+                <Setter Property="Visibility" Value="Visible" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Model.HasBattery}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
+        </StackPanel>
+      </Border>
+    </DataTemplate>
+
+    <!-- La página Widgets: una fila por widget y otra por favorito. -->
+    <DataTemplate DataType="{x:Type ui:WidgetRow}">
+      <StackPanel>
+        <Rectangle Style="{StaticResource Divider}" Margin="0,9" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+        <DockPanel>
+          <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding IsOn, Mode=OneWay}" Command="{Binding Toggle}" IsEnabled="{Binding CanToggle}"
+                          AutomationProperties.Name="{Binding SwitchName}" Margin="10,0,0,0" />
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding IsOn, Converter={StaticResource Visible}}">
+            <Button Style="{StaticResource Plain}" Command="{Binding Up}" AutomationProperties.Name="{Binding UpHelp}" ToolTip="{Binding UpHelp}">
+              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE70E;" FontFamily="{StaticResource Icons}" FontSize="11" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            </Button>
+            <Button Style="{StaticResource Plain}" Command="{Binding Down}" AutomationProperties.Name="{Binding DownHelp}" ToolTip="{Binding DownHelp}">
+              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE70D;" FontFamily="{StaticResource Icons}" FontSize="11" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            </Button>
+          </StackPanel>
+          <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource Secondary}" Width="26" VerticalAlignment="Center" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontSize="12" />
+            <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" />
+          </StackPanel>
+        </DockPanel>
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type ui:FavoriteRow}">
+      <StackPanel>
+        <Rectangle Style="{StaticResource Divider}" Margin="0,9" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+        <DockPanel>
+          <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding IsOn, Mode=OneWay}" Command="{Binding Toggle}" IsEnabled="{Binding CanToggle}"
+                          AutomationProperties.Name="{Binding Title}" Margin="10,0,0,0" />
+          <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" FontFamily="{StaticResource Icons}" FontSize="14" Foreground="{DynamicResource Secondary}" Width="26" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Title}" FontSize="12" VerticalAlignment="Center" />
+        </DockPanel>
+      </StackPanel>
+    </DataTemplate>
     </Application.Resources>
 </Application>

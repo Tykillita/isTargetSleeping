@@ -164,6 +164,103 @@ Check("notch: al salir de pantalla completa reaparece", ns.Update(false, false, 
 ns.Pin(); ns.Pin();
 Check("notch: fijar dos veces es lo mismo", ns.Mode == NotchMode.Pinned);
 
+// MARK: widgets del notch
+
+Section("Widgets del notch");
+Check("widgets: sin nada guardado salen los de siempre y caben justos",
+    WidgetLayout.Normalize(null).SequenceEqual(new[] { "ollama", "system", "clock" }) && WidgetLayout.Cells(WidgetLayout.Normalize(null)) == 4);
+Check("widgets: lo desconocido y lo repetido se descarta, y lo que no cabe en cuatro celdas también",
+    WidgetLayout.Normalize(new[] { "ollama", "bogus", "ollama", "notes", "system" }).SequenceEqual(new[] { "ollama", "notes" }));
+Check("widgets: una lista vacía guardada sigue vacía (no vuelven los de siempre)", WidgetLayout.Normalize(Array.Empty<string>()).Count == 0);
+var full = new List<string> { "ollama", "system", "clock" };
+Check("widgets: con el Home lleno no se puede añadir otro y añadir no cambia nada",
+    !WidgetLayout.CanAdd(full, "pomodoro") && WidgetLayout.Add(full, "pomodoro").SequenceEqual(full));
+Check("widgets: quitar uno hace sitio para otro", WidgetLayout.CanAdd(WidgetLayout.Remove(full, "clock"), "pomodoro")
+    && WidgetLayout.Add(WidgetLayout.Remove(full, "clock"), "pomodoro").SequenceEqual(new[] { "ollama", "system", "pomodoro" }));
+Check("widgets: uno de dos celdas no cabe donde solo queda una", !WidgetLayout.CanAdd(new List<string> { "ollama", "system" }, "notes") && WidgetLayout.CanAdd(new List<string> { "ollama" }, "notes"));
+Check("widgets: subir y bajar intercambia con el vecino",
+    WidgetLayout.Move(full, "clock", -1).SequenceEqual(new[] { "ollama", "clock", "system" })
+    && WidgetLayout.Move(full, "ollama", +1).SequenceEqual(new[] { "system", "ollama", "clock" }));
+Check("widgets: en el borde se queda donde está", WidgetLayout.Move(full, "ollama", -1).SequenceEqual(full) && WidgetLayout.Move(full, "clock", +1).SequenceEqual(full));
+Check("widgets: un id desconocido no mueve nada", WidgetLayout.Move(full, "bogus", -1).SequenceEqual(full));
+Check("widgets: el catálogo no repite ids y todos son de una o dos celdas",
+    WidgetCatalog.All.Select(w => w.Id).Distinct().Count() == WidgetCatalog.All.Count && WidgetCatalog.All.All(w => w.Cells is 1 or 2));
+Check("widgets: un widget de una celda solo en su fila se ensancha; con compañero se queda en una celda",
+    WidgetLayout.Arrange(new[] { "ollama", "system", "clock" }).SequenceEqual(new[] { ("ollama", 2), ("system", 1), ("clock", 1) })
+    && WidgetLayout.Arrange(new[] { "system" }).SequenceEqual(new[] { ("system", 2) })
+    && WidgetLayout.Arrange(new[] { "clock", "pomodoro", "awake" }).SequenceEqual(new[] { ("clock", 1), ("pomodoro", 1), ("awake", 2) })
+    && WidgetLayout.Arrange(new[] { "system", "ollama", "clock" }).SequenceEqual(new[] { ("system", 2), ("ollama", 2), ("clock", 2) })
+    && WidgetLayout.Arrange(Array.Empty<string>()).Count == 0);
+Check("widgets: la vista corta tiene sus propios valores por defecto y su propia lista vacía",
+    WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek).SequenceEqual(new[] { "ollama" }) && WidgetLayout.Normalize(Array.Empty<string>(), WidgetCatalog.DefaultPeek).Count == 0);
+Check("pastilla: sin nada guardado salen estado, modelo y RAM, y caben tres",
+    PillCatalog.Normalize(null).SequenceEqual(new[] { "state", "model", "ram" })
+    && PillCatalog.Normalize(new[] { "clock", "x", "cpu", "clock", "ram", "state" }).SequenceEqual(new[] { "clock", "cpu", "ram" })
+    && PillCatalog.Toggle(new List<string> { "state", "model", "ram" }, "cpu").Count == 3
+    && PillCatalog.Toggle(new List<string> { "state", "model" }, "cpu").SequenceEqual(new[] { "state", "model", "cpu" }));
+Check("pastilla: la CPU, la hora y la batería piden su widget; el resto no",
+    PillCatalog.WidgetsNeeded(new[] { "cpu", "clock", "battery", "ram" }).SequenceEqual(new[] { "system", "clock", "battery" })
+    && !PillCatalog.WidgetsNeeded(new[] { "state", "model", "ram", "vram", "pomodoro" }).Any());
+Check("favoritos: sin nada guardado salen encender, liberar RAM y procesos",
+    FavoriteCatalog.Normalize(null).SequenceEqual(new[] { "power", "clean", "processes" }));
+Check("favoritos: lo desconocido y lo repetido se descarta", FavoriteCatalog.Normalize(new[] { "x", "power", "power" }).SequenceEqual(new[] { "power" }));
+var favs = new List<string> { "power", "clean", "processes" };
+var fourFavs = FavoriteCatalog.Toggle(favs, "free");
+Check("favoritos: caben cuatro y el quinto no entra",
+    fourFavs.Count == 4 && FavoriteCatalog.Toggle(fourFavs, "awake").SequenceEqual(fourFavs) && FavoriteCatalog.Toggle(fourFavs, "free").Count == 3);
+
+var pomo = new Pomodoro();
+var pomoStart = new DateTime(2026, 1, 1, 9, 0, 0);
+Check("pomodoro: empieza en 25:00, en pausa", pomo.Left == TimeSpan.FromMinutes(25) && !pomo.Running && pomo.Phase == PomodoroPhase.Focus && !pomo.Tick(pomoStart));
+pomo.Start(pomoStart);
+Check("pomodoro: cuenta el tiempo que pasa", !pomo.Tick(pomoStart.AddMinutes(10)) && pomo.Left == TimeSpan.FromMinutes(15));
+pomo.Pause(pomoStart.AddMinutes(11));
+Check("pomodoro: al pausar guarda lo que quedaba y el tiempo parado no cuenta",
+    pomo.Left == TimeSpan.FromMinutes(14) && !pomo.Running && !pomo.Tick(pomoStart.AddHours(5)) && pomo.Left == TimeSpan.FromMinutes(14));
+pomo.Start(pomoStart.AddHours(6));
+Check("pomodoro: al acabar el enfoque avisa una vez y deja el descanso listo, en pausa",
+    pomo.Tick(pomoStart.AddHours(6).AddMinutes(14)) && pomo.Phase == PomodoroPhase.Break && pomo.Left == Pomodoro.BreakLength && !pomo.Running
+    && !pomo.Tick(pomoStart.AddHours(7)));
+pomo.Toggle(pomoStart.AddHours(8));
+Check("pomodoro: el descanso dura 5 min y al acabar vuelve al enfoque",
+    pomo.Tick(pomoStart.AddHours(8).AddMinutes(5)) && pomo.Phase == PomodoroPhase.Focus && pomo.Left == Pomodoro.FocusLength);
+pomo.Start(pomoStart); pomo.Reset();
+Check("pomodoro: reiniciar lo deja en 25:00 parado", !pomo.Running && pomo.Left == Pomodoro.FocusLength && pomo.Phase == PomodoroPhase.Focus && pomo.Progress == 0);
+Check("pomodoro: el formato es mm:ss y redondea hacia arriba",
+    Pomodoro.Format(TimeSpan.FromSeconds(65)) == "01:05" && Pomodoro.Format(TimeSpan.Zero) == "00:00" && Pomodoro.Format(TimeSpan.FromSeconds(0.2)) == "00:01"
+    && Pomodoro.Format(TimeSpan.FromSeconds(-3)) == "00:00");
+Check("cpu: la mitad del tiempo ocupado es el 50 %", Math.Abs(CpuMath.Percent(0, 0, 0, 50, 100, 0) - 50) < 0.001);
+Check("cpu: sin tiempo transcurrido es 0 y nunca pasa de 100",
+    CpuMath.Percent(5, 5, 5, 5, 5, 5) == 0 && CpuMath.Percent(0, 0, 0, 0, 100, 0) == 100);
+
+// MARK: agente de memoria
+
+Section("Agente de memoria");
+{
+    // El agente corre como administrador y se instala una vez: solo se cambia su versión (AGENT_VERSION) cuando cambia su código.
+    // Este hash de sus fuentes obliga a subirla (y a actualizar el hash) en el mismo commit que lo toque.
+    string? repo = AppContext.BaseDirectory;
+    while (repo is not null && !File.Exists(Path.Combine(repo, "AGENT_VERSION"))) repo = Path.GetDirectoryName(repo);
+    Check("agente: se encuentra AGENT_VERSION en el repositorio", repo is not null);
+    if (repo is not null)
+    {
+        var agentFiles = Directory.GetFiles(Path.Combine(repo, "src", "IsTargetSleeping.Agent"), "*.cs")
+            .Concat(new[] { "CleanSpec.cs", "MemoryContracts.cs", "ProcessContracts.cs", "ProcessMonitoring.cs", "ProcessActions.cs" }
+                .Select(n => Path.Combine(repo, "src", "IsTargetSleeping", "Core", n)))
+            .Select(p => Path.GetRelativePath(repo, p).Replace('\\', '/'))
+            .OrderBy(p => p, StringComparer.Ordinal).ToList();
+        var sha = System.Security.Cryptography.SHA256.Create();
+        var text = new System.Text.StringBuilder();
+        foreach (var f in agentFiles) text.Append(f).Append('\n').Append(File.ReadAllText(Path.Combine(repo, f)).Replace("\r\n", "\n")).Append('\n');
+        var hash = Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text.ToString()))).ToLowerInvariant();
+        Check("agente: si cambia su código hay que subir AGENT_VERSION y actualizar este hash (" + hash + ")", hash == "0abcfa4ad267fd1b505f10d9500246176fe006133d5b70a942ed28b214a78c5b");
+        var agentVersion = File.ReadAllText(Path.Combine(repo, "AGENT_VERSION")).Trim();
+        var appVersion = File.ReadAllText(Path.Combine(repo, "VERSION")).Trim();
+        Check("agente: AGENT_VERSION es una versión y no supera a la de la app",
+            Version.TryParse(agentVersion, out var av) && Version.TryParse(appVersion, out var pv) && av <= pv);
+    }
+}
+
 // MARK: modo juego
 
 Section("Modo juego");

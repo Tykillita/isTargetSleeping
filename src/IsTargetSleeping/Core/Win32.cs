@@ -524,6 +524,33 @@ public static class Win32
     [DllImport("shell32.dll")]
     public static extern int SHQueryUserNotificationState(out int state);
 
+    // MARK: widgets del notch: CPU, batería y mantener despierto
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FILETIME { public uint Low, High; public readonly ulong Value => ((ulong)High << 32) | Low; }
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GetSystemTimes(out FILETIME idle, out FILETIME kernel, out FILETIME user);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SYSTEM_POWER_STATUS
+    {
+        public byte ACLineStatus;       // 0 batería, 1 enchufado, 255 desconocido
+        public byte BatteryFlag;        // 128 = no hay batería
+        public byte BatteryLifePercent; // 0-100, 255 desconocido
+        public byte SystemStatusFlag;
+        public uint BatteryLifeTime, BatteryFullLifeTime;
+    }
+
+    [DllImport("kernel32.dll")]
+    public static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS status);
+
+    public const uint ES_CONTINUOUS = 0x80000000, ES_SYSTEM_REQUIRED = 0x1, ES_DISPLAY_REQUIRED = 0x2;
+
+    /// El estado vale mientras viva el hilo que lo pidió: se llama siempre desde el hilo de la interfaz.
+    [DllImport("kernel32.dll")]
+    public static extern uint SetThreadExecutionState(uint flags);
+
     // MARK: conexiones TCP con el proceso dueño (iphlpapi)
 
     public const int AF_INET = 2, AF_INET6 = 23;

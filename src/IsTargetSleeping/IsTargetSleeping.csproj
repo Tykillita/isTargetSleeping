@@ -17,6 +17,7 @@
     <ApplicationIcon Condition="Exists('..\..\Assets\isTargetSleeping.ico')">..\..\Assets\isTargetSleeping.ico</ApplicationIcon>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\VERSION').Trim())</Version>
+    <AgentVersion>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\AGENT_VERSION').Trim())</AgentVersion>
     <Product>isTargetSleeping</Product>
     <Company>CodeSentry - Tykillita</Company>
     <Authors>Ruben Pino (Tykillita), CodeSentry</Authors>
@@ -29,6 +30,10 @@
     <DebugType>embedded</DebugType>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="AgentVersion" Value="$(AgentVersion)" />
+  </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.en.json" LogicalName="IsTargetSleeping.Strings.en.json" WithCulture="false" />

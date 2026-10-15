@@ -4,12 +4,12 @@
 
 # isTargetSleeping
 
-**Watches your local models and puts them to sleep when they're idle.**
+**A notch for Windows: Ollama, your PC and your tools, at a glance.**
 
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.7.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.8.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -39,9 +39,10 @@
 
 <br>
 
-A native Windows tray app for [Ollama](https://ollama.com). It keeps an eye on your local models: when they stop
-working it puts them to sleep and gives you your RAM back, and it turns Ollama on and off in one click, however it
-was installed.
+A native Windows app that lives in the tray or, if you prefer, at the top edge of the screen as a notch. Its first
+module is [Ollama](https://ollama.com): it keeps an eye on your local models, puts them to sleep when they stop working
+to give you your RAM back, and turns Ollama on and off in one click, however it was installed. The notch adds widgets:
+system stats, clock and calendar, Pomodoro, notes and more.
 
 <a id="video"></a>
 
@@ -77,7 +78,8 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
 | 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and cleans up in its own way while freeing RAM. Each one reacts to clicks and to your cursor in its own way — asleep, without leaving its bed. Off by default; [more below](#-pets). |
-| 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is. Hover it for a short view (status, RAM and GPU, Free RAM, Free model, Processes); click it for the full panel. Two icon strips below it give one-click navigation and quick actions. It hides while something is full screen. |
+| 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is, showing the three items you choose (status, model and RAM by default). Hover it for a short view you can customize with your own widgets (Ollama by default: status, RAM and GPU, Free RAM, Free model, Processes); click it for the Home. Two icon strips below it give one-click navigation (Home, Ollama, Activity, Widgets, Settings) and up to four favorites you choose. It hides while something is full screen. |
+| 🧩 | **Widgets** | The notch Home holds four cells that you choose and order on the Widgets page: Ollama, System (CPU, RAM, VRAM, disk, network), Clock and calendar, Pomodoro (with a notice), Keep awake, Notes (saved on their own, locally) and Battery. Everything is read locally. |
 | ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
@@ -100,9 +102,10 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.7.0 is in development** (not published yet; the latest download is 1.6.1): an optional notch dock at the top
-of the screen that opens on hover and shows the whole panel, with icon strips below it for navigation and quick
-actions.
+**1.8.0 is in development** (not published yet; the latest download is 1.6.1): an optional notch dock at the top of
+the screen that opens on hover, with a Home of widgets you choose and order (Ollama, system, clock and calendar,
+Pomodoro, keep awake, notes, battery) and favorites you configure. It includes the 1.7.0 notch, which was never
+published separately.
 
 Downloads are on the [Releases](https://github.com/Tykillita/isTargetSleeping/releases) page.
 
@@ -425,6 +428,9 @@ Installations from before 1.3.0 without an update repository need one manual upg
   process-termination retries. Each elevated termination requires its own UAC approval.
 - Process names, PIDs, paths, users and memory/CPU metrics are read locally; the inspector sends none of them to
   an external service.
+- The notch widgets read your PC locally (CPU, memory, disk and network counters, battery, clock) and send nothing
+  anywhere. Notes are plain text in `%LOCALAPPDATA%\isTargetSleeping\notes.txt`; Keep awake asks Windows not to
+  sleep until you turn it off or quit.
 - No accounts, telemetry or analytics. Web pages open only when clicked: Ollama downloads, credits and GitHub
   release notes/downloads.
 - Settings live in `%LOCALAPPDATA%\isTargetSleeping\settings.json`, the 90-day history in `stats.json` next to it and

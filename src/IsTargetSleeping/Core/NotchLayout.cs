@@ -32,10 +32,10 @@ public static class NotchLayout
         return new NotchRects(pill, At(centerX, top, width, height), hot);
     }
 
-    /// Los botones flotantes, centrados justo debajo de la isla.
-    public static Win32.RECT DockBelow(Win32.RECT island, double scale)
+    /// Los botones flotantes, centrados justo debajo de la isla. El ancho lo da lo que midan sus botones (por defecto, DockWidth).
+    public static Win32.RECT DockBelow(Win32.RECT island, double scale, double widthDip = DockWidth)
     {
-        int width = Px(DockWidth, scale), top = island.Bottom + Px(DockGap, scale), centerX = island.Left + island.Width / 2;
+        int width = Px(widthDip, scale), top = island.Bottom + Px(DockGap, scale), centerX = island.Left + island.Width / 2;
         return new() { Left = centerX - width / 2, Top = top, Right = centerX - width / 2 + width, Bottom = top + Px(DockHeight, scale) };
     }
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Novedades · isTargetSleeping</title>
-<meta name="description" content="Qué trae cada versión de isTargetSleeping, la app de bandeja que duerme a Ollama en Windows.">
+<meta name="description" content="Qué trae cada versión de isTargetSleeping, el notch para Windows con widgets y control de Ollama.">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
 <script>try{var t=localStorage.getItem('its-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
@@ -58,7 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
-      <a href="#proxima" data-i18n="nov.s.proxima">1.7.0 · En desarrollo</a>
+      <a href="#proxima" data-i18n="nov.s.proxima">1.8.0 · En desarrollo</a>
       <a href="#v1-6-1">1.6.1</a>
       <a href="#v1-6-0">1.6.0</a>
       <a href="#v1-5-2">1.5.2</a>
@@ -79,19 +79,33 @@
   <div class="linea-tiempo">
     <article class="version" id="proxima">
       <div class="version-meta">
-        <div class="version-num">1.7.0</div>
+        <div class="version-num">1.8.0</div>
         <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
         <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
       </div>
       <div class="version-cuerpo">
-        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: un dock tipo notch opcional que se abre al pasar el ratón y muestra todo el panel.</p>
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: un dock tipo notch opcional con un Home de widgets que eliges y ordenas, y favoritos que configuras. Incluye el notch de la 1.7.0, que no llegó a publicarse por separado.</p>
         <div class="grupo">
           <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
           <div class="novedades">
-            <div class="novedad"><b data-i18n="nov.proxima.notchT">Dock tipo notch</b><span data-i18n="nov.proxima.notchD">Se activa en Ajustes &gt; General. Una pastilla pegada al borde superior, en el monitor donde está el cursor: al pasar el ratón se abre una vista corta con el estado, la RAM, la GPU y los botones Liberar RAM, Liberar y Procesos; un clic abre el panel entero en dos columnas. Esc, un clic fuera o apartar el puntero lo cierran.</span></div>
-            <div class="novedad"><b data-i18n="nov.proxima.dockT">Dos tiras de iconos debajo</b><span data-i18n="nov.proxima.dockD">Una para navegar (Resumen, Actividad, Ajustes) y otra con acciones rápidas: encender o apagar Ollama, Liberar RAM y Procesos. Las acciones rápidas funcionan sin abrir el panel.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.widgetsT">Home con widgets</b><span data-i18n="nov.proxima.widgetsD">El notch se abre en un Home de cuatro celdas con los widgets que elijas: Ollama, Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario, Pomodoro, Mantener despierto, Notas y Batería. Todo se lee en tu PC y no se envía a ningún sitio.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.peekT">Vista al pasar el ratón, a tu gusto</b><span data-i18n="nov.proxima.peekD">Lo que ves al acercar el ratón al notch ahora es su propia lista de widgets, que eliges y ordenas en la página Widgets (por defecto, Ollama, como siempre). Los botones Liberar RAM y Liberar modelo no desaparecen mientras trabajan: se apagan y dicen «Liberando…», sin mover a los demás.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.pildoraT">Pastilla a tu gusto</b><span data-i18n="nov.proxima.pildoraD">Elige hasta tres datos para la pastilla cerrada: estado, modelo, RAM, VRAM, CPU, hora, batería o el tiempo del Pomodoro, y ordénalos. Por defecto, estado, modelo y RAM, como siempre.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.adaptaT">Widgets que se adaptan</b><span data-i18n="nov.proxima.adaptaD">Cada widget cambia de vista según dónde está y quién lo acompaña: si se queda solo en su fila se ensancha y usa su vista ancha (Sistema en dos columnas, Reloj con el mes al lado, Pomodoro y Batería en una sola fila), y en la vista al pasar el ratón van más densos, sin lo secundario.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.paginaT">Página Widgets</b><span data-i18n="nov.proxima.paginaD">Enciende o apaga cada widget y súbelo o bájalo; un contador te dice cuántas celdas usas, y si uno no cabe te pide quitar otro antes.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.favT">Favoritos a tu gusto</b><span data-i18n="nov.proxima.favD">Hasta cuatro acciones de un toque junto a la navegación: encender o apagar Ollama, Liberar RAM, Liberar el modelo, Procesos, Mantener despierto y Pomodoro.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.pomoT">Pomodoro con aviso</b><span data-i18n="nov.proxima.pomoD">25 minutos de enfoque y 5 de descanso. Al acabar cada fase avisa con una notificación, que tiene su propio interruptor en Ajustes.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.notchT">Dock tipo notch</b><span data-i18n="nov.proxima.notchD">Se activa en Ajustes &gt; General. Una pastilla pegada al borde superior, en el monitor donde está el cursor: al pasar el ratón se abre una vista corta de Ollama con el estado, la RAM, la GPU y los botones Liberar RAM, Liberar modelo y Procesos; un clic abre el Home. Esc, un clic fuera o apartar el puntero lo cierran.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.dockT">Dos tiras de iconos debajo</b><span data-i18n="nov.proxima.dockD">Una para navegar (Inicio, Ollama, Actividad, Widgets y Ajustes) y otra con tus favoritos. Los favoritos funcionan sin abrir el panel.</span></div>
             <div class="novedad"><b data-i18n="nov.proxima.vidrioT">Vidrio con hombros curvos</b><span data-i18n="nov.proxima.vidrioD">Negro en el borde de la pantalla y cada vez más translúcido hacia abajo, con las esquinas superiores curvadas hacia fuera. El contenido aparece cuando la forma ya ha crecido y se respeta el movimiento reducido.</span></div>
             <div class="novedad"><b data-i18n="nov.proxima.pantallaT">Aparece donde lo necesitas</b><span data-i18n="nov.proxima.pantallaD">Sigue al cursor al tocar el borde superior de otro monitor y se oculta con un juego, un vídeo o el menú Inicio a pantalla completa. Todos sus botones tienen nombre accesible.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.cambios">Cambios</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.agenteT">Liberar RAM sin reinstalar el agente</b><span data-i18n="nov.proxima.agenteD">El agente de memoria ya no se pide de nuevo en cada versión: tiene su propia versión y solo hay que actualizarlo cuando cambia su código. Liberar RAM sigue funcionando al actualizar la app, sin otro permiso de administrador. Y si falta o está desactualizado, los botones del notch abren Ajustes en vez de no hacer nada.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.navT">Otra navegación en el notch</b><span data-i18n="nov.proxima.navD">El notch se abre en Inicio y su navegación es Inicio, Ollama, Actividad, Widgets y Ajustes. El panel de la bandeja no cambia.</span></div>
           </div>
         </div>
       </div>
@@ -440,7 +454,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.7.0 (en desarrollo)</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.8.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

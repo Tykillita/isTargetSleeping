@@ -13,7 +13,8 @@
     <AssemblyName>isTargetSleeping.MemoryAgent</AssemblyName>
     <RootNamespace>IsTargetSleeping.Agent</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\VERSION').Trim())</Version>
+    <!-- La versión del agente es la de AGENT_VERSION, no la de la app: solo cambia cuando cambia su código. -->
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\AGENT_VERSION').Trim())</Version>
     <Product>isTargetSleeping</Product>
     <Company>CodeSentry - Tykillita</Company>
     <Copyright>Copyright (c) 2026 CodeSentry - Tykillita (Ruben Pino)</Copyright>

@@ -68,6 +68,10 @@ public static class PrefKeys
     public const string TrayPercent = "trayPercent";          // ícono con el % de RAM (apagado por defecto)
     public const string MainModel = "mainModel";              // string, se carga al encender Ollama ("" = ninguno)
     public const string NotchDock = "notchDock";              // dock tipo notch arriba, en lugar del panel de la bandeja (experimental)
+    public const string NotchWidgets = "notchWidgets";        // lista: ids de los widgets del Home, en orden (sin valor: los de siempre)
+    public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: ids de los widgets de la vista corta (al pasar el ratón); sin valor: Ollama
+    public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
+    public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
     public const string TaskbarPet = "taskbarPetEnabled";      // mascota junto a Inicio (apagada por defecto)
     public const string TaskbarPetPlacement = "taskbarPetPlacement";   // above | left | walk
@@ -214,11 +218,17 @@ public sealed class Prefs
     public bool ReducedMotion => Switch(PrefKeys.ReducedMotion, !Win32.AnimationsEnabled());
     public void ToggleReducedMotion() => SetSwitch(PrefKeys.ReducedMotion, !ReducedMotion);
 
-    public List<string> List(string key) => demoLogin is null ? Defaults.GetList(key) : [];
+    private readonly Dictionary<string, List<string>> demoLists = [];
+    public List<string> List(string key) => demoLogin is null ? Defaults.GetList(key) : [.. demoLists.GetValueOrDefault(key) ?? []];
+
+    /// La lista guardada, o null si nunca se tocó (para distinguir «vacía» de «los valores de siempre»).
+    public List<string>? StoredList(string key) =>
+        demoLogin is null ? (Defaults.Has(key) ? Defaults.GetList(key) : null) : demoLists.GetValueOrDefault(key);
 
     public void SetList(string key, IEnumerable<string> values)
     {
         if (demoLogin is null) Defaults.SetList(key, values);
+        else demoLists[key] = values.ToList();
         Changed?.Invoke();
     }
 

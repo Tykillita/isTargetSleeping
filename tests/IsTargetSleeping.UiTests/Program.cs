@@ -114,12 +114,13 @@ internal static class Program
             model.Show(PanelView.Main);
             var fullView = new ContentView(model);
             fullView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            Check($"{language}: el hover enseña una versión corta (más baja que el panel entero)",
-                peekView.DesiredSize.Width == 640 && peekView.DesiredSize.Height > 80 && peekView.DesiredSize.Height < fullView.DesiredSize.Height - 100);
             model.WideLayout = false;
             // Los de la versión corta solo resuelven sus bindings con la ventana viva: se muestra un instante, fuera de pantalla.
             var peekHost = new Window { Content = peekView, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 300 };
             peekHost.Show();
+            peekHost.UpdateLayout();
+            Check($"{language}: el hover enseña una versión corta (640 de ancho, más baja que el panel entero)",
+                peekView.ActualWidth == 640 && peekView.ActualHeight > 80 && peekView.ActualHeight < 300 && peekView.ActualHeight < fullView.DesiredSize.Height - 100);
             static bool InPeek(DependencyObject d)
             {
                 for (; d is not null; d = VisualTreeHelper.GetParent(d)) if (d is NotchPeek) return true;
@@ -136,6 +137,149 @@ internal static class Program
             notch.Stop();
             Check($"{language}: al apagar el notch la vista queda libre para volver a la bandeja", LogicalTreeHelper.GetParent(notchView) is null);
             notch.Close();
+            // Home y Widgets: widgets elegibles y ordenables, favoritos configurables y nombres accesibles.
+            model.Show(PanelView.Home);
+            Check($"{language}: el Home empieza con los widgets de siempre", model.HomeWidgets.Select(w => w.Id).SequenceEqual(new[] { "ollama", "system", "clock" }));
+            Check($"{language}: el Home lleva el logo y el estado en la cabecera", model.ShowingBrand && !model.ShowingSecondary && model.HeaderTitle == AppInfo.Name);
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "pomodoro", "awake", "clock", "battery" });
+            Check($"{language}: elegir widgets cambia el Home y mantiene su orden", model.HomeWidgets.Select(w => w.Id).SequenceEqual(new[] { "pomodoro", "awake", "clock", "battery" }));
+            var homeKeep = model.HomeWidgets;
+            model.Notify();
+            Check($"{language}: un refresco no recrea la lista del Home (no se pierde el foco)", ReferenceEquals(homeKeep, model.HomeWidgets));
+            var homeHost = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 700 };
+            model.WideLayout = true;
+            homeHost.Show();
+            homeHost.UpdateLayout();
+            var homeButtons = Descendants(homeHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+            var unnamedHome = homeButtons.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }).ToArray();
+            Check($"{language}: los botones del Home ({homeButtons.Length}: temporizador, despierto y cabecera) tienen nombre accesible", homeButtons.Length >= 4 && unnamedHome.Length == 0);
+            Check($"{language}: el Home pinta sus widgets (reloj con calendario de 42 días)", Descendants(homeHost).OfType<ItemsControl>().Any(i => i.Items.Count == 42));
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "notes" });
+            homeHost.UpdateLayout();
+            var notesBox = Descendants(homeHost).OfType<TextBox>().FirstOrDefault(t => t.IsVisible);
+            Check($"{language}: el widget de notas tiene un campo con nombre accesible",
+                notesBox is not null && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(notesBox)?.GetName() == WidgetCatalog.Find("notes")!.Title);
+            prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "notes" });
+            Check($"{language}: la pastilla empieza con estado, modelo y RAM, y cada dato tiene texto",
+                model.PillIds.SequenceEqual(new[] { "state", "model", "ram" }) && PillCatalog.All.All(p => model.PillValue(p.Id).Length > 0));
+            prefs.SetList(PrefKeys.NotchPill, Array.Empty<string>());
+            model.Show(PanelView.Widgets);
+            homeHost.UpdateLayout();
+            var widgetSwitches = Descendants(homeHost).OfType<BrandSwitch>().Where(b => b.IsVisible).ToArray();
+            Check($"{language}: la página Widgets lista cada widget (Home y vista corta) y cada favorito con su interruptor con nombre",
+                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + FavoriteCatalog.All.Count
+                && widgetSwitches.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
+            var upDown = Descendants(homeHost).OfType<Button>().Where(b => b.IsVisible && b.Content is Border { Child: TextBlock { Text: "\uE70E" or "\uE70D" } }).ToArray();
+            Check($"{language}: subir y bajar tienen nombre propio por widget activo",
+                upDown.Length == 4 && upDown.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { } n && n.Contains(WidgetCatalog.Find("notes")!.Title)));
+            homeHost.Close();
+            prefs.SetList(PrefKeys.NotchPill, new[] { "clock", "cpu" });
+            Check($"{language}: la pastilla enseña lo elegido y pide a los widgets que sigan leyendo", model.PillIds.SequenceEqual(new[] { "clock", "cpu" })
+                && model.PillValue("cpu").StartsWith("CPU") && model.PillRows.Count(r => r.IsOn) == 2);
+            prefs.SetList(PrefKeys.NotchPill, new[] { "state", "model", "ram" });
+            Check($"{language}: la vista corta enseña lo elegido y por defecto Ollama",
+                model.PeekWidgets.Select(w => w.Id).SequenceEqual(new[] { "notes" })
+                && WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek).SequenceEqual(new[] { "ollama" }));
+            prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "ollama" });
+            model.WideLayout = false;
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
+            // Todas las combinaciones posibles de widgets, en el Home y en la vista corta: ninguna se sale de su celda ni de la fila,
+            // ninguna deja la plantilla sin pintar, ningún texto queda cortado y ningún botón sin nombre.
+            {
+                var comboIds = WidgetCatalog.All.Select(w => w.Id).ToList();
+                var combos = new List<List<string>>();
+                void Walk(List<string> current)
+                {
+                    if (current.Count > 0) combos.Add([.. current]);
+                    foreach (var id in comboIds)
+                        if (WidgetLayout.CanAdd(current, id)) { current.Add(id); Walk(current); current.RemoveAt(current.Count - 1); }
+                }
+                Walk([]);
+                // Cada widget del catálogo tiene su plantilla (con sus variantes: ver «Widgets nuevos» en CLAUDE.md).
+                Check($"{language}: cada widget del catálogo tiene modelo y plantilla propios",
+                    WidgetCatalog.All.All(w => model.Hub.Find(w.Id) is { } widget
+                        && Application.Current.TryFindResource("Widget" + widget.GetType().Name) is DataTemplate));
+                var comboClock = System.Diagnostics.Stopwatch.StartNew();
+                Check($"{language}: hay 349 combinaciones posibles de widgets", combos.Count == 349);
+                // Las 349 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
+                if (Environment.GetEnvironmentVariable("ITS_ALL_COMBOS") != "1") combos = combos.Where((_, i) => i % 7 == 0).ToList();
+                int checkedBoxes = 0, checkedTexts = 0;
+                model.WideLayout = true;
+                model.Show(PanelView.Home);
+                var comboHome = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1600 };
+                var comboPeek = new Window { Content = new NotchPeek(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1600 };
+                comboHome.Show();
+                comboPeek.Show();
+                var problems = new List<string>();
+                void Audit(Window host, ItemsControl items, List<WidgetSlot> slots, string label)
+                {
+                    host.UpdateLayout();
+                    for (int i = 0; i < slots.Count; i++)
+                    {
+                        var tag = $"{label} #{i} {slots[i].Id}";
+                        checkedBoxes++;
+                        if (items.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement box) { problems.Add($"{tag}: sin contenedor"); continue; }
+                        var bounds = box.TransformToAncestor(items).TransformBounds(new Rect(0, 0, box.ActualWidth, box.ActualHeight));
+                        if (bounds.Right > items.ActualWidth + 1) problems.Add($"{tag}: se sale de la fila ({bounds.Right:0} > {items.ActualWidth:0})");
+                        if (Math.Abs(bounds.Width - (slots[i].CardWidth + 12)) > 1) problems.Add($"{tag}: ancho {bounds.Width:0} en vez de {slots[i].CardWidth + 12}");
+                        if (box.ActualHeight < 40) problems.Add($"{tag}: alto {box.ActualHeight:0}");
+                        var inside = Descendants(box).ToList();
+                        if (!inside.OfType<TextBlock>().Any(t => t.IsVisible && !string.IsNullOrEmpty(t.Text))) problems.Add($"{tag}: plantilla sin texto");
+                        foreach (var t in inside.OfType<TextBlock>().Where(t => t.IsVisible && t.TextWrapping == TextWrapping.NoWrap && t.TextTrimming == TextTrimming.None && !string.IsNullOrEmpty(t.Text)))
+                        {
+                            checkedTexts++;
+                            var natural = new FormattedText(t.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                                new Typeface(t.FontFamily, t.FontStyle, t.FontWeight, t.FontStretch), t.FontSize, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace;
+                            if (natural > t.ActualWidth + 1) problems.Add($"{tag}: texto cortado «{t.Text}» ({natural:0} > {t.ActualWidth:0})");
+                        }
+                        foreach (var b in inside.OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible))
+                            if (System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }) problems.Add($"{tag}: botón sin nombre");
+                    }
+                    // Dentro de cada fila las celdas suman a lo sumo una fila (dos celdas).
+                    foreach (var row in slots.Select((slot, i) => (slot, box: items.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement)).Where(x => x.box is not null)
+                        .GroupBy(x => Math.Round(x.box!.TransformToAncestor(items).Transform(new Point(0, 0)).Y)))
+                        if (row.Sum(x => x.slot.Wide ? 2 : 1) > 2) problems.Add($"{label}: fila con más de dos celdas");
+                }
+                foreach (var combo in combos)
+                {
+                    prefs.SetList(PrefKeys.NotchWidgets, combo);
+                    var homeItems = Descendants(comboHome).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.HomeWidgets));
+                    Audit(comboHome, homeItems, model.HomeWidgets, $"Home [{string.Join(",", combo)}]");
+                    prefs.SetList(PrefKeys.NotchPeekWidgets, combo);
+                    var peekItems = Descendants(comboPeek).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.PeekWidgets));
+                    Audit(comboPeek, peekItems, model.PeekWidgets, $"Vista corta [{string.Join(",", combo)}]");
+                }
+                Console.WriteLine($"   combinaciones: {comboClock.Elapsed.TotalSeconds:0} s");
+                foreach (var problem in problems.Take(25)) Console.WriteLine("   " + problem);
+                Check($"{language}: {combos.Count} combinaciones de widgets, en el Home y en la vista corta ({checkedBoxes} ranuras y {checkedTexts} textos revisados), caben, se pintan, no cortan texto y tienen sus botones con nombre ({problems.Count} problemas)",
+                    problems.Count == 0 && checkedBoxes > 100 && checkedTexts > 300);
+                comboHome.Close();
+                comboPeek.Close();
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
+                prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "ollama" });
+                model.WideLayout = false;
+            }
+            int RowOf(string id) => WidgetCatalog.All.ToList().FindIndex(w => w.Id == id);
+            Check($"{language}: con el Home lleno solo se pueden quitar widgets", model.WidgetsAreFull && !model.WidgetRows[RowOf("pomodoro")].CanToggle && model.WidgetRows[RowOf("clock")].CanToggle);
+            model.WidgetRows[RowOf("clock")].Toggle.Execute(null);
+            model.WidgetRows[RowOf("pomodoro")].Toggle.Execute(null);
+            Check($"{language}: quitar uno y activar otro lo guarda en orden", model.WidgetIds.SequenceEqual(new[] { "ollama", "system", "pomodoro" }));
+            model.WidgetRows[RowOf("pomodoro")].Up.Execute(null);
+            Check($"{language}: subir un widget lo cambia con el de arriba", model.WidgetIds.SequenceEqual(new[] { "ollama", "pomodoro", "system" }));
+            Check($"{language}: los favoritos empiezan en encender, liberar RAM y procesos", model.FavoriteIds.SequenceEqual(new[] { "power", "clean", "processes" }));
+            model.FavoriteRows.First(r => r.Toggle is not null && r.IsOn is false).Toggle.Execute(null);
+            Check($"{language}: un favorito más hace cuatro y el quinto queda bloqueado",
+                model.FavoriteIds.Count == 4 && model.FavoriteRows.Count(r => !r.IsOn && !r.CanToggle) == FavoriteCatalog.All.Count - 4);
+            var dockNotch = new NotchWindow(model, new ContentView(model));
+            var dockNames = Descendants((DependencyObject)dockNotch.Content).OfType<Button>()
+                .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
+            Check($"{language}: el dock lleva las cinco páginas y los cuatro favoritos, cada uno con su nombre",
+                new[] { model.NotchTabHome, model.NotchTabOllama, model.NotchTabActivity, model.NotchTabWidgets, model.NotchTabSettings, model.HeroHelp, model.CleanLabel, model.NotchTabProcesses, model.FreeHelp }
+                    .All(name => dockNames.Contains(name)));
+            dockNotch.Stop();
+            dockNotch.Close();
+            prefs.SetList(PrefKeys.NotchFavorites, Array.Empty<string>());
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
             foreach (var panelView in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })
             {
                 var screen = new ContentView(new PanelViewModel(supervisor, panelView));

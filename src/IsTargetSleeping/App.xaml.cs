@@ -54,6 +54,7 @@ public partial class App : Application
 
         var notifier = new Notifier(tray, prefs);
         supervisor.Notify += notifier.Show;
+        model.Hub.Finished += (title, text) => notifier.Show(Notice.Pomodoro, title, text);
         supervisor.ShowPanel += activity => ShowPanel(activity ? PanelView.Activity : null);
         supervisor.Changed += Repaint;
 
