@@ -58,6 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.s.proxima">1.10.0 · En desarrollo</a>
       <a href="#v1-9-0">1.9.0</a>
       <a href="#v1-8-0">1.8.0</a>
       <a href="#v1-6-1">1.6.1</a>
@@ -78,6 +79,39 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.10.0</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+        <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: una bandeja de archivos en el notch, un widget Código con árbol de archivos y editor, un historial del portapapeles opcional y favoritos que abren tus apps.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.bandejaT">Bandeja de archivos</b><span data-i18n="nov.proxima.bandejaD">Arrastra archivos o carpetas al notch y se abre su página Bandeja. Solo guarda sus rutas (nunca copias), en memoria. De cada fila puedes arrastrar el archivo de vuelta al Explorador o a un correo, enseñarlo en el Explorador, copiar su ruta o quitarlo, y «Comprimir todo» crea un .zip en el Escritorio sin sobrescribir ninguno. El botón del dock solo aparece mientras hay algo esperando.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.codigoT">Widget Código</b><span data-i18n="nov.proxima.codigoD">Un IDE pequeño dentro del notch: eliges la carpeta de un proyecto y ves su árbol de archivos, con los iconos de Material Icon Theme (la extensión de VS Code) para cada lenguaje y carpeta. Abre hasta 8 archivos en pestañas, edita y guarda texto con Ctrl+S, y muestra imágenes. Conserva la codificación y los saltos de línea de cada archivo, guarda de forma atómica, no pisa un archivo que cambió en el disco sin preguntarte y no abre binarios ni archivos de más de 1 MB. El texto se colorea por lenguaje (solo las letras): Markdown, código, JSON, YAML, XML, CSS, SQL y scripts, y las líneas largas se ajustan al ancho, sin scroll horizontal. Solo recuerda la ruta de la carpeta; lo sin guardar vive en memoria. Viene apagado: actívalo en la página Widgets.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.editorT">Edición rápida de texto</b><span data-i18n="nov.proxima.editorD">El botón Editar de un archivo de texto lo abre en el notch para leerlo y cambiarlo; Ctrl+S o Guardar lo escribe y Recargar lo vuelve a leer del disco. Respeta su codificación y sus saltos de línea para no ensuciar un diff, guarda de forma atómica, no abre binarios, texto que no sea UTF ni archivos de más de 1 MB, y nunca pisa un archivo que cambió en el disco sin preguntarte. El texto sin guardar sobrevive a plegar el notch, y al cerrar con cambios te avisa antes.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.portapapelesT">Historial del portapapeles</b><span data-i18n="nov.proxima.portapapelesD">Opcional, viene apagado (Ajustes &gt; General). Guarda los últimos 25 textos que copias, solo en memoria: nada se escribe en disco, no guarda imágenes ni archivos, se salta lo que los gestores de contraseñas marcan como privado, se puede pausar y se vacía al apagarlo o cerrar la app.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.appsT">Favoritos que abren apps</b><span data-i18n="nov.proxima.appsD">Con «Añadir una app…» en la página Widgets, los favoritos del dock (hasta cuatro) también abren cualquier app, acceso directo o archivo que elijas. Salen con su nombre y se quitan desde la misma lista.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.cambios">Cambios</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.versionT">Versión de la app bajo el nombre</b><span data-i18n="nov.proxima.versionD">Bajo el nombre isTargetSleeping el panel y el Home del notch enseñan ahora la versión de la app (por ejemplo «v1.10.0») y no la de Ollama.</span></div>
+          </div>
+        </div>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.arreglos">Arreglos</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.parpadeoT">El notch abierto ya no parpadea</b><span data-i18n="nov.proxima.parpadeoD">Cuando la píldora cerrada cambiaba de ancho (el reloj al cambiar de minuto o una actividad en vivo como el Pomodoro, el volumen o la música al aparecer y desaparecer), el notch repetía su animación de apertura aunque ya estuviera abierto, y su contenido se apagaba y volvía a aparecer. Ahora solo se repinta cuando algo cambia de verdad.</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="version" id="v1-9-0">
       <div class="version-meta">
         <div class="version-num">1.9.0</div>
@@ -474,7 +508,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.9.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.10.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

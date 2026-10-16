@@ -32,11 +32,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- El editor de texto del widget Código (colorea el texto por lenguaje). MIT: ver THIRD-PARTY-NOTICES.md. -->
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyMetadata Include="AgentVersion" Value="$(AgentVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.en.json" LogicalName="IsTargetSleeping.Strings.en.json" WithCulture="false" />
+    <EmbeddedResource Include="Resources\FileIcons.json.gz" LogicalName="IsTargetSleeping.FileIcons.json.gz" WithCulture="false" />
     <!-- El agente de memoria (src/IsTargetSleeping.Agent), publicado antes por build.ps1. -->
     <EmbeddedResource Include="$(AgentExe)" LogicalName="IsTargetSleeping.MemoryAgent.exe" WithCulture="false"
                       Condition="'$(AgentExe)' != '' and Exists('$(AgentExe)')" />

@@ -114,6 +114,15 @@ public sealed class NotchWindow : Window
         peek.IsVisibleChanged += (_, _) => model.SetPeekVisible(peek.IsVisible);
         peek.SizeChanged += (_, _) => { if (state.Mode != NotchMode.Collapsed) Dispatcher.BeginInvoke(RelayoutIfContentChanged, DispatcherPriority.Background); };
         model.AttentionRequested += OnAttention;
+        model.TrayFilesAdded += OnTrayFiles;
+        // Archivos arrastrados al notch: se abre la bandeja y se pueden soltar en ella.
+        // WPF solo da el arrastre al elemento bajo el cursor si ese elemento lo permite: se permite en todo lo que cubre la isla.
+        AllowDrop = true;
+        foreach (var part in new UIElement[] { shell, holder, peek, view, dock, pill }) part.AllowDrop = true;
+        ((UIElement)Content).AllowDrop = true;
+        PreviewDragEnter += OnDragOver;
+        PreviewDragOver += OnDragOver;
+        Drop += OnDrop;
         model.Hub.Ticked += RefreshPill;
         model.PropertyChanged += (_, _) =>
         {
@@ -137,6 +146,29 @@ public sealed class NotchWindow : Window
         timer.Start();
     }
 
+    private void OnTrayFiles() => OpenTray();
+
+    private void OpenTray()
+    {
+        // Con un archivo a medio editar no se cambia de página: los archivos soltados quedan en la bandeja.
+        if (!model.ShowingTray && !(model.ShowingEditor && model.EditDirty)) model.Show(PanelView.Tray);
+        if (state.Mode != NotchMode.Pinned) Pin();
+    }
+
+    private void OnDragOver(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+        e.Effects = DragDropEffects.Copy;
+        e.Handled = true;
+        OpenTray();
+    }
+
+    private void OnDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] files) model.AddToTray(files);
+        e.Handled = true;
+    }
+
     private void OnAttention()
     {
         if (state.Mode != NotchMode.Pinned) Pin();
@@ -145,6 +177,7 @@ public sealed class NotchWindow : Window
     public void Stop()
     {
         model.AttentionRequested -= OnAttention;
+        model.TrayFilesAdded -= OnTrayFiles;
         model.Hub.Ticked -= RefreshPill;
         timer.Stop();
         Theme.Changed -= PaintShell;
@@ -326,13 +359,12 @@ public sealed class NotchWindow : Window
     // MARK: los botones flotantes
 
     /// Lo que cambia el dock: qué favoritos hay y el idioma (los nombres accesibles).
-    private string DockSignature() => $"{string.Join(",", model.FavoriteIds)}#{L10n.Effective}";
+    private string DockSignature() => $"{string.Join(",", model.FavoriteIds)}#{L10n.Effective}#{model.HasTrayFiles}#{model.ClipboardOn}";
 
     private void RebuildDock()
     {
         BuildDock();
-        painted = null;   // el ancho del dock cambió: hay que recolocar la ventana
-        if (laidOut) Apply();
+        if (laidOut) Apply();   // si el ancho del dock cambia la ventana, Apply lo nota al comparar con lo pintado
     }
 
     private void BuildDock()
@@ -342,14 +374,22 @@ public sealed class NotchWindow : Window
         dockPills.Clear();
         var navigation = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(5, 4, 5, 4) };
         var favorites = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(5, 4, 5, 4) };
-        void Tab(StackPanel row, string glyph, string nameProperty, PanelView? target, Action click)
+        void Tab(StackPanel row, string glyph, string nameProperty, PanelView? target, Action click, string? literalName = null)
         {
             var text = new TextBlock { Text = glyph, FontSize = 13, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             text.SetResourceReference(TextBlock.FontFamilyProperty, "Icons");
             var back = new Border { Width = 36, Height = 26, CornerRadius = new CornerRadius(8), Margin = new Thickness(2, 0, 2, 0), Child = text, Background = Brushes.Transparent };
             var button = new Button { Content = back, Style = (Style)Application.Current.FindResource("Plain") };
-            button.SetBinding(AutomationProperties.NameProperty, new Binding(nameProperty) { Source = model });
-            button.SetBinding(ToolTipProperty, new Binding(nameProperty) { Source = model });
+            if (literalName is null)
+            {
+                button.SetBinding(AutomationProperties.NameProperty, new Binding(nameProperty) { Source = model });
+                button.SetBinding(ToolTipProperty, new Binding(nameProperty) { Source = model });
+            }
+            else
+            {
+                AutomationProperties.SetName(button, literalName);
+                button.ToolTip = literalName;
+            }
             button.Click += (_, _) => click();
             // Un tinte plano al pasar el ratón (sin borde), como los controles del notch de Droppy.
             button.MouseEnter += (_, _) => back.SetResourceReference(Border.BackgroundProperty, "ButtonHover");
@@ -361,11 +401,15 @@ public sealed class NotchWindow : Window
         Tab(navigation, "", nameof(PanelViewModel.NotchTabHome), PanelView.Home, () => Go(PanelView.Home));
         Tab(navigation, "", nameof(PanelViewModel.NotchTabOllama), PanelView.Main, () => Go(PanelView.Main));
         Tab(navigation, "", nameof(PanelViewModel.NotchTabActivity), PanelView.Activity, () => Go(PanelView.Activity));
+        // La bandeja solo aparece mientras hay archivos esperando.
+        if (model.HasTrayFiles) Tab(navigation, "", nameof(PanelViewModel.NotchTabTray), PanelView.Tray, () => Go(PanelView.Tray));
+        if (model.ClipboardOn) Tab(navigation, "", nameof(PanelViewModel.NotchTabClipboard), PanelView.Clipboard, () => Go(PanelView.Clipboard));
         Tab(navigation, "", nameof(PanelViewModel.NotchTabWidgets), PanelView.Widgets, () => Go(PanelView.Widgets));
         Tab(navigation, "", nameof(PanelViewModel.NotchTabSettings), PanelView.Settings, () => Go(PanelView.Settings));
         foreach (var id in model.FavoriteIds)
             if (FavoriteCatalog.Find(id) is { } favorite)
-                Tab(favorites, favorite.Glyph, PanelViewModel.FavoriteNameProperty(id), null, () => model.RunFavorite(id));
+                Tab(favorites, favorite.Glyph, PanelViewModel.FavoriteNameProperty(id), null, () => model.RunFavorite(id),
+                    FavoriteCatalog.IsApp(id) ? L10n.tr("Abrir %@", favorite.Title) : null);
         Border Pill(StackPanel row, double left)
         {
             var pillBorder = new Border { CornerRadius = new CornerRadius(14), Child = row, Margin = new Thickness(left, 0, 0, 0) };
@@ -576,7 +620,9 @@ public sealed class NotchWindow : Window
         {
             pillWidthDip = width;
             if (pill is not null) pill.Width = width;
-            if (laidOut) { painted = null; Apply(); }
+            // Apply compara lo pintado con lo nuevo: con el notch abierto (la píldora ni se ve) no repinta, y cerrado solo cambia de ancho.
+            // Antes aquí se invalidaba `painted`, y cada cambio de ancho (reloj, actividades en vivo) repetía la apertura con su fundido: parpadeo.
+            if (laidOut) Apply();
         }
     }
 

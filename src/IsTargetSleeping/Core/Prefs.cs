@@ -72,6 +72,8 @@ public static class PrefKeys
     public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: ids de los widgets de la vista corta (al pasar el ratón); sin valor: Ollama
     public const string NotchActivities = "notchActivities";   // lista: actividades en vivo permitidas junto a la pastilla (sin valor: todas)
     public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
+    public const string ClipboardHistory = "clipboardHistory"; // historial de texto copiado, solo en memoria (apagado por defecto)
+    public const string CodeRoot = "codeRoot";                // lista de un valor: la carpeta del widget Código (solo la ruta)
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
     public const string TaskbarPet = "taskbarPetEnabled";      // mascota junto a Inicio (apagada por defecto)

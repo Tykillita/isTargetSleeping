@@ -26,6 +26,12 @@ public partial class ContentView : UserControl
         IsVisibleChanged += (_, _) => model.SetPanelVisible(IsVisible);
     }
 
+    /// Al abrir el editor el cursor ya está en el texto: se escribe sin hacer clic antes.
+    private void OnEditorVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true) Dispatcher.BeginInvoke(() => EditorBox.TextArea.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+    }
+
     /// Ancho (640) en dos columnas, o estrecho (340) en una: los mismos elementos, reacomodados.
     private void ApplyWide(bool on)
     {

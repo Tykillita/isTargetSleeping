@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.9.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.10.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -75,6 +75,7 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🪟 | **Dock tipo notch** | Opcional (Ajustes > General): una pastilla pegada al borde superior de la pantalla, en el monitor donde está el cursor, con los tres datos que elijas (estado, modelo y RAM por defecto). Pasa el ratón para una vista corta que personalizas con tus widgets (por defecto Ollama: estado, RAM y GPU, Liberar RAM, Liberar modelo, Procesos); haz clic para el Home. Dos tiras de iconos debajo dan navegación de un clic (Inicio, Ollama, Actividad, Widgets, Ajustes) y hasta cuatro favoritos que eliges tú. Se oculta mientras algo está a pantalla completa. |
 | 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario, Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con sus controles). Cada uno se adapta a su sitio y a sus compañeros. Todo se lee en local. |
 | ⚡ | **Actividades en vivo** | Junto a la pastilla cerrada del notch, lo que pasa ahora: liberando RAM, Ollama encendiéndose o apagándose, memoria crítica, el volumen cuando cambia, un Pomodoro en marcha, Mantener despierto y, si lo activas, la música que suena. Hasta dos a la vez, cada una con su interruptor. El widget de Música salta de pista al deslizarlo con el ratón o con dos dedos en el trackpad, y su barra de progreso se puede pulsar. |
+| 📥 | **Bandeja de archivos, portapapeles y favoritos de apps** | Arrastra archivos o carpetas al notch y esperan en su página Bandeja (solo sus rutas, en memoria) hasta que los arrastras de vuelta, copias su ruta, los enseñas en el Explorador o los comprimes todos en el Escritorio. El historial del portapapeles, opcional (Ajustes > General, apagado por defecto), guarda los últimos 25 textos que copias, solo en memoria, y se salta lo que los gestores de contraseñas marcan como privado. Los archivos de texto de la bandeja se pueden editar y guardar ahí mismo (Ctrl+S) para cambios rápidos mientras programas, y el widget **Código** es un IDE pequeño: eliges una carpeta y obtienes su árbol de archivos (con los iconos de Material Icon Theme), pestañas, un visor de imágenes y un editor de texto con colores de sintaxis para Markdown, código, JSON, YAML, XML y más. Los favoritos también pueden abrir cualquier app o archivo que elijas. |
 | ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
@@ -98,6 +99,9 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 **1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
+
+**1.10.0 está en desarrollo** (aún no publicada; la última descarga es la 1.9.0): una bandeja de archivos donde soltar lo que
+arrastras (con edición rápida de texto), un widget Código con árbol de archivos y editor, un historial del portapapeles opcional y favoritos de apps para el dock del notch.
 
 **1.9.0 ya está publicada** (15 de octubre de 2026): actividades en vivo junto a la pastilla cerrada del notch, un widget de
 Música con portada, controles de reproducción y barra de progreso pulsable, y el volumen en el notch.
@@ -377,6 +381,10 @@ archivos de paginación; llegar a su límite puede impedir nuevas reservas aunqu
   que no suspenda hasta que lo apagues o cierres la app.
 - El widget de Música y la actividad «Música sonando» leen en local la sesión de medios que expone Windows (título, artista,
   portada) y solo mientras uno de los dos está en uso; no se guarda ni se envía nada.
+- La bandeja de archivos guarda solo las rutas de lo que sueltas (nunca copias), en memoria; el .zip solo se crea cuando
+  lo pides, en tu Escritorio. El historial del portapapeles, opcional (apagado por defecto), guarda hasta 25 textos copiados
+  solo en memoria: nunca en disco, nunca imágenes ni archivos, se salta lo que los gestores de contraseñas marcan como
+  privado y se vacía al apagarlo o cerrar la app. Un favorito de app guarda solo su ruta en `settings.json`, y lo mismo la carpeta del widget Código, que solo lee y escribe los archivos que abres ahí. El editor de la bandeja trabaja sobre el propio archivo: conserva su codificación y sus saltos de línea, guarda a través de un archivo temporal y avisa en vez de sobrescribir un archivo que cambió en el disco; el texto sin guardar vive solo en memoria.
 - Nombres, PIDs, rutas, usuarios y métricas de RAM/CPU se leen localmente; el reconocimiento de procesos no envía
   esos datos a ningún servicio externo.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio
@@ -542,6 +550,8 @@ negro— y tiene **funciones nuevas y originales** como el modo juego, vigilante
 protegiendo los modelos (en lugar de Mem Reduct), uso de GPU/VRAM, «quién despierta al modelo», la vista Actividad con
 su historial, descargar y borrar modelos, llama.cpp y LM Studio, enlaces `istargetsleeping://`, notificaciones y
 actualizaciones. El aviso de copyright de ModelNap se conserva en [LICENSE](LICENSE), como exige su licencia MIT.
+
+Los iconos de archivo del widget Código vienen de [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) y su editor de texto es [AvalonEdit](https://github.com/icsharpcode/AvalonEdit) (MIT); mira [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Ollama es una marca de sus respectivos dueños; este proyecto no está afiliado a Ollama.
 

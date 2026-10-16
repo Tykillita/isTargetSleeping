@@ -72,7 +72,7 @@ Un widget nuevo del notch (`Core/Widgets/WidgetCatalog.cs`) no está terminado h
    la celda sin dejar huecos; hoy la tiene Música). Si no necesita una variante distinta, se dice en un comentario del propio widget.
 2. **Combinaciones.** Se prueba con todos los demás widgets, en el Home y en la vista corta: la prueba «combinaciones de
    widgets» de `tests/IsTargetSleeping.UiTests` recorre el catálogo y falla si algo no cabe, queda cortado, no se pinta o tiene
-   un botón sin nombre. Al añadir un widget cambia el número total de combinaciones (hoy 724): actualiza esa cifra en la prueba
+   un botón sin nombre. Al añadir un widget cambia el número total de combinaciones (hoy 831): actualiza esa cifra en la prueba
    y corre `ITS_ALL_COMBOS=1 ./build.ps1 -Test` para recorrerlas **todas** (tarda varios minutos; la ejecución normal solo
    revisa una de cada siete).
 3. **Vistazo.** Mira capturas del widget solo, con compañeros de una y de dos celdas, y en la vista corta, en español e inglés.

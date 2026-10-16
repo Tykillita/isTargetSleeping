@@ -207,8 +207,8 @@ internal static class Program
                     WidgetCatalog.All.All(w => model.Hub.Find(w.Id) is { } widget
                         && Application.Current.TryFindResource("Widget" + widget.GetType().Name) is DataTemplate));
                 var comboClock = System.Diagnostics.Stopwatch.StartNew();
-                Check($"{language}: hay 724 combinaciones posibles de widgets", combos.Count == 724);
-                // Las 724 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
+                Check($"{language}: hay 831 combinaciones posibles de widgets", combos.Count == 831);
+                // Las 831 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
                 if (Environment.GetEnvironmentVariable("ITS_ALL_COMBOS") != "1") combos = combos.Where((_, i) => i % 7 == 0).ToList();
                 int checkedBoxes = 0, checkedTexts = 0;
                 model.WideLayout = true;
@@ -285,6 +285,236 @@ internal static class Program
                     .All(name => dockNames.Contains(name)));
             dockNotch.Stop();
             dockNotch.Close();
+            // Bandeja de archivos: lo arrastrado aparece como filas con sus botones con nombre, y el dock gana su botón mientras hay archivos.
+            {
+                var trayDir = Path.Combine(Path.GetTempPath(), "its-ui-tray-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(trayDir);
+                var trayFile = Path.Combine(trayDir, "uno.txt");
+                File.WriteAllText(trayFile, "1");
+                Check($"{language}: sin archivos la bandeja está vacía y no hay botón en el dock", model.NoTrayFiles && !model.HasTrayFiles);
+                model.AddToTray(new[] { trayFile, trayDir });
+                model.WideLayout = true;
+                model.Show(PanelView.Tray);
+                Check($"{language}: la bandeja enseña lo arrastrado y su cabecera", model.ShowingTray && model.TrayRows.Count == 2 && model.HeaderTitle == L10n.tr("Bandeja")
+                    && model.TrayRows.Any(r => r.IsFolder) && model.TrayRows.Any(r => !r.IsFolder && r.Name == "uno.txt"));
+                var trayHost = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 900 };
+                trayHost.Show();
+                trayHost.UpdateLayout();
+                var trayButtons = Descendants(trayHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+                Check($"{language}: los botones de la bandeja ({trayButtons.Length}) tienen nombre accesible",
+                    trayButtons.Length >= 9 && trayButtons.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
+                trayHost.Close();
+                var trayNotch = new NotchWindow(model, new ContentView(model));
+                var trayNames = Descendants((DependencyObject)trayNotch.Content).OfType<Button>()
+                    .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
+                Check($"{language}: con archivos esperando el dock tiene el botón Bandeja", trayNames.Contains(model.NotchTabTray));
+                trayNotch.Stop();
+                trayNotch.Close();
+                // Editor rápido: abrir un .md de la bandeja, cambiarlo, guardarlo y cerrarlo, con sus botones con nombre.
+                var mdFile = Path.Combine(trayDir, "nota.md");
+                File.WriteAllText(mdFile, "# titulo\n");
+                model.AddToTray(new[] { mdFile });
+                var mdRow = model.TrayRows.First(r => r.Name == "nota.md");
+                Check($"{language}: las filas de archivo tienen botón Editar y las de carpeta no", mdRow.CanEdit && model.TrayRows.First(r => r.IsFolder).CanEdit == false);
+                mdRow.Edit.Execute(null);
+                Check($"{language}: Editar abre el editor con el texto del archivo", model.ShowingEditor && model.EditText == "# titulo\n" && model.HeaderTitle == "nota.md" && !model.EditDirty);
+                model.EditText = "# titulo\ncambio rápido\n";
+                Check($"{language}: escribir marca cambios sin guardar", model.EditDirty && model.EditStatus == L10n.tr("Sin guardar") && model.Subtitle == L10n.tr("Cambios sin guardar"));
+                var editHost = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 900 };
+                editHost.Show();
+                editHost.UpdateLayout();
+                var editButtons = Descendants(editHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+                Check($"{language}: los botones del editor ({editButtons.Length}) tienen nombre accesible",
+                    editButtons.Length >= 4 && editButtons.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
+                editHost.Close();
+                model.CornerCommand.Execute(null);
+                Check($"{language}: cerrar con cambios sin guardar avisa y no sale", model.ShowingEditor && model.EditStatus == L10n.tr("Hay cambios sin guardar. Pulsa Cerrar otra vez para descartarlos."));
+                model.SaveEdit.Execute(null);
+                Check($"{language}: guardar escribe el archivo y limpia el aviso", File.ReadAllText(mdFile) == "# titulo\ncambio rápido\n" && !model.EditDirty && model.EditStatus.StartsWith(L10n.tr("Guardado a las %@", "").TrimEnd()));
+                File.WriteAllText(mdFile, "lo cambió otro programa\n");
+                File.SetLastWriteTimeUtc(mdFile, DateTime.UtcNow.AddMinutes(3));
+                model.EditText = "mi segundo cambio\n";
+                model.SaveEdit.Execute(null);
+                Check($"{language}: si el archivo cambió fuera se avisa y no se pisa", model.EditConflict && File.ReadAllText(mdFile) == "lo cambió otro programa\n");
+                model.OverwriteEdit.Execute(null);
+                Check($"{language}: sobrescribir guarda y quita el aviso de conflicto", !model.EditConflict && File.ReadAllText(mdFile) == "mi segundo cambio\n");
+                model.CloseEdit.Execute(null);
+                Check($"{language}: cerrar sin cambios vuelve a la bandeja", model.ShowingTray && !model.ShowingEditor);
+                var binFile = Path.Combine(trayDir, "dato.bin");
+                File.WriteAllBytes(binFile, new byte[] { 1, 0, 2 });
+                model.AddToTray(new[] { binFile });
+                model.TrayRows.First(r => r.Name == "dato.bin").Edit.Execute(null);
+                Check($"{language}: un archivo que no es texto no se abre y lo dice en la bandeja", model.ShowingTray && model.HasTrayStatus && model.TrayStatus.Contains("dato.bin"));
+                model.Tray.Remove(mdFile);
+                model.Tray.Remove(binFile);
+                model.Notify();
+                model.TrayRows[0].Remove.Execute(null);
+                model.ClearTray.Execute(null);
+                Check($"{language}: vaciar la bandeja la deja sin filas", model.TrayRows.Count == 0 && model.NoTrayFiles);
+                model.WideLayout = false;
+                model.Show(PanelView.Main);
+                try { Directory.Delete(trayDir, true); } catch { }
+            }
+            // Bajo el nombre de la app va la versión de la app, sin nada de Ollama, en el panel y en el Home.
+            foreach (var brandView in new[] { PanelView.Main, PanelView.Home })
+            {
+                model.Show(brandView);
+                Check($"{language}: bajo el título de {brandView} va solo la versión de la app", model.Subtitle == $"v{AppInfo.Version}" && !model.Subtitle.Contains("Ollama", StringComparison.OrdinalIgnoreCase));
+            }
+            model.Show(PanelView.Main);
+            // Widget Código: árbol, pestañas, visor de imágenes y editor sobre una carpeta de verdad.
+            {
+                var iconMap = FileIcons.Map;
+                int brokenShapes = iconMap is null ? -1 : iconMap.Keys.Sum(k => FileIcons.BrokenShapes(iconMap.Get(k)!));
+                Check($"{language}: los {iconMap?.Count} iconos de archivo y carpeta se leen enteros en WPF y salen congelados",
+                    iconMap is { Count: > 1000 } && brokenShapes == 0 && iconMap.Keys.Take(80).All(k => FileIcons.Build(iconMap.Get(k)!).IsFrozen)
+                    && FileIcons.For("main.ts", false, false) is { Width: > 0 } && FileIcons.For("src", true, true) is { Height: > 0 });
+                var code = model.Hub.Code;
+                var projDir = Path.Combine(Path.GetTempPath(), "its-ui-code-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(Path.Combine(projDir, "src"));
+                Directory.CreateDirectory(Path.Combine(projDir, "node_modules"));
+                var mainFile = Path.Combine(projDir, "src", "main.ts"); File.WriteAllText(mainFile, "let a = 1;\n");
+                var readmeFile = Path.Combine(projDir, "README.md"); File.WriteAllText(readmeFile, "# Hola\r\ncon crlf\r\n");
+                var pngFile = Path.Combine(projDir, "logo.png");
+                {
+                    var bmp = System.Windows.Media.Imaging.BitmapSource.Create(4, 4, 96, 96, System.Windows.Media.PixelFormats.Bgra32, null, new byte[4 * 4 * 4], 16);
+                    var enc = new System.Windows.Media.Imaging.PngBitmapEncoder(); enc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bmp));
+                    using var fs = File.Create(pngFile); enc.Save(fs);
+                }
+                var binFile = Path.Combine(projDir, "datos.bin"); File.WriteAllBytes(binFile, new byte[] { 1, 0, 2, 0 });
+                Check($"{language}: sin carpeta el widget lo pide y no enseña árbol", code.NoRoot && code.Rows.Count == 0 && code.Summary == L10n.tr("Sin carpeta abierta"));
+                Check($"{language}: una carpeta que no existe no se acepta", !code.SetRoot(Path.Combine(projDir, "no-existe")) && code.NoRoot);
+                Check($"{language}: al elegir carpeta el árbol enseña lo suyo, sin carpetas generadas",
+                    code.SetRoot(projDir) && code.HasRoot && code.Rows.Select(r => r.Name).SequenceEqual(new[] { "src", "datos.bin", "logo.png", "README.md" }));
+                code.Rows[0].Click.Execute(null);
+                Check($"{language}: pulsar una carpeta la abre y enseña su contenido con sangría", code.Rows.Select(r => r.Name).SequenceEqual(new[] { "src", "main.ts", "datos.bin", "logo.png", "README.md" }) && code.Rows[1].Depth == 1 && code.Rows[0].Expanded);
+                Check($"{language}: cada fila lleva su icono dibujado y un nombre accesible", code.Rows.All(r => r.Icon is not null && r.Help.Length > 0) && code.Rows[0].Help == L10n.tr("Contraer «%@»", "src"));
+                code.Rows[1].Click.Execute(null);
+                Check($"{language}: abrir un archivo de texto crea su pestaña y la activa", code.Tabs.Count == 1 && code.ShowText && code.ActiveText == "let a = 1;\n" && code.Rows[1].Active);
+                code.ActiveText = "let a = 2;\n";
+                Check($"{language}: escribir marca la pestaña sin guardar y lo dice la vista corta", code.Tabs[0].Dirty && code.Status == L10n.tr("Sin guardar") && code.Summary.Contains("1"));
+                code.Rows.First(r => r.Name == "README.md").Click.Execute(null);
+                code.ActiveText = "# Hola\ncambiado\n";
+                code.Tabs[0].Select.Execute(null);
+                Check($"{language}: cada pestaña guarda su propio texto al cambiar de una a otra", code.ActiveText == "let a = 2;\n" && code.Tabs[1].Text == "# Hola\ncambiado\n" && code.DirtyCount == 2);
+                code.Save.Execute(null);
+                Check($"{language}: Guardar escribe el archivo activo y solo ese", File.ReadAllText(mainFile) == "let a = 2;\n" && !code.Tabs[0].Dirty && code.Tabs[1].Dirty && File.ReadAllText(readmeFile) == "# Hola\r\ncon crlf\r\n");
+                Check($"{language}: tras guardar sale «Guardado», porque había cambios", code.Status == L10n.tr("Guardado"));
+                code.FlashDelay = TimeSpan.FromMilliseconds(60);
+                code.Save.Execute(null);
+                Check($"{language}: guardar sin haber cambiado nada no enseña ningún mensaje", code.Status == "");
+                code.Tabs[0].Text = "let a = 3;\n";
+                code.Save.Execute(null);
+                {
+                    var wait = new System.Windows.Threading.DispatcherFrame();
+                    var waitTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+                    waitTimer.Tick += (_, _) => { waitTimer.Stop(); wait.Continue = false; };
+                    waitTimer.Start();
+                    Check($"{language}: el «Guardado» está al guardar…", code.Status == L10n.tr("Guardado"));
+                    System.Windows.Threading.Dispatcher.PushFrame(wait);
+                }
+                Check($"{language}: …y se apaga solo a los pocos segundos", code.Status == "" && code.ShortStatus == "");
+                code.FlashDelay = TimeSpan.FromSeconds(3);
+                code.Tabs[1].Select.Execute(null);
+                code.Save.Execute(null);
+                Check($"{language}: guarda con los saltos de línea que tenía el archivo (CRLF)", File.ReadAllText(readmeFile) == "# Hola\r\ncambiado\r\n" && code.DirtyCount == 0);
+                code.Rows.First(r => r.Name == "logo.png").Click.Execute(null);
+                Check($"{language}: una imagen se abre en el visor, no en el editor", code.ShowImage && !code.ShowText && code.ActiveImage is not null);
+                code.Rows.First(r => r.Name == "datos.bin").Click.Execute(null);
+                Check($"{language}: un binario enseña un aviso y no se edita", code.ShowMessage && code.ActiveMessage.Contains("datos.bin") && !code.ShowText);
+                code.Save.Execute(null);
+                Check($"{language}: guardar sin un archivo de texto activo no hace nada", File.ReadAllBytes(binFile).Length == 4);
+                code.OpenFile(mainFile);
+                Check($"{language}: abrir otra vez el mismo archivo no duplica su pestaña", code.Tabs.Count == 4 && code.Active?.Path == mainFile);
+                File.WriteAllText(mainFile, "otro programa\n");
+                File.SetLastWriteTimeUtc(mainFile, DateTime.UtcNow.AddMinutes(4));
+                code.Tabs[0].Select.Execute(null);
+                code.ActiveText = "mi cambio\n";
+                code.Save.Execute(null);
+                Check($"{language}: si el archivo cambió fuera no se pisa y se ofrece sobrescribir", code.Conflict && File.ReadAllText(mainFile) == "otro programa\n");
+                code.Overwrite.Execute(null);
+                Check($"{language}: sobrescribir guarda y quita el conflicto", !code.Conflict && File.ReadAllText(mainFile) == "mi cambio\n");
+                code.ActiveText = "sin guardar\n";
+                code.Tabs[0].Close.Execute(null);
+                Check($"{language}: cerrar una pestaña con cambios avisa y no la cierra", code.Tabs.Count == 4 && code.Status.Contains("main.ts"));
+                code.Tabs[0].Close.Execute(null);
+                Check($"{language}: cerrarla otra vez la descarta y activa otra", code.Tabs.Count == 3 && code.Active is not null && File.ReadAllText(mainFile) == "mi cambio\n");
+                for (int i = 0; i < CodeWidget.MaxTabs + 2; i++) { var extra = Path.Combine(projDir, $"e{i}.txt"); File.WriteAllText(extra, "x"); code.OpenFile(extra); }
+                Check($"{language}: hay un tope de pestañas abiertas y avisa", code.Tabs.Count == CodeWidget.MaxTabs && code.Status.Contains(CodeWidget.MaxTabs.ToString()));
+                while (code.Tabs.Count > 0) code.Tabs[0].Close.Execute(null);
+                Check($"{language}: sin pestañas el editor pide elegir un archivo", code.NoTabs && !code.ShowText && code.Active is null);
+                // El widget pintado: solo, con sus iconos, sus botones con nombre y su editor.
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "code" });
+                code.OpenFile(mainFile);
+                model.WideLayout = true;
+                model.Show(PanelView.Home);
+                var codeHost = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1100 };
+                codeHost.Show();
+                codeHost.UpdateLayout();
+                var codeButtons = Descendants(codeHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+                var codeImages = Descendants(codeHost).OfType<Image>().Where(i => i.IsVisible && i.Source is not null).ToArray();
+                var codeBox = Descendants(codeHost).OfType<CodeEditor>().FirstOrDefault(t => t.IsVisible);
+                Check($"{language}: el widget Código pintado tiene árbol, iconos, editor y botones con nombre ({codeButtons.Length} botones, {codeImages.Length} iconos)",
+                    codeButtons.Length >= 8 && codeImages.Length >= 4 && codeBox is not null && codeBox.Text == "mi cambio\n"
+                    && codeButtons.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 })
+                    && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(codeBox!)?.GetName() == L10n.tr("Editor de %@", "main.ts"));
+                Check($"{language}: si es el único widget el editor crece ({codeBox!.ActualHeight:0} px) sin dejar la tarjeta vacía", codeBox.ActualHeight > 200);
+                codeHost.Close();
+                code.Tabs.ToList().ForEach(t => t.Close.Execute(null));
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
+                model.WideLayout = false;
+                model.Show(PanelView.Main);
+                try { Directory.Delete(projDir, true); } catch { }
+            }
+            // Historial del portapapeles: apagado por defecto; al encenderlo aparece su botón en el dock y sus filas tienen botones con nombre.
+            {
+                Check($"{language}: el historial del portapapeles viene apagado y sin botón", !model.ClipboardOn && model.NoClipItems);
+                model.ToggleClipboard.Execute(null);
+                model.Clip.Clear();
+                model.Clip.Add("primer texto");
+                model.Clip.Add("segundo texto\ncon dos líneas");
+                model.WideLayout = true;
+                model.Show(PanelView.Clipboard);
+                model.Notify();
+                Check($"{language}: el historial enseña lo copiado, lo último primero", model.ShowingClipboard && model.ClipRows.Count == 2
+                    && model.ClipRows[0].Preview == "segundo texto" && model.HeaderTitle == L10n.tr("Portapapeles"));
+                var clipHost = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 900 };
+                clipHost.Show();
+                clipHost.UpdateLayout();
+                var clipButtons = Descendants(clipHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+                Check($"{language}: los botones del historial ({clipButtons.Length}) tienen nombre accesible",
+                    clipButtons.Length >= 7 && clipButtons.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
+                clipHost.Close();
+                var clipNotch = new NotchWindow(model, new ContentView(model));
+                var clipNames = Descendants((DependencyObject)clipNotch.Content).OfType<Button>()
+                    .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
+                Check($"{language}: con el historial activo el dock tiene el botón Portapapeles", clipNames.Contains(model.NotchTabClipboard));
+                clipNotch.Stop();
+                clipNotch.Close();
+                model.PauseClip.Execute(null);
+                Check($"{language}: pausar cambia el botón a Reanudar", model.ClipPauseLabel == L10n.tr("Reanudar"));
+                model.PauseClip.Execute(null);
+                model.ToggleClipboard.Execute(null);
+                Check($"{language}: apagar el historial lo borra y saca de su página", !model.ClipboardOn && model.Clip.Count == 0 && !model.ShowingClipboard);
+                model.WideLayout = false;
+                model.Show(PanelView.Main);
+            }
+            // Favoritos de apps: una app añadida sale en el dock con su nombre y se quita desde la misma lista.
+            {
+                var demoApp = FavoriteCatalog.AppId(@"C:\Demo\mi-app.exe");
+                prefs.SetList(PrefKeys.NotchFavorites, new[] { "power", demoApp });
+                model.Notify();
+                Check($"{language}: la lista de favoritos incluye la app añadida, activa", model.FavoriteRows.Any(r => r.Title == "mi-app" && r.IsOn));
+                var appNotch = new NotchWindow(model, new ContentView(model));
+                var appNames = Descendants((DependencyObject)appNotch.Content).OfType<Button>()
+                    .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
+                Check($"{language}: el dock enseña la app con su nombre accesible", appNames.Contains(L10n.tr("Abrir %@", "mi-app")));
+                appNotch.Stop();
+                appNotch.Close();
+                model.FavoriteRows.First(r => r.Title == "mi-app").Toggle.Execute(null);
+                model.Notify();
+                Check($"{language}: quitar la app la saca de la lista", model.FavoriteRows.All(r => r.Title != "mi-app"));
+            }
             prefs.SetList(PrefKeys.NotchFavorites, Array.Empty<string>());
             prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
             foreach (var panelView in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })

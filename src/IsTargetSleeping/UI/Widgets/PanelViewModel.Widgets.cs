@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Input;
 using static IsTargetSleeping.L10n;
 
@@ -27,6 +28,10 @@ public sealed partial class PanelViewModel
     public List<WidgetRow> PillRows { get; private set; } = [];
     public List<FavoriteRow> ActivityRows { get; private set; } = [];
     public List<FavoriteRow> FavoriteRows { get; private set; } = [];
+    public bool CanAddFavoriteApp { get; private set; }
+    public ICommand AddFavoriteApp { get; private set; } = null!;
+    public string AddAppLabel => tr("Añadir una app…");
+    public string AddAppHelp => tr("Elige una app o un archivo para abrirlo con un toque desde el dock");
     private string widgetsSignature = "";
 
     public bool ShowingHome => view == PanelView.Home;
@@ -146,13 +151,20 @@ public sealed partial class PanelViewModel
                 new Command(() => Prefs.SetList(PrefKeys.NotchPill, WidgetLayout.Move(pill, id, +1))),
                 i > 0, PillScope);
         }).ToList();
-        FavoriteRows = FavoriteCatalog.All.Select((info, i) =>
+        // Las acciones de siempre y, después, las apps del usuario (que aquí solo se pueden quitar).
+        FavoriteRows = FavoriteCatalog.All.Concat(favorites.Where(FavoriteCatalog.IsApp).Select(id => FavoriteCatalog.Find(id)!)).Select((info, i) =>
         {
             var id = info.Id;
             var on = favorites.Contains(id);
             return new FavoriteRow(info.Title, info.Glyph, on, on || favorites.Count < FavoriteCatalog.Max,
                 new Command(() => Prefs.SetList(PrefKeys.NotchFavorites, FavoriteCatalog.Toggle(favorites, id))), i > 0);
         }).ToList();
+        CanAddFavoriteApp = favorites.Count < FavoriteCatalog.Max;
+        AddFavoriteApp = new Command(() =>
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog { Title = AddAppLabel, Filter = tr("Apps y accesos directos") + "|*.exe;*.lnk|*.*|*.*" };
+            if (dialog.ShowDialog() == true) Prefs.SetList(PrefKeys.NotchFavorites, FavoriteCatalog.Toggle(favorites, FavoriteCatalog.AppId(dialog.FileName)));
+        });
     }
 
     private List<WidgetRow> BuildRows(List<string> ids, string key, string? scope) =>
@@ -188,6 +200,10 @@ public sealed partial class PanelViewModel
             case "processes": OpenProcesses.Execute(null); break;
             case "awake": Hub.Awake.Toggle.Execute(null); break;
             case "pomodoro": Hub.Pomodoro.Toggle.Execute(null); break;
+            case var app when FavoriteCatalog.IsApp(app):
+                try { Process.Start(new ProcessStartInfo(FavoriteCatalog.AppPath(app)) { UseShellExecute = true }); }
+                catch (Exception e) { AppLog.Write($"favorito: {e.Message}"); }
+                break;
         }
     }
 

@@ -44,6 +44,7 @@ public abstract class WidgetModel(WidgetInfo info) : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void Raise() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+    protected void RaiseProperty(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     public virtual void Tick(DateTime now) { }
 }
 
@@ -301,6 +302,7 @@ public sealed class WidgetHub
     public StayAwakeWidget Awake { get; } = new();
     public NotesWidget Notes { get; }
     public SystemWidget SystemStats { get; }
+    public CodeWidget Code { get; }
     public ClockWidget ClockInfo { get; } = new();
     public BatteryWidget BatteryInfo { get; } = new();
     public MediaWidget Media { get; } = new();
@@ -314,9 +316,10 @@ public sealed class WidgetHub
     {
         Notes = new NotesWidget(persist: !panel.Ollama.IsDemo);
         SystemStats = new SystemWidget(panel);
+        Code = new CodeWidget(panel.Prefs);
         all = new WidgetModel[]
         {
-            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media,
+            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media, Code,
         }.ToDictionary(w => w.Id);
         Pomodoro.Finished += (title, text) => Finished?.Invoke(title, text);
         Pomodoro.PropertyChanged += (_, _) => Sync();

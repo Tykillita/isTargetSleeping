@@ -161,6 +161,97 @@
               <TextBlock Text="{Binding FavoritesTitle}" Style="{StaticResource Eyebrow}" />
               <TextBlock Text="{Binding FavoritesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
               <ItemsControl ItemsSource="{Binding FavoriteRows}" Focusable="False" />
+              <Button Style="{StaticResource Bordered}" Command="{Binding AddFavoriteApp}" IsEnabled="{Binding CanAddFavoriteApp}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                      AutomationProperties.Name="{Binding AddAppLabel}" ToolTip="{Binding AddAppHelp}">
+                <TextBlock Text="{Binding AddAppLabel}" />
+              </Button>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- MARK: bandeja de archivos: lo que se arrastra al notch espera aquí -->
+        <StackPanel x:Name="TrayPanel" Margin="14" Visibility="{Binding ShowingTray, Converter={StaticResource Visible}}">
+          <Border Style="{StaticResource CardBox}">
+            <StackPanel>
+              <TextBlock Text="{Binding TraySummary}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,8"
+                         Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}" />
+              <TextBlock Text="{Binding TrayEmpty}" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                         Visibility="{Binding NoTrayFiles, Converter={StaticResource Visible}}" />
+              <ItemsControl ItemsSource="{Binding TrayRows}" Focusable="False" />
+              <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}">
+                <Button Style="{StaticResource Bordered}" Command="{Binding ZipTray}" AutomationProperties.Name="{Binding ZipLabel}" ToolTip="{Binding ZipHelp}">
+                  <TextBlock Text="{Binding ZipLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding ClearTray}" AutomationProperties.Name="{Binding ClearTrayLabel}" ToolTip="{Binding ClearTrayHelp}" Margin="8,0,0,0">
+                  <TextBlock Text="{Binding ClearTrayLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding RevealZip}" AutomationProperties.Name="{Binding RevealZipLabel}" Margin="8,0,0,0"
+                        Visibility="{Binding HasTrayZip, Converter={StaticResource Visible}}">
+                  <TextBlock Text="{Binding RevealZipLabel}" />
+                </Button>
+              </StackPanel>
+              <TextBlock Text="{Binding TrayStatus}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                         Visibility="{Binding HasTrayStatus, Converter={StaticResource Visible}}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- MARK: editor rápido de un archivo de texto de la bandeja -->
+        <StackPanel x:Name="EditorPanel" Margin="14" Visibility="{Binding ShowingEditor, Converter={StaticResource Visible}}">
+          <Border Style="{StaticResource CardBox}">
+            <StackPanel>
+              <Border CornerRadius="6" BorderThickness="1" Background="{DynamicResource Track}" Height="280">
+                <Border.Style>
+                  <Style TargetType="Border">
+                    <Setter Property="BorderBrush" Value="{DynamicResource Line}" />
+                    <Style.Triggers>
+                  <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource Muted}" /></Trigger>
+                    </Style.Triggers>
+                  </Style>
+                </Border.Style>
+                <ui:CodeEditor x:Name="EditorBox" Source="{Binding EditText, Mode=TwoWay}" FileName="{Binding EditTitle}" Foreground="{DynamicResource Fg}"
+                               AutomationProperties.Name="{Binding EditTitle}" IsVisibleChanged="OnEditorVisibleChanged">
+                  <ui:CodeEditor.InputBindings>
+                    <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveEdit}" />
+                  </ui:CodeEditor.InputBindings>
+                </ui:CodeEditor>
+              </Border>
+              <TextBlock Text="{Binding EditStatus}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0" />
+              <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Style="{StaticResource Bordered}" Command="{Binding SaveEdit}" AutomationProperties.Name="{Binding EditSaveLabel}" ToolTip="{Binding EditSaveHelp}">
+                  <TextBlock Text="{Binding EditSaveLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding ReloadEdit}" AutomationProperties.Name="{Binding EditReloadLabel}" ToolTip="{Binding EditReloadHelp}" Margin="8,0,0,0">
+                  <TextBlock Text="{Binding EditReloadLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding OverwriteEdit}" AutomationProperties.Name="{Binding EditOverwriteLabel}" ToolTip="{Binding EditOverwriteHelp}" Margin="8,0,0,0"
+                        Visibility="{Binding EditConflict, Converter={StaticResource Visible}}">
+                  <TextBlock Text="{Binding EditOverwriteLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding CloseEdit}" AutomationProperties.Name="{Binding EditCloseLabel}" ToolTip="{Binding EditCloseHelp}" Margin="8,0,0,0">
+                  <TextBlock Text="{Binding EditCloseLabel}" />
+                </Button>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <!-- MARK: historial del portapapeles (solo texto, solo en memoria) -->
+        <StackPanel x:Name="ClipboardPanel" Margin="14" Visibility="{Binding ShowingClipboard, Converter={StaticResource Visible}}">
+          <Border Style="{StaticResource CardBox}">
+            <StackPanel>
+              <TextBlock Text="{Binding ClipEmpty}" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                         Visibility="{Binding NoClipItems, Converter={StaticResource Visible}}" />
+              <ItemsControl ItemsSource="{Binding ClipRows}" Focusable="False" />
+              <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                <Button Style="{StaticResource Bordered}" Command="{Binding PauseClip}" AutomationProperties.Name="{Binding ClipPauseLabel}" ToolTip="{Binding ClipPauseHelp}">
+                  <TextBlock Text="{Binding ClipPauseLabel}" />
+                </Button>
+                <Button Style="{StaticResource Bordered}" Command="{Binding ClearClip}" AutomationProperties.Name="{Binding ClipClearLabel}" ToolTip="{Binding ClipClearHelp}" Margin="8,0,0,0"
+                        Visibility="{Binding HasClipItems, Converter={StaticResource Visible}}">
+                  <TextBlock Text="{Binding ClipClearLabel}" />
+                </Button>
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -944,6 +1035,14 @@
                         <StackPanel>
                             <TextBlock Text="{Binding NotchDockTitle}" Style="{StaticResource Label}" />
                             <TextBlock Text="{Binding NotchDockDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding ClipboardOn}" Command="{Binding ToggleClipboard}" AutomationProperties.Name="{Binding ClipboardTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding ClipboardTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding ClipboardDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,1,0,0" />
                         </StackPanel>
                     </DockPanel>
                     <Rectangle Style="{StaticResource Divider}" Margin="0,11" />

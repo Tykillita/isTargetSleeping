@@ -5,6 +5,43 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.10.0] — 2026-10-15
+
+### Added
+- File tray: drag files or folders onto the notch and it opens its new Tray page. It keeps only their paths (no
+  copies, in memory); from each row you can drag the item back out to Explorer, mail or anywhere else, show it in
+  Explorer, copy its path or remove it, and "Zip everything" writes a .zip to the Desktop without ever overwriting an
+  existing one. The dock only shows the Tray button while something is waiting there.
+- Code widget: a small IDE in the notch (two cells, off by default). Pick a project folder and it shows its file tree
+  with the file and folder icons of Material Icon Theme (the VS Code extension, MIT), opens files in tabs (up to 8)
+  and lets you edit and save text files with Ctrl+S, reload them, or view images. It keeps each file's encoding and
+  line endings, saves atomically, never overwrites a file that changed on disk without asking, refuses binaries, non-UTF
+  text and files over 1 MB instead of damaging them, hides `.git`, `node_modules`, `bin` and `obj` and does not follow
+  links. Only the folder path is remembered; unsaved text lives in memory. Text is colored by language, letters only, in the editor of the widget and of the
+  tray: Markdown (headings, code, bold, links, lists, quotes, tables), C-like languages, Python, JSON, YAML, XML/HTML/XAML,
+  CSS, SQL and shell scripts, with the Material-style palette of VS Code (not for files over 200 KB or with the Windows
+  high-contrast theme). Long lines wrap inside the card, so there is no horizontal scrolling. The hover view just
+  summarizes it, and when it is the only widget its editor grows to fill the card.
+- Quick text editing from the tray: the Edit button on a file opens it in the notch to read and change it, Ctrl+S
+  or Save writes it, and Reload re-reads it from disk. It keeps the file's encoding (UTF-8, with or without BOM, or
+  UTF-16) and line endings so diffs stay clean, saves atomically, refuses binaries, non-UTF text and files over 1 MB
+  instead of damaging them, and never overwrites a file that changed on disk without asking. Unsaved text survives
+  collapsing the notch, and closing with changes asks first.
+- Clipboard history (Settings > General, off by default): keeps the last 25 texts you copy, only in memory. It never
+  writes to disk, never keeps images or files, skips what password managers mark as private, can be paused, and is
+  emptied when you turn it off or quit. Its page and dock button exist only while it is on.
+- App favorites: the dock favorites (still up to four) can now launch any app, shortcut or file you pick with
+  "Add an app…" on the Widgets page; they show up with the file's name and are removed from the same list.
+
+### Changed
+- Under the app name, the panel and the notch Home now show the version of isTargetSleeping (for example "v1.10.0")
+  instead of the Ollama version and backend.
+
+### Fixed
+- The open notch no longer blinks. When the closed pill changed width (the clock ticking over, or a live activity such as the
+  Pomodoro, the volume or the music showing up or going away), the notch redid its whole opening animation even while it was
+  open, fading its content out and in. Now it only repaints when something really changed.
+
 ## [1.9.0] — 2026-10-15
 
 ### Added

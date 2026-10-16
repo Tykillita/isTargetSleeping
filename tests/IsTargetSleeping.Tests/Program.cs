@@ -215,6 +215,13 @@ Check("actividades: la pastilla más ancha mantiene su centro y su zona activa",
     && NotchLayout.Place(nm, nw, 1.0, 340, 200, 100).Pill.Width == 230);
 Check("favoritos: sin nada guardado salen encender, liberar RAM y procesos",
     FavoriteCatalog.Normalize(null).SequenceEqual(new[] { "power", "clean", "processes" }));
+var appFav = FavoriteCatalog.AppId(@"C:\Program Files\Demo\demo-app.exe");
+Check("favoritos: una app del usuario se guarda con su ruta y se titula con su nombre",
+    FavoriteCatalog.IsApp(appFav) && FavoriteCatalog.AppPath(appFav) == @"C:\Program Files\Demo\demo-app.exe"
+    && FavoriteCatalog.Find(appFav)?.Title == "demo-app" && !FavoriteCatalog.IsApp("app:") && !FavoriteCatalog.IsApp("power"));
+Check("favoritos: las apps cuentan en el tope de cuatro y sobreviven a Normalize",
+    FavoriteCatalog.Normalize(new[] { "power", appFav, appFav }).SequenceEqual(new[] { "power", appFav })
+    && FavoriteCatalog.Toggle(FavoriteCatalog.Toggle(new[] { "power", "clean", "free" }, appFav), FavoriteCatalog.AppId("x.exe")).Count == 4);
 Check("favoritos: lo desconocido y lo repetido se descarta", FavoriteCatalog.Normalize(new[] { "x", "power", "power" }).SequenceEqual(new[] { "power" }));
 var favs = new List<string> { "power", "clean", "processes" };
 var fourFavs = FavoriteCatalog.Toggle(favs, "free");
@@ -271,6 +278,227 @@ Section("Agente de memoria");
         Check("agente: AGENT_VERSION es una versión y no supera a la de la app",
             Version.TryParse(agentVersion, out var av) && Version.TryParse(appVersion, out var pv) && av <= pv);
     }
+}
+
+// MARK: bandeja de archivos y portapapeles
+
+Section("Bandeja de archivos");
+{
+    var dir = Path.Combine(Path.GetTempPath(), "its-tray-" + Guid.NewGuid().ToString("N"));
+    var sub = Path.Combine(dir, "carpeta"); Directory.CreateDirectory(Path.Combine(sub, "dentro"));
+    var otra = Path.Combine(dir, "otra"); Directory.CreateDirectory(otra);
+    var a = Path.Combine(dir, "a.txt"); File.WriteAllText(a, "hola");
+    var b = Path.Combine(otra, "a.txt"); File.WriteAllText(b, "otro a");
+    File.WriteAllText(Path.Combine(sub, "x.txt"), "x"); File.WriteAllText(Path.Combine(sub, "dentro", "y.txt"), "y");
+    try
+    {
+        var tray = new FileTray();
+        Check("bandeja: entra lo que existe, sin repetir, y lo que no existe se ignora",
+            tray.Add(new[] { a, a, Path.Combine(dir, "no-existe.txt"), sub }) == 2 && tray.Count == 2
+            && tray.Entries[0] is { IsDirectory: false, Name: "a.txt", Size: 4 } && tray.Entries[1] is { IsDirectory: true, Name: "carpeta" });
+        Check("bandeja: la misma ruta con otra grafía de mayúsculas no se repite", tray.Add(new[] { a.ToUpperInvariant() }) == 0);
+        Check("bandeja: el total suma el tamaño de los archivos", tray.TotalBytes == 4);
+        tray.Add(new[] { b });
+        var zipPath = tray.ZipTo(dir, "prueba");
+        using (var zip = System.IO.Compression.ZipFile.OpenRead(zipPath))
+        {
+            var names = zip.Entries.Select(e => e.FullName).OrderBy(n => n, StringComparer.Ordinal).ToList();
+            Check("bandeja: el zip lleva archivos, carpetas con su contenido y nombres repetidos renumerados",
+                names.SequenceEqual(new[] { "a (2).txt", "a.txt", "carpeta/dentro/y.txt", "carpeta/x.txt" }));
+        }
+        Check("bandeja: otro zip con el mismo nombre no sobrescribe", tray.ZipTo(dir, "prueba").EndsWith("prueba (2).zip") && File.Exists(zipPath));
+        File.Delete(a);
+        Check("bandeja: lo que se borró del disco se quita solo", tray.Prune() == 1 && tray.Entries.All(e => e.Name != "a.txt" || e.Path == b));
+        tray.Remove(b);
+        tray.Clear();
+        Check("bandeja: vaciar quita todo", tray.Count == 0 && tray.TotalBytes == 0);
+        var many = new FileTray();
+        var files = Enumerable.Range(0, FileTray.Max + 10).Select(i => { var f = Path.Combine(dir, $"m{i}.txt"); File.WriteAllText(f, "m"); return f; }).ToList();
+        Check("bandeja: tiene tope", many.Add(files) == FileTray.Max && many.Count == FileTray.Max);
+    }
+    finally { try { Directory.Delete(dir, true); } catch { } }
+}
+
+Section("Historial del portapapeles");
+{
+    var history = new ClipboardHistory();
+    Check("portapapeles: vacío o solo espacios no entra", !history.Add(null) && !history.Add("") && !history.Add("  \n\t") && history.Count == 0);
+    Check("portapapeles: lo último copiado va primero", history.Add("uno") && history.Add("dos") && history.Items.SequenceEqual(new[] { "dos", "uno" }));
+    Check("portapapeles: copiar lo mismo dos veces seguidas no repite", !history.Add("dos") && history.Count == 2);
+    Check("portapapeles: un texto que ya estaba sube al primer puesto sin duplicarse", history.Add("uno") && history.Items.SequenceEqual(new[] { "uno", "dos" }));
+    for (int i = 0; i < ClipboardHistory.Max + 5; i++) history.Add("texto " + i);
+    Check("portapapeles: tiene tope y conserva lo más reciente", history.Count == ClipboardHistory.Max && history.Items[0] == "texto " + (ClipboardHistory.Max + 4));
+    history.RemoveAt(0); history.RemoveAt(999);
+    Check("portapapeles: se puede quitar una entrada y un índice fuera de rango no hace nada", history.Count == ClipboardHistory.Max - 1);
+    Check("portapapeles: un texto enorme se recorta", new ClipboardHistory().Add(new string('x', ClipboardHistory.MaxLength + 50)));
+    var huge = new ClipboardHistory(); huge.Add(new string('x', ClipboardHistory.MaxLength + 50));
+    Check("portapapeles: el recorte deja MaxLength caracteres", huge.Items[0].Length == ClipboardHistory.MaxLength);
+    Check("portapapeles: la vista previa es la primera línea con contenido y se corta con «…»",
+        ClipboardHistory.Preview("\n  hola mundo \nsegunda") == "hola mundo" && ClipboardHistory.Preview(new string('a', 200), 20) == new string('a', 19) + "…");
+    Check("portapapeles: lo marcado por un gestor de contraseñas no se registra",
+        ClipboardHistory.ShouldRecord(false, null) && ClipboardHistory.ShouldRecord(false, 1) && !ClipboardHistory.ShouldRecord(true, null) && !ClipboardHistory.ShouldRecord(false, 0));
+    history.Clear();
+    Check("portapapeles: vaciar quita todo", history.Count == 0);
+}
+
+Section("Edición rápida de archivos de texto");
+{
+    var dir = Path.Combine(Path.GetTempPath(), "its-edit-" + Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(dir);
+    try
+    {
+        var lf = Path.Combine(dir, "a.md"); File.WriteAllText(lf, "uno\ndos\n");
+        var crlf = Path.Combine(dir, "b.txt"); File.WriteAllBytes(crlf, System.Text.Encoding.UTF8.GetBytes("uno\r\ndos\r\ntres"));
+        var bom = Path.Combine(dir, "c.cs"); File.WriteAllBytes(bom, new byte[] { 0xEF, 0xBB, 0xBF }.Concat(System.Text.Encoding.UTF8.GetBytes("ñandú\r\n")).ToArray());
+        var utf16 = Path.Combine(dir, "d.txt"); File.WriteAllText(utf16, "hola\r\nmundo", new System.Text.UnicodeEncoding(false, true));
+        var (docLf, e1, _) = TextFile.Load(lf);
+        Check("editor: lee un archivo con saltos «\n» y los conserva al guardar",
+            e1 == TextFileError.None && docLf!.Text == "uno\ndos\n" && docLf.Eol == "\n"
+            && TextFile.Save(docLf, "uno\r\ndos\r\ncambio\r\n").Result == TextSaveResult.Saved && File.ReadAllText(lf) == "uno\ndos\ncambio\n");
+        var (docCrlf, _, _) = TextFile.Load(crlf);
+        TextFile.Save(docCrlf!, "uno\ndos\ntres y más");
+        Check("editor: un archivo con «\r\n» sigue con «\r\n» y sin salto final si no lo tenía",
+            docCrlf!.Eol == "\r\n" && File.ReadAllText(crlf) == "uno\r\ndos\r\ntres y más");
+        var (docBom, _, _) = TextFile.Load(bom);
+        TextFile.Save(docBom!, "ñandú 2\n");
+        var bomBytes = File.ReadAllBytes(bom);
+        Check("editor: conserva la marca BOM de UTF-8 y los acentos", docBom!.Text == "ñandú\n" && bomBytes[0] == 0xEF && bomBytes[1] == 0xBB && System.Text.Encoding.UTF8.GetString(bomBytes, 3, bomBytes.Length - 3) == "ñandú 2\r\n");
+        var (docU16, e16, _) = TextFile.Load(utf16);
+        TextFile.Save(docU16!, "adiós");
+        Check("editor: UTF-16 se lee y se vuelve a guardar en UTF-16", e16 == TextFileError.None && docU16!.Text == "hola\nmundo" && File.ReadAllBytes(utf16)[0] == 0xFF && File.ReadAllText(utf16) == "adiós");
+        var bin = Path.Combine(dir, "e.bin"); File.WriteAllBytes(bin, new byte[] { 1, 2, 0, 3, 4 });
+        var ansi = Path.Combine(dir, "f.txt"); File.WriteAllBytes(ansi, new byte[] { 0x63, 0x61, 0x66, 0xE9 });   // «café» en ANSI: UTF-8 inválido
+        var huge = Path.Combine(dir, "g.txt"); File.WriteAllBytes(huge, new byte[TextFile.MaxBytes + 1]);
+        Check("editor: rechaza binarios, texto que no es UTF-8 válido y lo demasiado grande, sin tocarlos",
+            TextFile.Load(bin).Error == TextFileError.NotText && TextFile.Load(ansi).Error == TextFileError.NotText
+            && TextFile.Load(huge).Error == TextFileError.TooBig && TextFile.Load(Path.Combine(dir, "no-existe.txt")).Error == TextFileError.Unreadable);
+        var (docConflict, _, _) = TextFile.Load(lf);
+        File.WriteAllText(lf, "otro programa cambió esto\n");
+        File.SetLastWriteTimeUtc(lf, DateTime.UtcNow.AddMinutes(5));
+        var refused = TextFile.Save(docConflict!, "mis cambios\n");
+        Check("editor: si el archivo cambió en el disco no lo pisa", refused.Result == TextSaveResult.Conflict && File.ReadAllText(lf) == "otro programa cambió esto\n");
+        var forced = TextFile.Save(docConflict!, "mis cambios\n", overwrite: true);
+        Check("editor: sobrescribir lo guarda y deja el documento al día", forced.Result == TextSaveResult.Saved && File.ReadAllText(lf) == "mis cambios\n"
+            && TextFile.Save(forced.Doc, "otra vez\n").Result == TextSaveResult.Saved);
+        Check("editor: no deja archivos temporales", Directory.GetFiles(dir, "*.tmp").Length == 0);
+        File.SetAttributes(lf, FileAttributes.ReadOnly);
+        var (docRo, _, _) = TextFile.Load(lf);
+        var ro = TextFile.Save(docRo!, "no debería");
+        File.SetAttributes(lf, FileAttributes.Normal);
+        Check("editor: un archivo de solo lectura da error claro, no lo cambia y no deja temporales",
+            ro.Result == TextSaveResult.Failed && File.ReadAllText(lf) == "otra vez\n" && Directory.GetFiles(dir, "*.tmp").Length == 0);
+    }
+    finally { try { Directory.Delete(dir, true); } catch { } }
+}
+
+Section("Árbol de archivos e iconos del widget Código");
+{
+    var dir = Path.Combine(Path.GetTempPath(), "its-code-" + Guid.NewGuid().ToString("N"));
+    try
+    {
+        Directory.CreateDirectory(Path.Combine(dir, "src", "sub"));
+        foreach (var skipped in new[] { "node_modules", ".git", "bin", "obj" }) Directory.CreateDirectory(Path.Combine(dir, skipped));
+        File.WriteAllText(Path.Combine(dir, "zeta.txt"), "z");
+        File.WriteAllText(Path.Combine(dir, "Alpha.md"), "a");
+        File.WriteAllText(Path.Combine(dir, "src", "a.cs"), "a");
+        File.WriteAllText(Path.Combine(dir, "src", "sub", "b.ts"), "b");
+        var hiddenFile = Path.Combine(dir, "secreto.txt"); File.WriteAllText(hiddenFile, "s"); File.SetAttributes(hiddenFile, FileAttributes.Hidden);
+        var closed = CodeTree.Flatten(dir, new HashSet<string>());
+        Check("árbol: carpetas antes que archivos y cada grupo por nombre, sin mayúsculas que descoloquen",
+            closed.Select(r => r.Name).SequenceEqual(new[] { "src", "Alpha.md", "zeta.txt" }) && closed.All(r => r.Depth == 0));
+        Check("árbol: esconde carpetas generadas (.git, node_modules, bin, obj) y lo oculto del sistema",
+            closed.All(r => r.Name is not ("node_modules" or ".git" or "bin" or "obj" or "secreto.txt")));
+        var open = CodeTree.Flatten(dir, new HashSet<string> { Path.Combine(dir, "src"), Path.Combine(dir, "src", "sub") });
+        Check("árbol: una carpeta abierta enseña su contenido justo debajo y con sangría",
+            open.Select(r => $"{r.Depth}:{r.Name}").SequenceEqual(new[] { "0:src", "1:sub", "2:b.ts", "1:a.cs", "0:Alpha.md", "0:zeta.txt" })
+            && open[0].Expanded && !open[3].IsDirectory);
+        Check("árbol: una carpeta que no existe o sin permiso da una lista vacía", CodeTree.Flatten(Path.Combine(dir, "no-existe"), new HashSet<string>()).Count == 0);
+        var many = Path.Combine(dir, "muchos"); Directory.CreateDirectory(many);
+        for (int i = 0; i < CodeTree.MaxPerFolder + 20; i++) File.WriteAllText(Path.Combine(many, $"f{i:D4}.txt"), "x");
+        Check("árbol: una carpeta enorme se corta en su tope", CodeTree.Flatten(many, new HashSet<string>()).Count == CodeTree.MaxPerFolder);
+        Check("árbol: reconoce las imágenes que el visor sabe mostrar", CodeTree.IsImage("a.PNG") && CodeTree.IsImage("b.jpeg") && !CodeTree.IsImage("c.svg") && !CodeTree.IsImage("d.cs"));
+    }
+    finally { try { Directory.Delete(dir, true); } catch { } }
+
+    var iconFile = "";
+    for (var probe = new DirectoryInfo(AppContext.BaseDirectory); probe is not null && iconFile.Length == 0; probe = probe.Parent)
+        if (File.Exists(Path.Combine(probe.FullName, "src", "IsTargetSleeping", "Resources", "FileIcons.json.gz"))) iconFile = Path.Combine(probe.FullName, "src", "IsTargetSleeping", "Resources", "FileIcons.json.gz");
+    Check("iconos: el archivo de datos está en el repo", iconFile.Length > 0);
+    using var iconStream = File.OpenRead(iconFile);
+    var icons = FileIconMap.Load(iconStream);
+    Check("iconos: trae más de mil iconos con sus formas y su viewBox", icons.Count > 1000 && icons.Keys.All(k => icons.Get(k) is { ViewBox.Length: 4, Shapes.Count: > 0 }));
+    Check("iconos: un archivo desconocido y una carpeta cualquiera caen en el genérico",
+        icons.Resolve("algo.extensionrara", false, false) == "file" && icons.Resolve("mi-carpeta", true, false) == "folder" && icons.Resolve("mi-carpeta", true, true) == "folder-open");
+    Check("iconos: cada lenguaje tiene el suyo, sin distinguir mayúsculas",
+        icons.Resolve("main.ts", false, false) != "file" && icons.Resolve("MAIN.TS", false, false) == icons.Resolve("main.ts", false, false)
+        && icons.Resolve("Program.cs", false, false) != icons.Resolve("main.ts", false, false) && icons.Resolve("x.py", false, false) != "file");
+    Check("iconos: la extensión más larga gana (app.spec.ts no es un .ts cualquiera) y el nombre entero gana a la extensión",
+        icons.Resolve("app.spec.ts", false, false) != icons.Resolve("app.ts", false, false)
+        && icons.Resolve("package.json", false, false) != icons.Resolve("datos.json", false, false));
+    Check("iconos: las carpetas conocidas (src, docs…) tienen icono propio, abierto y cerrado",
+        icons.Resolve("src", true, false) != "folder" && icons.Resolve("SRC", true, false) == icons.Resolve("src", true, false)
+        && icons.Resolve("src", true, true) != "folder-open" && icons.Get(icons.Resolve("src", true, true)) is not null);
+    Check("iconos: un nombre acabado en punto no rompe la búsqueda", icons.Resolve("archivo.", false, false) == "file" && icons.Resolve(".", false, false) == "file");
+}
+
+Section("Resaltado de sintaxis");
+{
+    string Spans(string text, string file, TokenKind kind) =>
+        string.Join("|", SyntaxHighlighter.Tokenize(text, SyntaxHighlighter.LanguageOf(file)).Where(t => t.Kind == kind).Select(t => text.Substring(t.Start, t.Length)));
+    Check("resaltado: reconoce el lenguaje por el nombre del archivo",
+        SyntaxHighlighter.LanguageOf("a.md") == "markdown" && SyntaxHighlighter.LanguageOf("C:\\x\\Program.CS") == "clike" && SyntaxHighlighter.LanguageOf("package.json") == "json"
+        && SyntaxHighlighter.LanguageOf("Dockerfile") == "script" && SyntaxHighlighter.LanguageOf(".gitignore") == "script" && SyntaxHighlighter.LanguageOf("App.xaml") == "xml"
+        && SyntaxHighlighter.LanguageOf("LICENSE") is null && SyntaxHighlighter.LanguageOf("foto.png") is null && SyntaxHighlighter.LanguageOf("") is null);
+    const string md = "# Título `a`\n\nTexto **negrita** y `codigo` y [enlace](http://x.y).\n\n- uno\n> cita con **negrita**\n\n```\n# no es un título\n```\n| a | b |\n|---|---|\n";
+    Check("resaltado: markdown colorea el título (con su código dentro por separado), la negrita, el código y el enlace",
+        Spans(md, "x.md", TokenKind.Heading) == "# Título " && Spans(md, "x.md", TokenKind.Code).StartsWith("`a`|`codigo`") && Spans(md, "x.md", TokenKind.Bold).Contains("**negrita**")
+        && Spans(md, "x.md", TokenKind.Link) == "[enlace](http://x.y)");
+    Check("resaltado: markdown marca las viñetas, las citas y la tabla; un bloque de código no se parte en títulos",
+        Spans(md, "x.md", TokenKind.Marker).Contains("-") && Spans(md, "x.md", TokenKind.Quote).StartsWith("> cita con ") && Spans(md, "x.md", TokenKind.Marker).Contains("|---|---|")
+        && !Spans(md, "x.md", TokenKind.Heading).Contains("no es un título") && Spans(md, "x.md", TokenKind.Code).Contains("# no es un título"));
+    const string cs = "// hola\nvar s = \"a // b\"; /* x\ny */ if (n > 0x1F) return Foo(1.5);\nclass Bar { }";
+    Check("resaltado: C# separa comentarios, cadenas (sin confundirlas con comentarios), números, claves, tipos y funciones",
+        Spans(cs, "x.cs", TokenKind.Comment) == "// hola|/* x\ny */" && Spans(cs, "x.cs", TokenKind.String) == "\"a // b\"" && Spans(cs, "x.cs", TokenKind.Number) == "0x1F|1.5"
+        && Spans(cs, "x.cs", TokenKind.Control) == "if|return" && Spans(cs, "x.cs", TokenKind.Keyword).Contains("var") && Spans(cs, "x.cs", TokenKind.Function) == "Foo" && Spans(cs, "x.cs", TokenKind.Type) == "Bar");
+    const string json = "{ \"clave\": \"valor\", \"n\": -12.5e3, \"ok\": true, \"x\": null }";
+    Check("resaltado: JSON distingue la clave del valor",
+        Spans(json, "x.json", TokenKind.Property) == "\"clave\"|\"n\"|\"ok\"|\"x\"" && Spans(json, "x.json", TokenKind.String) == "\"valor\"" && Spans(json, "x.json", TokenKind.Number) == "-12.5e3"
+        && Spans(json, "x.json", TokenKind.Keyword) == "true|null");
+    const string xml = "<!-- c --><Grid Width=\"5\" x:Name='a'>texto \"suelto\"</Grid>";
+    Check("resaltado: XML colorea etiquetas, atributos y valores, pero no el texto de en medio",
+        Spans(xml, "x.xaml", TokenKind.Tag) == "<Grid|</Grid" && Spans(xml, "x.xaml", TokenKind.Attribute) == "Width|x:Name" && Spans(xml, "x.xaml", TokenKind.String) == "\"5\"|'a'"
+        && Spans(xml, "x.xaml", TokenKind.Comment) == "<!-- c -->");
+    const string py = "# nota\n@dec\ndef f(x):\n    \"\"\"doc\n    # no es comentario\"\"\"\n    return None if x else 3";
+    Check("resaltado: Python con comentarios, decoradores y cadenas de triple comilla que cruzan líneas",
+        Spans(py, "x.py", TokenKind.Comment) == "# nota" && Spans(py, "x.py", TokenKind.String).StartsWith("\"\"\"doc") && Spans(py, "x.py", TokenKind.Function) == "@dec|f"
+        && Spans(py, "x.py", TokenKind.Keyword).Contains("def") && Spans(py, "x.py", TokenKind.Control).Contains("return"));
+    Check("resaltado: YAML, CSS, SQL y scripts también colorean lo básico",
+        Spans("clave: valor # nota\nlista:\n  - uno\n", "x.yml", TokenKind.Property).Contains("clave") && Spans("a { color: #fff; margin: 4px } /* c */", "x.css", TokenKind.Number) == "#fff|4px"
+        && Spans("SELECT n FROM t -- hola", "x.sql", TokenKind.Control) == "SELECT|FROM" && Spans("echo $HOME # nota", "x.sh", TokenKind.Property) == "$HOME" && Spans("echo $HOME # nota", "x.sh", TokenKind.Comment) == "# nota");
+    Check("resaltado: lo que no se reconoce o es enorme se enseña sin colores",
+        SyntaxHighlighter.Tokenize("texto", null).Count == 0 && SyntaxHighlighter.Tokenize("", "clike").Count == 0 && SyntaxHighlighter.Tokenize(new string('a', SyntaxHighlighter.MaxLength + 1), "clike").Count == 0);
+    // En cualquier archivo real del repo los trozos van ordenados, sin solaparse y dentro del texto, y se calculan rápido.
+    var root = AppContext.BaseDirectory;
+    while (root is not null && !File.Exists(Path.Combine(root, "VERSION"))) root = Path.GetDirectoryName(root);
+    int filesChecked = 0, badFiles = 0, tokensSeen = 0;
+    var clock = System.Diagnostics.Stopwatch.StartNew();
+    foreach (var sourceFile in Directory.EnumerateFiles(root!, "*.*", SearchOption.AllDirectories)
+        .Where(f => !f.Contains(@"\obj\") && !f.Contains(@"\bin\") && !f.Contains(@"\node_modules\") && !f.Contains(@"\.git\") && !f.Contains(@"\_site\") && !f.Contains(@"\dist\") && !f.Contains(@"\build\") && !f.Contains(@"\artifacts\") && !f.Contains(@"\media\"))
+        .Take(4000))
+    {
+        if (SyntaxHighlighter.LanguageOf(sourceFile) is not { } language || new FileInfo(sourceFile).Length > SyntaxHighlighter.MaxLength) continue;
+        string text;
+        try { text = File.ReadAllText(sourceFile); } catch (IOException) { continue; }
+        var tokens = SyntaxHighlighter.Tokenize(text, language);
+        filesChecked++;
+        tokensSeen += tokens.Count;
+        int end = 0;
+        bool ok = true;
+        foreach (var t in tokens) { if (t.Start < end || t.Length <= 0 || t.End > text.Length) { ok = false; break; } end = t.End; }
+        if (!ok) { badFiles++; Console.WriteLine("   mal: " + sourceFile); }
+    }
+    Check($"resaltado: en {filesChecked} archivos reales del repo ({tokensSeen} trozos) todos van ordenados y sin solaparse", filesChecked > 50 && badFiles == 0);
+    Check($"resaltado: y se calculan rápido ({clock.ElapsedMilliseconds} ms en total)", clock.ElapsedMilliseconds < 20000);
 }
 
 // MARK: modo juego

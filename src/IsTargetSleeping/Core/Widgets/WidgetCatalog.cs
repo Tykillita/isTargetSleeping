@@ -28,6 +28,7 @@ public static class WidgetCatalog
         new("awake", "Mantener despierto", "", 1),
         new("notes", "Notas", "", 2),
         new("battery", "Batería", "", 1),
+        new("code", "Código", "", 2),
         new("media", "Música", "", 1),
     ];
 
@@ -54,7 +55,14 @@ public static class FavoriteCatalog
 
     public static readonly IReadOnlyList<string> Defaults = ["power", "clean", "processes"];
 
-    public static FavoriteInfo? Find(string id) => All.FirstOrDefault(f => f.Id == id);
+    /// Un favorito puede ser una app o un archivo del usuario: su id es «app:» y la ruta.
+    public const string AppPrefix = "app:";
+    public static string AppId(string path) => AppPrefix + path;
+    public static bool IsApp(string id) => id.StartsWith(AppPrefix, StringComparison.Ordinal) && id.Length > AppPrefix.Length;
+    public static string AppPath(string id) => id[AppPrefix.Length..];
+
+    public static FavoriteInfo? Find(string id) =>
+        IsApp(id) ? new FavoriteInfo(id, Path.GetFileNameWithoutExtension(AppPath(id)), "") : All.FirstOrDefault(f => f.Id == id);
 
     /// Lo guardado (null = nunca se tocó) sin ids desconocidos ni repetidos y con tope.
     public static List<string> Normalize(IEnumerable<string>? stored) =>

@@ -58,7 +58,7 @@ foreach ($a in $Arch) {
     if (-not ([IO.Path]::GetFullPath($stage)).StartsWith($dist + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Ruta de paquete no válida." }
     if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
     New-Item -ItemType Directory -Force $stage | Out-Null
-    Copy-Item $exe, LICENSE $stage -Force
+    Copy-Item $exe, LICENSE, THIRD-PARTY-NOTICES.md $stage -Force
     $zip = "$stage.zip"
     Remove-Item $zip -ErrorAction SilentlyContinue
     Compress-Archive -Path "$stage\*" -DestinationPath $zip

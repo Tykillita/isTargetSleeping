@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.9.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.10.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -81,6 +81,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is, showing the three items you choose (status, model and RAM by default). Hover it for a short view you can customize with your own widgets (Ollama by default: status, RAM and GPU, Free RAM, Free model, Processes); click it for the Home. Two icon strips below it give one-click navigation (Home, Ollama, Activity, Widgets, Settings) and up to four favorites you choose. It hides while something is full screen. |
 | 🧩 | **Widgets** | The notch Home holds four cells that you choose and order on the Widgets page: Ollama, System (CPU, RAM, VRAM, disk, network), Clock and calendar, Pomodoro (with a notice), Keep awake, Notes (saved on their own, locally), Battery and Music (what Windows reports as playing, with its controls). Each one adapts to its place and its neighbors. Everything is read locally. |
 | ⚡ | **Live activities** | Next to the closed notch pill, what is happening now: freeing RAM, Ollama turning on or off, critical memory, the volume when it changes, a running Pomodoro, Keep awake and, if you turn it on, the music playing. Up to two at a time, each with its own switch. The Music widget skips tracks when you swipe it with the mouse or two fingers on the trackpad, and its progress bar is clickable. |
+| 📥 | **File tray, clipboard and app favorites** | Drag files or folders onto the notch and they wait on its Tray page (only their paths, in memory) until you drag them back out, copy their path, show them in Explorer or zip them all to the Desktop. The optional Clipboard history (Settings > General, off by default) keeps the last 25 texts you copy, in memory only, and skips what password managers mark as private. Text files in the tray can be edited and saved right there (Ctrl+S) for quick changes while you code, and the **Code** widget is a small IDE: pick a folder and get its file tree (with Material Icon Theme icons), tabs, an image viewer and a text editor with syntax colors for Markdown, code, JSON, YAML, XML and more. Favorites can also launch any app or file you pick. |
 | ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
@@ -102,6 +103,9 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 **1.6.1 is out** (October 14, 2026): turning Ollama off also closes the server this app started, even if you then
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
+
+**1.10.0 is in development** (not published yet; the latest download is 1.9.0): a file tray you drop files onto (with quick text editing), a Code
+widget with a file tree and editor, an optional clipboard history and app favorites for the notch dock.
 
 **1.9.0 is out** (October 15, 2026): live activities beside the closed notch pill, a Music widget with cover art,
 playback controls and a clickable progress bar, and the volume in the notch.
@@ -436,6 +440,10 @@ Installations from before 1.3.0 without an update repository need one manual upg
   sleep until you turn it off or quit.
 - The Music widget and the "Music playing" live activity read the media session Windows exposes (title, artist, cover art)
   locally and only while one of them is in use; nothing is stored or sent.
+- The file tray keeps only the paths of what you drop (never copies), in memory; a .zip is written only when you ask for
+  it, on your Desktop. The optional clipboard history (off by default) keeps up to 25 copied texts in memory only: never
+  on disk, never images or files, skipping what password managers flag as private, and it is emptied when you turn it
+  off or quit. A favorite app stores just its path in `settings.json`, and so does the Code widget's folder; it only reads and writes the files you open there. The tray editor works on the file in place: it keeps its encoding and line endings, saves through a temporary file and warns instead of overwriting a file that changed on disk; text you have not saved lives only in memory.
 - No accounts, telemetry or analytics. Web pages open only when clicked: Ollama downloads, credits and GitHub
   release notes/downloads.
 - Settings live in `%LOCALAPPDATA%\isTargetSleeping\settings.json`, the 90-day history in `stats.json` next to it and
@@ -601,6 +609,8 @@ features** such as game mode, the Ollama watchdog, RAM cleaning that protects th
 (replacing Mem Reduct), GPU/VRAM usage, "who wakes the model", the Activity view with its history, downloading and
 deleting models, llama.cpp and LM Studio, `istargetsleeping://` links, notifications and updates. ModelNap's copyright
 notice is kept in [LICENSE](LICENSE), as its MIT License requires.
+
+The Code widget's file icons come from [Material Icon Theme](https://github.com/material-extensions/vscode-material-icon-theme) (MIT) and its text editor is [AvalonEdit](https://github.com/icsharpcode/AvalonEdit) (MIT); see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Ollama is a trademark of its respective owners; this project is not affiliated with Ollama.
 

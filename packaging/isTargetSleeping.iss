@@ -48,6 +48,7 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "{#SourceExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{userprograms}\{#AppName}"; Filename: "{app}\{#AppName}.exe"

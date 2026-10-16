@@ -22,7 +22,7 @@ public sealed class ParamCommand(Action<object?> action) : ICommand
     public void Execute(object? parameter) => action(parameter);
 }
 
-public enum PanelView { Main, Activity, Settings, Home, Widgets }
+public enum PanelView { Main, Activity, Settings, Home, Widgets, Tray, Clipboard, Editor }
 
 /// Una opción del selector segmentado.
 public sealed record Segment(string Title, bool IsSelected, ICommand Pick);
@@ -168,7 +168,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         Supervisor.Changed += Notify;
         Theme.Changed += Notify;
 
-        CornerCommand = new Command(() => Show(ShowingBrand ? PanelView.Settings : BackView));
+        CornerCommand = new Command(() => { if (this.view == PanelView.Editor) CloseEditor(); else Show(ShowingBrand ? PanelView.Settings : BackView); });
         SideCommand = new Command(() => Show(this.view == PanelView.Activity ? PanelView.Settings : PanelView.Activity));
         OpenProcesses = new Command(() => ProcessesRequested?.Invoke());
         processSummaryTimer.Tick += async (_, _) => await RefreshProcessSummary();
@@ -225,6 +225,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; Notify(); })))
             .ToList();
         InitWidgets();
+        InitTray();
+        InitClipboard();
+        InitEditor();
         Rebuild();
     }
 
@@ -356,6 +359,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         PanelView.Settings => tr("Ajustes"),
         PanelView.Activity => tr("Actividad"),
         PanelView.Widgets => tr("Widgets"),
+        PanelView.Tray => tr("Bandeja"),
+        PanelView.Clipboard => tr("Portapapeles"),
+        PanelView.Editor => EditTitle,
         _ => AppInfo.Name,
     };
 
@@ -363,6 +369,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     {
         PanelView.Settings => "",   // Settings
         PanelView.Widgets => "",
+        PanelView.Tray => "",
+        PanelView.Clipboard => "",
+        PanelView.Editor => "",
         _ => "",   // AreaChart
     };
     public Brush LogoBrush => B(P == Power.On ? T.On : T.Muted);
@@ -374,8 +383,10 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             if (view == PanelView.Settings) return $"v{AppInfo.Version}";
             if (view == PanelView.Activity) return tr("Historial de %d días, en este PC", StatsStore.KeepDays);
             if (view == PanelView.Widgets) return tr("Elige y ordena lo que ve el notch");
-            if (Ollama.Version is { } v) return $"v{v} · {Ollama.Backend.Summary}";
-            return Ollama.Backend.Summary;
+            if (view == PanelView.Editor) return EditSubtitle;
+            if (view == PanelView.Clipboard) return tr("Lo último que copiaste, solo en esta sesión");
+            if (view == PanelView.Tray) return Tray.Count == 0 ? tr("Archivos de paso, en este PC") : TraySummary;
+            return $"v{AppInfo.Version}";   // la versión de esta app; nada de Ollama bajo el nombre
         }
     }
 
@@ -390,6 +401,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         PanelView.Settings => tr("Cerrar ajustes"),
         PanelView.Activity => tr("Cerrar actividad"),
         PanelView.Widgets => tr("Cerrar widgets"),
+        PanelView.Tray => tr("Cerrar bandeja"),
+        PanelView.Clipboard => tr("Cerrar portapapeles"),
+        PanelView.Editor => tr("Cerrar el editor"),
         _ => tr("Ajustes"),
     };
     public string SideGlyph => ShowingActivity ? SettingsGlyph : ChartGlyph;
@@ -1045,6 +1059,8 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var signature = string.Join("|", Ollama.Installed.Select(m => $"{m.Name}:{m.Bytes}:{loaded.Contains(m.Name)}"))
                         + $"#{busy}#{P}#{L10n.Effective}#{confirmingDelete}#{Ollama.Pulling?.Name}#{Prefs.MainModel}";
         RebuildWidgets();
+        RebuildTray();
+        RebuildClipboard();
         if (signature != modelsSignature)
         {
             Models.Clear();
