@@ -100,8 +100,9 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.10.0 está en desarrollo** (aún no publicada; la última descarga es la 1.9.0): una bandeja de archivos donde soltar lo que
-arrastras (con edición rápida de texto), un widget Código con árbol de archivos y editor, un historial del portapapeles opcional y favoritos de apps para el dock del notch.
+**1.10.0 ya está publicada** (15 de octubre de 2026): una bandeja de archivos donde soltar lo que arrastras (con edición
+rápida de texto), un widget Código con árbol de archivos, pestañas, visor de imágenes y editor con colores de sintaxis,
+un historial del portapapeles opcional y favoritos de apps.
 
 **1.9.0 ya está publicada** (15 de octubre de 2026): actividades en vivo junto a la pastilla cerrada del notch, un widget de
 Música con portada, controles de reproducción y barra de progreso pulsable, y el volumen en el notch.

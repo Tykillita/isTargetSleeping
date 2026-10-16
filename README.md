@@ -104,8 +104,8 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.10.0 is in development** (not published yet; the latest download is 1.9.0): a file tray you drop files onto (with quick text editing), a Code
-widget with a file tree and editor, an optional clipboard history and app favorites for the notch dock.
+**1.10.0 is out** (October 15, 2026): a file tray you drop files onto (with quick text editing), a Code widget
+with a file tree, tabs, an image viewer and a syntax-colored editor, an optional clipboard history and app favorites.
 
 **1.9.0 is out** (October 15, 2026): live activities beside the closed notch pill, a Music widget with cover art,
 playback controls and a clickable progress bar, and the volume in the notch.
