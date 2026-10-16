@@ -639,5 +639,22 @@
   "«%@» no es un archivo de texto (UTF-8 o UTF-16): no se puede mostrar ni editar aquí.": "“%@” is not a text file (UTF-8 or UTF-16): it can’t be shown or edited here.",
   "No se pudo mostrar «%@»: %@": "Couldn’t show “%@”: %@",
   "«%@» tiene cambios sin guardar. Ciérralo otra vez para descartarlos.": "“%@” has unsaved changes. Close it again to discard them.",
-  "Cambió en el disco": "Changed on disk"
+  "Cambió en el disco": "Changed on disk",
+  "Lo que suena ahora, con su indicador": "What is playing now, with its indicator",
+  "1 elemento": "1 item",
+  "%d elementos": "%d items",
+  "calculando…": "calculating…",
+  "Carpeta · %@ · %@": "Folder · %@ · %@",
+  "Carpeta · más de %d elementos": "Folder · over %d items",
+  "Abrir «%@» como proyecto en Código": "Open “%@” as a project in Code",
+  "Pegar": "Paste",
+  "Añade a la bandeja los archivos que hayas copiado (Ctrl+C en el Explorador)": "Adds the files you copied (Ctrl+C in Explorer) to the tray",
+  "Arrastrar todo": "Drag all",
+  "Arrastra desde aquí todos los elementos de la bandeja para llevarlos a otro sitio": "Drag from here to take every item in the tray somewhere else",
+  "Suelta para añadir a la bandeja": "Drop to add to the tray",
+  "Doble clic abre un elemento; arrastra una fila para llevártelo a otro sitio.": "Double-click opens an item; drag a row to take it somewhere else.",
+  "La bandeja está llena (%d). Quita algo para añadir más.": "The tray is full (%d). Remove something to add more.",
+  "No hay archivos copiados en el portapapeles.": "There are no copied files on the clipboard.",
+  "Recordar la bandeja al cerrar la app": "Remember the tray when the app closes",
+  "Guarda solo las rutas de lo que hay en la bandeja (nunca copias) y las recupera al abrir la app. Apagado, la bandeja se vacía al cerrar.": "Keeps only the paths of what is in the tray (never copies) and brings them back when the app opens. Off, the tray empties when the app closes."
 }

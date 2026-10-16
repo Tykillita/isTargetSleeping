@@ -9,6 +9,10 @@ namespace IsTargetSleeping.UI;
 public static class FileDrag
 {
     private const double MinDistance = 6;
+    /// Varias rutas en una (arrastrar todo): «|» no puede aparecer en una ruta de Windows.
+    public const string Separator = "|";
+
+    public static string[] Split(string? paths) => (paths ?? "").Split(Separator, StringSplitOptions.RemoveEmptyEntries);
 
     public static readonly DependencyProperty PathProperty =
         DependencyProperty.RegisterAttached("Path", typeof(string), typeof(FileDrag), new PropertyMetadata(null, OnChanged));
@@ -47,7 +51,8 @@ public static class FileDrag
         var now = e.GetPosition((IInputElement)sender);
         if (Math.Abs(now.X - start.X) < MinDistance && Math.Abs(now.Y - start.Y) < MinDistance) return;
         element.ClearValue(StartProperty);
-        if (GetPath(element) is not { } path || !(File.Exists(path) || Directory.Exists(path))) return;
-        DragDrop.DoDragDrop(element, new DataObject(DataFormats.FileDrop, new[] { path }), DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+        var existing = Split(GetPath(element)).Where(p => File.Exists(p) || Directory.Exists(p)).ToArray();
+        if (existing.Length == 0) return;
+        DragDrop.DoDragDrop(element, new DataObject(DataFormats.FileDrop, existing), DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
     }
 }

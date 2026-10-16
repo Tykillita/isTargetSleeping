@@ -5,6 +5,20 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.11.0] — 2026-10-16
+
+### Added
+- Music in the closed notch pill: "Music" is now one of the items you can choose for the closed pill (Widgets > Closed
+  pill). It shows an animated playing indicator and "title · artist", and when the text doesn't fit it scrolls inside a
+  fixed width (with a pause at the start, looping) so the pill never grows. It hides itself while nothing plays, and when it
+  is a pill item the "Music playing" live activity is not repeated. The live activity got the same indicator and scrolling.
+- Tray: much better. Rows are bigger, with real thumbnails for images and the Material icons for folders; their actions
+  light up on hover and double-click opens the item. Folders show how many items they hold and their size (measured in the
+  background); "Open as a project" sends a folder to the Code widget (adding it to the Home if needed). New "Paste" (adds the
+  files you copied in Explorer) and "Drag all" (takes every item at once), a "Drop to add to the tray" cue while you drag over
+  the notch, a drop zone when the tray is empty, a full-tray notice, and correct singular/plural. Optionally the tray can be
+  remembered between sessions (Settings > General, off by default; only the paths are stored).
+
 ## [1.10.0] — 2026-10-15
 
 ### Added

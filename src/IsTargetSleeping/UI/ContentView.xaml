@@ -172,27 +172,59 @@
         <!-- MARK: bandeja de archivos: lo que se arrastra al notch espera aquí -->
         <StackPanel x:Name="TrayPanel" Margin="14" Visibility="{Binding ShowingTray, Converter={StaticResource Visible}}">
           <Border Style="{StaticResource CardBox}">
-            <StackPanel>
-              <TextBlock Text="{Binding TraySummary}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,8"
-                         Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}" />
-              <TextBlock Text="{Binding TrayEmpty}" Style="{StaticResource Hint}" TextWrapping="Wrap"
-                         Visibility="{Binding NoTrayFiles, Converter={StaticResource Visible}}" />
-              <ItemsControl ItemsSource="{Binding TrayRows}" Focusable="False" />
-              <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}">
-                <Button Style="{StaticResource Bordered}" Command="{Binding ZipTray}" AutomationProperties.Name="{Binding ZipLabel}" ToolTip="{Binding ZipHelp}">
-                  <TextBlock Text="{Binding ZipLabel}" />
-                </Button>
-                <Button Style="{StaticResource Bordered}" Command="{Binding ClearTray}" AutomationProperties.Name="{Binding ClearTrayLabel}" ToolTip="{Binding ClearTrayHelp}" Margin="8,0,0,0">
-                  <TextBlock Text="{Binding ClearTrayLabel}" />
-                </Button>
-                <Button Style="{StaticResource Bordered}" Command="{Binding RevealZip}" AutomationProperties.Name="{Binding RevealZipLabel}" Margin="8,0,0,0"
-                        Visibility="{Binding HasTrayZip, Converter={StaticResource Visible}}">
-                  <TextBlock Text="{Binding RevealZipLabel}" />
-                </Button>
+            <Grid>
+              <StackPanel>
+                <!-- Sin nada: una zona para soltar -->
+                <Grid Margin="0,2" Visibility="{Binding NoTrayFiles, Converter={StaticResource Visible}}">
+                  <Rectangle StrokeDashArray="4 4" Stroke="{DynamicResource Line}" StrokeThickness="1.2" RadiusX="12" RadiusY="12" />
+                  <StackPanel HorizontalAlignment="Center" Margin="22,26">
+                    <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="28" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" />
+                    <TextBlock Text="{Binding TrayEmpty}" Style="{StaticResource Hint}" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="400" Margin="0,12,0,0" />
+                    <Button Style="{StaticResource Bordered}" Command="{Binding PasteTray}" AutomationProperties.Name="{Binding PasteTrayLabel}" ToolTip="{Binding PasteTrayHelp}"
+                            HorizontalAlignment="Center" Margin="0,14,0,0">
+                      <TextBlock Text="{Binding PasteTrayLabel}" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+                <ItemsControl ItemsSource="{Binding TrayRows}" Focusable="False" />
+                <DockPanel Margin="0,12,0,0" Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}">
+                  <Border DockPanel.Dock="Right" CornerRadius="8" Background="{DynamicResource Track}" Padding="10,4" Cursor="Hand" ui:FileDrag.Path="{Binding TrayAllPaths}"
+                          ToolTip="{Binding DragAllHelp}" Visibility="{Binding HasManyTrayFiles, Converter={StaticResource Visible}}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="&#xE76F;" FontFamily="{StaticResource Icons}" FontSize="11" Foreground="{DynamicResource Secondary}" VerticalAlignment="Center" Margin="0,0,7,0" />
+                      <TextBlock Text="{Binding DragAllLabel}" FontSize="11.5" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                  <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource Bordered}" Command="{Binding ZipTray}" AutomationProperties.Name="{Binding ZipLabel}" ToolTip="{Binding ZipHelp}">
+                      <TextBlock Text="{Binding ZipLabel}" />
+                    </Button>
+                    <Button Style="{StaticResource Bordered}" Command="{Binding PasteTray}" AutomationProperties.Name="{Binding PasteTrayLabel}" ToolTip="{Binding PasteTrayHelp}" Margin="8,0,0,0">
+                      <TextBlock Text="{Binding PasteTrayLabel}" />
+                    </Button>
+                    <Button Style="{StaticResource Bordered}" Command="{Binding ClearTray}" AutomationProperties.Name="{Binding ClearTrayLabel}" ToolTip="{Binding ClearTrayHelp}" Margin="8,0,0,0">
+                      <TextBlock Text="{Binding ClearTrayLabel}" />
+                    </Button>
+                    <Button Style="{StaticResource Bordered}" Command="{Binding RevealZip}" AutomationProperties.Name="{Binding RevealZipLabel}" Margin="8,0,0,0"
+                            Visibility="{Binding HasTrayZip, Converter={StaticResource Visible}}">
+                      <TextBlock Text="{Binding RevealZipLabel}" />
+                    </Button>
+                  </StackPanel>
+                </DockPanel>
+                <TextBlock Text="{Binding TrayStatus}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                           Visibility="{Binding HasTrayStatus, Converter={StaticResource Visible}}" />
+                <TextBlock Text="{Binding TrayHint}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
+                           Visibility="{Binding HasTrayFiles, Converter={StaticResource Visible}}" />
               </StackPanel>
-              <TextBlock Text="{Binding TrayStatus}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,8,0,0"
-                         Visibility="{Binding HasTrayStatus, Converter={StaticResource Visible}}" />
-            </StackPanel>
+              <!-- Mientras se arrastra algo por encima del notch -->
+              <Grid Visibility="{Binding TrayDragging, Converter={StaticResource Visible}}" IsHitTestVisible="False" Margin="-6">
+                <Rectangle Fill="#D0101418" StrokeDashArray="4 3" Stroke="{DynamicResource Muted}" StrokeThickness="1.6" RadiusX="12" RadiusY="12" />
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                  <TextBlock Text="&#xE896;" FontFamily="{StaticResource Icons}" FontSize="26" Foreground="{DynamicResource Fg}" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding TrayDropText}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" Margin="0,8,0,0" />
+                </StackPanel>
+              </Grid>
+            </Grid>
           </Border>
         </StackPanel>
 
@@ -1043,6 +1075,14 @@
                         <StackPanel>
                             <TextBlock Text="{Binding ClipboardTitle}" Style="{StaticResource Label}" />
                             <TextBlock Text="{Binding ClipboardDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding TrayRememberOn}" Command="{Binding ToggleTrayRemember}" AutomationProperties.Name="{Binding TrayRememberTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding TrayRememberTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding TrayRememberDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,1,0,0" />
                         </StackPanel>
                     </DockPanel>
                     <Rectangle Style="{StaticResource Divider}" Margin="0,11" />

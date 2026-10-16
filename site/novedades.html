@@ -58,6 +58,7 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.s.proxima">1.11.0 · En desarrollo</a>
       <a href="#v1-10-0">1.10.0</a>
       <a href="#v1-9-0">1.9.0</a>
       <a href="#v1-8-0">1.8.0</a>
@@ -79,6 +80,24 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.11.0</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+        <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.resumen">Esta versión está en desarrollo y aún no se ha publicado: la música que suena en la pastilla cerrada del notch y una bandeja de archivos mucho mejor.</p>
+        <div class="grupo">
+          <h3 data-i18n="nov.g.nuevo">Nuevo</h3>
+          <div class="novedades">
+            <div class="novedad"><b data-i18n="nov.proxima.pastillaT">Música en la pastilla cerrada</b><span data-i18n="nov.proxima.pastillaD">La música que suena ya se puede elegir como dato de la pastilla cerrada (Widgets &gt; Pastilla cerrada): tres barras animadas y «título · artista». Si el texto no cabe, se desplaza en bucle dentro de un ancho fijo para que la pastilla no crezca, y se esconde mientras no suena nada. Con ese dato elegido, la actividad «Música sonando» no se repite. Respeta el movimiento reducido: texto recortado y barras quietas.</span></div>
+            <div class="novedad"><b data-i18n="nov.proxima.bandejaT">Bandeja renovada</b><span data-i18n="nov.proxima.bandejaD">Filas más grandes con miniaturas reales de las imágenes e iconos de Material para las carpetas; las acciones se aclaran al pasar el ratón y el doble clic abre el elemento. Las carpetas dicen cuántos elementos tienen y cuánto pesan, y «Abrir como proyecto» las manda al widget Código. Nuevos «Pegar» (los archivos que copiaste en el Explorador) y «Arrastrar todo», un aviso «Suelta para añadir a la bandeja» mientras arrastras, una zona para soltar cuando está vacía, aviso de bandeja llena y plurales correctos. Si quieres, la bandeja se recuerda entre sesiones (Ajustes &gt; General, apagado por defecto; solo se guardan las rutas).</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
     <article class="version" id="v1-10-0">
       <div class="version-meta">
         <div class="version-num">1.10.0</div>
@@ -508,7 +527,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.10.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.11.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

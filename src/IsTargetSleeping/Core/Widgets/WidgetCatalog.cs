@@ -148,6 +148,7 @@ public static class PillCatalog
         new("cpu", "CPU", "El uso de la CPU", ""),
         new("clock", "Hora", "La hora", ""),
         new("battery", "Batería", "La carga de la batería", ""),
+        new("media", "Música", "Lo que suena ahora, con su indicador", ""),
         new("pomodoro", "Pomodoro", "El tiempo del temporizador", ""),
     ];
 

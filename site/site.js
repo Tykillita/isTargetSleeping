@@ -14,7 +14,7 @@ const EN = {
   'tema.oscuro': 'Dark theme',
   'tema.sistema': 'System theme',
 
-  'hero.eyebrow': 'Version 1.10.0 · Native Windows',
+  'hero.eyebrow': 'Version 1.11.0 in development · Native Windows',
   'hero.titulo': 'A notch for Windows: Ollama, your PC and your tools, at a glance.',
   'hero.sub': 'isTargetSleeping lives next to the Windows clock or, if you like, at the edge of the screen as a notch. It turns Ollama on and off, puts its models to sleep when they stop working and gives you your RAM back, and adds widgets: system, clock, Pomodoro, notes…',
   'hero.meta': 'Free and open source · Latest published version: 1.10.0 · Windows 10 and 11 · x64 and ARM64',
@@ -187,7 +187,7 @@ const EN = {
 
   'priv.eyebrow': 'Privacy',
   'priv.titulo': 'It all happens on your PC.<br>That’s it.',
-  'priv.sub': 'It talks to Ollama’s local API at <code>127.0.0.1:11434</code> (or <code>OLLAMA_HOST</code>, if you set it) and to the other engines’ local ports. The widgets read data from your own PC and send nothing; the tray and the optional clipboard live only in memory. Web pages only open when you click.',
+  'priv.sub': 'It talks to Ollama’s local API at <code>127.0.0.1:11434</code> (or <code>OLLAMA_HOST</code>, if you set it) and to the other engines’ local ports. The widgets read data from your own PC and send nothing; the tray (which only remembers its paths if you ask) and the optional clipboard live in memory. Web pages only open when you click.',
   'priv.c1': 'No accounts',
   'priv.c1t': 'No sign-up, no email, no password. Download it and use it.',
   'priv.c2': 'No telemetry',
@@ -265,7 +265,7 @@ const EN = {
 
   'cierre.titulo': 'Let your model rest.',
   'cierre.texto': 'Free for Windows. No accounts. Awake when you talk to it, asleep when you don’t.',
-  'cierre.meta': 'Version 1.10.0 · Windows 10 and 11 · x64 and ARM64',
+  'cierre.meta': 'Version 1.11.0 in development · available download: 1.10.0 · Windows 10 and 11 · x64 and ARM64',
 
   'pie.mit': 'MIT License',
   'pie.novedades': 'What’s new',
@@ -283,7 +283,7 @@ const EN = {
   'pie.quien': 'Who makes it',
   'pie.autor': 'Designed and built by <b>CodeSentry - Tykillita</b>, software development and cybersecurity.',
   'pie.aviso': 'isTargetSleeping is an independent project, not affiliated with Ollama. The idea of putting idle models to sleep comes from <a href="https://github.com/eriktaveras/modelnap">ModelNap</a> by Erik Taveras (MIT); the Windows app’s design and code are its own.',
-  'pie.version': 'Version 1.10.0',
+  'pie.version': 'Version 1.11.0 (in development)',
   'pie.idiomaAria': 'Language',
   'pie.licencia': 'License',
 
@@ -310,7 +310,14 @@ const EN = {
   'nov.v1_9_0.volumenD': 'When the Windows volume changes (or you mute it), the closed pill shows it for a couple of seconds, for example “98 %” or “Muted”. It shows up in addition to the Windows indicator, which can’t be removed in a supported way. It only reads the volume, never changes it, and has its own switch.',
   'nov.v1_9_0.musicaT': 'Music widget',
   'nov.v1_9_0.musicaD': 'Title, artist, cover art, progress and the previous, play or pause and next controls for whatever Windows says is playing (Spotify, the browser, the media player…). The progress bar can be clicked or dragged to jump to another point in the song. Swipe the widget left or right (with the mouse, or two fingers on the trackpad) to skip tracks. It is read on your PC and only when something needs it; the “Music playing” activity comes turned off.',
-  'widg.l6': 'Drag files onto the notch and they wait in the Tray until you drop them wherever you like; text files can be edited right there. The clipboard history is optional, text only and in memory only, and favorites open your apps too. The Code widget is a small IDE: file tree with Material Icon Theme icons, tabs, an image viewer and an editor.',
+  'widg.l6': 'Drag files onto the notch and they wait in the Tray until you drop them wherever you like; text files can be edited right there. The clipboard history is optional, text only and in memory only, and favorites open your apps too. The Code widget is a small IDE: file tree with Material Icon Theme icons, tabs, an image viewer and an editor. The closed pill can also show the music that is playing, with its title scrolling.',
+  'nov.s.proxima': '1.11.0 · In development',
+  'nov.proxima.estado': 'In development',
+  'nov.proxima.resumen': 'This version is in development and not published yet: the music that is playing in the closed notch pill and a much better file tray.',
+  'nov.proxima.pastillaT': 'Music in the closed pill',
+  'nov.proxima.pastillaD': 'The music that is playing can now be picked as an item of the closed pill (Widgets > Closed pill): three animated bars and “title · artist”. If the text doesn’t fit, it scrolls in a loop inside a fixed width so the pill doesn’t grow, and it hides while nothing plays. With that item picked, the “Music playing” activity is not repeated. It respects reduced motion: clipped text and still bars.',
+  'nov.proxima.bandejaT': 'A renewed tray',
+  'nov.proxima.bandejaD': 'Bigger rows with real thumbnails for images and Material icons for folders; the actions light up on hover and double-click opens the item. Folders say how many items they hold and how big they are, and “Open as a project” sends them to the Code widget. New “Paste” (the files you copied in Explorer) and “Drag all”, a “Drop to add to the tray” cue while you drag, a drop zone when it is empty, a full-tray notice and correct plurals. If you want, the tray is remembered between sessions (Settings > General, off by default; only the paths are stored).',
   'nov.v1_10_0.fecha': 'Oct 15, 2026',
   'nov.v1_10_0.resumen': 'A file tray in the notch, a Code widget with a file tree and editor, an optional clipboard history and favorites that open your apps.',
   'nov.v1_10_0.bandejaT': 'File tray',

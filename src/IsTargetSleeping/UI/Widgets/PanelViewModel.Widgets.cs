@@ -75,6 +75,8 @@ public sealed partial class PanelViewModel
         "clock" => Hub.ClockInfo.Time,
         "battery" => Hub.BatteryInfo.HasBattery ? Hub.BatteryInfo.Label : "—",
         "pomodoro" => Hub.Pomodoro.Remaining,
+        // Vacío mientras no suena nada: la pastilla esconde entonces ese dato.
+        "media" => Hub.Media.IsPlaying ? MediaPillText(Hub.Media.MediaTitle, Hub.Media.Artist) : "",
         _ => "",
     };
 
@@ -94,10 +96,14 @@ public sealed partial class PanelViewModel
             if (Mem.Pressure == SystemMemory.Level.Critical) Add("pressure", tr("RAM crítica"));
             if (Hub.Pomodoro.Running) Add("pomodoro", Hub.Pomodoro.Remaining);
             if (Hub.Awake.On) Add("awake", "");
-            if (Hub.Media.IsPlaying) Add("media", Hub.Media.MediaTitle);
+            // Si la música es un dato de la pastilla, no se repite como actividad.
+            if (Hub.Media.IsPlaying && !PillIds.Contains("media")) Add("media", MediaPillText(Hub.Media.MediaTitle, Hub.Media.Artist));
             return ActivityQueue.Pick(now, ActivityIds);
         }
     }
+
+    /// Lo que enseña la pastilla de la canción que suena: «título · artista» (o solo el título si no hay artista).
+    public static string MediaPillText(string title, string artist) => artist.Length > 0 ? $"{title} · {artist}" : title;
 
     public string FavoritesTitle => tr("Favoritos");
     public string FavoritesIntro => tr("Hasta %d acciones de un toque junto a la navegación del dock.", FavoriteCatalog.Max);
@@ -133,7 +139,7 @@ public sealed partial class PanelViewModel
         PeekRows = BuildRows(peek, PrefKeys.NotchPeekWidgets, PeekScope);
         Hub.SetPillNeeds(PillCatalog.WidgetsNeeded(pill));
         // La música solo se lee si algo la necesita: el widget en alguna lista o su actividad permitida.
-        if (ids.Contains("media") || peek.Contains("media") || activities.Contains("media")) Hub.Media.Start();
+        if (ids.Contains("media") || peek.Contains("media") || pill.Contains("media") || activities.Contains("media")) Hub.Media.Start();
         if (activities.Contains("volume")) Hub.Volume.Start();
         ActivityRows = ActivityCatalog.All.Select((info, i) =>
         {

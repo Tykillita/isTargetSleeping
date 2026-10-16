@@ -160,6 +160,7 @@ public sealed class NotchWindow : Window
         if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
         e.Effects = DragDropEffects.Copy;
         e.Handled = true;
+        model.SetTrayDragging(true);
         OpenTray();
     }
 
@@ -545,12 +546,15 @@ public sealed class NotchWindow : Window
 
     private readonly StackPanel pillRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Dictionary<string, TextBlock> pillTexts = [];
+    private Marquee? pillMarquee;   // el dato «Música» de la pastilla (con su indicador), si está elegido
+    private FrameworkElement? pillMediaItem;
     private Ellipse? pillDot;
     private string pillSignature = "", activitySignature = "";
     /// Las actividades en vivo (limpiando, encendiendo, temporizador…) van a la derecha de los datos; la pastilla crece para dar sitio.
     private readonly StackPanel activityRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly StackPanel pillOuter = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-    private readonly Dictionary<string, TextBlock> activityTexts = [];
+    private readonly Dictionary<string, Action<string>> activityTexts = [];
+    private const double MediaTextWidth = 120;   // el título de la canción se desplaza dentro de este ancho: la pastilla no crece con él
     private double pillWidthDip = NotchLayout.PillWidth;
 
     /// Los datos de la pastilla cerrada son los que elija el usuario (página Widgets): se reconstruyen si cambia la lista y se repintan con cada dato nuevo.
@@ -564,8 +568,24 @@ public sealed class NotchWindow : Window
             pillRow.Children.Clear();
             pillTexts.Clear();
             pillDot = null;
+            pillMarquee = null;
+            pillMediaItem = null;
             foreach (var id in ids)
             {
+                if (id == "media")
+                {
+                    bool reduced = model.Prefs.ReducedMotion;
+                    pillMarquee = new Marquee(() =>
+                    {
+                        var t = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center };
+                        t.SetResourceReference(TextBlock.ForegroundProperty, "Secondary");
+                        return t;
+                    }, MediaTextWidth, reduced);
+                    var mediaItem = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(pillRow.Children.Count == 0 ? 0 : 10, 0, 0, 0), Children = { PillEqualizer.Build(reduced), pillMarquee } };
+                    pillMediaItem = mediaItem;
+                    pillRow.Children.Add(mediaItem);
+                    continue;
+                }
                 var text = new TextBlock { FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
                 switch (id)
                 {
@@ -590,6 +610,12 @@ public sealed class NotchWindow : Window
             }
         }
         foreach (var (id, text) in pillTexts) text.Text = model.PillValue(id);
+        if (pillMarquee is not null && pillMediaItem is not null)
+        {
+            var playing = model.PillValue("media");
+            pillMarquee.Text = playing;
+            pillMediaItem.Visibility = playing.Length > 0 ? Visibility.Visible : Visibility.Collapsed;   // sin música, el dato no ocupa sitio
+        }
         if (pillDot is not null) pillDot.Fill = model.PillForeground;
 
         var activities = model.LiveActivities;
@@ -601,16 +627,30 @@ public sealed class NotchWindow : Window
             activityTexts.Clear();
             foreach (var activity in activities)
             {
+                // La música lleva el indicador de reproducción y el título con el artista, que se desplaza dentro de un ancho fijo.
+                if (activity.Id == "media")
+                {
+                    bool reduced = model.Prefs.ReducedMotion;
+                    var marquee = new Marquee(() =>
+                    {
+                        var t = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center };
+                        t.SetResourceReference(TextBlock.ForegroundProperty, "Secondary");
+                        return t;
+                    }, MediaTextWidth, reduced);
+                    activityRow.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { PillEqualizer.Build(reduced), marquee } });
+                    activityTexts[activity.Id] = value => marquee.Text = value;
+                    continue;
+                }
                 var glyph = new TextBlock { Text = activity.Glyph, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
                 glyph.SetResourceReference(TextBlock.FontFamilyProperty, "Icons");
                 glyph.SetResourceReference(TextBlock.ForegroundProperty, activity.Id switch { "clean" or "power" => "Warm", "pressure" => "Danger", _ => "Secondary" });
                 var text = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 110, TextTrimming = TextTrimming.CharacterEllipsis };
                 text.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
                 activityRow.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { glyph, text } });
-                activityTexts[activity.Id] = text;
+                activityTexts[activity.Id] = value => text.Text = value;
             }
         }
-        foreach (var activity in activities) activityTexts[activity.Id].Text = activity.Text;
+        foreach (var activity in activities) activityTexts[activity.Id](activity.Text);
 
         var unbounded = new Size(double.PositiveInfinity, double.PositiveInfinity);
         pillRow.Measure(unbounded);

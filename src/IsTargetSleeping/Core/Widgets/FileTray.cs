@@ -6,6 +6,9 @@ namespace IsTargetSleeping;
 /// Un archivo o carpeta que espera en la bandeja del notch. Solo guarda la ruta: nunca copia ni mueve nada por sí sola.
 public sealed record TrayEntry(string Path, string Name, bool IsDirectory, long Size);
 
+/// Qué hay dentro de una carpeta: archivos, subcarpetas y tamaño total. `Truncated` si se cortó por el tope de elementos.
+public readonly record struct FolderStats(int Files, int Folders, long Bytes, bool Truncated);
+
 /// La bandeja de archivos: una lista corta en memoria (se vacía al cerrar la app) con lo que se arrastró al notch.
 public sealed class FileTray
 {
@@ -32,6 +35,34 @@ public sealed class FileTray
             added++;
         }
         return added;
+    }
+
+    /// Cuenta lo que hay dentro de `directory` (sin seguir enlaces, y parando en `cap` elementos para no atascarse con una carpeta enorme).
+    public static FolderStats Measure(string directory, int cap = 20000)
+    {
+        int files = 0, folders = 0;
+        long bytes = 0;
+        var pending = new Stack<string>();
+        pending.Push(directory);
+        while (pending.Count > 0)
+        {
+            try
+            {
+                foreach (var entry in new DirectoryInfo(pending.Pop()).EnumerateFileSystemInfos())
+                {
+                    if (files + folders >= cap) return new FolderStats(files, folders, bytes, true);
+                    if (entry is DirectoryInfo dir)
+                    {
+                        if ((dir.Attributes & FileAttributes.ReparsePoint) != 0) continue;   // un enlace no es contenido de la carpeta
+                        folders++;
+                        pending.Push(dir.FullName);
+                    }
+                    else if (entry is FileInfo file) { files++; bytes += file.Length; }
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }   // lo que no se puede leer no cuenta
+        }
+        return new FolderStats(files, folders, bytes, false);
     }
 
     public void Remove(string path) => entries.RemoveAll(e => string.Equals(e.Path, path, StringComparison.OrdinalIgnoreCase));

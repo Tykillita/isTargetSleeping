@@ -161,7 +161,11 @@ internal static class Program
                 notesBox is not null && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(notesBox)?.GetName() == WidgetCatalog.Find("notes")!.Title);
             prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "notes" });
             Check($"{language}: la pastilla empieza con estado, modelo y RAM, y cada dato tiene texto",
-                model.PillIds.SequenceEqual(new[] { "state", "model", "ram" }) && PillCatalog.All.All(p => model.PillValue(p.Id).Length > 0));
+                model.PillIds.SequenceEqual(new[] { "state", "model", "ram" }) && PillCatalog.All.Where(p => p.Id != "media").All(p => model.PillValue(p.Id).Length > 0));
+            // La música es un dato más de la pastilla (vacío, y por tanto oculto, mientras no suena nada) y entonces no se repite como actividad.
+            Check($"{language}: «Música» se puede elegir en la pastilla cerrada y sin música no ocupa sitio",
+                PillCatalog.Find("media") is { Glyph.Length: > 0 } && model.PillValue("media") == "" && PillCatalog.Toggle(new List<string> { "state", "model" }, "media").SequenceEqual(new[] { "state", "model", "media" })
+                && model.PillRows.Any(r => r.Title == L10n.tr("Música")));
             prefs.SetList(PrefKeys.NotchPill, Array.Empty<string>());
             model.Show(PanelView.Widgets);
             homeHost.UpdateLayout();
@@ -354,6 +358,98 @@ internal static class Program
                 model.WideLayout = false;
                 model.Show(PanelView.Main);
                 try { Directory.Delete(trayDir, true); } catch { }
+            }
+            // Mejoras de la bandeja: plurales, contenido de las carpetas, abrir como proyecto, arrastrar todo, recordarla y el aviso de soltar.
+            {
+                var box = Path.Combine(Path.GetTempPath(), "its-ui-tray2-" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(Path.Combine(box, "carpeta", "sub"));
+                File.WriteAllText(Path.Combine(box, "carpeta", "a.txt"), new string('x', 2048));
+                File.WriteAllText(Path.Combine(box, "carpeta", "sub", "b.txt"), "y");
+                var single = Path.Combine(box, "suelto.txt"); File.WriteAllText(single, "z");
+                void Pump(Func<bool> done)
+                {
+                    var frame = new System.Windows.Threading.DispatcherFrame();
+                    var poll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+                    var started = DateTime.UtcNow;
+                    poll.Tick += (_, _) => { if (done() || DateTime.UtcNow - started > TimeSpan.FromSeconds(4)) { poll.Stop(); frame.Continue = false; } };
+                    poll.Start();
+                    System.Windows.Threading.Dispatcher.PushFrame(frame);
+                }
+                model.ClearTray.Execute(null);
+                model.AddToTray(new[] { Path.Combine(box, "carpeta") });
+                Check($"{language}: con un solo elemento el resumen va en singular y mientras mide la carpeta no inventa un tamaño",
+                    model.TraySummary == $"{L10n.tr("1 elemento")} · {L10n.tr("calculando…")}" || model.TraySummary.StartsWith(L10n.tr("1 elemento")));
+                Pump(() => model.TrayRows.Count == 1 && model.TrayRows[0].Detail.Contains(L10n.tr("%d elementos", 3)));
+                Check($"{language}: la carpeta enseña cuántos elementos lleva (archivos y subcarpetas) y su tamaño", model.TrayRows[0].Detail.Contains(L10n.tr("%d elementos", 3)) && model.TrayRows[0].Detail.Contains("2"));
+                model.AddToTray(new[] { single });
+                Check($"{language}: con dos elementos el resumen va en plural y suma el contenido de la carpeta", model.TraySummary.StartsWith(L10n.tr("%d elementos", 2)) && model.TraySummary.Contains("KB"));
+                Check($"{language}: arrastrar todo lleva las rutas de todos los elementos", FileDrag.Split(model.TrayAllPaths).Length == 2 && model.HasManyTrayFiles
+                    && FileDrag.Split(model.TrayAllPaths).All(path => path.StartsWith(box)));
+                Check($"{language}: cada fila tiene abrir, abrir como proyecto, enseñar, copiar y quitar con nombre, y las carpetas no se editan",
+                    model.TrayRows.All(r => r.Open is not null && r.OpenProject is not null && r.OpenHelp.Length > 0 && r.ProjectHelp.Length > 0) && model.TrayRows.Count(r => r.CanEdit) == 1);
+                var other = new PanelViewModel(supervisor);   // otro modelo: así el widget Código de las demás pruebas sigue sin carpeta
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
+                Check($"{language}: con el Home lleno no se puede abrir una carpeta como proyecto y lo dice", !other.OpenInCode(Path.Combine(box, "carpeta")) && other.TrayStatus == L10n.tr("Quita otro widget para hacer sitio."));
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "clock" });
+                Check($"{language}: abrir una carpeta como proyecto añade el widget Código al Home, le da la carpeta y lleva al Home",
+                    other.OpenInCode(Path.Combine(box, "carpeta")) && other.WidgetIds.Contains("code") && other.Hub.Code.Root == Path.Combine(box, "carpeta") && other.ShowingHome);
+                prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
+                model.Show(PanelView.Main);
+                Check($"{language}: la bandeja no se recuerda salvo que se pida, y entonces guarda solo las rutas", !model.TrayRememberOn && !(prefs.StoredList(PrefKeys.TrayItems)?.Count > 0));
+                model.ToggleTrayRemember.Execute(null);
+                Check($"{language}: al activarlo se guardan las rutas de lo que hay", model.TrayRememberOn && prefs.StoredList(PrefKeys.TrayItems) is { Count: 2 });
+                model.ToggleTrayRemember.Execute(null);
+                Check($"{language}: al apagarlo no queda nada guardado", !model.TrayRememberOn && prefs.StoredList(PrefKeys.TrayItems) is { Count: 0 });
+                model.SetTrayDragging(true);
+                Check($"{language}: mientras se arrastra algo se enseña el aviso de soltar, y se apaga al terminar", model.TrayDragging && model.TrayDropText.Length > 0);
+                model.SetTrayDragging(false);
+                Check($"{language}: …y deja de enseñarse", !model.TrayDragging);
+                model.ClearTray.Execute(null);
+                var crowd = new List<string>();
+                for (int i = 0; i < FileTray.Max + 3; i++) { var f = Path.Combine(box, $"m{i:D2}.txt"); File.WriteAllText(f, "m"); crowd.Add(f); }
+                model.AddToTray(crowd);
+                Check($"{language}: con la bandeja llena avisa de que no cabe más", model.Tray.Count == FileTray.Max && model.TrayStatus == L10n.tr("La bandeja está llena (%d). Quita algo para añadir más.", FileTray.Max));
+                var trayHost2 = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1400 };
+                model.WideLayout = true;
+                model.Show(PanelView.Tray);
+                trayHost2.Show();
+                trayHost2.UpdateLayout();
+                var trayButtons2 = Descendants(trayHost2).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
+                Check($"{language}: la bandeja llena pinta sus {model.TrayRows.Count} filas y todos sus botones ({trayButtons2.Length}) tienen nombre accesible",
+                    model.TrayRows.Count == FileTray.Max && trayButtons2.Length > 5 * FileTray.Max
+                    && trayButtons2.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
+                trayHost2.Close();
+                model.ClearTray.Execute(null);
+                model.WideLayout = false;
+                model.Show(PanelView.Main);
+                try { Directory.Delete(box, true); } catch { }
+            }
+            // La canción en la pastilla: «título · artista» en un texto que se desplaza dentro de un ancho fijo, con su indicador.
+            {
+                Check($"{language}: la pastilla enseña título y artista, o solo el título si no hay artista",
+                    PanelViewModel.MediaPillText("Canción", "Artista") == "Canción · Artista" && PanelViewModel.MediaPillText("Solo título", "") == "Solo título");
+                Func<TextBlock> makeText = () => new TextBlock { FontSize = 10.5, FontFamily = new FontFamily("Cascadia Mono, Consolas") };
+                var unbounded = new Size(double.PositiveInfinity, double.PositiveInfinity);
+                const string longTitle = "Un título larguísimo de una canción · con un artista también largo";
+                var shortMarquee = new Marquee(makeText, 120, false) { Text = "Hola" };
+                shortMarquee.Measure(unbounded);
+                var longMarquee = new Marquee(makeText, 120, false) { Text = longTitle };
+                longMarquee.Measure(unbounded);
+                var reducedMarquee = new Marquee(makeText, 120, true) { Text = longTitle };
+                reducedMarquee.Measure(unbounded);
+                Check($"{language}: un texto corto se queda quieto con su ancho, y uno largo se desplaza sin pasar del ancho fijo",
+                    !shortMarquee.Scrolling && shortMarquee.DesiredSize.Width < 120 && longMarquee.Scrolling && Math.Abs(longMarquee.DesiredSize.Width - 120) < 1);
+                // El fallo que se vio en la pastilla real: un recorte de diseño de 120 px en la fila que se desplaza (se movía con ella y
+                // el final del título nunca llegaba a verse). La fila debe quedar a su tamaño entero y sin recorte propio.
+                longMarquee.Arrange(new Rect(longMarquee.DesiredSize));
+                Check($"{language}: la fila que se desplaza mide lo que su texto (dos copias) y no lleva recorte propio, para que se vea hasta el final",
+                    longMarquee.Strip.ActualWidth > 2 * 120 && System.Windows.Media.VisualTreeHelper.GetClip(longMarquee.Strip) is null
+                    && System.Windows.Controls.Primitives.LayoutInformation.GetLayoutClip(longMarquee.Strip) is null && Math.Abs(longMarquee.ActualWidth - 120) < 1);
+                Check($"{language}: con movimiento reducido el texto largo no se desplaza y se recorta al ancho", !reducedMarquee.Scrolling && Math.Abs(reducedMarquee.DesiredSize.Width - 120) < 1);
+                longMarquee.Text = "Corto";
+                longMarquee.Measure(unbounded);
+                Check($"{language}: si la canción cambia a un título corto deja de desplazarse y recupera su ancho", !longMarquee.Scrolling && longMarquee.DesiredSize.Width < 120);
+                Check($"{language}: el indicador de reproducción son tres barras", PillEqualizer.Build(false) is System.Windows.Controls.Panel { Children.Count: 3 } && PillEqualizer.Build(true) is System.Windows.Controls.Panel { Children.Count: 3 });
             }
             // Bajo el nombre de la app va la versión de la app, sin nada de Ollama, en el panel y en el Home.
             foreach (var brandView in new[] { PanelView.Main, PanelView.Home })

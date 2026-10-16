@@ -1041,37 +1041,57 @@
       </StackPanel>
     </DataTemplate>
 
-    <!-- La bandeja de archivos: una fila por archivo, que se puede arrastrar hacia fuera. -->
+    <!-- La bandeja de archivos: una fila por elemento (miniatura, nombre y detalle). Las acciones se aclaran al pasar el ratón; doble clic abre; se arrastra hacia fuera. -->
     <DataTemplate DataType="{x:Type ui:TrayRow}">
-      <StackPanel Background="Transparent" ui:FileDrag.Path="{Binding Path}" ToolTip="{Binding Path}">
-        <Rectangle Style="{StaticResource Divider}" Margin="0,7" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+      <Border x:Name="box" CornerRadius="9" Padding="6,5" Margin="0,1" Background="Transparent" ui:FileDrag.Path="{Binding Path}" ToolTip="{Binding Path}">
+        <Border.InputBindings>
+          <MouseBinding Gesture="LeftDoubleClick" Command="{Binding Open}" />
+        </Border.InputBindings>
         <DockPanel>
-          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <StackPanel x:Name="actions" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0.55">
             <Button Style="{StaticResource Plain}" Command="{Binding Edit}" AutomationProperties.Name="{Binding EditHelp}" ToolTip="{Binding EditHelp}"
                     Visibility="{Binding CanEdit, Converter={StaticResource Visible}}">
-              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE70F;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE70F;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            </Button>
+            <Button Style="{StaticResource Plain}" Command="{Binding OpenProject}" AutomationProperties.Name="{Binding ProjectHelp}" ToolTip="{Binding ProjectHelp}"
+                    Visibility="{Binding IsFolder, Converter={StaticResource Visible}}">
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE943;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+            </Button>
+            <Button Style="{StaticResource Plain}" Command="{Binding Open}" AutomationProperties.Name="{Binding OpenHelp}" ToolTip="{Binding OpenHelp}">
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE8A7;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
             </Button>
             <Button Style="{StaticResource Plain}" Command="{Binding Reveal}" AutomationProperties.Name="{Binding RevealHelp}" ToolTip="{Binding RevealHelp}">
-              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE838;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE838;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
             </Button>
             <Button Style="{StaticResource Plain}" Command="{Binding CopyPath}" AutomationProperties.Name="{Binding CopyHelp}" ToolTip="{Binding CopyHelp}">
-              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
             </Button>
             <Button Style="{StaticResource Plain}" Command="{Binding Remove}" AutomationProperties.Name="{Binding RemoveHelp}" ToolTip="{Binding RemoveHelp}">
-              <Border Width="26" Height="24" CornerRadius="6"><TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="11" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+              <Border Width="28" Height="26" CornerRadius="6"><TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
             </Button>
           </StackPanel>
-          <Grid DockPanel.Dock="Left" Width="26" Margin="0,0,10,0" VerticalAlignment="Center">
-            <Image Source="{Binding Icon}" Width="20" Height="20" Visibility="{Binding HasIcon, Converter={StaticResource Visible}}" />
-            <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center"
-                       Visibility="{Binding NoIcon, Converter={StaticResource Visible}}" />
-          </Grid>
+          <Border DockPanel.Dock="Left" Width="38" Height="38" CornerRadius="9" Background="{DynamicResource Track}" Margin="0,0,11,0" VerticalAlignment="Center">
+            <Grid>
+              <Image Source="{Binding Icon}" Width="28" Height="28" Stretch="Uniform" Visibility="{Binding HasIcon, Converter={StaticResource Visible}}" />
+              <TextBlock Text="&#xE8B7;" FontFamily="{StaticResource Icons}" FontSize="18" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         Visibility="{Binding NoIcon, Converter={StaticResource Visible}}" />
+            </Grid>
+          </Border>
           <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" />
+            <TextBlock Text="{Binding Name}" FontSize="12.5" Foreground="{DynamicResource Fg}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,1,0,0" />
           </StackPanel>
         </DockPanel>
-      </StackPanel>
+      </Border>
+      <DataTemplate.Triggers>
+        <Trigger SourceName="box" Property="IsMouseOver" Value="True">
+          <Setter TargetName="box" Property="Background" Value="{DynamicResource ButtonHover}" />
+          <Setter TargetName="actions" Property="Opacity" Value="1" />
+        </Trigger>
+        <Trigger SourceName="box" Property="IsKeyboardFocusWithin" Value="True">
+          <Setter TargetName="actions" Property="Opacity" Value="1" />
+        </Trigger>
+      </DataTemplate.Triggers>
     </DataTemplate>
 
     <!-- La página Widgets: una fila por widget y otra por favorito. -->
