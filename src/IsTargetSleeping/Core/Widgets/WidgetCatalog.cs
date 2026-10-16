@@ -28,6 +28,7 @@ public static class WidgetCatalog
         new("awake", "Mantener despierto", "", 1),
         new("notes", "Notas", "", 2),
         new("battery", "Batería", "", 1),
+        new("media", "Música", "", 1),
     ];
 
     public static readonly IReadOnlyList<string> DefaultWidgets = ["ollama", "system", "clock"];

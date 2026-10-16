@@ -683,6 +683,196 @@
       </Border>
     </DataTemplate>
 
+
+    <!-- Música: portada redondeada con sombra, un velo con el color de la portada, tiempos y controles redondos. Una celda: portada y
+         título arriba y controles debajo; dos celdas: todo en una fila. -->
+    <DataTemplate x:Key="WidgetMediaWidget">
+      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6"
+              ui:Swipe.Next="{Binding Model.Next}" ui:Swipe.Previous="{Binding Model.Previous}">
+        <Grid>
+          <!-- Fondo: la portada muy desenfocada, oscurecida para que el texto se lea; redondeado como la tarjeta. -->
+          <ui:RoundedClip Radius="11" Margin="-12" IsHitTestVisible="False" Visibility="{Binding Full, Converter={StaticResource Visible}}">
+           <Grid>
+            <Image Source="{Binding Model.Art}" Stretch="UniformToFill" Margin="-60" Opacity="0.55"
+                   Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
+              <Image.Effect><BlurEffect Radius="38" KernelType="Gaussian" RenderingBias="Performance" /></Image.Effect>
+            </Image>
+            <Rectangle Fill="{Binding Model.Tint}" />
+            <Rectangle>
+              <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                  <GradientStop Color="#40000000" Offset="0" />
+                  <GradientStop Color="#78000000" Offset="1" />
+                </LinearGradientBrush>
+              </Rectangle.Fill>
+            </Rectangle>
+           </Grid>
+          </ui:RoundedClip>
+          <StackPanel>
+            <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+            <TextBlock Text="{Binding Model.Idle}" Style="{StaticResource Hint}" TextWrapping="Wrap"
+                       Visibility="{Binding Model.NoSession, Converter={StaticResource Visible}}" />
+            <StackPanel Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
+              <!-- Una celda -->
+              <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <Border Width="64" Height="64" CornerRadius="10" Background="{DynamicResource Track}" Margin="0,0,12,0"
+                          Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
+                    <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.45" /></Border.Effect>
+                    <Rectangle RadiusX="10" RadiusY="10"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                  </Border>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Model.MediaTitle}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Model.Artist}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                  </StackPanel>
+                </Grid>
+                <Grid Margin="0,12,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                  <ui:SeekBar Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                </Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
+                    <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="10,0">
+                    <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
+                    <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                </StackPanel>
+              </StackPanel>
+              <!-- Solo en su lista: una vista grande que llena la celda -->
+              <Grid Visibility="{Binding WideAlone, Converter={StaticResource Visible}}" MinHeight="132">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="132" Height="132" CornerRadius="14" Background="{DynamicResource Track}" Margin="0,0,22,0" VerticalAlignment="Center"
+                        Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
+                  <Border.Effect><DropShadowEffect BlurRadius="22" ShadowDepth="5" Opacity="0.55" /></Border.Effect>
+                  <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                </Border>
+                <Grid Grid.Column="1" VerticalAlignment="Stretch">
+                  <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                  </Grid.RowDefinitions>
+                  <StackPanel>
+                    <TextBlock Text="{Binding Model.MediaTitle}" FontSize="22" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Model.Artist}" Foreground="{DynamicResource Secondary}" FontSize="14" TextTrimming="CharacterEllipsis" Margin="0,3,0,0" />
+                  </StackPanel>
+                  <Grid Grid.Row="2" Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                    <ui:SeekBar Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                  </Grid>
+                  <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
+                      <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    </Button>
+                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="14,0">
+                      <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="20" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    </Button>
+                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
+                      <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+              <!-- Dos celdas, con compañeros -->
+              <Grid Visibility="{Binding WideCompanion, Converter={StaticResource Visible}}">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Width="88" Height="88" CornerRadius="12" Background="{DynamicResource Track}" Margin="0,0,18,0"
+                        Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
+                  <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.5" /></Border.Effect>
+                  <Rectangle RadiusX="12" RadiusY="12"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Model.MediaTitle}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding Model.Artist}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                  <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                    <ui:SeekBar Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                  </Grid>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
+                    <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="10,0">
+                    <Border Width="48" Height="48" CornerRadius="24" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
+                    <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                  </Button>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+          <!-- Arriba a la derecha: la app que suena y un ecualizador que baila mientras suena. -->
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False"
+                      Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding Model.SourceApp}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <StackPanel Orientation="Horizontal" Height="12" VerticalAlignment="Center">
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
+                <Rectangle.RenderTransform><ScaleTransform x:Name="EqA" ScaleY="0.3" /></Rectangle.RenderTransform>
+              </Rectangle>
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
+                <Rectangle.RenderTransform><ScaleTransform x:Name="EqB" ScaleY="0.3" /></Rectangle.RenderTransform>
+              </Rectangle>
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" RenderTransformOrigin="0.5,1">
+                <Rectangle.RenderTransform><ScaleTransform x:Name="EqC" ScaleY="0.3" /></Rectangle.RenderTransform>
+              </Rectangle>
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding Model.IsPlaying}" Value="True">
+          <DataTrigger.EnterActions>
+            <BeginStoryboard x:Name="EqRun">
+              <Storyboard>
+                <DoubleAnimation Storyboard.TargetName="EqA" Storyboard.TargetProperty="ScaleY" From="0.25" To="1" Duration="0:0:0.45" AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="EqB" Storyboard.TargetProperty="ScaleY" From="1" To="0.3" Duration="0:0:0.6" AutoReverse="True" RepeatBehavior="Forever" />
+                <DoubleAnimation Storyboard.TargetName="EqC" Storyboard.TargetProperty="ScaleY" From="0.4" To="0.9" Duration="0:0:0.35" AutoReverse="True" RepeatBehavior="Forever" />
+              </Storyboard>
+            </BeginStoryboard>
+          </DataTrigger.EnterActions>
+          <DataTrigger.ExitActions>
+            <RemoveStoryboard BeginStoryboardName="EqRun" />
+          </DataTrigger.ExitActions>
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
     <!-- La página Widgets: una fila por widget y otra por favorito. -->
     <DataTemplate DataType="{x:Type ui:WidgetRow}">
       <StackPanel>

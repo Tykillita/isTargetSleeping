@@ -15,11 +15,12 @@ public static class NotchLayout
 
     /// `monitor` y `work` son los rectángulos del monitor y de su área de trabajo; `scale`, dpi/96;
     /// el tamaño expandido viene en DIP (lo que mide el contenido).
-    public static NotchRects Place(Win32.RECT monitor, Win32.RECT work, double scale, double expandedWidth, double expandedHeight)
+    /// `pillWidth` (DIP) crece cuando la pastilla enseña actividades en vivo junto a sus datos.
+    public static NotchRects Place(Win32.RECT monitor, Win32.RECT work, double scale, double expandedWidth, double expandedHeight, double pillWidth = PillWidth)
     {
         int top = Math.Max(monitor.Top, work.Top);
         int centerX = monitor.Left + monitor.Width / 2;
-        int pillW = Px(PillWidth, scale), pillH = Px(PillHeight, scale);
+        int pillW = Px(Math.Max(PillWidth, pillWidth), scale), pillH = Px(PillHeight, scale);
         int width = Math.Clamp(Px(expandedWidth, scale), pillW, Math.Max(pillW, monitor.Width));
         int height = Math.Clamp(Px(expandedHeight, scale), pillH, Math.Max(pillH, work.Bottom - top));
         var pill = At(centerX, top, pillW, pillH);

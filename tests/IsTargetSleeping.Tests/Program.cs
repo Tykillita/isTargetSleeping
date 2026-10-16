@@ -201,6 +201,18 @@ Check("pastilla: sin nada guardado salen estado, modelo y RAM, y caben tres",
 Check("pastilla: la CPU, la hora y la batería piden su widget; el resto no",
     PillCatalog.WidgetsNeeded(new[] { "cpu", "clock", "battery", "ram" }).SequenceEqual(new[] { "system", "clock", "battery" })
     && !PillCatalog.WidgetsNeeded(new[] { "state", "model", "ram", "vram", "pomodoro" }).Any());
+var happening = new List<Activity> { new("awake", "g", "", 10), new("pomodoro", "g", "24:00", 50), new("clean", "g", "Liberando…", 90) };
+Check("actividades: salen las más urgentes primero y caben dos",
+    ActivityQueue.Pick(happening, ActivityCatalog.Normalize(null)).Select(a => a.Id).SequenceEqual(new[] { "clean", "pomodoro" }));
+Check("actividades: las que el usuario apagó no salen y la siguiente ocupa su sitio",
+    ActivityQueue.Pick(happening, ActivityCatalog.Toggle(ActivityCatalog.Normalize(null), "clean")).Select(a => a.Id).SequenceEqual(new[] { "pomodoro", "awake" })
+    && !ActivityQueue.Pick(happening, Array.Empty<string>()).Any());
+Check("actividades: sin nada guardado están las de siempre (la música no, hasta que se activa); lo desconocido se descarta",
+    ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.Id != "media").Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
+    && ActivityCatalog.All.Select(a => a.Id).Distinct().Count() == ActivityCatalog.All.Count);
+Check("actividades: la pastilla más ancha mantiene su centro y su zona activa",
+    NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Pill.Width == 330 && NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Hot.Right > NotchLayout.Place(nm, nw, 1.0, 340, 200).Hot.Right
+    && NotchLayout.Place(nm, nw, 1.0, 340, 200, 100).Pill.Width == 230);
 Check("favoritos: sin nada guardado salen encender, liberar RAM y procesos",
     FavoriteCatalog.Normalize(null).SequenceEqual(new[] { "power", "clean", "processes" }));
 Check("favoritos: lo desconocido y lo repetido se descarta", FavoriteCatalog.Normalize(new[] { "x", "power", "power" }).SequenceEqual(new[] { "power" }));

@@ -9,12 +9,16 @@ using static IsTargetSleeping.L10n;
 namespace IsTargetSleeping.UI;
 
 /// Un widget colocado en un sitio: el Home o la vista al pasar el ratón, con una o dos celdas. Su plantilla elige la variante.
-public sealed class WidgetSlot(WidgetModel model, int span, bool peek)
+public sealed class WidgetSlot(WidgetModel model, int span, bool peek, bool alone = false)
 {
     public WidgetModel Model { get; } = model;
     public string Id => Model.Id;
     public bool Wide => span == 2;
     public bool Compact => !Wide;
+    /// Es el único widget de su lista: llena su celda con una vista grande en vez de dejar sitio vacío.
+    public bool Alone => alone;
+    public bool WideAlone => Wide && alone && !peek;   // en la vista corta se queda baja
+    public bool WideCompanion => Wide && !WideAlone;
     /// En la vista al pasar el ratón los widgets van más densos (sin lo secundario).
     public bool Peek { get; } = peek;
     public bool Full => !Peek;
@@ -299,6 +303,8 @@ public sealed class WidgetHub
     public SystemWidget SystemStats { get; }
     public ClockWidget ClockInfo { get; } = new();
     public BatteryWidget BatteryInfo { get; } = new();
+    public MediaWidget Media { get; } = new();
+    public AudioVolume Volume { get; } = new();
     private HashSet<string> pillNeeds = [];
     public event Action<string, string>? Finished;
     /// Cada segundo, tras leer los datos: la pastilla cerrada se repinta con ellos.
@@ -310,7 +316,7 @@ public sealed class WidgetHub
         SystemStats = new SystemWidget(panel);
         all = new WidgetModel[]
         {
-            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo,
+            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media,
         }.ToDictionary(w => w.Id);
         Pomodoro.Finished += (title, text) => Finished?.Invoke(title, text);
         Pomodoro.PropertyChanged += (_, _) => Sync();
@@ -319,7 +325,7 @@ public sealed class WidgetHub
 
     public WidgetModel? Find(string id) => all.GetValueOrDefault(id);
     public List<WidgetSlot> Slots(IReadOnlyList<string> ids, bool peek) =>
-        WidgetLayout.Arrange(ids).Select(p => Find(p.Id) is { } w ? new WidgetSlot(w, p.Span, peek) : null).OfType<WidgetSlot>().ToList();
+        WidgetLayout.Arrange(ids).Select(p => Find(p.Id) is { } w ? new WidgetSlot(w, p.Span, peek, ids.Count == 1) : null).OfType<WidgetSlot>().ToList();
 
     public void SetVisible(bool value)
     {

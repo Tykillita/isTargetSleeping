@@ -25,6 +25,7 @@ public sealed partial class PanelViewModel
     public List<WidgetRow> WidgetRows { get; private set; } = [];
     public List<WidgetRow> PeekRows { get; private set; } = [];
     public List<WidgetRow> PillRows { get; private set; } = [];
+    public List<FavoriteRow> ActivityRows { get; private set; } = [];
     public List<FavoriteRow> FavoriteRows { get; private set; } = [];
     private string widgetsSignature = "";
 
@@ -38,6 +39,7 @@ public sealed partial class PanelViewModel
     public List<string> WidgetIds => WidgetLayout.Normalize(Prefs.StoredList(PrefKeys.NotchWidgets));
     public List<string> PeekIds => WidgetLayout.Normalize(Prefs.StoredList(PrefKeys.NotchPeekWidgets), WidgetCatalog.DefaultPeek);
     public List<string> PillIds => PillCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchPill));
+    public List<string> ActivityIds => ActivityCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchActivities));
     public List<string> FavoriteIds => FavoriteCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchFavorites));
 
     public string WidgetsEmpty => tr("No hay widgets en el Home. Actívalos en la página Widgets.");
@@ -71,6 +73,27 @@ public sealed partial class PanelViewModel
         _ => "",
     };
 
+    public string ActivitiesTitle => tr("Actividades en vivo");
+    public string ActivitiesIntro => tr("Lo que pasa ahora, junto a los datos de la pastilla cerrada. Caben %d a la vez.", ActivityCatalog.Max);
+
+    /// Lo que está pasando ahora y el usuario deja ver: la pastilla cerrada lo enseña a su lado.
+    public List<Activity> LiveActivities
+    {
+        get
+        {
+            var now = new List<Activity>();
+            void Add(string id, string text, string? glyph = null) => now.Add(new Activity(id, glyph ?? ActivityCatalog.Find(id)!.Glyph, text, ActivityCatalog.Find(id)!.Priority));
+            if (Hub.Volume.Recent) Add("volume", Hub.Volume.Text, Hub.Volume.Muted ? "\uE74F" : null);
+            if (IsCleaning) Add("clean", tr("Liberando…"));
+            if (P is Power.Starting or Power.Stopping) Add("power", P == Power.Starting ? tr("Encendiendo…") : tr("Apagando…"));
+            if (Mem.Pressure == SystemMemory.Level.Critical) Add("pressure", tr("RAM crítica"));
+            if (Hub.Pomodoro.Running) Add("pomodoro", Hub.Pomodoro.Remaining);
+            if (Hub.Awake.On) Add("awake", "");
+            if (Hub.Media.IsPlaying) Add("media", Hub.Media.MediaTitle);
+            return ActivityQueue.Pick(now, ActivityIds);
+        }
+    }
+
     public string FavoritesTitle => tr("Favoritos");
     public string FavoritesIntro => tr("Hasta %d acciones de un toque junto a la navegación del dock.", FavoriteCatalog.Max);
     public string NotchTabOllama => tr("Ollama");
@@ -84,6 +107,8 @@ public sealed partial class PanelViewModel
         // Los nombres del dock («Pausar el temporizador», «Dejar que Windows suspenda») cambian solo cuando cambia el estado.
         Hub.Awake.PropertyChanged += (_, _) => Notify();
         Hub.Pomodoro.StateChanged += Notify;
+        Hub.Media.PropertyChanged += (_, _) => Notify();
+        Hub.Volume.Changed += Notify;
     }
 
     private void RebuildWidgets()
@@ -92,7 +117,8 @@ public sealed partial class PanelViewModel
         var peek = PeekIds;
         var pill = PillIds;
         var favorites = FavoriteIds;
-        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{Effective}";
+        var activities = ActivityIds;
+        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{string.Join(",", activities)}#{Effective}";
         if (signature == widgetsSignature) return;
         widgetsSignature = signature;
 
@@ -101,6 +127,15 @@ public sealed partial class PanelViewModel
         WidgetRows = BuildRows(ids, PrefKeys.NotchWidgets, null);
         PeekRows = BuildRows(peek, PrefKeys.NotchPeekWidgets, PeekScope);
         Hub.SetPillNeeds(PillCatalog.WidgetsNeeded(pill));
+        // La música solo se lee si algo la necesita: el widget en alguna lista o su actividad permitida.
+        if (ids.Contains("media") || peek.Contains("media") || activities.Contains("media")) Hub.Media.Start();
+        if (activities.Contains("volume")) Hub.Volume.Start();
+        ActivityRows = ActivityCatalog.All.Select((info, i) =>
+        {
+            var id = info.Id;
+            return new FavoriteRow(info.Title, info.Glyph, activities.Contains(id), true,
+                new Command(() => Prefs.SetList(PrefKeys.NotchActivities, ActivityCatalog.Toggle(activities, id))), i > 0);
+        }).ToList();
         PillRows = PillCatalog.All.Select((info, i) =>
         {
             var id = info.Id;

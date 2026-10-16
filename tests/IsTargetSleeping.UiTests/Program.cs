@@ -167,7 +167,7 @@ internal static class Program
             homeHost.UpdateLayout();
             var widgetSwitches = Descendants(homeHost).OfType<BrandSwitch>().Where(b => b.IsVisible).ToArray();
             Check($"{language}: la página Widgets lista cada widget (Home y vista corta) y cada favorito con su interruptor con nombre",
-                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + FavoriteCatalog.All.Count
+                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + ActivityCatalog.All.Count + FavoriteCatalog.All.Count
                 && widgetSwitches.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
             var upDown = Descendants(homeHost).OfType<Button>().Where(b => b.IsVisible && b.Content is Border { Child: TextBlock { Text: "\uE70E" or "\uE70D" } }).ToArray();
             Check($"{language}: subir y bajar tienen nombre propio por widget activo",
@@ -177,6 +177,13 @@ internal static class Program
             Check($"{language}: la pastilla enseña lo elegido y pide a los widgets que sigan leyendo", model.PillIds.SequenceEqual(new[] { "clock", "cpu" })
                 && model.PillValue("cpu").StartsWith("CPU") && model.PillRows.Count(r => r.IsOn) == 2);
             prefs.SetList(PrefKeys.NotchPill, new[] { "state", "model", "ram" });
+            model.Hub.Pomodoro.Toggle.Execute(null);
+            Check($"{language}: un temporizador en marcha es una actividad en vivo con su tiempo",
+                model.LiveActivities.Any(a => a.Id == "pomodoro" && a.Text == "25:00"));
+            prefs.SetList(PrefKeys.NotchActivities, Array.Empty<string>());
+            Check($"{language}: sin actividades permitidas la pastilla no enseña ninguna", model.LiveActivities.Count == 0 && model.ActivityRows.All(r => !r.IsOn));
+            prefs.SetList(PrefKeys.NotchActivities, ActivityCatalog.All.Select(a => a.Id).ToArray());
+            model.Hub.Pomodoro.Toggle.Execute(null);
             Check($"{language}: la vista corta enseña lo elegido y por defecto Ollama",
                 model.PeekWidgets.Select(w => w.Id).SequenceEqual(new[] { "notes" })
                 && WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek).SequenceEqual(new[] { "ollama" }));
@@ -200,8 +207,8 @@ internal static class Program
                     WidgetCatalog.All.All(w => model.Hub.Find(w.Id) is { } widget
                         && Application.Current.TryFindResource("Widget" + widget.GetType().Name) is DataTemplate));
                 var comboClock = System.Diagnostics.Stopwatch.StartNew();
-                Check($"{language}: hay 349 combinaciones posibles de widgets", combos.Count == 349);
-                // Las 349 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
+                Check($"{language}: hay 724 combinaciones posibles de widgets", combos.Count == 724);
+                // Las 724 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
                 if (Environment.GetEnvironmentVariable("ITS_ALL_COMBOS") != "1") combos = combos.Where((_, i) => i % 7 == 0).ToList();
                 int checkedBoxes = 0, checkedTexts = 0;
                 model.WideLayout = true;

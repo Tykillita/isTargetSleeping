@@ -261,7 +261,7 @@ public sealed class NotchWindow : Window
         var mode = state.Mode;
         // El hover enseña la versión corta; el clic, el panel entero.
         var content = mode == NotchMode.Pinned ? view.DesiredSize : peek.DesiredSize;
-        rects = NotchLayout.Place(monitor, work, scale, content.Width, content.Height);
+        rects = NotchLayout.Place(monitor, work, scale, content.Width, content.Height, pillWidthDip);
         bool open = mode != NotchMode.Collapsed;
         if (!IsVisible) Show();
 
@@ -502,7 +502,12 @@ public sealed class NotchWindow : Window
     private readonly StackPanel pillRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Dictionary<string, TextBlock> pillTexts = [];
     private Ellipse? pillDot;
-    private string pillSignature = "";
+    private string pillSignature = "", activitySignature = "";
+    /// Las actividades en vivo (limpiando, encendiendo, temporizador…) van a la derecha de los datos; la pastilla crece para dar sitio.
+    private readonly StackPanel activityRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+    private readonly StackPanel pillOuter = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly Dictionary<string, TextBlock> activityTexts = [];
+    private double pillWidthDip = NotchLayout.PillWidth;
 
     /// Los datos de la pastilla cerrada son los que elija el usuario (página Widgets): se reconstruyen si cambia la lista y se repintan con cada dato nuevo.
     private void RefreshPill()
@@ -542,14 +547,47 @@ public sealed class NotchWindow : Window
         }
         foreach (var (id, text) in pillTexts) text.Text = model.PillValue(id);
         if (pillDot is not null) pillDot.Fill = model.PillForeground;
+
+        var activities = model.LiveActivities;
+        var activityIds = string.Join(",", activities.Select(a => a.Id));
+        if (activityIds != activitySignature)
+        {
+            activitySignature = activityIds;
+            activityRow.Children.Clear();
+            activityTexts.Clear();
+            foreach (var activity in activities)
+            {
+                var glyph = new TextBlock { Text = activity.Glyph, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
+                glyph.SetResourceReference(TextBlock.FontFamilyProperty, "Icons");
+                glyph.SetResourceReference(TextBlock.ForegroundProperty, activity.Id switch { "clean" or "power" => "Warm", "pressure" => "Danger", _ => "Secondary" });
+                var text = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 110, TextTrimming = TextTrimming.CharacterEllipsis };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+                activityRow.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { glyph, text } });
+                activityTexts[activity.Id] = text;
+            }
+        }
+        foreach (var activity in activities) activityTexts[activity.Id].Text = activity.Text;
+
+        var unbounded = new Size(double.PositiveInfinity, double.PositiveInfinity);
+        pillRow.Measure(unbounded);
+        activityRow.Measure(unbounded);
+        var width = Math.Clamp(Math.Ceiling(pillRow.DesiredSize.Width + activityRow.DesiredSize.Width) + 32, NotchLayout.PillWidth, 440);
+        if (Math.Abs(width - pillWidthDip) > 1)
+        {
+            pillWidthDip = width;
+            if (pill is not null) pill.Width = width;
+            if (laidOut) { painted = null; Apply(); }
+        }
     }
 
     private Button BuildPill()
     {
+        pillOuter.Children.Add(pillRow);
+        pillOuter.Children.Add(activityRow);
         RefreshPill();
         var button = new Button
         {
-            Content = pillRow, Width = NotchLayout.PillWidth, Height = NotchLayout.PillHeight,
+            Content = pillOuter, Width = pillWidthDip, Height = NotchLayout.PillHeight,
             Style = (Style)Application.Current.FindResource("Plain"),
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
         };

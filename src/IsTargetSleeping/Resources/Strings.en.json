@@ -543,5 +543,21 @@
   "Pastilla cerrada": "Closed pill",
   "Lo que enseña el notch cuando está cerrado. Caben %d datos.": "What the notch shows when it is closed. It fits %d items.",
   "%d de %d datos": "%d of %d items",
-  "pastilla": "pill"
+  "pastilla": "pill",
+  "Liberando RAM": "Freeing RAM",
+  "Encendiendo o apagando Ollama": "Turning Ollama on or off",
+  "Pomodoro en marcha": "Pomodoro running",
+  "Encendiendo…": "Turning on…",
+  "RAM crítica": "Critical RAM",
+  "Actividades en vivo": "Live activities",
+  "Lo que pasa ahora, junto a los datos de la pastilla cerrada. Caben %d a la vez.": "What is happening now, beside the closed pill's data. %d fit at a time.",
+  "Música": "Music",
+  "Música sonando": "Music playing",
+  "Reproducir": "Play",
+  "Siguiente": "Next",
+  "Anterior": "Previous",
+  "No suena nada ahora.": "Nothing is playing right now.",
+  "Silencio": "Muted",
+  "Volumen": "Volume",
+  "Ir a otro momento de la canción": "Go to another point in the song"
 }

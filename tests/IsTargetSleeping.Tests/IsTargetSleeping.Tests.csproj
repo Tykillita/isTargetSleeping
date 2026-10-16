@@ -18,6 +18,7 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\NotchState.cs" Link="Core\NotchState.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WidgetCatalog.cs" Link="Core\Widgets\WidgetCatalog.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Pomodoro.cs" Link="Core\Widgets\Pomodoro.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Activities.cs" Link="Core\Widgets\Activities.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryBreakdown.cs" Link="Core\MemoryBreakdown.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Watchdog.cs" Link="Core\Watchdog.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Games.cs" Link="Core\Games.cs" />

@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.8.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.9.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -73,7 +73,8 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
 | 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y se asea a su manera mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera — dormida, sin salir de la cama. Apagadas por defecto; [más abajo](#-mascotas). |
 | 🪟 | **Dock tipo notch** | Opcional (Ajustes > General): una pastilla pegada al borde superior de la pantalla, en el monitor donde está el cursor, con los tres datos que elijas (estado, modelo y RAM por defecto). Pasa el ratón para una vista corta que personalizas con tus widgets (por defecto Ollama: estado, RAM y GPU, Liberar RAM, Liberar modelo, Procesos); haz clic para el Home. Dos tiras de iconos debajo dan navegación de un clic (Inicio, Ollama, Actividad, Widgets, Ajustes) y hasta cuatro favoritos que eliges tú. Se oculta mientras algo está a pantalla completa. |
-| 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario, Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local) y Batería. Todo se lee en local. |
+| 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario, Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con sus controles). Cada uno se adapta a su sitio y a sus compañeros. Todo se lee en local. |
+| ⚡ | **Actividades en vivo** | Junto a la pastilla cerrada del notch, lo que pasa ahora: liberando RAM, Ollama encendiéndose o apagándose, memoria crítica, el volumen cuando cambia, un Pomodoro en marcha, Mantener despierto y, si lo activas, la música que suena. Hasta dos a la vez, cada una con su interruptor. El widget de Música salta de pista al deslizarlo con el ratón o con dos dedos en el trackpad, y su barra de progreso se puede pulsar. |
 | ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
@@ -97,6 +98,9 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 **1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
+
+**1.9.0 está en desarrollo** (aún no publicada; la última descarga es la 1.8.0): actividades en vivo junto a la pastilla cerrada del
+notch y un widget de Música con portada y controles de reproducción.
 
 **1.8.0 ya está publicada** (15 de octubre de 2026): un dock tipo notch opcional en el borde superior de la pantalla
 que se abre al pasar el ratón, con un Home de widgets que eliges y ordenas (Ollama, sistema, reloj y calendario,
@@ -371,6 +375,8 @@ archivos de paginación; llegar a su límite puede impedir nuevas reservas aunqu
 - Los widgets del notch leen tu PC en local (CPU, memoria, contadores de disco y red, batería, reloj) y no envían
   nada. Las notas son texto plano en `%LOCALAPPDATA%\isTargetSleeping\notes.txt`; Mantener despierto pide a Windows
   que no suspenda hasta que lo apagues o cierres la app.
+- El widget de Música y la actividad «Música sonando» leen en local la sesión de medios que expone Windows (título, artista,
+  portada) y solo mientras uno de los dos está en uso; no se guarda ni se envía nada.
 - Nombres, PIDs, rutas, usuarios y métricas de RAM/CPU se leen localmente; el reconocimiento de procesos no envía
   esos datos a ningún servicio externo.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio

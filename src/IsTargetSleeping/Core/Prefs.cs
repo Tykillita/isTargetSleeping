@@ -70,6 +70,7 @@ public static class PrefKeys
     public const string NotchDock = "notchDock";              // dock tipo notch arriba, en lugar del panel de la bandeja (experimental)
     public const string NotchWidgets = "notchWidgets";        // lista: ids de los widgets del Home, en orden (sin valor: los de siempre)
     public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: ids de los widgets de la vista corta (al pasar el ratón); sin valor: Ollama
+    public const string NotchActivities = "notchActivities";   // lista: actividades en vivo permitidas junto a la pastilla (sin valor: todas)
     public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)

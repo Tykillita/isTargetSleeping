@@ -135,6 +135,13 @@
           </Border>
           <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
             <StackPanel>
+              <TextBlock Text="{Binding ActivitiesTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding ActivitiesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+              <ItemsControl ItemsSource="{Binding ActivityRows}" Focusable="False" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
+            <StackPanel>
               <TextBlock Text="{Binding PillTitle}" Style="{StaticResource Eyebrow}" />
               <TextBlock Text="{Binding PillIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,4" />
               <TextBlock Text="{Binding PillCount}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,12" />

@@ -5,6 +5,24 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.9.0] — 2026-10-15
+
+### Added
+- Live activities beside the closed notch pill: what is happening right now shows next to its data and the pill
+  grows to make room. They are Freeing RAM, Turning Ollama on or off, Critical memory, a running Pomodoro, Keep
+  awake and, if you turn it on, the music that is playing. Up to two at a time, the most urgent first; each one has
+  its own switch on the Widgets page.
+- Volume indicator in the notch: when the Windows volume changes (or is muted), the closed pill shows it for a couple
+  of seconds as a live activity ("98 %" or "Muted"). It is shown in addition to the Windows indicator, which can't be
+  removed in a supported way. It only reads the volume and never changes it; it has its own switch.
+- Clickable progress bar: click or drag the song's progress bar in the Music widget to jump to that point.
+- Swipe to skip tracks: dragging across the Music widget with the mouse or a finger, or scrolling horizontally with
+  two fingers on a trackpad, goes to the next or previous track.
+- Music widget (one or two cells): title, artist, cover art, progress and previous, play/pause and next controls for
+  whatever Windows reports as playing (Spotify, the browser, the media player…). It reads the system's own media
+  session locally and only starts when a list or the live activity needs it; the "Music playing" live activity is off
+  by default.
+
 ## [1.8.0] — 2026-10-15
 
 Includes the 1.7.0 notch dock, which was never published as a separate release.
