@@ -103,8 +103,8 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.9.0 is in development** (not published yet; the latest download is 1.8.0): live activities beside the closed notch pill and a Music
-widget with cover art and playback controls.
+**1.9.0 is out** (October 15, 2026): live activities beside the closed notch pill, a Music widget with cover art,
+playback controls and a clickable progress bar, and the volume in the notch.
 
 **1.8.0 is out** (October 15, 2026): an optional notch dock at the top of the screen that opens on hover, with a Home
 of widgets you choose and order (Ollama, system, clock and calendar, Pomodoro, keep awake, notes, battery) and
