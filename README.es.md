@@ -100,8 +100,9 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.11.0 está en desarrollo** (aún no publicada; la última descarga es la 1.10.0): la música que suena en la pastilla cerrada del
-notch (con su título desplazándose) y una bandeja de archivos mucho mejor.
+**1.11.0 ya está publicada** (16 de octubre de 2026): la música que suena en la pastilla cerrada del notch (con su título
+desplazándose) y una bandeja de archivos mucho mejor (miniaturas, tamaño de carpetas, abrir como proyecto, pegar, arrastrar
+todo y memoria opcional entre sesiones).
 
 **1.10.0 ya está publicada** (15 de octubre de 2026): una bandeja de archivos donde soltar lo que arrastras (con edición
 rápida de texto), un widget Código con árbol de archivos, pestañas, visor de imágenes y editor con colores de sintaxis,
