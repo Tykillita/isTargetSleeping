@@ -124,49 +124,6 @@ public sealed class SystemWidget(PanelViewModel panel) : WidgetModel(WidgetCatal
     };
 }
 
-public sealed record CalendarDay(string Text, bool Today, bool InMonth)
-{
-    public double Alpha => InMonth ? 1 : 0.35;
-}
-
-/// La hora y el mes en curso, con el idioma de la app (no el de Windows).
-public sealed class ClockWidget() : WidgetModel(WidgetCatalog.Find("clock")!)
-{
-    private readonly CultureInfo culture = new(Effective);
-    private DateOnly built;
-    public string Time { get; private set; } = "";
-    public string DateText { get; private set; } = "";
-    public List<string> Weekdays { get; private set; } = [];
-    public List<CalendarDay> Days { get; private set; } = [];
-
-    public override void Tick(DateTime now)
-    {
-        Time = now.ToString("t", culture);
-        var today = DateOnly.FromDateTime(now);
-        if (today != built)
-        {
-            built = today;
-            DateText = now.ToString("dddd, d MMMM", culture);
-            Build(today);
-        }
-        Raise();
-    }
-
-    private void Build(DateOnly today)
-    {
-        var first = culture.DateTimeFormat.FirstDayOfWeek;
-        Weekdays = Enumerable.Range(0, 7)
-            .Select(i => culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)(((int)first + i) % 7))[..1].ToUpperInvariant()).ToList();
-        var start = new DateOnly(today.Year, today.Month, 1);
-        start = start.AddDays(-(((int)start.DayOfWeek - (int)first + 7) % 7));
-        Days = Enumerable.Range(0, 42).Select(i =>
-        {
-            var day = start.AddDays(i);
-            return new CalendarDay(day.Day.ToString(culture), day == today, day.Month == today.Month);
-        }).ToList();
-    }
-}
-
 public sealed class PomodoroWidget : WidgetModel
 {
     private readonly Pomodoro timer = new();
@@ -303,7 +260,7 @@ public sealed class WidgetHub
     public NotesWidget Notes { get; }
     public SystemWidget SystemStats { get; }
     public CodeWidget Code { get; }
-    public ClockWidget ClockInfo { get; } = new();
+    public ClockWidget ClockInfo { get; }
     public BatteryWidget BatteryInfo { get; } = new();
     public MediaWidget Media { get; } = new();
     public AudioVolume Volume { get; } = new();
@@ -317,6 +274,7 @@ public sealed class WidgetHub
         Notes = new NotesWidget(persist: !panel.Ollama.IsDemo);
         SystemStats = new SystemWidget(panel);
         Code = new CodeWidget(panel.Prefs);
+        ClockInfo = new ClockWidget(panel.Prefs);
         all = new WidgetModel[]
         {
             new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media, Code,

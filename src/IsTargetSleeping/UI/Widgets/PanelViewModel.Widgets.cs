@@ -28,6 +28,10 @@ public sealed partial class PanelViewModel
     public List<WidgetRow> PillRows { get; private set; } = [];
     public List<FavoriteRow> ActivityRows { get; private set; } = [];
     public List<FavoriteRow> FavoriteRows { get; private set; } = [];
+    public List<FavoriteRow> DockRows { get; private set; } = [];
+    public List<string> DockIds => DockCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchDockPages));
+    public string DockTitle => tr("Botones del dock");
+    public string DockIntro => tr("Inicio, Widgets y Ajustes siempre están. Añade aquí las páginas de Ollama y de Actividad.");
     public bool CanAddFavoriteApp { get; private set; }
     public ICommand AddFavoriteApp { get; private set; } = null!;
     public string AddAppLabel => tr("Añadir una app…");
@@ -81,7 +85,7 @@ public sealed partial class PanelViewModel
     };
 
     public string ActivitiesTitle => tr("Actividades en vivo");
-    public string ActivitiesIntro => tr("Lo que pasa ahora, junto a los datos de la pastilla cerrada. Caben %d a la vez.", ActivityCatalog.Max);
+    public string ActivitiesIntro => tr("Lo que pasa ahora, a los lados del notch cerrado: lo de Ollama a la izquierda y lo demás a la derecha. Caben hasta %d a la vez.", ActivityCatalog.MaxLeft + ActivityCatalog.MaxRight);
 
     /// Lo que está pasando ahora y el usuario deja ver: la pastilla cerrada lo enseña a su lado.
     public List<Activity> LiveActivities
@@ -89,7 +93,7 @@ public sealed partial class PanelViewModel
         get
         {
             var now = new List<Activity>();
-            void Add(string id, string text, string? glyph = null) => now.Add(new Activity(id, glyph ?? ActivityCatalog.Find(id)!.Glyph, text, ActivityCatalog.Find(id)!.Priority));
+            void Add(string id, string text, string? glyph = null) => now.Add(new Activity(id, glyph ?? ActivityCatalog.Find(id)!.Glyph, text, ActivityCatalog.Find(id)!.Priority, ActivityCatalog.Find(id)!.Left));
             if (Hub.Volume.Recent) Add("volume", Hub.Volume.Text, Hub.Volume.Muted ? "\uE74F" : null);
             if (IsCleaning) Add("clean", tr("Liberando…"));
             if (P is Power.Starting or Power.Stopping) Add("power", P == Power.Starting ? tr("Encendiendo…") : tr("Apagando…"));
@@ -98,7 +102,8 @@ public sealed partial class PanelViewModel
             if (Hub.Awake.On) Add("awake", "");
             // Si la música es un dato de la pastilla, no se repite como actividad.
             if (Hub.Media.IsPlaying && !PillIds.Contains("media")) Add("media", MediaPillText(Hub.Media.MediaTitle, Hub.Media.Artist));
-            return ActivityQueue.Pick(now, ActivityIds);
+            var (left, right) = ActivityQueue.PickSides(now, ActivityIds);
+            return [.. left, .. right];
         }
     }
 
@@ -129,7 +134,8 @@ public sealed partial class PanelViewModel
         var pill = PillIds;
         var favorites = FavoriteIds;
         var activities = ActivityIds;
-        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{string.Join(",", activities)}#{Effective}";
+        var dockPages = DockIds;
+        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{string.Join(",", activities)}#{string.Join(",", dockPages)}#{Effective}";
         if (signature == widgetsSignature) return;
         widgetsSignature = signature;
 
@@ -141,6 +147,12 @@ public sealed partial class PanelViewModel
         // La música solo se lee si algo la necesita: el widget en alguna lista o su actividad permitida.
         if (ids.Contains("media") || peek.Contains("media") || pill.Contains("media") || activities.Contains("media")) Hub.Media.Start();
         if (activities.Contains("volume")) Hub.Volume.Start();
+        DockRows = DockCatalog.Optional.Select((info, i) =>
+        {
+            var id = info.Id;
+            return new FavoriteRow(info.Title, info.Glyph, dockPages.Contains(id), true,
+                new Command(() => Prefs.SetList(PrefKeys.NotchDockPages, DockCatalog.Toggle(dockPages, id))), i > 0);
+        }).ToList();
         ActivityRows = ActivityCatalog.All.Select((info, i) =>
         {
             var id = info.Id;

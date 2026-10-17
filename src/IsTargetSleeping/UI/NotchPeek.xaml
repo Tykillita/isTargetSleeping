@@ -7,17 +7,17 @@
              TextOptions.TextFormattingMode="Ideal" UseLayoutRounding="True" SnapsToDevicePixels="True">
   <UserControl.Resources>
     <!-- Dentro de la isla los widgets van sin tarjeta propia: integrados en el vidrio, como la vista corta de siempre.
-         Las plantillas piden CardBox como DynamicResource, así que este estilo local manda aquí y no en el Home. -->
-    <Style x:Key="CardBox" TargetType="Border">
+         Las plantillas piden WidgetBox como DynamicResource; este estilo local manda aquí (un poco más denso) y no en el Home. -->
+    <Style x:Key="WidgetBox" TargetType="Border">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="Padding" Value="12,6" />
     </Style>
   </UserControl.Resources>
   <!-- La versión corta del notch (al pasar el ratón): los widgets que elijas en la página Widgets. Un clic abre el Home. -->
-  <StackPanel Margin="8,6,8,8" MinHeight="60">
+  <StackPanel Margin="8,4,8,4" MinHeight="60">
     <ItemsControl ItemsSource="{Binding PeekWidgets}" Focusable="False" HorizontalAlignment="Center">
-      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><ui:MasonryPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
     </ItemsControl>
     <TextBlock Text="{Binding PeekEmpty}" Style="{StaticResource Hint}" Margin="14,12" TextWrapping="Wrap"
                Visibility="{Binding NoPeekWidgets, Converter={StaticResource Visible}}" />

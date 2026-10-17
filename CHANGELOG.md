@@ -5,6 +5,62 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.20.0] — 2026-10-17
+
+### Added
+- The notch is liquid glass, like Droppy's: the open panel is solid black (#000000) at the top, next to the camera, and fades into
+  real frosted glass, with the wallpaper and windows behind it blurred and slightly saturated, and a thin rim that catches the light
+  at the corners. The tint darkens by itself over bright backgrounds so the text stays readable. What's behind the notch is copied
+  once each time it opens and reduced to a few dozen colored cells in memory (never saved or sent anywhere), so if what's behind
+  changes while the notch stays open, the glass keeps the picture from when it opened. High contrast stays solid.
+- Glass lens in the dock, in the style of iOS 26's Liquid Glass tab bar: one glass indicator travels between the buttons. Press and
+  hold a button and it swells into a capsule taller than the bar, magnifies the icons under it and follows your pointer with a
+  springy, slightly stretchy motion; let go and it settles on the closest button and opens that page. A plain click makes it glide
+  to the button too. The color fringes (chromatic aberration) come from the icons themselves: they split into red and blue only
+  while the lens is pressed, more towards its edge and trailing when it moves fast. Reduced motion skips the animation.
+- Calendar with an agenda, like Droppy's: the month (name in red, today in a red circle, dots on days with something, arrows to
+  change month and a "+" to add) on the left and the agenda on the right, grouped by day. Reminders are local (saved in the app's
+  settings, nothing leaves the PC), have an orange ring you tick when done, and can be removed. Events come from an optional .ics
+  file you pick under Widgets (Google Calendar, Outlook and Apple export it; weekly, daily, monthly and yearly repeats are
+  understood; the file is only read, no account, no network). Adding a reminder opens a panel with the text, a ruler you drag to
+  pick the day, the time and "Done". The smaller calendar views show what's next.
+- Live activities on both sides of the closed notch, each in its own black capsule that fades in from the notch and opens it on
+  click: Ollama's (freeing RAM, powering on or off, critical memory) on the left, and everything else (Pomodoro, music, volume,
+  keep-awake) on the right, up to one and two at a time. They are measured before they show, so they never flash over the notch.
+- A pin button in the dock keeps the notch open while you work in another window.
+- Music: shuffle and repeat buttons, shown only when the player supports them (Spotify does; browsers rarely).
+
+### Changed
+- The dock is two liquid-glass capsules (pages and favorites) in the same black as the island, see-through towards the bottom,
+  with a thin rim, the icons set loose inside, a translucent glass circle behind the selected page and a small bounce when you press
+  a button. By default it has Home, Widgets and Settings, plus your favorites; the Ollama and Activity page buttons are optional
+  (turn them on under "Dock buttons" on the Widgets page; Activity is still one click away from the chart button in the header).
+  The dock only shows when you click the notch: the hover view is just the short view.
+- The Music widget looks like Droppy's: bold double arrows and a bar-style pause without discs, shuffle and repeat as drawn glass
+  squares, remaining time ("-3:02"), and the color of the cover tints the progress bar, the equalizer and the active buttons. The
+  closed pill shows the cover next to the title and a tinted equalizer. The one-cell card is vertical, with a big cover that
+  matches the calendar's height, in the full view and stays horizontal in the hover view.
+- Widgets sit straight on the notch glass, with no card, fill or border behind them (as in Droppy); only what has to read as
+  relief (buttons, agenda rows) keeps its glass. Margins between widgets are tighter.
+- Home widgets are placed in two columns that fill by the shorter one (masonry) instead of rows as tall as the tallest widget, so a
+  short widget no longer leaves a gap beside a tall one; two-cell widgets still take the full width.
+- The "By CodeSentry - Tykillita" footer sits at the end of each page in the notch (it scrolls with it) instead of staying pinned
+  over whatever scrolls underneath.
+- Settings and Activity are organized in tabs instead of one long scroll of mixed cards. Settings: Ollama (idle release, game
+  mode, other engines, integrations), Memory (free RAM and notifications), Notch (dock, clipboard, tray), Pet and General
+  (shortcuts, login, updates, language, logs). Activity: Memory (week, chart, memory now, GPUs), Processes and History (clients and
+  events).
+- The process explorer is no longer a separate window: it is the Processes tab of Activity, inside the notch (and the tray
+  panel). Same search, filters, sorting (press the active criterion to reverse it), minimum RAM, expandable app groups, pause and
+  refresh, and the same sampling rules (it only samples while the tab is visible). Ending a process asks for confirmation right
+  there, with the exact list of what will close, the access-denied retry as administrator included; nothing is ended before you
+  accept. The "top five apps" summary that preceded it is gone, and every "View all processes" button now opens the tab.
+
+### Fixed
+- Music from a web app installed from the browser (YouTube Music in Chrome or Edge) showed a long internal identifier where the app
+  name goes. Known apps and browsers now show their name (Spotify, YouTube Music, Chrome, Edge…) and an unknown internal
+  identifier shows nothing.
+
 ## [1.11.0] — 2026-10-16
 
 ### Added

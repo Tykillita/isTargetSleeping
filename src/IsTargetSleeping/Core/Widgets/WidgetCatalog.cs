@@ -39,6 +39,25 @@ public static class WidgetCatalog
     public static WidgetInfo? Find(string id) => All.FirstOrDefault(w => w.Id == id);
 }
 
+/// Los botones del dock: Inicio, Widgets y Ajustes siempre están; estas páginas son opcionales (apagadas por defecto).
+public static class DockCatalog
+{
+    public static readonly IReadOnlyList<FavoriteInfo> Optional =
+    [
+        new("ollama", "Ollama", ""),
+        new("activity", "Actividad", ""),
+    ];
+
+    public static FavoriteInfo? Find(string id) => Optional.FirstOrDefault(f => f.Id == id);
+
+    /// Lo guardado (null = nunca se tocó: ninguna) sin ids desconocidos ni repetidos.
+    public static List<string> Normalize(IEnumerable<string>? stored) =>
+        stored is null ? [] : stored.Where(id => Find(id) is not null).Distinct().ToList();
+
+    public static List<string> Toggle(IReadOnlyList<string> ids, string id) =>
+        ids.Contains(id) ? ids.Where(i => i != id).ToList() : [.. ids, id];
+}
+
 public static class FavoriteCatalog
 {
     public const int Max = 4;

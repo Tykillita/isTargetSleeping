@@ -23,6 +23,11 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ClipboardHistory.cs" Link="Core\Widgets\ClipboardHistory.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\TextFile.cs" Link="Core\Widgets\TextFile.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\CodeTree.cs" Link="Core\Widgets\CodeTree.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\LensPhysics.cs" Link="Core\Widgets\LensPhysics.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\BackdropBlur.cs" Link="Core\BackdropBlur.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ArtColor.cs" Link="Core\Widgets\ArtColor.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Agenda.cs" Link="Core\Widgets\Agenda.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MediaSource.cs" Link="Core\Widgets\MediaSource.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\SyntaxHighlighter.cs" Link="Core\Widgets\SyntaxHighlighter.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\FileIconMap.cs" Link="Core\Widgets\FileIconMap.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryBreakdown.cs" Link="Core\MemoryBreakdown.cs" />

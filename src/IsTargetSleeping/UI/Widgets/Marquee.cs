@@ -93,6 +93,12 @@ public sealed class Marquee : Border
 /// El indicador de reproducción de la pastilla: tres barras que suben y bajan (quietas con «movimiento reducido»).
 public static class PillEqualizer
 {
+    /// Tiñe las barras (con el color de la portada, como en Droppy).
+    public static void Paint(FrameworkElement equalizer, Brush brush)
+    {
+        if (equalizer is Panel panel) foreach (var bar in panel.Children.OfType<Shape>()) bar.Fill = brush;
+    }
+
     public static FrameworkElement Build(bool reducedMotion)
     {
         var grid = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Height = 12 };

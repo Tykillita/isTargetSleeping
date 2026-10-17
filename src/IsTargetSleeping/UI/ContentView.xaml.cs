@@ -26,6 +26,12 @@ public partial class ContentView : UserControl
         IsVisibleChanged += (_, _) => model.SetPanelVisible(IsVisible);
     }
 
+    /// La confirmación de finalizar procesos sale debajo de la lista: se lleva a la vista para que no pase desapercibida.
+    private void OnConfirmationVisible(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is true) ((FrameworkElement)sender).BringIntoView();
+    }
+
     /// Al abrir el editor el cursor ya está en el texto: se escribe sin hacer clic antes.
     private void OnEditorVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
@@ -38,7 +44,7 @@ public partial class ContentView : UserControl
         if (on == wide) return;
         wide = on;
         Width = on ? 640 : 340;
-        foreach (var panel in new[] { MainPanel, ActivityPanel, SettingsPanel })
+        foreach (var panel in new[] { MainPanel })
         {
             if (on) Columnize(panel);
             else Restore(panel);

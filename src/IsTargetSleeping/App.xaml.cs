@@ -22,7 +22,6 @@ public partial class App : Application
     private PanelViewModel model = null!;
     private TrayAnimator animator = null!;
     private TaskbarPet? pet;
-    private ProcessWindow? processes;
     public bool EnsureTrayReady() => tray?.EnsureReady() == true;
 
     public void StartTray(bool launchedAtLogin, string? pending = null)
@@ -33,7 +32,7 @@ public partial class App : Application
         supervisor = new Supervisor(ollama, prefs);
 
         model = new PanelViewModel(supervisor);
-        model.ProcessesRequested += ShowProcesses;
+        model.ProcessesRequested += () => ShowPanel();   // los procesos son una pestaña de Actividad: solo hay que enseñar el panel
         content = new ContentView(model);
         panel = new PanelWindow(content);
 
@@ -93,7 +92,6 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         supervisor?.Stop();
-        processes?.Close();
         notch?.Stop();
         model?.SetPanelVisible(false);
         HotKey.Power.Unregister();
@@ -188,21 +186,6 @@ public partial class App : Application
             notch = null;
             panel.Attach(content);
         }
-    }
-
-    private void ShowProcesses()
-    {
-        if (processes == null)
-        {
-            processes = new ProcessWindow(supervisor.ExecuteProcessAction,
-                async () => { await supervisor.InstallAgent(); return supervisor.AgentError; },
-                () => supervisor.Agent, supervisor.GetProcessProtectionPids);
-            processes.Closed += (_, _) => processes = null;
-            processes.BackRequested += () => ShowPanel(PanelView.Activity);
-        }
-        processes.Show();
-        if (processes.WindowState == WindowState.Minimized) processes.WindowState = WindowState.Normal;
-        processes.Activate();
     }
 
     private void TogglePanel()

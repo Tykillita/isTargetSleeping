@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using static IsTargetSleeping.L10n;
@@ -23,6 +24,8 @@ public sealed class ProcessRow : INotifyPropertyChanged
     /// Chevrón Fluent: a la derecha plegado, hacia abajo desplegado.
     public string Expansion => IsGroup ? Expanded ? "" : "" : "";
     public string Name => Group?.Name ?? Process!.Name;
+    /// Junto al nombre: cuántos procesos tiene la aplicación, o el PID del proceso (los hijos se llaman igual que su padre).
+    public string Tag => IsGroup ? Group!.Count > 1 ? "×" + Group.Count : "" : "PID " + Process!.Pid.ToString(CultureInfo.InvariantCulture);
     public string Executable => Group?.Executable ?? Process!.Executable;
     public string? Path => Group?.Path ?? Process?.Path;
     public string User => Group?.User ?? Process?.User ?? tr("No disponible");
@@ -89,9 +92,35 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
     private ProcessRow? selected;
     private string? error;
 
+    private readonly Func<ProcessActionRequest, bool, Task<ProcessActionResult>>? execute;
+    private readonly Func<ProcessActionRequest, Task<ProcessActionPreview>> previewAction;
+    private readonly Func<Task<string?>>? installAgent;
+    private readonly Func<AgentStatus>? agentStatus;
+    private TaskCompletionSource<bool>? asking;
+    private bool operating;
+    private string resultText = "";
+    private Color resultColor;
+
     public ProcessViewModel(Func<CancellationToken, Task<ProcessSample>>? capture = null,
-        Func<IReadOnlySet<int>>? protectedPids = null, bool persistSettings = true)
+        Func<IReadOnlySet<int>>? protectedPids = null, bool persistSettings = true,
+        Func<ProcessActionRequest, bool, Task<ProcessActionResult>>? execute = null,
+        Func<ProcessActionRequest, Task<ProcessActionPreview>>? preview = null,
+        Func<Task<string?>>? installAgent = null, Func<AgentStatus>? agentStatus = null)
     {
+        this.execute = execute;
+        this.installAgent = installAgent;
+        this.agentStatus = agentStatus;
+        previewAction = preview ?? (request => Task.Run(() => ProcessActions.Preview(request)));
+        Rows.CollectionChanged += (_, _) => { Changed(nameof(ShowEmpty)); Changed(nameof(EmptyText)); };
+        RefreshCommand = new Command(() => _ = RefreshAsync());
+        TogglePause = new Command(() => Paused = !Paused);
+        CycleMinimum = new Command(() => MinimumMiB = MinimumChoices[(Array.IndexOf(MinimumChoices, MinimumMiB) + 1) % MinimumChoices.Length]);
+        ToggleRow = new ParamCommand(p => { if (p is ProcessRow row) Toggle(row); });
+        ActApplication = new Command(() => _ = Act(ProcessActionMode.Application));
+        ActProcess = new Command(() => _ = Act(ProcessActionMode.Single));
+        ActTree = new Command(() => _ = Act(ProcessActionMode.Tree));
+        Confirm = new Command(() => asking?.TrySetResult(true));
+        Cancel = new Command(() => asking?.TrySetResult(false));
         if (capture == null)
         {
             var monitor = new ProcessMonitor();
@@ -121,13 +150,93 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
     public string Summary => error ?? (Snapshot == null ? tr("Leyendo procesos…")
         : tr("%@ aplicaciones · %@ procesos · actualizado %@", Groups.Count, Snapshot.Processes.Count,
             Snapshot.CapturedAt.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture)));
-    public bool Paused { get => paused; set { if (paused == value) return; paused = value; UpdateTimer(); Changed(nameof(Paused)); } }
+    public bool Paused { get => paused; set { if (paused == value) return; paused = value; UpdateTimer(); Changed(nameof(Paused)); Changed(nameof(PauseGlyph)); Changed(nameof(PauseLabel)); } }
     public string Search { get => search; set { if (search == value) return; search = value; Rebuild(); Changed(nameof(Search)); } }
-    public ProcessFilter Filter { get => filter; set { if (filter == value) return; filter = value; Rebuild(); Changed(nameof(Filter)); } }
-    public int MinimumMiB { get => minimumMiB; set { if (minimumMiB == value) return; minimumMiB = value; Rebuild(); Changed(nameof(MinimumMiB)); } }
+    public ProcessFilter Filter { get => filter; set { if (filter == value) return; filter = value; Rebuild(); Changed(nameof(Filter)); Changed(nameof(FilterSegments)); } }
+    public int MinimumMiB { get => minimumMiB; set { if (minimumMiB == value) return; minimumMiB = value; Rebuild(); Changed(nameof(MinimumMiB)); Changed(nameof(MinimumLabel)); } }
     public ProcessSort Sort => sort;
     public bool Descending => descending;
-    public ProcessRow? Selected { get => selected; set { if (ReferenceEquals(selected, value)) return; selected = value; Changed(nameof(Selected)); Changed(nameof(Details)); } }
+    public ProcessRow? Selected
+    {
+        get => selected;
+        set
+        {
+            if (ReferenceEquals(selected, value)) return;
+            selected = value;
+            Changed(nameof(Selected));
+            Changed(nameof(Details));
+            ActionsChanged();
+        }
+    }
+    private void ActionsChanged()
+    {
+        Changed(nameof(CanApplication));
+        Changed(nameof(CanProcess));
+        Changed(nameof(SelectedIsGroup));
+        Changed(nameof(SelectedIsProcess));
+    }
+
+    // MARK: lo que se ve en el notch (la tabla de antes, en una ventana, ahora vive en la pestaña Procesos de Actividad)
+
+    public static readonly int[] MinimumChoices = [0, 100, 500, 1024];
+    public string PauseGlyph => paused ? "\uE768" : "\uE769";
+    public string PauseLabel => paused ? tr("Reanudar") : tr("Pausar");
+    public string RefreshLabel => tr("Actualizar");
+    public string CancelLabel => tr("Cancelar");
+    public string ConfirmLabel => Confirmation?.Affirmative ?? tr("Finalizar");
+    public string SearchLabel => tr("Buscar procesos");
+    public string SearchHint => tr("Buscar por nombre, ejecutable, ruta o PID");
+    public string ListLabel => tr("Aplicaciones y procesos activos");
+    public string ToggleLabel => tr("Desplegar o contraer los procesos de la aplicación");
+    public string FilterLabel => tr("Tipo");
+    public string SortLabel => tr("Ordenar por");
+    public string MinimumLabel => tr("RAM mínima") + ": " + (minimumMiB == 0 ? tr("Sin mínimo")
+        : minimumMiB >= 1024 ? "≥ 1 GiB" : $"≥ {minimumMiB} MiB");
+    public bool ShowEmpty => Rows.Count == 0;
+    public string EmptyText => Snapshot == null ? error ?? tr("Leyendo procesos…")
+        : tr("No hay procesos con estos filtros. Cambia la búsqueda o el consumo mínimo.");
+    public string ApplicationLabel => tr("Finalizar aplicación");
+    public string ProcessLabel => tr("Finalizar proceso");
+    public string TreeLabel => tr("Finalizar árbol");
+    public string ApplicationHelp => tr("Todos los procesos de la aplicación y sus descendientes");
+    public string ProcessHelp => tr("Solo el proceso seleccionado");
+    public string TreeHelp => tr("El proceso seleccionado y sus descendientes");
+    public bool SelectedIsGroup => selected?.IsGroup == true;
+    public bool SelectedIsProcess => selected is { IsGroup: false };
+    public bool CanApplication => !operating && selected?.CanAct == true && selected.IsGroup;
+    public bool CanProcess => !operating && selected?.CanAct == true && !selected.IsGroup;
+    public bool CanRefresh => !operating && !refreshing;
+    public ICommand RefreshCommand { get; }
+    public ICommand TogglePause { get; }
+    public ICommand CycleMinimum { get; }
+    public ICommand ToggleRow { get; }
+    public ICommand ActApplication { get; }
+    public ICommand ActProcess { get; }
+    public ICommand ActTree { get; }
+    public ICommand Confirm { get; }
+    public ICommand Cancel { get; }
+
+    public List<Segment> FilterSegments => new[]
+    {
+        (ProcessFilter.All, tr("Todos")), (ProcessFilter.Windows, tr("Ventana")), (ProcessFilter.Background, tr("Fondo")),
+        (ProcessFilter.System, tr("Sistema")), (ProcessFilter.Protected, tr("Protegidos")),
+    }.Select(f => new Segment(f.Item2, filter == f.Item1, new Command(() => Filter = f.Item1))).ToList();
+
+    /// Pulsar el criterio elegido invierte el orden; la flecha dice cuál es.
+    public List<Segment> SortSegments => new[]
+    {
+        (ProcessSort.Ram, tr("RAM")), (ProcessSort.Cpu, tr("CPU")), (ProcessSort.Name, tr("Nombre")),
+        (ProcessSort.Count, tr("Cantidad")), (ProcessSort.Pid, tr("PID")),
+    }.Select(c => new Segment(sort == c.Item1 ? c.Item2 + (descending ? " ↓" : " ↑") : c.Item2, sort == c.Item1,
+        new Command(() => SetSort(c.Item1)))).ToList();
+
+    /// La confirmación sale dentro del notch, con la lista exacta de lo que se cerrará; hasta aceptarla no se finaliza nada.
+    public ProcessConfirm? Confirmation { get; private set; }
+    public bool HasConfirmation => Confirmation != null;
+    public bool HasResult => resultText.Length > 0;
+    public string ResultText => resultText;
+    public Brush ResultBrush => Theme.Brush(resultColor);
+    public bool Operating => operating;
     public string Details
     {
         get
@@ -170,6 +279,7 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
         if (disposed || refreshing) return;
         refreshing = true;
         Changed(nameof(IsRefreshing));
+        Changed(nameof(CanRefresh));
         try
         {
             var sample = await capture(lifetime.Token);
@@ -191,7 +301,7 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
                 Changed(nameof(Summary));
             }
         }
-        finally { refreshing = false; Changed(nameof(IsRefreshing)); }
+        finally { refreshing = false; Changed(nameof(IsRefreshing)); Changed(nameof(CanRefresh)); }
     }
 
     public void Apply(ProcessSample sample)
@@ -211,6 +321,7 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
         Changed(nameof(RamHeading));
         Changed(nameof(RamExplanation));
         Changed(nameof(Error));
+        Changed(nameof(EmptyText));
     }
 
     public void Toggle(ProcessRow row)
@@ -232,7 +343,140 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
         Rebuild();
         Changed(nameof(Sort));
         Changed(nameof(Descending));
+        Changed(nameof(SortSegments));
     }
+
+    private void SetOperating(bool value)
+    {
+        operating = value;
+        Changed(nameof(Operating));
+        Changed(nameof(CanRefresh));
+        ActionsChanged();
+    }
+
+    private void ShowResult(string text, Color? color = null)
+    {
+        resultText = text;
+        resultColor = color ?? Theme.Current.Secondary;
+        Changed(nameof(ResultText));
+        Changed(nameof(ResultBrush));
+        Changed(nameof(HasResult));
+    }
+
+    private async Task<bool> Ask(ProcessConfirm card)
+    {
+        var source = asking = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Confirmation = card;
+        Changed(nameof(Confirmation));
+        Changed(nameof(HasConfirmation));
+        try { return await source.Task; }
+        finally
+        {
+            asking = null;
+            Confirmation = null;
+            if (!disposed) { Changed(nameof(Confirmation)); Changed(nameof(HasConfirmation)); }
+        }
+    }
+
+    private async Task Act(ProcessActionMode mode)
+    {
+        if (operating || execute == null || Request(mode) is not { } request) return;
+        SetOperating(true);
+        try
+        {
+            var preview = await previewAction(request);
+            if (disposed) return;
+            if (preview.Processes.Count == 0) { ShowResult(tr("Los procesos seleccionados ya no están activos.")); return; }
+            ShowResult("");
+            if (!await Ask(ProcessConfirmation.For(preview))) return;
+            ShowResult(tr("Finalizando procesos…"));
+            var result = await execute(request, false);
+            if (disposed) return;
+            RecordAction(result);
+            var allItems = result.Items.ToList();
+            if (result.RetryTargets.Count > 0)
+            {
+                bool ready = agentStatus?.Invoke() == AgentStatus.Ready;
+                string button = ready ? tr("Reintentar como administrador") : tr("Instalar agente y reintentar");
+                string message = ready
+                    ? tr("Windows denegó el acceso a %@ procesos. Puedes reintentar los restantes con permisos de administrador.", result.RetryTargets.Count)
+                    : tr("Windows denegó el acceso a %@ procesos. Instala o actualiza el agente para reintentar con permisos de administrador.", result.RetryTargets.Count);
+                var retryIds = result.RetryTargets.ToHashSet();
+                var retryProcesses = preview.Processes.Where(p => retryIds.Contains(p.Identity)).ToArray();
+                bool canElevate = ready || installAgent != null;
+                if (canElevate && await Ask(ProcessConfirmation.Retry(tr("Acceso denegado"), message, retryProcesses, preview.UsesPrivateWorkingSet, button)))
+                {
+                    if (!ready)
+                    {
+                        ShowResult(tr("Instalando agente…"));
+                        string? installError = await installAgent!();
+                        if (disposed) return;
+                        if (installError != null) { ShowResult(Describe(result) + Environment.NewLine + installError, Theme.Current.Danger); return; }
+                    }
+                    ShowResult(tr("Finalizando procesos como administrador…"));
+                    var elevatedRequest = new ProcessActionRequest(Guid.NewGuid(), request.Mode, result.RetryTargets);
+                    var elevated = await execute(elevatedRequest, true);
+                    if (disposed) return;
+                    RecordAction(elevated);
+                    var replacements = elevated.Items.ToDictionary(i => i.Identity);
+                    allItems = allItems.Select(i => replacements.GetValueOrDefault(i.Identity, i)).ToList();
+                    foreach (var item in elevated.Items.Where(i => allItems.All(existing => existing.Identity != i.Identity))) allItems.Add(item);
+                    var outcome = elevated.Outcome == ProcessActionOutcome.Cancelled ? ProcessActionOutcome.Cancelled
+                        : allItems.All(i => i.Completed) ? ProcessActionOutcome.Success : allItems.Any(i => i.Completed)
+                            ? ProcessActionOutcome.Partial : elevated.Outcome;
+                    result = new ProcessActionResult(request.Id, outcome, result.StartedAt, elevated.FinishedAt, allItems);
+                }
+            }
+            var t = Theme.Current;
+            ShowResult(Describe(result), result.Outcome switch
+            {
+                ProcessActionOutcome.Success => t.Fg,
+                ProcessActionOutcome.Partial or ProcessActionOutcome.Pending => t.Warm,
+                ProcessActionOutcome.NoWork or ProcessActionOutcome.Cancelled => t.Secondary,
+                _ => t.Danger,
+            });
+        }
+        catch (Exception ex) { if (!disposed) ShowResult(tr("No se pudieron finalizar los procesos: %@", ex.Message), Theme.Current.Danger); }
+        finally
+        {
+            SetOperating(false);
+            if (!disposed) await RefreshAsync();
+        }
+    }
+
+    public static string Describe(ProcessActionResult result)
+    {
+        string heading = result.Outcome switch
+        {
+            ProcessActionOutcome.Success => tr("Procesos finalizados"), ProcessActionOutcome.Partial => tr("Finalización parcial"),
+            ProcessActionOutcome.NoWork => tr("Los procesos seleccionados ya no están activos."),
+            ProcessActionOutcome.Pending => tr("La finalización sigue pendiente"), ProcessActionOutcome.Cancelled => tr("La solicitud de administrador se canceló"),
+            _ => tr("No se pudieron finalizar los procesos"),
+        };
+        var remaining = result.Items.Where(i => !i.Completed).Select(i => tr("PID %@: %@", i.Identity.Pid, ReasonText(i.Reason, i.Outcome))
+            + (i.Win32Error.HasValue ? tr(" (código %@)", i.Win32Error.Value) : ""));
+        return heading + tr(" · %@ de %@ completados", result.Items.Count(i => i.Completed), result.Items.Count)
+            + (result.Remaining.Count > 0 ? Environment.NewLine + string.Join(" · ", remaining) : "")
+            + (result.Error != null ? Environment.NewLine + ReasonText(result.Error, ProcessTargetOutcome.Failed) : "");
+    }
+    private static string TargetText(ProcessTargetOutcome outcome) => outcome switch
+    {
+        ProcessTargetOutcome.Denied => tr("Acceso denegado"), ProcessTargetOutcome.Blocked => tr("Finalización bloqueada"),
+        ProcessTargetOutcome.Changed => tr("El PID cambió de proceso"), ProcessTargetOutcome.Pending => tr("Pendiente"),
+        _ => tr("Error"),
+    };
+    private static string ReasonText(string? reason, ProcessTargetOutcome outcome) => reason switch
+    {
+        null => TargetText(outcome), "TargetLimit" => tr("Se alcanzó el límite de procesos"),
+        "CriticalOrUnknown" or "CriticalUnknown" => tr("No se pudo comprobar que el proceso no sea crítico"),
+        "Critical" => tr("Proceso crítico de Windows"), "TerminateFailed" => tr("Windows no pudo finalizar el proceso"),
+        "ExitNotConfirmed" => tr("Salida todavía no confirmada"), "Cancelled" => tr("Solicitud cancelada"),
+        "Deadline" => tr("Se agotó el tiempo de espera"), "OwnOrSystemProcess" => tr("Proceso propio o del sistema"),
+        "UnavailableIdentity" => tr("Identidad no disponible"), "OpenFailed" => outcome == ProcessTargetOutcome.Denied
+            ? tr("Acceso denegado") : tr("No se pudo abrir el proceso"), "PidReused" => tr("El PID cambió de proceso"),
+        "UnavailablePath" => tr("Ruta no disponible"), "OwnApplication" => tr("Proceso de isTargetSleeping"),
+        _ => tr(reason),
+    };
 
     public ProcessActionRequest? Request(ProcessActionMode mode)
     {
@@ -332,6 +576,7 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
     {
         if (disposed) return;
         disposed = true;
+        asking?.TrySetResult(false);
         timer.Stop();
         timer.Tick -= Tick;
         lifetime.Cancel();
@@ -342,5 +587,59 @@ public sealed class ProcessViewModel : INotifyPropertyChanged, IDisposable
         endedGroups.Clear();
         Rows.Clear();
         Changed(nameof(IsSampling));
+    }
+}
+
+/// Una fila de la confirmación: qué proceso, su PID y ejecutable, y cuánta RAM libera.
+public sealed record ConfirmRow(string Name, string Detail, string Memory);
+
+/// Lo que se muestra antes de finalizar: alcance, cuántos procesos y cuánta RAM, la lista exacta y el aviso de cierre forzado.
+public sealed record ProcessConfirm(string Title, string Message, string Summary, IReadOnlyList<ConfirmRow> Rows, string Affirmative, string Glyph, string Warning)
+{
+    public bool HasRows => Rows.Count > 0;
+}
+
+public static class ProcessConfirmation
+{
+    private const string GlyphWarning = "\uE7BA", GlyphShield = "\uEA18";
+
+    public static ProcessConfirm For(ProcessActionPreview preview) => Build(preview.Request.Mode switch
+    {
+        ProcessActionMode.Application => tr("Finalizar aplicación"),
+        ProcessActionMode.Tree => tr("Finalizar árbol"), _ => tr("Finalizar proceso"),
+    }, Scope(preview.Request.Mode), preview.Processes, preview.UsesPrivateWorkingSet, preview.RamBytes, tr("Finalizar"), GlyphWarning);
+
+    /// Acceso denegado: los procesos que faltan, y el reintento con permisos de administrador.
+    public static ProcessConfirm Retry(string title, string message, IReadOnlyList<ProcessSnapshot> processes, bool usesPrivate, string affirmative) =>
+        Build(title, message, processes, usesPrivate, null, affirmative, GlyphShield);
+
+    private static ProcessConfirm Build(string title, string message, IReadOnlyList<ProcessSnapshot> processes, bool usesPrivate,
+        long? totalRam, string affirmative, string glyph)
+    {
+        string ramLabel = usesPrivate ? tr("RAM privada residente") : tr("RAM residente total");
+        long? ram = totalRam ?? processes.Sum(p => p.RamBytes(usesPrivate) ?? 0);
+        return new ProcessConfirm(title, message, processes.Count == 0 ? "" : tr("%@ procesos · %@: %@", processes.Count, ramLabel, ProcessViewModel.Memory(ram)),
+            processes.Select(p => new ConfirmRow(p.Name, tr("PID %@", p.Pid) + (string.IsNullOrEmpty(p.Executable) ? "" : " · " + p.Executable),
+                ProcessViewModel.Memory(p.RamBytes(usesPrivate)))).ToList(),
+            affirmative, glyph, tr("El cierre es forzado. Puedes perder trabajo sin guardar."));
+    }
+
+    private static string Scope(ProcessActionMode mode) => mode switch
+    {
+        ProcessActionMode.Application => tr("Todos los procesos de la aplicación y sus descendientes"),
+        ProcessActionMode.Tree => tr("El proceso seleccionado y sus descendientes"),
+        _ => tr("Solo el proceso seleccionado"),
+    };
+
+    /// El mismo contenido como texto (registro, pruebas y lectores de pantalla).
+    public static string Text(ProcessActionPreview preview)
+    {
+        string ramLabel = preview.UsesPrivateWorkingSet ? tr("RAM privada residente") : tr("RAM residente total");
+        var lines = preview.Processes.Select(p => tr("%@ · PID %@ · %@", p.Name, p.Pid,
+            ProcessViewModel.Memory(p.RamBytes(preview.UsesPrivateWorkingSet))));
+        return Scope(preview.Request.Mode) + Environment.NewLine
+            + tr("%@ procesos · %@: %@", preview.Processes.Count, ramLabel, ProcessViewModel.Memory(preview.RamBytes))
+            + Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, lines)
+            + Environment.NewLine + Environment.NewLine + tr("El cierre es forzado. Puedes perder trabajo sin guardar.");
     }
 }

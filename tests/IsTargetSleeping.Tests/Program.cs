@@ -207,6 +207,13 @@ Check("actividades: salen las más urgentes primero y caben dos",
 Check("actividades: las que el usuario apagó no salen y la siguiente ocupa su sitio",
     ActivityQueue.Pick(happening, ActivityCatalog.Toggle(ActivityCatalog.Normalize(null), "clean")).Select(a => a.Id).SequenceEqual(new[] { "pomodoro", "awake" })
     && !ActivityQueue.Pick(happening, Array.Empty<string>()).Any());
+var both = new List<Activity> { new("awake", "g", "", 10), new("pomodoro", "g", "24:00", 50), new("media", "g", "canción", 40), new("clean", "g", "Liberando…", 90, true), new("power", "g", "Encendiendo…", 80, true) };
+var sides = ActivityQueue.PickSides(both, ActivityCatalog.All.Select(a => a.Id).ToList());
+Check("actividades: lo de Ollama sale a la izquierda (una) y lo demás a la derecha (dos), cada lado por urgencia",
+    sides.Left.Select(a => a.Id).SequenceEqual(new[] { "clean" }) && sides.Right.Select(a => a.Id).SequenceEqual(new[] { "pomodoro", "media" }));
+Check("actividades: limpieza, encendido y memoria crítica van a la izquierda; el resto, a la derecha",
+    ActivityCatalog.All.Where(a => a.Left).Select(a => a.Id).OrderBy(i => i).SequenceEqual(new[] { "clean", "power", "pressure" }));
+Check("actividades: sin nada de Ollama, la izquierda queda vacía", ActivityQueue.PickSides(both.Where(a => !a.Left), ActivityCatalog.All.Select(a => a.Id).ToList()).Left.Count == 0);
 Check("actividades: sin nada guardado están las de siempre (la música no, hasta que se activa); lo desconocido se descarta",
     ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.Id != "media").Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
     && ActivityCatalog.All.Select(a => a.Id).Distinct().Count() == ActivityCatalog.All.Count);
@@ -504,6 +511,122 @@ Section("Resaltado de sintaxis");
     }
     Check($"resaltado: en {filesChecked} archivos reales del repo ({tokensSeen} trozos) todos van ordenados y sin solaparse", filesChecked > 50 && badFiles == 0);
     Check($"resaltado: y se calculan rápido ({clock.ElapsedMilliseconds} ms en total)", clock.ElapsedMilliseconds < 20000);
+}
+
+Section("Lente de cristal del dock (física del muelle)");
+{
+    var lens = new LensPhysics { X = 18, TargetX = 18 };
+    lens.TargetX = 150;
+    double highest = lens.X, fastest = 0;
+    for (int i = 0; i < 300; i++)
+    {
+        lens.Step(1.0 / 60);
+        highest = Math.Max(highest, lens.X);
+        fastest = Math.Max(fastest, lens.Stretch);
+    }
+    Check("lente: persigue su destino y se asienta", Math.Abs(lens.X - 150) < 0.1 && lens.Settled);
+    Check("lente: rebasa un poco su destino al llegar (rebote de muelle), sin pasarse de largo", highest > 150.5 && highest < 150 + 0.2 * 132);
+    Check("lente: se estira con la velocidad y vuelve a su forma al pararse", fastest > 0.5 && fastest <= 1 && lens.Stretch < 0.01);
+    var press = new LensPhysics();
+    press.TargetGrow = 1;
+    for (int i = 0; i < 60; i++) press.Step(1.0 / 60);
+    Check("lente: al pulsar crece hasta su tamaño y al soltar vuelve al de reposo", Math.Abs(press.Grow - 1) < 0.01);
+    press.TargetGrow = 0;
+    for (int i = 0; i < 60; i++) press.Step(1.0 / 60);
+    Check("lente: …y encoge otra vez", Math.Abs(press.Grow) < 0.01 && press.Settled);
+    var slow = new LensPhysics { X = 0, TargetX = 100 };
+    slow.Step(10);   // un fotograma larguísimo (la app estuvo ocupada) no debe hacer explotar el muelle
+    Check("lente: un fotograma muy largo no la desestabiliza", double.IsFinite(slow.X) && slow.X > 0 && slow.X < 200);
+    var centers = new double[] { 18, 54, 90, 126 };
+    Check("lente: elige el botón más cercano al puntero", LensPhysics.Nearest(centers, 10) == 0 && LensPhysics.Nearest(centers, 70) == 1 && LensPhysics.Nearest(centers, 73) == 2 && LensPhysics.Nearest(centers, 500) == 3 && LensPhysics.Nearest(Array.Empty<double>(), 5) == -1);
+    Check("lente: sigue al puntero entre los botones y se pasa solo un poco de los extremos", LensPhysics.Follow(centers, 60, 14) == 60 && LensPhysics.Follow(centers, -300, 14) == 4 && LensPhysics.Follow(centers, 999, 14) == 140);
+    var inner = new Win32.RECT { Left = 100, Top = 200, Right = 400, Bottom = 234 };
+    var over = NotchLayout.WithOvershoot(inner, 1.5);
+    Check("lente: la ventana del dock deja margen por arriba y por abajo para que la lente sobresalga", over.Left == 100 && over.Right == 400 && over.Top == 200 - 9 && over.Bottom == 234 + 9);
+}
+
+Section("Nombre de la app que suena");
+{
+    Check("fuente: Spotify desde su identificador de la tienda", MediaSource.Name("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify") == "Spotify");
+    Check("fuente: un navegador por su ejecutable", MediaSource.Name("chrome.exe") == "Chrome" && MediaSource.Name("MSEdge") == "Edge" && MediaSource.Name("firefox.exe") == "Firefox");
+    Check("fuente: una app web de Chrome (YouTube Music instalado) no enseña su identificador", MediaSource.Name("Chrome._crx_h3nctbl7snswhxn4y4yxm5cewi") == "Chrome");
+    Check("fuente: YouTube Music, mejor que YouTube", MediaSource.Name("th-ch.YoutubeMusic") == "YouTube Music" && MediaSource.Name("youtube.exe") == "YouTube");
+    Check("fuente: un nombre normal se capitaliza", MediaSource.Name("Foo.Bar!baz") == "Baz" && MediaSource.Name("miapp.exe") == "Miapp");
+    Check("fuente: un identificador interno desconocido no se enseña", MediaSource.Name("H3NCTBL7SNSWHXN4Y4YXM5CEWI") == "" && MediaSource.Name("_crx_abcdef") == "" && MediaSource.Name(null) == "" && MediaSource.Name("  ") == "");
+}
+
+Section("Agenda del calendario");
+{
+    var when = new DateTime(2026, 10, 17, 21, 30, 0);
+    var item = new AgendaItem("a1", "Dentista | con rayos", when, AgendaKind.Reminder, true);
+    var back = Agenda.Parse(Agenda.Format(item));
+    Check("agenda: un recordatorio se guarda y se lee igual, aunque el título lleve «|»", back == item);
+    Check("agenda: una línea rota o incompleta se descarta", Agenda.Parse(null) is null && Agenda.Parse("x") is null && Agenda.Parse("a|20261017T2130|r0|") is null
+        && Agenda.Parse("a|ayer|r0|t") is null && Agenda.Parse("a|20261017T2130|z9|t") is null);
+    var items = new[]
+    {
+        new AgendaItem("1", "Tarde", new DateTime(2026, 10, 17, 18, 0, 0), AgendaKind.Reminder),
+        new AgendaItem("2", "Ayer", new DateTime(2026, 10, 16, 9, 0, 0), AgendaKind.Reminder),
+        new AgendaItem("3", "Mañana", new DateTime(2026, 10, 18, 8, 0, 0), AgendaKind.Event),
+        new AgendaItem("4", "Pronto", new DateTime(2026, 10, 17, 8, 0, 0), AgendaKind.Reminder),
+    };
+    var days = Agenda.Group(items, new DateOnly(2026, 10, 17), 10);
+    Check("agenda: agrupa por días desde hoy, en orden, sin lo de ayer", days.Count == 2 && days[0].Items.Select(i => i.Id).SequenceEqual(["4", "1"]) && days[1].Items[0].Id == "3");
+    Check("agenda: el máximo de cosas corta la lista", Agenda.Group(items, new DateOnly(2026, 10, 17), 2).Sum(d => d.Items.Count) == 2);
+    Check("agenda: semana ISO del 17 de octubre de 2026 es la 42", Agenda.IsoWeek(new DateOnly(2026, 10, 17)) == 42);
+
+    var from = new DateOnly(2026, 10, 1);
+    var to = new DateOnly(2026, 12, 31);
+    string Ics(params string[] lines) => "BEGIN:VCALENDAR\r\n" + string.Join("\r\n", lines) + "\r\nEND:VCALENDAR\r\n";
+    var one = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "UID:u1", "SUMMARY:Reunión\\, con equipo", "DTSTART:20261020T093000", "END:VEVENT"), from, to);
+    Check("ics: un evento con su hora y el texto sin escapes", one.Count == 1 && one[0].Title == "Reunión, con equipo" && one[0].Start == new DateTime(2026, 10, 20, 9, 30, 0) && one[0].Kind == AgendaKind.Event && !one[0].AllDay);
+    var utc = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:UTC", "DTSTART:20261020T120000Z", "END:VEVENT"), from, to);
+    Check("ics: una hora con Z se pasa a la hora local", utc.Count == 1 && utc[0].Start == TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2026, 10, 20, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local));
+    var allDay = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:Cumple", "DTSTART;VALUE=DATE:20261105", "END:VEVENT"), from, to);
+    Check("ics: un evento de todo el día", allDay.Count == 1 && allDay[0].AllDay && allDay[0].Start == new DateTime(2026, 11, 5));
+    var folded = Agenda.ParseIcs("BEGIN:VEVENT\r\nSUMMARY:Título muy\r\n  largo\r\nDTSTART:20261020T090000\r\nEND:VEVENT\r\n", from, to);
+    Check("ics: las líneas largas dobladas se unen", folded.Count == 1 && folded[0].Title == "Título muy largo");
+    Check("ics: lo que cae fuera de la ventana no sale, y lo roto se salta",
+        Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:Lejos", "DTSTART:20300101T090000", "END:VEVENT", "BEGIN:VEVENT", "SUMMARY:Sin fecha", "END:VEVENT", "BEGIN:VEVENT", "DTSTART:20261020T090000", "END:VEVENT"), from, to).Count == 0);
+    var weekly = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "UID:w", "SUMMARY:Clase", "DTSTART:20261005T100000", "RRULE:FREQ=WEEKLY;BYDAY=MO,WE;COUNT=5", "END:VEVENT"), from, to);
+    Check("ics: repetición semanal con días y COUNT", weekly.Count == 5 && weekly.Select(i => i.Start.Day).SequenceEqual([5, 7, 12, 14, 19]) && weekly.All(i => i.Start.Hour == 10));
+    var yearly = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "UID:y", "SUMMARY:Aniversario", "DTSTART;VALUE=DATE:20200315", "RRULE:FREQ=YEARLY", "END:VEVENT"), new DateOnly(2027, 1, 1), new DateOnly(2028, 12, 31));
+    Check("ics: repetición anual dentro de la ventana", yearly.Select(i => i.Start).SequenceEqual([new DateTime(2027, 3, 15), new DateTime(2028, 3, 15)]));
+    var daily = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "UID:d", "SUMMARY:Pastilla", "DTSTART:20261001T080000", "RRULE:FREQ=DAILY;INTERVAL=2;UNTIL=20261009T000000", "END:VEVENT"), from, to);
+    Check("ics: repetición cada dos días con UNTIL", daily.Select(i => i.Start.Day).SequenceEqual([1, 3, 5, 7, 9]));
+    Check("ics: un archivo vacío o que no es un calendario da una lista vacía", Agenda.ParseIcs("", from, to).Count == 0 && Agenda.ParseIcs("hola\nmundo", from, to).Count == 0);
+}
+
+Section("Color de la portada");
+{
+    byte[] Pixels(params (byte B, byte G, byte R)[] colors) => colors.SelectMany(c => new byte[] { c.B, c.G, c.R, 255 }).ToArray();
+    var (dr, dg, db) = ArtColor.Dominant(Pixels((0, 0, 220), (0, 0, 220), (10, 10, 10), (10, 10, 10)));
+    Check("portada: el rojo vivo pesa más que el negro apagado", dr > 150 && dg < 60 && db < 60);
+    Check("portada: sin píxeles, gris medio", ArtColor.Dominant([]) == ((byte)128, (byte)128, (byte)128));
+    var vivid = ArtColor.Vivid((140, 30, 30));
+    Check("portada: el rojo oscuro se aclara y sigue siendo rojo", vivid.R > 200 && vivid.R > vivid.G + 60 && vivid.R > vivid.B + 60);
+    Check("portada: un azul pálido gana color sin cambiar de tono", ArtColor.Vivid((150, 170, 200)) is var v && v.B > v.R + 40);
+    Check("portada: una portada gris da un blanco suave, no un color inventado", ArtColor.Vivid((120, 120, 120)) == ((byte)0xE6, (byte)0xE6, (byte)0xEB));
+}
+
+Section("Vidrio del notch (desenfoque del fondo)");
+{
+    byte[] Solid(int w, int h, byte b, byte g, byte r) { var px = new byte[w * h * 4]; for (int i = 0; i < w * h; i++) { px[i * 4] = b; px[i * 4 + 1] = g; px[i * 4 + 2] = r; px[i * 4 + 3] = 255; } return px; }
+    var flat = BackdropBlur.Reduce(Solid(40, 20, 30, 60, 90), 40, 20, 10, out int fw, out int fh, 1);
+    Check("vidrio: una imagen lisa sigue lisa y se reduce por celdas", fw == 4 && fh == 2 && flat.Length == 4 * 2 * 4 && flat[0] == 30 && flat[1] == 60 && flat[2] == 90 && flat[3] == 255);
+    var half = Solid(20, 10, 0, 0, 0);
+    for (int y = 0; y < 10; y++) for (int x = 10; x < 20; x++) { int i = (y * 20 + x) * 4; half[i] = half[i + 1] = half[i + 2] = 200; }
+    var split = BackdropBlur.Reduce(half, 20, 10, 5, out int sw, out _, 1);
+    Check("vidrio: cada celda promedia sus píxeles (negro a un lado, claro al otro)", sw == 4 && split[0] == 0 && split[(3) * 4] == 200);
+    var odd = BackdropBlur.Reduce(Solid(23, 11, 50, 50, 50), 23, 11, 10, out int ow, out int oh, 1);
+    Check("vidrio: un tamaño que no es múltiplo de la celda no deja bordes negros", ow == 3 && oh == 2 && odd[(2 * 4 / 4 * 0) + 0] == 50 && odd[(1 * 3 + 2) * 4] == 50);
+    var vivid = BackdropBlur.Reduce(Solid(10, 10, 40, 80, 160), 10, 10, 10, out _, out _, 1.5);
+    Check("vidrio: realza el color sin tocar el gris", vivid[2] > 160 && vivid[0] < 40 && BackdropBlur.Reduce(Solid(10, 10, 90, 90, 90), 10, 10, 10, out _, out _, 1.5)[1] == 90);
+    Check("vidrio: aclarar acerca el color al blanco sin pasarse", BackdropBlur.Reduce(Solid(10, 10, 100, 100, 100), 10, 10, 10, out _, out _, 1, 0.5)[0] == 178 && BackdropBlur.Reduce(Solid(10, 10, 255, 255, 255), 10, 10, 10, out _, out _, 1, 0.5)[0] == 255);
+    Check("vidrio: la claridad va de 0 (negro) a 1 (blanco)", BackdropBlur.Luminance(Solid(4, 4, 0, 0, 0), 4, 4) == 0 && Math.Abs(BackdropBlur.Luminance(Solid(4, 4, 255, 255, 255), 4, 4) - 1) < 1e-9 && BackdropBlur.Luminance([], 0, 0) == 0);
+    bool threw = false;
+    try { BackdropBlur.Reduce(new byte[10], 4, 4, 2, out _, out _); } catch (ArgumentException) { threw = true; }
+    Check("vidrio: una imagen más corta que su tamaño se rechaza", threw);
 }
 
 // MARK: modo juego

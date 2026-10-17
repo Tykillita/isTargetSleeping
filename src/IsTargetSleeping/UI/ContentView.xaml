@@ -59,7 +59,7 @@
   </UserControl.Resources>
   <Grid>
     <!-- Profundidad del vidrio: una sombra negra que se asienta hacia el borde inferior. -->
-    <Border Height="220" VerticalAlignment="Bottom" Background="{DynamicResource Sheen}" IsHitTestVisible="False" />
+    <Border Height="220" VerticalAlignment="Bottom" Background="{DynamicResource Sheen}" IsHitTestVisible="False" Visibility="{Binding FlatFooter, Converter={StaticResource Visible}}" />
     <StackPanel>
 
         <!-- MARK: cabecera (se arrastra para mover el panel; doble clic: vuelve junto a la bandeja) -->
@@ -111,12 +111,13 @@
         <Rectangle Style="{StaticResource Divider}" />
 
         <ScrollViewer x:Name="BodyScroll" MaxHeight="{Binding BodyMaxHeight}" VerticalScrollBarVisibility="Auto" Focusable="False">
+        <StackPanel>
         <Grid>
 
         <!-- MARK: Home del notch: los widgets elegidos, en su orden -->
         <StackPanel x:Name="HomePanel" Margin="8" Visibility="{Binding ShowingHome, Converter={StaticResource Visible}}">
           <ItemsControl ItemsSource="{Binding HomeWidgets}" Focusable="False" HorizontalAlignment="Center">
-            <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><ui:MasonryPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
           </ItemsControl>
           <TextBlock Text="{Binding WidgetsEmpty}" Style="{StaticResource Hint}" Margin="6,10"
                      Visibility="{Binding NoHomeWidgets, Converter={StaticResource Visible}}" />
@@ -158,6 +159,13 @@
           </Border>
           <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
             <StackPanel>
+              <TextBlock Text="{Binding DockTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding DockIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+              <ItemsControl ItemsSource="{Binding DockRows}" Focusable="False" />
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
+            <StackPanel>
               <TextBlock Text="{Binding FavoritesTitle}" Style="{StaticResource Eyebrow}" />
               <TextBlock Text="{Binding FavoritesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
               <ItemsControl ItemsSource="{Binding FavoriteRows}" Focusable="False" />
@@ -165,6 +173,17 @@
                       AutomationProperties.Name="{Binding AddAppLabel}" ToolTip="{Binding AddAppHelp}">
                 <TextBlock Text="{Binding AddAppLabel}" />
               </Button>
+            </StackPanel>
+          </Border>
+          <Border Style="{StaticResource CardBox}" Margin="0,10,0,0" DataContext="{Binding Hub.ClockInfo}">
+            <StackPanel>
+              <TextBlock Text="{Binding IcsTitle}" Style="{StaticResource Eyebrow}" />
+              <TextBlock Text="{Binding IcsDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+              <TextBlock Text="{Binding IcsText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" TextTrimming="CharacterEllipsis" Margin="0,0,0,10" />
+              <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource Bordered}" Command="{Binding PickIcs}" Content="{Binding IcsChoose}" AutomationProperties.Name="{Binding IcsChoose}" Margin="0,0,8,0" />
+                <Button Style="{StaticResource Bordered}" Command="{Binding ClearIcs}" Content="{Binding IcsRemove}" AutomationProperties.Name="{Binding IcsRemove}" Visibility="{Binding HasIcs, Converter={StaticResource Visible}}" />
+              </StackPanel>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -525,7 +544,7 @@
                 <DockPanel Margin="2,0,0,6">
                     <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding ToggleAddModel}" AutomationProperties.Name="{Binding AddModelHelp}" IsEnabled="{Binding CanAddModel}"
                             ToolTip="{Binding AddModelHelp}" VerticalAlignment="Center">
-                        <Border Width="22" Height="20" CornerRadius="5" Background="{DynamicResource ButtonBg}">
+                        <Border Width="22" Height="20" CornerRadius="5" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
                             <TextBlock Text="{Binding AddModelGlyph}" FontFamily="{StaticResource Icons}" FontSize="10.5"
                                        Foreground="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
@@ -698,6 +717,8 @@
 
         <!-- MARK: actividad -->
         <StackPanel x:Name="ActivityPanel" Margin="14" Visibility="{Binding ShowingActivity, Converter={StaticResource Visible}}">
+            <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding ActivityTabs}" Margin="0,0,0,12" AutomationProperties.Name="{Binding TabsLabel}" />
+            <StackPanel Visibility="{Binding ShowingActivityMemory, Converter={StaticResource Visible}}">
             <TextBlock Text="{Binding WeekTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="8,11">
                 <ItemsControl ItemsSource="{Binding WeekTiles}" Focusable="False">
@@ -779,39 +800,187 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
-
-            <TextBlock ui:ContentView.BreakBefore="True" Text="{Binding ProcessesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
-            <Border Style="{StaticResource CardBox}" Padding="11,9">
-                <StackPanel>
-                    <TextBlock Text="{Binding ProcessesHint}" Style="{StaticResource Hint}" />
-                    <TextBlock Text="{Binding ProcessesEmpty}" Style="{StaticResource Hint}" Margin="0,6,0,0"
-                               Visibility="{Binding NoProcessSummary, Converter={StaticResource Visible}}" />
-                    <ItemsControl ItemsSource="{Binding ProcessSummaryRows}" Margin="0,5,0,0">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type ui:ProcessSummaryRow}">
-                                <DockPanel Margin="0,4">
-                                    <Image DockPanel.Dock="Left" Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0" />
-                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Memory}" Style="{StaticResource MonoSmall}" VerticalAlignment="Center" />
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Count}" FontSize="10" Foreground="{DynamicResource Muted}" />
-                                    </StackPanel>
-                                </DockPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Content="{Binding OpenProcessesLabel}" Command="{Binding OpenProcesses}" Style="{StaticResource Bordered}"
-                            HorizontalAlignment="Stretch" Margin="0,8,0,0" AutomationProperties.Name="{Binding OpenProcessesLabel}" />
-                </StackPanel>
-            </Border>
             <StackPanel Visibility="{Binding HasCleanObservation, Converter={StaticResource Visible}}">
                 <TextBlock Text="{Binding CleanObservationTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
                 <Border Style="{StaticResource CardBox}" Padding="11,9">
                     <TextBlock Text="{Binding CleanObservationText}" Style="{StaticResource Hint}" TextWrapping="Wrap" />
                 </Border>
             </StackPanel>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingActivityProcesses, Converter={StaticResource Visible}}">
+            <!-- Los procesos, dentro del notch: lo que antes era una ventana aparte. -->
+            <TextBlock Text="{Binding ProcessesIntro}" Style="{StaticResource Hint}" Margin="2,0,2,0" />
+            <StackPanel x:Name="ProcsRoot" DataContext="{Binding Procs}">
+                <DockPanel Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding RefreshCommand}" IsEnabled="{Binding CanRefresh}"
+                            AutomationProperties.Name="{Binding RefreshLabel}" ToolTip="{Binding RefreshLabel}" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <Border Width="28" Height="28" CornerRadius="6" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
+                            <TextBlock Text="&#xE72C;" FontFamily="{StaticResource Icons}" FontSize="12.5" Foreground="{DynamicResource Secondary}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding TogglePause}"
+                            AutomationProperties.Name="{Binding PauseLabel}" ToolTip="{Binding PauseLabel}" Margin="6,0,0,0" VerticalAlignment="Center">
+                        <Border Width="28" Height="28" CornerRadius="6" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
+                            <TextBlock Text="{Binding PauseGlyph}" FontFamily="{StaticResource Icons}" FontSize="12.5" Foreground="{DynamicResource Secondary}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Button>
+                    <Grid>
+                        <TextBox Style="{StaticResource Field}" Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" MinHeight="28" Padding="26,4,6,4"
+                                 AutomationProperties.Name="{Binding SearchLabel}" ToolTip="{Binding SearchHint}" />
+                        <TextBlock Text="&#xE721;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Muted}"
+                                   HorizontalAlignment="Left" VerticalAlignment="Center" Margin="9,0,0,0" IsHitTestVisible="False" />
+                        <TextBlock Text="{Binding SearchHint}" FontSize="11.5" Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" Margin="26,0,8,0" IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Search}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </DockPanel>
+                <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding FilterSegments}" Margin="0,8,0,0" AutomationProperties.Name="{Binding FilterLabel}" />
+                <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding SortSegments}" Margin="0,6,0,0" AutomationProperties.Name="{Binding SortLabel}" />
+                <DockPanel Margin="2,7,2,7">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding CycleMinimum}" AutomationProperties.Name="{Binding MinimumLabel}"
+                            ToolTip="{Binding MinimumLabel}" Margin="10,0,0,0">
+                        <TextBlock Text="{Binding MinimumLabel}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource Secondary}" />
+                    </Button>
+                    <TextBlock Text="{Binding Summary}" Style="{StaticResource MonoSmall}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                </DockPanel>
+                <Border Style="{StaticResource CardBox}" Padding="0">
+                    <Border CornerRadius="11" ClipToBounds="True">
+                        <Grid>
+                            <ListBox ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected, Mode=TwoWay}" MinHeight="150" MaxHeight="230" Padding="2"
+                                     Background="Transparent" BorderThickness="0" AutomationProperties.Name="{Binding ListLabel}" TextElement.Foreground="{DynamicResource Fg}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True"
+                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Focusable" Value="True" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="row" Background="Transparent" CornerRadius="7" Padding="6,5">
+                                                        <ContentPresenter />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="row" Property="Background" Value="{DynamicResource Track}" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="row" Property="Background" Value="{DynamicResource AccentSoft}" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type ui:ProcessRow}">
+                                        <Grid Margin="{Binding NameInset}" ToolTip="{Binding Executable}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="22" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button Style="{StaticResource Plain}" Visibility="{Binding IsGroup, Converter={StaticResource Visible}}" VerticalAlignment="Center"
+                                                    Command="{Binding DataContext.ToggleRow, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="{Binding DataContext.ToggleLabel, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    ToolTip="{Binding DataContext.ToggleLabel, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                                                <TextBlock Text="{Binding Expansion}" FontFamily="{StaticResource Icons}" FontSize="10" Foreground="{DynamicResource Secondary}"
+                                                           HorizontalAlignment="Center" />
+                                            </Button>
+                                            <Image Grid.Column="1" Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <DockPanel>
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Tag}" Style="{StaticResource MonoSmall}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="{Binding Weight}" TextTrimming="CharacterEllipsis" />
+                                                </DockPanel>
+                                                <ui:MemoryBar Margin="0,4,0,0" Height="3" Used="{Binding RamFraction}" Model="0" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="3" VerticalAlignment="Center" MinWidth="64">
+                                                <TextBlock Text="{Binding RamText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Fg}" HorizontalAlignment="Right" />
+                                                <TextBlock Text="{Binding CpuText}" FontSize="10" Foreground="{DynamicResource Muted}" HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock Text="{Binding EmptyText}" Style="{StaticResource Hint}" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="16" IsHitTestVisible="False" Visibility="{Binding ShowEmpty, Converter={StaticResource Visible}}" />
+                        </Grid>
+                    </Border>
+                </Border>
 
-            <TextBlock Text="{Binding ClientsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+                <!-- Lo seleccionado y sus acciones; el resultado de la última se queda debajo. -->
+                <Border Style="{StaticResource CardBox}" Padding="11,9" Margin="0,8,0,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Details}" FontFamily="{StaticResource Mono}" FontSize="10.5" Foreground="{DynamicResource Secondary}" TextWrapping="Wrap" />
+                        <WrapPanel Margin="0,8,0,0">
+                            <Button Style="{StaticResource DangerButton}" Content="{Binding ApplicationLabel}" Command="{Binding ActApplication}" IsEnabled="{Binding CanApplication}"
+                                    Visibility="{Binding SelectedIsGroup, Converter={StaticResource Visible}}" ToolTip="{Binding ApplicationHelp}" AutomationProperties.Name="{Binding ApplicationLabel}" />
+                            <Button Style="{StaticResource DangerButton}" Content="{Binding ProcessLabel}" Command="{Binding ActProcess}" IsEnabled="{Binding CanProcess}"
+                                    Visibility="{Binding SelectedIsProcess, Converter={StaticResource Visible}}" ToolTip="{Binding ProcessHelp}" AutomationProperties.Name="{Binding ProcessLabel}" Margin="0,0,6,0" />
+                            <Button Style="{StaticResource DangerButton}" Content="{Binding TreeLabel}" Command="{Binding ActTree}" IsEnabled="{Binding CanProcess}"
+                                    Visibility="{Binding SelectedIsProcess, Converter={StaticResource Visible}}" ToolTip="{Binding TreeHelp}" AutomationProperties.Name="{Binding TreeLabel}" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding ResultText}" Foreground="{Binding ResultBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"
+                                   Visibility="{Binding HasResult, Converter={StaticResource Visible}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- La confirmación, aquí mismo: la lista exacta de lo que se va a cerrar. Hasta aceptarla no se finaliza nada. -->
+                <Border Style="{StaticResource CardBox}" Padding="12" Margin="0,8,0,0" IsVisibleChanged="OnConfirmationVisible"
+                        Visibility="{Binding HasConfirmation, Converter={StaticResource Visible}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Border DockPanel.Dock="Left" Width="30" Height="30" CornerRadius="15" Background="{DynamicResource DangerSoft}" VerticalAlignment="Top" Margin="0,0,10,0">
+                                <TextBlock Text="{Binding Confirmation.Glyph}" FontFamily="{StaticResource Icons}" FontSize="13" Foreground="{DynamicResource Danger}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Confirmation.Title}" FontSize="13.5" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Confirmation.Message}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                        <TextBlock Text="{Binding Confirmation.Summary}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" Margin="2,10,2,5" />
+                        <ScrollViewer MaxHeight="120" VerticalScrollBarVisibility="Auto" Focusable="False">
+                            <ItemsControl ItemsSource="{Binding Confirmation.Rows}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type ui:ConfirmRow}">
+                                        <DockPanel Margin="0,3">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Memory}" Style="{StaticResource MonoSmall}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource MonoSmall}" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <TextBlock Text="{Binding Confirmation.Warning}" FontSize="11" Foreground="{DynamicResource Warm}" TextWrapping="Wrap" Margin="2,8,2,0" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                            <Button Style="{StaticResource Bordered}" Content="{Binding CancelLabel}" Command="{Binding Cancel}" AutomationProperties.Name="{Binding CancelLabel}" Margin="0,0,6,0" MinWidth="88" />
+                            <Button Style="{StaticResource DangerButton}" Content="{Binding ConfirmLabel}" Command="{Binding Confirm}" AutomationProperties.Name="{Binding ConfirmLabel}" MinWidth="88" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <TextBlock Text="{Binding RamExplanation}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="2,8,2,0" />
+            </StackPanel>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingActivityHistory, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding ClientsTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
             <Border Style="{StaticResource CardBox}" Padding="11,9">
                 <StackPanel>
                     <TextBlock Text="{Binding ClientsEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoClients, Converter={StaticResource Visible}}" />
@@ -856,11 +1025,13 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+            </StackPanel>
         </StackPanel>
 
         <!-- MARK: ajustes -->
         <StackPanel x:Name="SettingsPanel" Margin="14" Visibility="{Binding ShowingSettings, Converter={StaticResource Visible}}">
-
+            <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding SettingsTabs}" Margin="0,0,0,12" AutomationProperties.Name="{Binding TabsLabel}" />
+            <StackPanel Visibility="{Binding ShowingSettingsOllama, Converter={StaticResource Visible}}">
             <StackPanel Orientation="Horizontal" Margin="2,0,2,6">
                 <TextBlock Text="Ollama" Style="{StaticResource Eyebrow}" />
                 <TextBlock Text="{Binding OllamaSectionDetail}" Style="{StaticResource MonoSmall}" Margin="6,0,0,0" VerticalAlignment="Center" />
@@ -934,9 +1105,61 @@
                 </StackPanel>
             </Border>
 
+            <TextBlock Text="{Binding EnginesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <TextBlock Text="{Binding EnginesEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoEngineSettings, Converter={StaticResource Visible}}" />
+                    <ItemsControl ItemsSource="{Binding EngineSettingsRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:EngineSettingsRow}">
+                                <StackPanel>
+                                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Forget}" VerticalAlignment="Center"
+                                                Visibility="{Binding CanForget, Converter={StaticResource Visible}}">
+                                            <TextBlock Text="{Binding ForgetLabel}" FontSize="11" Foreground="{DynamicResource Muted}" />
+                                        </Button>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" />
+                                            <Border Style="{StaticResource Chip}" Visibility="{Binding Experimental, Converter={StaticResource Visible}}">
+                                                <TextBlock Text="{Binding ExperimentalLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IdleSegments}" Margin="0,7,0,0" />
+                                    <TextBlock Text="{Binding Hint}" Style="{StaticResource Hint}" Margin="0,7,0,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding IntegrationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <TextBlock Text="{Binding LinksHint}" Style="{StaticResource Hint}" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding LinkRows}" Focusable="False">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type ui:LinkRow}">
+                                <DockPanel x:Name="link" Background="Transparent" Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Copy}" AutomationProperties.Name="{Binding CopyHelp}" ToolTip="{Binding CopyHelp}"
+                                            VerticalAlignment="Center" Margin="8,0,2,0">
+                                        <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Muted}" />
+                                    </Button>
+                                    <TextBlock Text="{Binding Url}" FontFamily="{StaticResource Mono}" FontSize="11" Foreground="{DynamicResource Secondary}"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingSettingsMemory, Converter={StaticResource Visible}}">
             <!-- Liberar RAM -->
             <StackPanel Visibility="{Binding ShowCleanSection, Converter={StaticResource Visible}}">
-                <TextBlock Text="{Binding CleanSectionTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+                <TextBlock Text="{Binding CleanSectionTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
                 <Border Style="{StaticResource CardBox}">
                     <StackPanel>
                         <DockPanel>
@@ -983,85 +1206,11 @@
             <Border Style="{StaticResource CardBox}">
                 <ItemsControl ItemsSource="{Binding NotificationRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
             </Border>
-
-            <TextBlock ui:ContentView.BreakBefore="True" Text="{Binding IntegrationsTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingSettingsNotch, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding NotchSectionTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
             <Border Style="{StaticResource CardBox}">
                 <StackPanel>
-                    <TextBlock Text="{Binding LinksHint}" Style="{StaticResource Hint}" Margin="0,0,0,6" />
-                    <ItemsControl ItemsSource="{Binding LinkRows}" Focusable="False">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type ui:LinkRow}">
-                                <DockPanel x:Name="link" Background="Transparent" Margin="0,2">
-                                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Copy}" AutomationProperties.Name="{Binding CopyHelp}" ToolTip="{Binding CopyHelp}"
-                                            VerticalAlignment="Center" Margin="8,0,2,0">
-                                        <TextBlock Text="&#xE8C8;" FontFamily="{StaticResource Icons}" FontSize="11.5" Foreground="{DynamicResource Muted}" />
-                                    </Button>
-                                    <TextBlock Text="{Binding Url}" FontFamily="{StaticResource Mono}" FontSize="11" Foreground="{DynamicResource Secondary}"
-                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                                </DockPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <TextBlock Text="{Binding EnginesTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
-            <Border Style="{StaticResource CardBox}">
-                <StackPanel>
-                    <TextBlock Text="{Binding EnginesEmpty}" Style="{StaticResource Hint}" Visibility="{Binding NoEngineSettings, Converter={StaticResource Visible}}" />
-                    <ItemsControl ItemsSource="{Binding EngineSettingsRows}" Focusable="False">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate DataType="{x:Type ui:EngineSettingsRow}">
-                                <StackPanel>
-                                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" Visibility="{Binding ShowDivider, Converter={StaticResource Visible}}" />
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Forget}" VerticalAlignment="Center"
-                                                Visibility="{Binding CanForget, Converter={StaticResource Visible}}">
-                                            <TextBlock Text="{Binding ForgetLabel}" FontSize="11" Foreground="{DynamicResource Muted}" />
-                                        </Button>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Label}" />
-                                            <Border Style="{StaticResource Chip}" Visibility="{Binding Experimental, Converter={StaticResource Visible}}">
-                                                <TextBlock Text="{Binding ExperimentalLabel}" FontSize="10" FontWeight="Medium" Foreground="{DynamicResource Muted}" />
-                                            </Border>
-                                        </StackPanel>
-                                    </DockPanel>
-                                    <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding IdleSegments}" Margin="0,7,0,0" />
-                                    <TextBlock Text="{Binding Hint}" Style="{StaticResource Hint}" Margin="0,7,0,0" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <TextBlock Text="{Binding GeneralTitle}" Style="{StaticResource Eyebrow}" Margin="2,10,2,6" />
-            <Border Style="{StaticResource CardBox}">
-                <StackPanel>
-                    <DockPanel>
-                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding HotKeyOn}" Command="{Binding ToggleHotKey}" AutomationProperties.Name="{Binding HotKeyTitle}" Margin="10,0,0,0" />
-                        <StackPanel>
-                            <TextBlock Text="{Binding HotKeyTitle}" Style="{StaticResource Label}" />
-                            <TextBlock Text="{Binding HotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
-                        </StackPanel>
-                    </DockPanel>
-                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
-                    <DockPanel>
-                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding SleepHotKeyOn}" Command="{Binding ToggleSleepHotKey}" AutomationProperties.Name="{Binding SleepHotKeyTitle}" Margin="10,0,0,0" />
-                        <StackPanel>
-                            <TextBlock Text="{Binding SleepHotKeyTitle}" Style="{StaticResource Label}" />
-                            <TextBlock Text="{Binding SleepHotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
-                        </StackPanel>
-                    </DockPanel>
-                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
-                    <DockPanel>
-                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding LoginOn}" Command="{Binding ToggleLogin}" AutomationProperties.Name="{Binding LoginTitle}" Margin="10,0,0,0" />
-                        <StackPanel>
-                            <TextBlock Text="{Binding LoginTitle}" Style="{StaticResource Label}" />
-                            <TextBlock Text="{Binding LoginDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
-                        </StackPanel>
-                    </DockPanel>
-                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                     <DockPanel>
                         <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding NotchDockOn}" Command="{Binding ToggleNotchDock}" AutomationProperties.Name="{Binding NotchDockTitle}" Margin="10,0,0,0" />
                         <StackPanel>
@@ -1111,7 +1260,13 @@
                         <Button Style="{StaticResource Bordered}" Content="{Binding TrayFallbackOpen}" Command="{Binding OpenTrayFallback}"
                                 HorizontalAlignment="Left" Margin="0,8,0,0" />
                     </StackPanel>
-                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                </StackPanel>
+            </Border>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingSettingsPet, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding PetSectionTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
                     <DockPanel>
                         <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding TaskbarPetOn}" Command="{Binding ToggleTaskbarPet}"
                                         AutomationProperties.Name="{Binding TaskbarPetTitle}" Margin="10,0,0,0" />
@@ -1141,6 +1296,36 @@
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
+                </StackPanel>
+            </Border>
+            </StackPanel>
+            <StackPanel Visibility="{Binding ShowingSettingsGeneral, Converter={StaticResource Visible}}">
+            <TextBlock Text="{Binding GeneralTitle}" Style="{StaticResource Eyebrow}" Margin="2,0,2,6" />
+            <Border Style="{StaticResource CardBox}">
+                <StackPanel>
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding HotKeyOn}" Command="{Binding ToggleHotKey}" AutomationProperties.Name="{Binding HotKeyTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding HotKeyTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding HotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding SleepHotKeyOn}" Command="{Binding ToggleSleepHotKey}" AutomationProperties.Name="{Binding SleepHotKeyTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding SleepHotKeyTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding SleepHotKeyDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
+                    <DockPanel>
+                        <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding LoginOn}" Command="{Binding ToggleLogin}" AutomationProperties.Name="{Binding LoginTitle}" Margin="10,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding LoginTitle}" Style="{StaticResource Label}" />
+                            <TextBlock Text="{Binding LoginDetail}" Style="{StaticResource Hint}" Margin="0,1,0,0" />
+                        </StackPanel>
+                    </DockPanel>
                     <StackPanel Visibility="{Binding ShowUpdateSetting, Converter={StaticResource Visible}}">
                         <Rectangle Style="{StaticResource Divider}" Margin="0,11" />
                         <DockPanel>
@@ -1193,20 +1378,27 @@
                     </StackPanel>
                 </Button>
             </StackPanel>
+            </StackPanel>
         </StackPanel>
 
         </Grid>
-        </ScrollViewer>
-
-        <!-- MARK: pie -->
-        <Rectangle Style="{StaticResource Divider}" />
-        <DockPanel Margin="14,9">
+        <!-- MARK: pie en el notch: al final del contenido de cada página (se desplaza con ella), no fijo encima de lo que pasa por debajo -->
+        <DockPanel Margin="{Binding FooterMargin}" Visibility="{Binding NotchFooter, Converter={StaticResource Visible}}">
             <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
                 <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding BrandName}" Margin="5,0,0,0" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" />
             </StackPanel>
-            <TextBlock Text="{Binding FooterText}" FontSize="10.5" Foreground="{DynamicResource Muted}" HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Margin="12,0,0,0" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+        </StackPanel>
+        </ScrollViewer>
+
+        <!-- MARK: pie del panel de la bandeja: fijo abajo, con su línea -->
+        <Rectangle Style="{StaticResource Divider}" Visibility="{Binding FlatFooter, Converter={StaticResource Visible}}" />
+        <DockPanel Margin="{Binding FooterMargin}" Visibility="{Binding FlatFooter, Converter={StaticResource Visible}}">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <Ellipse Width="6" Height="6" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding BrandName}" Margin="5,0,0,0" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Secondary}" />
+            </StackPanel>
         </DockPanel>
     </StackPanel>
   </Grid>

@@ -73,9 +73,12 @@ public static class PrefKeys
     public const string NotchActivities = "notchActivities";   // lista: actividades en vivo permitidas junto a la pastilla (sin valor: todas)
     public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
     public const string ClipboardHistory = "clipboardHistory"; // historial de texto copiado, solo en memoria (apagado por defecto)
+    public const string CalendarItems = "calendarItems";      // lista: los recordatorios del widget de calendario (una línea cada uno; solo locales)
+    public const string CalendarIcs = "calendarIcs";          // lista de un valor: la ruta del archivo .ics que lee el widget de calendario
     public const string CodeRoot = "codeRoot";                // lista de un valor: la carpeta del widget Código (solo la ruta)
     public const string TrayRemember = "trayRemember";        // recordar la bandeja de archivos entre sesiones (apagado por defecto)
     public const string TrayItems = "trayItems";              // lista: las rutas de la bandeja, solo si se pidió recordarla
+    public const string NotchDockPages = "notchDockPages";    // lista: páginas opcionales del dock (ollama, activity); Inicio, Widgets y Ajustes siempre están
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
     public const string TaskbarPet = "taskbarPetEnabled";      // mascota junto a Inicio (apagada por defecto)

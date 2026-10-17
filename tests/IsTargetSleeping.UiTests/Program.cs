@@ -70,6 +70,8 @@ internal static class Program
                 && model.OpenTrayFallback is not null);
             Check($"{language}: interruptor directo o ayuda, nunca los dos",
                 model.ShowTrayPin != model.ShowTrayFallback);
+            model.CurrentSettingsTab = PanelViewModel.SettingsTab.Notch;   // la ayuda y el interruptor de la bandeja están en la pestaña Notch
+            view.UpdateLayout();
             var trayButton = Descendants(view).OfType<Button>().FirstOrDefault(b => b.Content as string == trayOpen);
             Check($"{language}: el botón de ayuda se ve cuando no hay interruptor directo",
                 trayButton is not null && SeVe(trayButton) == model.ShowTrayFallback);
@@ -96,15 +98,20 @@ internal static class Program
                 model.Show(wideView);
                 model.BodyMaxHeight = double.PositiveInfinity;
                 var tall = new ContentView(model);
+                // Sin ventana los enlaces de visibilidad no se resuelven y todas las páginas cuentan a la vez: se muestra un instante, fuera de pantalla.
+                var tallHost = new Window { Content = tall, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 3000 };
+                tallHost.Show();
                 tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 double tallHeight = tall.DesiredSize.Height;
                 model.WideLayout = true;
                 tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                Check($"{language}/{wideView}: en ancho mide 640 y es más bajo que en estrecho",
-                    tall.DesiredSize.Width == 640 && tall.DesiredSize.Height < tallHeight);
+                // Ajustes y Actividad van por pestañas, a una columna: en ancho solo cambia la anchura (la vista principal sí se parte en dos).
+                Check($"{language}/{wideView}: en ancho mide 640" + (wideView == PanelView.Main ? " y es más bajo que en estrecho" : ""),
+                    tall.DesiredSize.Width == 640 && (wideView != PanelView.Main || tall.DesiredSize.Height < tallHeight));
                 model.WideLayout = false;
                 tall.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 Check($"{language}/{wideView}: al volver a estrecho recupera su tamaño", tall.DesiredSize.Width == 340 && Math.Abs(tall.DesiredSize.Height - tallHeight) < 1);
+                tallHost.Close();
             }
             model.Show(PanelView.Settings);
             // Versión corta (hover): más baja que el panel entero, y todos sus botones y los del dock tienen nombre.
@@ -171,7 +178,7 @@ internal static class Program
             homeHost.UpdateLayout();
             var widgetSwitches = Descendants(homeHost).OfType<BrandSwitch>().Where(b => b.IsVisible).ToArray();
             Check($"{language}: la página Widgets lista cada widget (Home y vista corta) y cada favorito con su interruptor con nombre",
-                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + ActivityCatalog.All.Count + FavoriteCatalog.All.Count
+                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + ActivityCatalog.All.Count + FavoriteCatalog.All.Count + DockCatalog.Optional.Count
                 && widgetSwitches.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
             var upDown = Descendants(homeHost).OfType<Button>().Where(b => b.IsVisible && b.Content is Border { Child: TextBlock { Text: "\uE70E" or "\uE70D" } }).ToArray();
             Check($"{language}: subir y bajar tienen nombre propio por widget activo",
@@ -284,11 +291,24 @@ internal static class Program
             var dockNotch = new NotchWindow(model, new ContentView(model));
             var dockNames = Descendants((DependencyObject)dockNotch.Content).OfType<Button>()
                 .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
-            Check($"{language}: el dock lleva las cinco páginas y los cuatro favoritos, cada uno con su nombre",
-                new[] { model.NotchTabHome, model.NotchTabOllama, model.NotchTabActivity, model.NotchTabWidgets, model.NotchTabSettings, model.HeroHelp, model.CleanLabel, model.NotchTabProcesses, model.FreeHelp }
-                    .All(name => dockNames.Contains(name)));
+            Check($"{language}: por defecto el dock lleva solo Inicio, Widgets y Ajustes más los cuatro favoritos, cada uno con su nombre",
+                new[] { model.NotchTabHome, model.NotchTabWidgets, model.NotchTabSettings, model.HeroHelp, model.CleanLabel, model.NotchTabProcesses, model.FreeHelp }
+                    .All(name => dockNames.Contains(name)) && !dockNames.Contains(model.NotchTabOllama) && !dockNames.Contains(model.NotchTabActivity) && model.DockIds.Count == 0);
             dockNotch.Stop();
             dockNotch.Close();
+            model.DockRows.First(r => r.Title == L10n.tr("Ollama")).Toggle.Execute(null);
+            model.DockRows.First(r => r.Title == L10n.tr("Actividad")).Toggle.Execute(null);
+            var dockNotch2 = new NotchWindow(model, new ContentView(model));
+            var dockNames2 = Descendants((DependencyObject)dockNotch2.Content).OfType<Button>()
+                .Select(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName()).ToArray();
+            Check($"{language}: las páginas de Ollama y de Actividad salen en el dock cuando se activan, y se pueden quitar otra vez",
+                model.DockIds.SequenceEqual(new[] { "ollama", "activity" }) && dockNames2.Contains(model.NotchTabOllama) && dockNames2.Contains(model.NotchTabActivity)
+                && model.DockRows.All(r => r.IsOn));
+            dockNotch2.Stop();
+            dockNotch2.Close();
+            model.DockRows.First(r => r.Title == L10n.tr("Ollama")).Toggle.Execute(null);
+            model.DockRows.First(r => r.Title == L10n.tr("Actividad")).Toggle.Execute(null);
+            Check($"{language}: sin ellas el dock vuelve a tres botones", model.DockIds.Count == 0);
             // Bandeja de archivos: lo arrastrado aparece como filas con sus botones con nombre, y el dock gana su botón mientras hay archivos.
             {
                 var trayDir = Path.Combine(Path.GetTempPath(), "its-ui-tray-" + Guid.NewGuid().ToString("N"));
@@ -423,6 +443,58 @@ internal static class Program
                 model.WideLayout = false;
                 model.Show(PanelView.Main);
                 try { Directory.Delete(box, true); } catch { }
+            }
+            // La lente de cristal del dock: viaja entre los botones, se agranda al pulsar, sigue al puntero y se asienta en el botón más cercano.
+            {
+                // La animación va a fotogramas de 1/60 s, como en la app (un solo paso largo se recorta para que el muelle sea estable).
+                void Run(DockLens l, double seconds) { for (double t = 0; t < seconds; t += 1.0 / 60) l.Advance(1.0 / 60); }
+                Border Button(string glyph) => new Border { Width = 28, Height = 28, Margin = new Thickness(4, 0, 4, 0), Child = new TextBlock { Text = glyph, FontSize = 14, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
+                foreach (var reduced in new[] { false, true })
+                {
+                    var dockButtons = new[] { Button("A"), Button("B"), Button("C") };
+                    var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                    foreach (var b in dockButtons) row.Children.Add(b);
+                    var theLens = new DockLens(() => reduced);
+                    var hostGrid = new Grid { Height = NotchLayout.DockHeight + 2 * NotchLayout.DockPad };
+                    hostGrid.Children.Add(row);
+                    hostGrid.Children.Add(theLens.Layer);
+                    var lensHost = new Window { Content = hostGrid, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 300, Height = 80 };
+                    lensHost.Show();
+                    lensHost.UpdateLayout();
+                    theLens.SetButtons(dockButtons.Select(b => (b, (TextBlock)b.Child)).ToList());
+                    double Cx(int i) => dockButtons[i].TranslatePoint(new Point(14, 14), theLens.Layer).X;
+                    string tag = reduced ? "con movimiento reducido" : "con muelle";
+                    theLens.Select(1);
+                    theLens.Advance(0.016);
+                    Check($"{language}: la lente nace tras el botón elegido y no viaja desde el borde ({tag})", theLens.Selected == 1 && Math.Abs(theLens.CenterX - Cx(1)) < 0.5);
+                    double restWidth = theLens.LensWidth;
+                    theLens.BeginDrag(new Point(Cx(1), 20));
+                    Run(theLens, 1);
+                    Check($"{language}: al pulsar la lente crece más que la barra y sobresale por arriba y por abajo ({tag})", theLens.Dragging && theLens.LensWidth > restWidth + 20 && theLens.LensHeight > NotchLayout.DockHeight);
+                    theLens.DragTo(new Point(Cx(2), 20));
+                    theLens.Advance(reduced ? 0 : 0.05);
+                    double whileMoving = theLens.LensWidth;
+                    Run(theLens, 1);
+                    Check($"{language}: arrastrando, la lente sigue al puntero hasta el otro botón ({tag})", Math.Abs(theLens.CenterX - Cx(2)) < 1 && (reduced || whileMoving > theLens.LensWidth));
+                    theLens.DragTo(new Point(Cx(0) - 80, 20));
+                    Run(theLens, 1);
+                    Check($"{language}: …y no se pasa de los extremos más que un poco ({tag})", theLens.CenterX >= Cx(0) - 15 && theLens.CenterX <= Cx(0));
+                    theLens.DragTo(new Point(Cx(2) - 3, 20));
+                    int chosen = theLens.EndDrag(new Point(Cx(2) - 3, 20));
+                    Run(theLens, 1.5);
+                    Check($"{language}: al soltar se asienta en el botón más cercano, que es el que se abre, y vuelve a su tamaño ({tag})",
+                        chosen == 2 && theLens.Selected == 2 && !theLens.Dragging && Math.Abs(theLens.CenterX - Cx(2)) < 0.5 && Math.Abs(theLens.LensWidth - restWidth) < 0.5);
+                    theLens.BeginDrag(new Point(Cx(2), 20));
+                    theLens.DragTo(new Point(Cx(0), 20));
+                    theLens.CancelDrag();
+                    Run(theLens, 1.5);
+                    Check($"{language}: si se pierde el ratón a medias, la lente vuelve al botón que estaba elegido ({tag})", !theLens.Dragging && Math.Abs(theLens.CenterX - Cx(2)) < 0.5);
+                    theLens.Select(-1);
+                    theLens.Advance(0.1);
+                    Check($"{language}: los iconos originales vuelven a verse del todo cuando la lente no los cubre ({tag})", dockButtons.All(b => ((TextBlock)b.Child).Opacity > 0.99));
+                    theLens.Dispose();
+                    lensHost.Close();
+                }
             }
             // La canción en la pastilla: «título · artista» en un texto que se desplaza dentro de un ancho fijo, con su indicador.
             {
@@ -631,6 +703,8 @@ internal static class Program
         }
         Check("la demo no modifica ajustes guardados", originalSettings == (File.Exists(Paths.SettingsFile) ? File.ReadAllText(Paths.SettingsFile) : null));
         ProcessUiTests.Run(Check);
+        ContrastAudit.Run(Check);
+        MasonryTests.Run(Check);
         app.Shutdown();
         Console.WriteLine(failures == 0 ? "interfaz: todo bien" : $"interfaz: {failures} fallos");
         return failures == 0 ? 0 : 1;

@@ -22,6 +22,14 @@
             <Setter Property="Padding" Value="12" />
         </Style>
 
+        <!-- Un widget del Home: sin tarjeta, sin relleno ni borde, directamente sobre el cristal del notch (como los de Droppy). Lo que dentro
+             tenga que verse como relieve (un botón, una fila de la agenda) lleva su propio cristal. -->
+        <Style x:Key="WidgetBox" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="12,8" />
+        </Style>
+
         <Style x:Key="Divider" TargetType="Rectangle">
             <Setter Property="Fill" Value="{DynamicResource Line}" />
             <Setter Property="Height" Value="1" />
@@ -67,6 +75,7 @@
 
         <!-- Botón sin adornos. -->
         <Style x:Key="Plain" TargetType="ButtonBase">
+            <Setter Property="Foreground" Value="{DynamicResource Fg}" />   <!-- sin esto, el icono de un botón sin color propio sale negro (el de Windows) -->
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="True" />
@@ -372,7 +381,7 @@
 
     <!-- Ollama: siempre ocupa una fila entera. -->
     <DataTemplate x:Key="WidgetOllamaWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
         <Grid DataContext="{Binding Model.Panel}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -432,9 +441,12 @@
 
     <!-- Sistema: una celda = una columna (en la vista corta, sin disco ni red); dos celdas = dos columnas. -->
     <DataTemplate x:Key="WidgetSystemWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
-        <StackPanel>
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <!-- El contenido se centra en la altura que le deja la fila: sin huecos en blanco debajo cuando el vecino es más alto -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center">
           <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
             <DockPanel>
               <TextBlock DockPanel.Dock="Right" Text="{Binding Model.CpuLabel}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" />
@@ -504,58 +516,214 @@
             </StackPanel>
           </Grid>
         </StackPanel>
+        </Grid>
       </Border>
     </DataTemplate>
 
+    <!-- Un día del mes: el de hoy en rojo (como el calendario de Droppy), un punto si tiene algo y un aro si es el elegido. -->
     <DataTemplate DataType="{x:Type ui:CalendarDay}">
-      <Border x:Name="day" Height="19" CornerRadius="9" Background="Transparent" Opacity="{Binding Alpha}">
-        <TextBlock x:Name="num" Text="{Binding Text}" FontSize="10.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
-      </Border>
+      <Button Style="{StaticResource Plain}" Command="{Binding Pick}" Opacity="{Binding Alpha}" AutomationProperties.Name="{Binding Spoken}" ToolTip="{Binding Spoken}">
+        <Border x:Name="day" Height="19" Margin="1,0" CornerRadius="9.5" Background="Transparent" BorderThickness="1" BorderBrush="Transparent">
+          <Grid>
+            <TextBlock x:Name="num" Text="{Binding Text}" FontSize="10.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Ellipse x:Name="dot" Width="3" Height="3" Fill="{DynamicResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,0.5" Visibility="Collapsed" />
+          </Grid>
+        </Border>
+      </Button>
       <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding HasItems}" Value="True">
+          <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding Selected}" Value="True">
+          <Setter TargetName="day" Property="BorderBrush" Value="{DynamicResource Fg}" />
+        </DataTrigger>
         <DataTrigger Binding="{Binding Today}" Value="True">
-          <Setter TargetName="day" Property="Background" Value="{DynamicResource Accent}" />
-          <Setter TargetName="num" Property="Foreground" Value="{DynamicResource OnAccent}" />
+          <Setter TargetName="day" Property="Background" Value="#E5383B" />   <!-- el rojo de Droppy: más hondo que el coral del tema, para que el blanco se lea -->
+          <Setter TargetName="num" Property="Foreground" Value="White" />
           <Setter TargetName="num" Property="FontWeight" Value="SemiBold" />
+          <Setter TargetName="dot" Property="Fill" Value="White" />
         </DataTrigger>
       </DataTemplate.Triggers>
     </DataTemplate>
 
-    <!-- Reloj: el mes entero solo en el Home; en la vista corta, la hora y la fecha. Con dos celdas, la hora a un lado y el mes al otro. -->
+    <!-- La agenda: los días con algo, cada uno con su cabecera; los recordatorios con un aro naranja (se marcan hechos) y los eventos con una barra verde. -->
+    <DataTemplate DataType="{x:Type ui:AgendaGroupRow}">
+      <StackPanel Margin="0,0,0,8">
+        <TextBlock Text="{Binding Header}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" Margin="2,0,0,4" TextTrimming="CharacterEllipsis" />
+        <ItemsControl ItemsSource="{Binding Items}" Focusable="False" />
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type ui:AgendaRow}">
+      <Border x:Name="card" CornerRadius="10" Padding="9,6" Margin="0,0,0,4" Background="{DynamicResource Track}">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Remove}" AutomationProperties.Name="{Binding RemoveHelp}" ToolTip="{Binding RemoveHelp}"
+                  VerticalAlignment="Center" Visibility="{Binding IsReminder, Converter={StaticResource Visible}}">
+            <TextBlock Text="&#xE711;" FontFamily="{StaticResource Icons}" FontSize="9" Foreground="{DynamicResource Muted}" Margin="6,0,0,0" />
+          </Button>
+          <Button DockPanel.Dock="Left" Style="{StaticResource Plain}" Command="{Binding Toggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}"
+                  VerticalAlignment="Center" Margin="0,0,9,0" Visibility="{Binding IsReminder, Converter={StaticResource Visible}}">
+            <Grid Width="16" Height="16">
+              <Ellipse Stroke="#F2994A" StrokeThickness="2" />
+              <Ellipse x:Name="filled" Fill="#F2994A" Margin="4" Visibility="Collapsed" />
+            </Grid>
+          </Button>
+          <Rectangle DockPanel.Dock="Left" Width="3" RadiusX="1.5" RadiusY="1.5" Fill="#5CD66F" Margin="0,1,9,1" Visibility="{Binding IsEvent, Converter={StaticResource Visible}}" />
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock x:Name="title" Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Opacity="{Binding TitleAlpha}" />
+            <TextBlock Text="{Binding TimeText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding Done}" Value="True">
+          <Setter TargetName="filled" Property="Visibility" Value="Visible" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsEvent}" Value="True">
+          <Setter TargetName="card" Property="Background" Value="#26308A3C" />
+          <Setter TargetName="title" Property="Foreground" Value="#A8EDB2" />
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- Piezas del calendario, compartidas por sus vistas. DataContext: el reloj. -->
+    <DataTemplate x:Key="CalendarHeader">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Style="{StaticResource Plain}" Command="{Binding PrevMonth}" AutomationProperties.Name="{Binding PrevHelp}" ToolTip="{Binding PrevHelp}">
+            <Border Width="28" Height="26" Background="Transparent"><TextBlock Text="&#xE76B;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+          </Button>
+          <Button Style="{StaticResource Plain}" Command="{Binding NextMonth}" AutomationProperties.Name="{Binding NextHelp}" ToolTip="{Binding NextHelp}">
+            <Border Width="28" Height="26" Background="Transparent"><TextBlock Text="&#xE76C;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+          </Button>
+        </StackPanel>
+        <Button Style="{StaticResource Plain}" Command="{Binding ThisMonth}" AutomationProperties.Name="{Binding TodayHelp}" ToolTip="{Binding TodayHelp}" HorizontalAlignment="Left" VerticalAlignment="Center">
+          <TextBlock Text="{Binding MonthTitle}" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource Danger}" />
+        </Button>
+      </DockPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="CalendarMonth">
+      <StackPanel>
+        <ItemsControl ItemsSource="{Binding Weekdays}" Focusable="False" Foreground="{DynamicResource Muted}" FontSize="10.5">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding Days}" Focusable="False" Margin="0,4,0,0">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+    <!-- Lo próximo, como una fila de la agenda -->
+    <DataTemplate x:Key="CalendarNext">
+      <Border CornerRadius="10" Padding="9,7" Background="{DynamicResource Track}">
+        <DockPanel>
+          <Grid Width="16" Height="16" Margin="0,0,9,0" VerticalAlignment="Center" Visibility="{Binding HasNext, Converter={StaticResource Visible}}"><Ellipse Stroke="#F2994A" StrokeThickness="2" /></Grid>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding NextTitle}" FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding NextWhen}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" Visibility="{Binding HasNext, Converter={StaticResource Visible}}" />
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </DataTemplate>
+
+    <!-- Reloj y calendario. Una celda: la hora y la fecha, el mes con sus flechas y lo próximo; dos celdas con compañeros: la hora y lo próximo a un lado
+         y el mes al otro; solo en su lista: el mes (con el «+» para añadir) a la izquierda y la agenda a la derecha, como en Droppy. En la vista
+         corta, solo la hora, la fecha y lo próximo. -->
     <DataTemplate x:Key="WidgetClockWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
         <StackPanel>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
           <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
-            <TextBlock Text="{Binding Model.Time}" FontSize="26" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Model.DateText}" Style="{StaticResource Hint}" />
-            <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}" Margin="0,8,0,0">
-              <ItemsControl ItemsSource="{Binding Model.Weekdays}" Focusable="False" Foreground="{DynamicResource Muted}" FontSize="10">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <ItemsControl ItemsSource="{Binding Model.Days}" Focusable="False" Margin="0,2,0,0">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              </ItemsControl>
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Model.DateText}" Style="{StaticResource Hint}" TextAlignment="Right" TextWrapping="Wrap" MaxWidth="104" VerticalAlignment="Center" Margin="10,0,0,0" />
+              <TextBlock Text="{Binding Model.Time}" FontSize="28" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock Text="{Binding Model.NextText}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" Visibility="{Binding Peek, Converter={StaticResource Visible}}" />
+            <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}" Margin="0,10,0,0">
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarHeader}" Margin="0,0,0,6" />
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarMonth}" />
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarNext}" Margin="0,10,0,0" />
             </StackPanel>
           </StackPanel>
-          <Grid Visibility="{Binding Wide, Converter={StaticResource Visible}}">
+          <Grid Visibility="{Binding WideCompanion, Converter={StaticResource Visible}}">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel VerticalAlignment="Center">
-              <TextBlock Text="{Binding Model.Time}" FontSize="34" FontWeight="SemiBold" />
-              <TextBlock Text="{Binding Model.DateText}" Style="{StaticResource Hint}" />
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <StackPanel>
+                <TextBlock Text="{Binding Model.Time}" FontSize="34" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Model.DateText}" Style="{StaticResource Hint}" />
+                <TextBlock Text="{Binding Model.NextText}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" Visibility="{Binding Peek, Converter={StaticResource Visible}}" />
+              </StackPanel>
+              <ContentControl Grid.Row="2" Content="{Binding Model}" ContentTemplate="{StaticResource CalendarNext}" Margin="0,12,0,0" VerticalAlignment="Bottom" Visibility="{Binding Full, Converter={StaticResource Visible}}" />
+            </Grid>
+            <StackPanel Grid.Column="1" Width="272" Margin="22,0,0,0" Visibility="{Binding Full, Converter={StaticResource Visible}}">
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarHeader}" Margin="0,0,0,6" />
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarMonth}" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Width="250" Margin="20,0,0,0" Visibility="{Binding Full, Converter={StaticResource Visible}}">
-              <ItemsControl ItemsSource="{Binding Model.Weekdays}" Focusable="False" Foreground="{DynamicResource Muted}" FontSize="10">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" HorizontalAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <ItemsControl ItemsSource="{Binding Model.Days}" Focusable="False" Margin="0,2,0,0">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-              </ItemsControl>
+          </Grid>
+          <!-- Solo en su lista -->
+          <Grid Visibility="{Binding WideAlone, Converter={StaticResource Visible}}" MinHeight="250">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="24" />
+              <ColumnDefinition Width="1.25*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+              <DockPanel Margin="0,0,0,8">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Model.ToggleAdder}" AutomationProperties.Name="{Binding Model.AddHelp}" ToolTip="{Binding Model.AddHelp}" VerticalAlignment="Center">
+                  <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
+                    <TextBlock Text="&#xE710;" FontFamily="{StaticResource Icons}" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Button>
+                <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarHeader}" />
+              </DockPanel>
+              <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource CalendarMonth}" />
             </StackPanel>
+            <Grid Grid.Column="2">
+              <TextBlock Text="{Binding Model.EmptyText}" Style="{StaticResource Hint}" TextWrapping="Wrap" VerticalAlignment="Center" Visibility="{Binding Model.NoAgenda, Converter={StaticResource Visible}}" />
+              <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto" Focusable="False" Visibility="{Binding Model.HasAgenda, Converter={StaticResource Visible}}">
+                <ItemsControl ItemsSource="{Binding Model.AgendaGroups}" Focusable="False" />
+              </ScrollViewer>
+              <!-- Añadir un recordatorio: texto, la regla para el día y la hora, como en Droppy -->
+              <Border VerticalAlignment="Top" CornerRadius="14" Padding="10" Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1"
+                      Visibility="{Binding Model.AdderOpen, Converter={StaticResource Visible}}">
+                <Border.Effect><DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.5" /></Border.Effect>
+                <StackPanel>
+                  <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Plain}" Command="{Binding Model.Add}" AutomationProperties.Name="{Binding Model.AddSend}" ToolTip="{Binding Model.AddSend}" Margin="8,0,0,0" VerticalAlignment="Center">
+                      <Border Width="26" Height="26" CornerRadius="13" Background="{DynamicResource Fg}"><TextBlock Text="&#xE74A;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+                    </Button>
+                    <Grid>
+                      <TextBox Style="{StaticResource Field}" Text="{Binding Model.NewTitle, UpdateSourceTrigger=PropertyChanged}" MinHeight="28" Padding="8,4" AutomationProperties.Name="{Binding Model.TitleHint}" />
+                      <TextBlock Text="{Binding Model.TitleHint}" FontSize="11.5" Foreground="{DynamicResource Muted}" Margin="9,0,0,0" VerticalAlignment="Center" IsHitTestVisible="False">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding Model.NewTitle}" Value=""><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </Grid>
+                  </DockPanel>
+                  <ui:RulerPicker Margin="0,10,0,0" Offset="{Binding Model.NewOffset, Mode=TwoWay}" AutomationProperties.Name="{Binding Model.RulerHelp}" ToolTip="{Binding Model.RulerHelp}" />
+                  <TextBlock Text="{Binding Model.NewDayText}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                  <DockPanel Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Bordered}" Content="{Binding Model.DoneLabel}" Command="{Binding Model.Add}" AutomationProperties.Name="{Binding Model.DoneLabel}" />
+                    <TextBox Style="{StaticResource Field}" Text="{Binding Model.NewTime, UpdateSourceTrigger=PropertyChanged}" Width="76" MinHeight="28" Padding="8,4" HorizontalAlignment="Left"
+                             FontFamily="{StaticResource Mono}" AutomationProperties.Name="{Binding Model.TimeHelp}" ToolTip="{Binding Model.TimeHelp}" />
+                  </DockPanel>
+                  <TextBlock Text="{Binding Model.Hint}" FontSize="11" Foreground="{DynamicResource Warm}" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="{Binding Model.HasHint, Converter={StaticResource Visible}}" />
+                </StackPanel>
+              </Border>
+            </Grid>
           </Grid>
         </StackPanel>
       </Border>
@@ -563,18 +731,21 @@
 
     <!-- Pomodoro: con dos celdas, el tiempo, la barra y los botones en una sola fila. -->
     <DataTemplate x:Key="WidgetPomodoroWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
-        <StackPanel>
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <!-- El contenido se centra en la altura que le deja la fila: sin huecos en blanco debajo cuando el vecino es más alto -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center">
           <DockPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
               <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
-                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource ButtonBg}">
+                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
                   <TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Button>
               <Button Style="{StaticResource Plain}" Command="{Binding Model.Reset}" AutomationProperties.Name="{Binding Model.ResetHelp}" ToolTip="{Binding Model.ResetHelp}" Margin="6,0,0,0">
-                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource ButtonBg}">
+                <Border Width="34" Height="28" CornerRadius="8" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
                   <TextBlock Text="&#xE777;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Button>
@@ -598,36 +769,41 @@
             <ui:MemoryBar Grid.Column="1" Margin="24,0" Height="6" Used="{Binding Model.Progress}" VerticalAlignment="Center" />
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
               <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
-                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource ButtonBg}">
+                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
                   <TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Button>
               <Button Style="{StaticResource Plain}" Command="{Binding Model.Reset}" AutomationProperties.Name="{Binding Model.ResetHelp}" ToolTip="{Binding Model.ResetHelp}" Margin="6,0,0,0">
-                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource ButtonBg}">
+                <Border Width="44" Height="34" CornerRadius="9" Background="{DynamicResource GlassFill}" BorderBrush="{DynamicResource GlassRim}" BorderThickness="1">
                   <TextBlock Text="&#xE777;" FontFamily="{StaticResource Icons}" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
               </Button>
             </StackPanel>
           </Grid>
         </StackPanel>
+        </Grid>
       </Border>
     </DataTemplate>
 
     <DataTemplate x:Key="WidgetStayAwakeWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
-        <StackPanel>
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <!-- El contenido se centra en la altura que le deja la fila: sin huecos en blanco debajo cuando el vecino es más alto -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center">
           <DockPanel>
             <ui:BrandSwitch DockPanel.Dock="Right" IsOn="{Binding Model.On, Mode=OneWay}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.Title}" Margin="10,0,0,0" />
             <TextBlock Text="{Binding Model.State}" Style="{StaticResource Hint}" TextWrapping="Wrap" VerticalAlignment="Center" />
           </DockPanel>
         </StackPanel>
+        </Grid>
       </Border>
     </DataTemplate>
 
     <!-- Notas: más bajas en la vista corta, y sin la pista. -->
     <DataTemplate x:Key="WidgetNotesWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
         <StackPanel>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
           <TextBox Text="{Binding Model.Text, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Model.Title}"
@@ -688,7 +864,7 @@
     </DataTemplate>
 
     <DataTemplate x:Key="WidgetCodeWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
         <StackPanel>
           <DockPanel Margin="0,0,0,8">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Visibility="{Binding Full, Converter={StaticResource Visible}}">
@@ -795,9 +971,12 @@
 
     <!-- Batería: con dos celdas, el porcentaje y la barra en una fila. -->
     <DataTemplate x:Key="WidgetBatteryWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6">
-        <StackPanel>
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2">
+        <Grid>
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
+          <!-- El contenido se centra en la altura que le deja la fila: sin huecos en blanco debajo cuando el vecino es más alto -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center">
           <StackPanel Visibility="{Binding Model.HasBattery, Converter={StaticResource Visible}}">
             <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
               <TextBlock Text="{Binding Model.Label}" FontSize="26" FontWeight="SemiBold" />
@@ -827,78 +1006,98 @@
             </TextBlock.Style>
           </TextBlock>
         </StackPanel>
+        </Grid>
       </Border>
     </DataTemplate>
 
 
+    <!-- Los controles de la música, como los de Droppy: iconos limpios, sin disco (el de pausa, más grande) y, a los lados, mezclar y repetir
+         en cuadritos de cristal cuando el reproductor los admite. DataContext: la música. -->
+    <DataTemplate x:Key="MediaTransport">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+        <Button Style="{StaticResource Plain}" Command="{Binding ToggleShuffle}" Visibility="{Binding CanShuffle, Converter={StaticResource Visible}}"
+                AutomationProperties.Name="{Binding ShuffleHelp}" ToolTip="{Binding ShuffleHelp}" Margin="0,0,14,0" VerticalAlignment="Center">
+          <Border Width="36" Height="32" CornerRadius="10" Background="{Binding ShuffleBack}" BorderBrush="{Binding ShuffleRim}" BorderThickness="1">
+            <Path Data="M1,3.5 H4.5 C8,3.5 9.5,10.5 13,10.5 H15.5 M13.5,8.5 L15.5,10.5 L13.5,12.5 M1,10.5 H4.5 C5.7,10.5 6.6,9.7 7.3,8.6 M10.7,5.4 C11.4,4.3 12.2,3.5 13.5,3.5 H15.5 M13.5,1.5 L15.5,3.5 L13.5,5.5" Stroke="{Binding ShuffleBrush}" Stretch="Uniform" Width="20" Height="16" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+        </Button>
+        <Button Style="{StaticResource Plain}" Command="{Binding Previous}" AutomationProperties.Name="{Binding PreviousHelp}" ToolTip="{Binding PreviousHelp}" VerticalAlignment="Center">
+          <Border Width="40" Height="40" Background="Transparent"><Path Data="M21,0 L10,9 L21,18 Z M11,0 L0,9 L11,18 Z" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+        </Button>
+        <Button Style="{StaticResource Plain}" Command="{Binding Toggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}" Margin="6,0" VerticalAlignment="Center">
+          <Border Width="48" Height="48" Background="Transparent"><Grid><Path Data="M0,0 L7,0 L7,26 L0,26 Z M14,0 L21,0 L21,26 L14,26 Z" Visibility="{Binding IsPlaying, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /><Path Data="M0,0 L22,13 L0,26 Z" Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid></Border>
+        </Button>
+        <Button Style="{StaticResource Plain}" Command="{Binding Next}" AutomationProperties.Name="{Binding NextHelp}" ToolTip="{Binding NextHelp}" VerticalAlignment="Center">
+          <Border Width="40" Height="40" Background="Transparent"><Path Data="M0,0 L11,9 L0,18 Z M10,0 L21,9 L10,18 Z" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+        </Button>
+        <Button Style="{StaticResource Plain}" Command="{Binding CycleRepeat}" Visibility="{Binding CanRepeat, Converter={StaticResource Visible}}"
+                AutomationProperties.Name="{Binding RepeatHelp}" ToolTip="{Binding RepeatHelp}" Margin="16,0,0,0" VerticalAlignment="Center">
+          <Border Width="36" Height="32" CornerRadius="10" Background="{Binding RepeatBack}" BorderBrush="{Binding RepeatRim}" BorderThickness="1">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="M3,7 V6 C3,4 4,3 6,3 H15 M13,1 L15,3 L13,5 M15,7 V8 C15,10 14,11 12,11 H3 M5,9 L3,11 L5,13" Stroke="{Binding RepeatBrush}" Stretch="Uniform" Width="20" Height="16" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent" /><TextBlock Text="1" FontSize="7.5" FontWeight="Bold" Foreground="{Binding RepeatBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,1,0,0" Visibility="{Binding RepeatOne, Converter={StaticResource Visible}}" /></Grid>
+          </Border>
+        </Button>
+      </StackPanel>
+    </DataTemplate>
+
     <!-- Música: portada redondeada con sombra, un velo con el color de la portada, tiempos y controles redondos. Una celda: portada y
          título arriba y controles debajo; dos celdas: todo en una fila. -->
     <DataTemplate x:Key="WidgetMediaWidget">
-      <Border Style="{DynamicResource CardBox}" Width="{Binding CardWidth}" Margin="6"
+      <Border Style="{DynamicResource WidgetBox}" Width="{Binding CardWidth}" Margin="6,2"
               ui:Swipe.Next="{Binding Model.Next}" ui:Swipe.Previous="{Binding Model.Previous}">
         <Grid>
-          <!-- Fondo: la portada muy desenfocada, oscurecida para que el texto se lea; redondeado como la tarjeta. -->
-          <ui:RoundedClip Radius="11" Margin="-12" IsHitTestVisible="False" Visibility="{Binding Full, Converter={StaticResource Visible}}">
-           <Grid>
-            <Image Source="{Binding Model.Art}" Stretch="UniformToFill" Margin="-60" Opacity="0.55"
-                   Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
-              <Image.Effect><BlurEffect Radius="38" KernelType="Gaussian" RenderingBias="Performance" /></Image.Effect>
-            </Image>
-            <Rectangle Fill="{Binding Model.Tint}" />
-            <Rectangle>
-              <Rectangle.Fill>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                  <GradientStop Color="#40000000" Offset="0" />
-                  <GradientStop Color="#78000000" Offset="1" />
-                </LinearGradientBrush>
-              </Rectangle.Fill>
-            </Rectangle>
-           </Grid>
-          </ui:RoundedClip>
-          <StackPanel>
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
             <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
-            <TextBlock Text="{Binding Model.Idle}" Style="{StaticResource Hint}" TextWrapping="Wrap"
+            <TextBlock Grid.Row="1" Text="{Binding Model.Idle}" Style="{StaticResource Hint}" TextWrapping="Wrap"
                        Visibility="{Binding Model.NoSession, Converter={StaticResource Visible}}" />
-            <StackPanel Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
-              <!-- Una celda -->
-              <StackPanel Visibility="{Binding Compact, Converter={StaticResource Visible}}">
-                <Grid>
+            <Grid Grid.Row="2" Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
+              <!-- Una celda: la portada y el título arriba, el progreso y los controles abajo; si el vecino de la fila es más alto, sobra aire entre ambos -->
+              <Grid Visibility="{Binding Compact, Converter={StaticResource Visible}}">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="*" />
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <StackPanel Visibility="{Binding Full, Converter={StaticResource Visible}}" VerticalAlignment="Center" Margin="0,4,0,0">
+                  <Border Width="150" Height="150" CornerRadius="14" Background="{DynamicResource Track}" HorizontalAlignment="Center"
+                          Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
+                    <Border.Effect><DropShadowEffect BlurRadius="20" ShadowDepth="5" Opacity="0.5" /></Border.Effect>
+                    <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                  </Border>
+                  <TextBlock Text="{Binding Model.MediaTitle}" FontSize="15" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,14,0,0" />
+                  <TextBlock Text="{Binding Model.Artist}" Style="{StaticResource Hint}" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                </StackPanel>
+                <Grid VerticalAlignment="Center" Visibility="{Binding Peek, Converter={StaticResource Visible}}">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <Border Width="64" Height="64" CornerRadius="10" Background="{DynamicResource Track}" Margin="0,0,12,0"
+                  <Border Width="84" Height="84" CornerRadius="12" Background="{DynamicResource Track}" Margin="0,0,14,0"
                           Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
                     <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Opacity="0.45" /></Border.Effect>
-                    <Rectangle RadiusX="10" RadiusY="10"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                    <Rectangle RadiusX="12" RadiusY="12"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding Model.MediaTitle}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Model.MediaTitle}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Model.Artist}" Style="{StaticResource Hint}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
                   </StackPanel>
                 </Grid>
-                <Grid Margin="0,12,0,0">
+                <Grid Grid.Row="1" Margin="0,12,0,0">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                  <ui:SeekBar Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                  <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
                 </Grid>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
-                    <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="10,0">
-                    <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="15" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
-                    <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                </StackPanel>
-              </StackPanel>
+                <ContentControl Grid.Row="2" Content="{Binding Model}" ContentTemplate="{StaticResource MediaTransport}" HorizontalAlignment="Center" Margin="0,8,0,0"><ContentControl.LayoutTransform><ScaleTransform ScaleX="1.0" ScaleY="1.0" /></ContentControl.LayoutTransform></ContentControl>
+              </Grid>
               <!-- Solo en su lista: una vista grande que llena la celda -->
               <Grid Visibility="{Binding WideAlone, Converter={StaticResource Visible}}" MinHeight="132">
                 <Grid.ColumnDefinitions>
@@ -928,20 +1127,10 @@
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                    <ui:SeekBar Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
                   </Grid>
-                  <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
-                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
-                      <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                    </Button>
-                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="14,0">
-                      <Border Width="56" Height="56" CornerRadius="28" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="20" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                    </Button>
-                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
-                      <Border Width="42" Height="42" CornerRadius="21" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                    </Button>
-                  </StackPanel>
+                  <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource MediaTransport}" HorizontalAlignment="Center" Grid.Row="3"  Margin="0,12,0,0"><ContentControl.LayoutTransform><ScaleTransform ScaleX="1.3" ScaleY="1.3" /></ContentControl.LayoutTransform></ContentControl>
                 </Grid>
               </Grid>
               <!-- Dos celdas, con compañeros -->
@@ -966,36 +1155,26 @@
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                    <ui:SeekBar Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="2" Text="{Binding Model.TotalText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
+                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
                   </Grid>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="18,0,0,0">
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
-                    <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE892;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}" Margin="10,0">
-                    <Border Width="48" Height="48" CornerRadius="24" Background="{DynamicResource Fg}"><TextBlock Text="{Binding Model.ToggleGlyph}" FontFamily="{StaticResource Icons}" FontSize="17" Foreground="{DynamicResource Bg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                  <Button Style="{StaticResource Plain}" Command="{Binding Model.Next}" AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
-                    <Border Width="38" Height="38" CornerRadius="19" Background="{DynamicResource ButtonBg}"><TextBlock Text="&#xE893;" FontFamily="{StaticResource Icons}" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-                  </Button>
-                </StackPanel>
+                <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource MediaTransport}" HorizontalAlignment="Center" Grid.Column="2" VerticalAlignment="Center" Margin="18,0,0,0"><ContentControl.LayoutTransform><ScaleTransform ScaleX="1.12" ScaleY="1.12" /></ContentControl.LayoutTransform></ContentControl>
               </Grid>
-            </StackPanel>
-          </StackPanel>
+            </Grid>
+          </Grid>
           <!-- Arriba a la derecha: la app que suena y un ecualizador que baila mientras suena. -->
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False"
                       Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
             <TextBlock Text="{Binding Model.SourceApp}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
             <StackPanel Orientation="Horizontal" Height="12" VerticalAlignment="Center">
-              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{Binding Model.AccentBrush}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
                 <Rectangle.RenderTransform><ScaleTransform x:Name="EqA" ScaleY="0.3" /></Rectangle.RenderTransform>
               </Rectangle>
-              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{Binding Model.AccentBrush}" Margin="0,0,2,0" RenderTransformOrigin="0.5,1">
                 <Rectangle.RenderTransform><ScaleTransform x:Name="EqB" ScaleY="0.3" /></Rectangle.RenderTransform>
               </Rectangle>
-              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource Fg}" RenderTransformOrigin="0.5,1">
+              <Rectangle Width="3" Height="12" RadiusX="1.5" RadiusY="1.5" Fill="{Binding Model.AccentBrush}" RenderTransformOrigin="0.5,1">
                 <Rectangle.RenderTransform><ScaleTransform x:Name="EqC" ScaleY="0.3" /></Rectangle.RenderTransform>
               </Rectangle>
             </StackPanel>

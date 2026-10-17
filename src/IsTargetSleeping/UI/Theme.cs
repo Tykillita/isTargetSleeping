@@ -116,8 +116,11 @@ public sealed record Theme(
         // da una sombra negra que cae hacia abajo, no un brillo.
         bool contrast = SystemParameters.HighContrast;
         r["PanelTint"] = contrast ? Brush(t.Bg) : BackdropSupported ? Brush(t.Bg) : Brush(Hex(0x0A0A0B));
-        r["CardFill"] = contrast ? Brush(t.Card) : Gradient(Argb(0x0F, 0xFFFFFF), Argb(0x06, 0xFFFFFF));
-        r["CardStroke"] = contrast ? Brush(t.Line) : Gradient(Argb(0x24, 0xFFFFFF), Argb(0x0A, 0xFFFFFF), 70);
+        // Liquid glass: las tarjetas y los botones redondos son cristal (más luz arriba, casi claro abajo) con un canto de luz fino.
+        r["CardFill"] = contrast ? Brush(t.Card) : Gradient(Argb(0x17, 0xFFFFFF), Argb(0x07, 0xFFFFFF));
+        r["CardStroke"] = contrast ? Brush(t.Line) : Gradient(Argb(0x3A, 0xFFFFFF), Argb(0x0C, 0xFFFFFF), 70);
+        r["GlassFill"] = contrast ? Brush(t.Button) : Gradient(Argb(0x3A, 0xFFFFFF), Argb(0x12, 0xFFFFFF));
+        r["GlassRim"] = contrast ? Brush(t.Line) : Gradient(Argb(0x66, 0xFFFFFF), Argb(0x1C, 0xFFFFFF));
         r["Sheen"] = contrast ? Brush(Colors.Transparent) : Gradient(Argb(0x00, 0x000000), Argb(0x59, 0x000000));
         if (!watchingContrast)
         {

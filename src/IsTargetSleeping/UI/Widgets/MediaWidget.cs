@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.Media.Control;
+using Windows.Media;
 using static IsTargetSleeping.L10n;
 
 namespace IsTargetSleeping.UI;
@@ -25,11 +26,47 @@ public sealed class MediaWidget : WidgetModel
         Next = new Command(() => { var s = session; if (s is not null) _ = s.TrySkipNextAsync(); });
         Previous = new Command(() => { var s = session; if (s is not null) _ = s.TrySkipPreviousAsync(); });
         Seek = new ParamCommand(p => SeekTo(p is double fraction ? fraction : 0));
+        ToggleShuffle = new Command(() => { var s = session; if (s is not null) _ = s.TryChangeShuffleActiveAsync(!IsShuffle); });
+        CycleRepeat = new Command(() =>
+        {
+            var s = session;
+            if (s is null) return;
+            // Nada → toda la lista → una canción → nada, como en los reproductores.
+            var next = Repeat switch { MediaPlaybackAutoRepeatMode.None => MediaPlaybackAutoRepeatMode.List, MediaPlaybackAutoRepeatMode.List => MediaPlaybackAutoRepeatMode.Track, _ => MediaPlaybackAutoRepeatMode.None };
+            _ = s.TryChangeAutoRepeatModeAsync(next);
+        });
     }
+
+    private static readonly Brush Dim = Frozen(Theme.WithOpacity(Colors.White, 0.5));
+    private static Brush Frozen(Color color) { var b = new SolidColorBrush(color); b.Freeze(); return b; }
+    private MediaPlaybackAutoRepeatMode Repeat = MediaPlaybackAutoRepeatMode.None;
+    /// El color vivo de la portada: tiñe el ecualizador, la barra de progreso y los botones activos (sin portada, el blanco del tema).
+    public Brush AccentBrush { get; private set; } = Frozen(Theme.Current.Fg);
+    /// Mezclar y repetir solo salen si el reproductor los admite (Spotify sí; el navegador, casi nunca).
+    public bool CanShuffle { get; private set; }
+    public bool CanRepeat { get; private set; }
+    public bool IsShuffle { get; private set; }
+    private static readonly Brush Idle1 = Frozen(Color.FromArgb(0x14, 255, 255, 255)), Idle2 = Frozen(Color.FromArgb(0x30, 255, 255, 255));
+    private Color accentColor = Theme.Current.Fg;
+    /// Mezclar y repetir: apagados, un cuadrito de cristal con el icono tenue; encendidos, teñidos con el color de la portada.
+    public Brush ShuffleBrush => IsShuffle ? AccentBrush : Dim;
+    public Brush ShuffleBack => IsShuffle ? Frozen(Color.FromArgb(0x38, accentColor.R, accentColor.G, accentColor.B)) : Idle1;
+    public Brush ShuffleRim => IsShuffle ? Frozen(Color.FromArgb(0x70, accentColor.R, accentColor.G, accentColor.B)) : Idle2;
+    public Brush RepeatBrush => Repeat == MediaPlaybackAutoRepeatMode.None ? Dim : AccentBrush;
+    public Brush RepeatBack => Repeat != MediaPlaybackAutoRepeatMode.None ? Frozen(Color.FromArgb(0x38, accentColor.R, accentColor.G, accentColor.B)) : Idle1;
+    public Brush RepeatRim => Repeat != MediaPlaybackAutoRepeatMode.None ? Frozen(Color.FromArgb(0x70, accentColor.R, accentColor.G, accentColor.B)) : Idle2;
+    public bool RepeatOne => Repeat == MediaPlaybackAutoRepeatMode.Track;
+    public ICommand ToggleShuffle { get; }
+    public ICommand CycleRepeat { get; }
+    public string ShuffleHelp => tr("Aleatorio");
+    public string RepeatHelp => Repeat switch { MediaPlaybackAutoRepeatMode.List => tr("Repetir todo"), MediaPlaybackAutoRepeatMode.Track => tr("Repetir esta canción"), _ => tr("Repetir") };
+    /// Lo que falta para que acabe, con un menos delante («-4:45»), como en el reproductor de Droppy.
+    public string RemainingText { get; private set; } = "-0:00";
 
     public bool HasSession { get; private set; }
     public bool NoSession => !HasSession;
     public bool IsPlaying { get; private set; }
+    public bool IsPaused => !IsPlaying;
     public string MediaTitle { get; private set; } = "";
     public string Artist { get; private set; } = "";
     public double Progress { get; private set; }
@@ -103,12 +140,16 @@ public sealed class MediaWidget : WidgetModel
                 Raise();
                 return;
             }
-            IsPlaying = s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            var info = s.GetPlaybackInfo();
+            IsPlaying = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            (CanShuffle, CanRepeat) = (info.Controls.IsShuffleEnabled, info.Controls.IsRepeatEnabled);
+            IsShuffle = info.IsShuffleActive == true;
+            Repeat = info.AutoRepeatMode ?? MediaPlaybackAutoRepeatMode.None;
             var props = await s.TryGetMediaPropertiesAsync();
             if (!ReferenceEquals(s, session)) return;   // la sesión cambió mientras esperaba
             (MediaTitle, Artist) = (props.Title ?? "", props.Artist ?? "");
             HasSession = MediaTitle.Length > 0;
-            SourceApp = AppName(s.SourceAppUserModelId);
+            SourceApp = MediaSource.Name(s.SourceAppUserModelId);
             var timeline = s.GetTimelineProperties();
             duration = timeline.EndTime - timeline.StartTime;
             basePosition = timeline.Position;
@@ -119,7 +160,8 @@ public sealed class MediaWidget : WidgetModel
             {
                 artKey = key;
                 Art = props.Thumbnail is { } thumbnail ? await LoadArt(thumbnail) : null;
-                Tint = Art is BitmapSource bitmap ? MakeTint(bitmap) : Brushes.Transparent;
+                (Tint, AccentBrush) = Art is BitmapSource bitmap ? Analyze(bitmap) : (Brushes.Transparent, Frozen(Theme.Current.Fg));
+                accentColor = ((SolidColorBrush)AccentBrush).Color;
             }
             Raise();
         }
@@ -146,8 +188,8 @@ public sealed class MediaWidget : WidgetModel
         catch { return null; }
     }
 
-    /// El color dominante de la portada (los píxeles más vivos pesan más que los grises) como degradado suave de arriba a la izquierda.
-    private static Brush MakeTint(BitmapSource bitmap)
+    /// El color dominante de la portada: un velo suave de arriba a la izquierda para el fondo de la tarjeta y su versión viva para teñir lo que suena.
+    private static (Brush Tint, Brush Accent) Analyze(BitmapSource bitmap)
     {
         try
         {
@@ -155,33 +197,15 @@ public sealed class MediaWidget : WidgetModel
             int width = converted.PixelWidth, height = converted.PixelHeight, stride = width * 4;
             var pixels = new byte[stride * height];
             converted.CopyPixels(pixels, stride, 0);
-            double r = 0, g = 0, b = 0, total = 0;
-            for (int i = 0; i + 3 < pixels.Length; i += 4)
-            {
-                double pb = pixels[i], pg = pixels[i + 1], pr = pixels[i + 2];
-                double max = Math.Max(pr, Math.Max(pg, pb)), min = Math.Min(pr, Math.Min(pg, pb));
-                double weight = 0.1 + (max - min) / 255.0 * (max / 255.0);   // vivo y claro pesa más
-                (r, g, b, total) = (r + pr * weight, g + pg * weight, b + pb * weight, total + weight);
-            }
-            if (total <= 0) return Brushes.Transparent;
-            var color = Color.FromRgb((byte)(r / total), (byte)(g / total), (byte)(b / total));
+            var (dr, dg, db) = ArtColor.Dominant(pixels);
             var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
-            brush.GradientStops.Add(new GradientStop(Color.FromArgb(96, color.R, color.G, color.B), 0));
-            brush.GradientStops.Add(new GradientStop(Color.FromArgb(14, color.R, color.G, color.B), 1));
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(96, dr, dg, db), 0));
+            brush.GradientStops.Add(new GradientStop(Color.FromArgb(14, dr, dg, db), 1));
             brush.Freeze();
-            return brush;
+            var (vr, vg, vb) = ArtColor.Vivid((dr, dg, db));
+            return (brush, Frozen(Color.FromRgb(vr, vg, vb)));
         }
-        catch { return Brushes.Transparent; }
-    }
-
-    /// «SpotifyAB.SpotifyMusic_zpd…!Spotify», «chrome.exe», «Microsoft.ZuneMusic_…!Microsoft.ZuneMusic»: lo que se lee como nombre de la app.
-    private static string AppName(string? id)
-    {
-        if (string.IsNullOrWhiteSpace(id)) return "";
-        var name = id.Contains('!') ? id[(id.LastIndexOf('!') + 1)..] : id;
-        name = name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
-        if (name.Contains('.')) name = name[(name.LastIndexOf('.') + 1)..];
-        return name.Length == 0 ? "" : char.ToUpperInvariant(name[0]) + name[1..];
+        catch { return (Brushes.Transparent, Frozen(Theme.Current.Fg)); }
     }
 
     private static string Clock(TimeSpan span) => $"{(int)span.TotalMinutes}:{span.Seconds:00}";
@@ -193,6 +217,7 @@ public sealed class MediaWidget : WidgetModel
         if (position < TimeSpan.Zero) position = TimeSpan.Zero;
         Progress = duration.TotalSeconds > 1 ? Math.Clamp(position.TotalSeconds / duration.TotalSeconds, 0, 1) : 0;
         (ElapsedText, TotalText) = (Clock(position), Clock(duration < TimeSpan.Zero ? TimeSpan.Zero : duration));
+        RemainingText = "-" + Clock(duration > position ? duration - position : TimeSpan.Zero);
     }
 
     private void SeekTo(double fraction)

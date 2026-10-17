@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.11.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.20.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -66,7 +66,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🔍 | **Detects your install** | The Ollama app, a Windows service (NSSM, WinSW, `sc create`…), a scheduled task or a manual `ollama serve`. It stops Ollama the same way it starts. |
 | 🧹 | **Frees idle memory** | After 5, 15, 30 or 60 minutes without generating, it unloads the model. Ollama stays on and reloads it with the next message. **Ctrl+Alt+S** puts it to sleep right now. |
 | 🧽 | **Free RAM** | Automatic cleanup when RAM goes over your percentage (repeating after a minimum pause while it stays high), every few minutes or under critical pressure; also with the button or **Ctrl+Alt+L**. Protects models, games and the app you're using. Doesn't need Mem Reduct. |
-| 🔎 | **Process explorer** | Activity shows the five applications using the most RAM. Open the full window (✕ or Esc closes it and returns to the panel) to inspect RAM/CPU, expand PIDs, search and filter, or forcibly end an application, process or tree after confirmation. |
+| 🔎 | **Process explorer** | The **Processes** tab of Activity, inside the notch (or the tray panel): RAM/CPU per application, expandable PIDs, search, filters, sorting, pause and refresh, and forcibly ending an application, process or tree after a confirmation shown right there. |
 | 🎮 | **Game mode** | Open a game from Steam, Epic, Riot, EA, GOG, Rockstar or Xbox (or one you add) and Ollama turns off to give it the RAM and VRAM; quit and it comes back the same way. |
 | 🛟 | **Watchdog** | If Ollama crashes or hangs, it restarts it with the same mechanism (up to 3 times in 10 minutes). |
 | 🔔 | **Notifications** | Native Windows notifications when a model falls asleep, Ollama crashes, memory runs critical, a game starts or a download finishes — each one with its own switch. |
@@ -78,13 +78,13 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🔗 | **Links** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<model>`… for Stream Deck, PowerToys or scripts. |
 | 🎯 | **Status at a glance** | The target in the tray, with a blue, amber or no dot; a radar sweeps while Ollama turns on or off, and the eye opens while a model is loaded. |
 | 🐾 | **Pets with personality** | Choose **Mira**, a **llama**, a **capybara** or an **orange kitten**. One lives on the taskbar (above Start, left of Start or walking along it) and acts out what Ollama is doing: sleeps in its own bed, eats while a model loads, types while it generates and cleans up in its own way while freeing RAM. Each one reacts to clicks and to your cursor in its own way — asleep, without leaving its bed. Off by default; [more below](#-pets). |
-| 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is, showing the three items you choose (status, model and RAM by default; you can also pick the music that is playing, with a playing indicator and a scrolling title). Hover it for a short view you can customize with your own widgets (Ollama by default: status, RAM and GPU, Free RAM, Free model, Processes); click it for the Home. Two icon strips below it give one-click navigation (Home, Ollama, Activity, Widgets, Settings) and up to four favorites you choose. It hides while something is full screen. |
-| 🧩 | **Widgets** | The notch Home holds four cells that you choose and order on the Widgets page: Ollama, System (CPU, RAM, VRAM, disk, network), Clock and calendar, Pomodoro (with a notice), Keep awake, Notes (saved on their own, locally), Battery and Music (what Windows reports as playing, with its controls). Each one adapts to its place and its neighbors. Everything is read locally. |
-| ⚡ | **Live activities** | Next to the closed notch pill, what is happening now: freeing RAM, Ollama turning on or off, critical memory, the volume when it changes, a running Pomodoro, Keep awake and, if you turn it on, the music playing. Up to two at a time, each with its own switch. The Music widget skips tracks when you swipe it with the mouse or two fingers on the trackpad, and its progress bar is clickable. |
+| 🪟 | **Notch dock** | Optional (Settings > General): a pill docked to the top edge of the screen, on the monitor where your cursor is, showing the three items you choose (status, model and RAM by default; you can also pick the music that is playing, with a playing indicator and a scrolling title). Hover it for a short view you can customize with your own widgets (Ollama by default: status, RAM and GPU, Free RAM, Free model, Processes); click it for the Home. Two icon strips below it give one-click navigation (Home, Widgets and Settings, plus Ollama and Activity if you turn them on) and up to four favorites you choose, with a pin button that keeps the notch open. The panel is solid black at the top and fades into liquid glass (what is behind it, blurred), the dock capsules are glass too, and pressing and dragging across the dock buttons moves a glass lens that opens the page it lands on. It hides while something is full screen. |
+| 🧩 | **Widgets** | The notch Home holds four cells that you choose and order on the Widgets page: Ollama, System (CPU, RAM, VRAM, disk, network), Clock and calendar (a month with arrows, an agenda of reminders you add with a draggable day ruler, and the events of an optional .ics file), Pomodoro (with a notice), Keep awake, Notes (saved on their own, locally), Battery and Music (what Windows reports as playing, with bold controls, shuffle and repeat, and the cover's color). Widgets sit straight on the glass, with no cards, in two columns that fill by the shorter one. Everything is read locally. |
+| ⚡ | **Live activities** | In capsules on both sides of the closed notch pill, what is happening now: on the left, Ollama's (freeing RAM, turning on or off, critical memory); on the right, the volume when it changes, a running Pomodoro, Keep awake and, if you turn it on, the music playing. Up to one on the left and two on the right, each with its own switch. The Music widget skips tracks when you swipe it with the mouse or two fingers on the trackpad, and its progress bar is clickable. |
 | 📥 | **File tray, clipboard and app favorites** | Drag files or folders onto the notch and they wait on its Tray page (only their paths, in memory) until you drag them back out, copy their path, show them in Explorer or zip them all to the Desktop. Rows show image thumbnails and Material icons for folders, with how many items and how big each folder is; double-click opens an item, a folder can be opened as a project in the Code widget, you can paste files you copied in Explorer, drag everything out at once, and optionally have the tray remembered between sessions (Settings > General, paths only). The optional Clipboard history (Settings > General, off by default) keeps the last 25 texts you copy, in memory only, and skips what password managers mark as private. Text files in the tray can be edited and saved right there (Ctrl+S) for quick changes while you code, and the **Code** widget is a small IDE: pick a folder and get its file tree (with Material Icon Theme icons), tabs, an image viewer and a text editor with syntax colors for Markdown, code, JSON, YAML, XML and more. Favorites can also launch any app or file you pick. |
 | ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
-| 🖤 | **Black glass** | Smoked black glass over Windows 11's real acrylic, translucent cards and a monochrome UI with color only for status. The tray icon follows the taskbar mode. |
+| 🖤 | **Black glass** | In the tray panel, smoked black glass over Windows 11's real acrylic; in the notch, true black that fades into liquid glass (it blurs what is behind it and tints it so text stays readable). Translucent cards and a monochrome UI with color only for status (and the cover's color for music). The tray icon follows the taskbar mode. |
 | 🔄 | **Updates** | Checks GitHub for new stable releases, shows the release notes and installs only when you click **Update** — verified with SHA-256, extracts only allowed ZIP files into its staging folder and rolls back automatically if anything fails. |
 | 🔒 | **Private** | Talks to your local model engines. No accounts, telemetry or analytics. Optional update checks and downloads contact GitHub; process data stays on your PC. |
 | 🧾 | **Open source** | MIT licensed. |
@@ -103,6 +103,8 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 **1.6.1 is out** (October 14, 2026): turning Ollama off also closes the server this app started, even if you then
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
+
+**1.20.0 is in development** (not published yet; the latest download is 1.11.0): the notch becomes liquid glass (true black fading into frosted glass, glass dock capsules and a glass lens you drag across the dock), widgets with no cards laid out in two columns, a Music widget tinted with the cover and a calendar with an agenda of local reminders and an optional .ics file, live activities on both sides of the notch, a pin button, Settings and Activity in tabs, and the process explorer inside the notch.
 
 **1.11.0 is out** (October 16, 2026): the music playing in the closed notch pill (with a scrolling title) and a much
 better file tray (thumbnails, folder sizes, open as a project, paste, drag all and optional memory between sessions).
@@ -343,19 +345,19 @@ Settings before using the new operations.
 
 ### Recognizing and ending processes
 
-**Activity › Process explorer** lists the five applications using the most RAM. **View all processes** opens an
-independent window (its ✕ button or Esc closes it and brings the panel back) with RAM, physical RAM share, CPU, user and status, grouped by executable path, owner and session.
+**Activity › Processes** (also reached from every **View all processes** button) lists the applications using
+RAM inside the notch, or the tray panel, with RAM, physical RAM share, CPU, user and status, grouped by executable path, owner and session.
 Expand an application to see each PID, path, parent and committed memory. Search name, executable, path or PID;
 filter windowed/background/system/protected applications and minimum RAM; sort RAM, CPU, name, count or PID.
 On supported Windows versions RAM is **private resident RAM**; older versions explicitly show **total resident
 RAM**. Unreadable metrics stay unavailable and process totals can differ from global RAM.
 
-The table updates every two seconds while visible, stops when minimized or closed, and has **Pause** and
-**Refresh**. Size, position and sorting persist; searches and filters do not. Queries and normal termination work
+The list updates every two seconds only while the tab is visible, and has **Pause** and
+**Refresh**. Sorting persists (press the active criterion to reverse it); searches and filters do not. Queries and normal termination work
 without installing the agent.
 
 **End application** targets its grouped processes and descendants. **End process** targets only the selected PID;
-**End process tree** includes its descendants. Each forced close confirms PIDs and memory and can lose unsaved work.
+**End process tree** includes its descendants. Each forced close shows its confirmation right there, with the exact list of PIDs and memory, and can lose unsaved work.
 Critical Windows processes and isTargetSleeping/its agent are blocked. Creation-time validation and individual
 exit checks protect against PID reuse and report partial failures. Access denied offers **Retry as administrator**
 with its own UAC prompt and a separate agent command; the cleanup task cannot terminate arbitrary processes.
@@ -441,6 +443,9 @@ Installations from before 1.3.0 without an update repository need one manual upg
 - The notch widgets read your PC locally (CPU, memory, disk and network counters, battery, clock) and send nothing
   anywhere. Notes are plain text in `%LOCALAPPDATA%\isTargetSleeping\notes.txt`; Keep awake asks Windows not to
   sleep until you turn it off or quit.
+- The notch's liquid glass copies the screen area behind the open notch once each time it opens, reduces it to a few dozen
+  colored cells in memory and never saves it or sends it anywhere. Calendar reminders are saved in `settings.json`; the
+  optional `.ics` file is only read from the path you pick (only the path is saved) and nothing is sent: no accounts, no network.
 - The Music widget and the "Music playing" live activity read the media session Windows exposes (title, artist, cover art)
   locally and only while one of them is in use; nothing is stored or sent.
 - The file tray keeps only the paths of what you drop (never copies), in memory unless you ask it to remember them between sessions (then only the paths go to `settings.json`); a .zip is written only when you ask for

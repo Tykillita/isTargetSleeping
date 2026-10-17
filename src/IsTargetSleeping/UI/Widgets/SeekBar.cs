@@ -14,9 +14,13 @@ public sealed class SeekBar : FrameworkElement
 
     public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(
         nameof(Value), typeof(double), typeof(SeekBar), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    /// El color de lo ya sonado (el de la portada); sin él, el blanco del tema.
+    public static readonly DependencyProperty AccentProperty = DependencyProperty.Register(
+        nameof(Accent), typeof(Brush), typeof(SeekBar), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty CommandProperty = DependencyProperty.Register(nameof(Command), typeof(ICommand), typeof(SeekBar));
 
     public double Value { get => (double)GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
+    public Brush? Accent { get => (Brush?)GetValue(AccentProperty); set => SetValue(AccentProperty, value); }
     public ICommand? Command { get => (ICommand?)GetValue(CommandProperty); set => SetValue(CommandProperty, value); }
 
     public SeekBar()
@@ -84,8 +88,8 @@ public sealed class SeekBar : FrameworkElement
         dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, w, h));   // toda la altura recibe el ratón
         dc.DrawRoundedRectangle(Theme.Brush(t.Track), null, new Rect(0, y, w, TrackHeight), r, r);
         double fill = Math.Max(0, w * shown);
-        if (fill > 0) dc.DrawRoundedRectangle(Theme.Brush(Theme.WithOpacity(t.Fg, IsMouseOver || dragging ? 0.95 : 0.75)), null, new Rect(0, y, fill, TrackHeight), r, r);
+        if (fill > 0) dc.DrawRoundedRectangle(Accent ?? Theme.Brush(Theme.WithOpacity(t.Fg, IsMouseOver || dragging ? 0.95 : 0.75)), null, new Rect(0, y, fill, TrackHeight), r, r);
         if (IsMouseOver || dragging || IsKeyboardFocused)
-            dc.DrawEllipse(Theme.Brush(t.Fg), null, new Point(Math.Clamp(fill, KnobSize / 2, Math.Max(KnobSize / 2, w - KnobSize / 2)), h / 2), KnobSize / 2, KnobSize / 2);
+            dc.DrawEllipse(Accent ?? Theme.Brush(t.Fg), null, new Point(Math.Clamp(fill, KnobSize / 2, Math.Max(KnobSize / 2, w - KnobSize / 2)), h / 2), KnobSize / 2, KnobSize / 2);
     }
 }

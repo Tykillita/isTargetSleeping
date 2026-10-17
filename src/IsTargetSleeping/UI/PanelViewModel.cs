@@ -146,7 +146,6 @@ public sealed record GpuRow(string Name, string Value, string Detail, double Fra
     /// Lo que lee un lector de pantalla: la fila entera como una frase, no sus tres textos sueltos.
     public string Spoken => $"{Name}: {Value}. {Detail}";
 }
-public sealed record ProcessSummaryRow(string Name, string Memory, string Count, ImageSource? Icon);
 
 /// Todo lo que muestra el panel, calculado a partir del estado: la interfaz
 /// (ContentView.xaml) solo se enlaza a estas propiedades.
@@ -157,7 +156,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public Prefs Prefs { get; }
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public PanelViewModel(Supervisor supervisor, PanelView view = PanelView.Main)
+    public PanelViewModel(Supervisor supervisor, PanelView view = PanelView.Main, Func<CancellationToken, Task<ProcessSample>>? captureProcesses = null,
+        Func<ProcessActionRequest, Task<ProcessActionPreview>>? previewProcesses = null,
+        Func<ProcessActionRequest, bool, Task<ProcessActionResult>>? executeProcesses = null)
     {
         Supervisor = supervisor;
         Ollama = supervisor.Ollama;
@@ -170,8 +171,12 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
         CornerCommand = new Command(() => { if (this.view == PanelView.Editor) CloseEditor(); else Show(ShowingBrand ? PanelView.Settings : BackView); });
         SideCommand = new Command(() => Show(this.view == PanelView.Activity ? PanelView.Settings : PanelView.Activity));
-        OpenProcesses = new Command(() => ProcessesRequested?.Invoke());
-        processSummaryTimer.Tick += async (_, _) => await RefreshProcessSummary();
+        OpenProcesses = new Command(() => { activityTab = ActivityTab.Processes; Show(PanelView.Activity); ProcessesRequested?.Invoke(); });
+        Procs = new ProcessViewModel(captureProcesses, Supervisor.GetProcessProtectionPids, persistSettings: !Ollama.IsDemo,
+            execute: executeProcesses ?? Supervisor.ExecuteProcessAction, preview: previewProcesses,
+            installAgent: async () => { await Supervisor.InstallAgent(); return Supervisor.AgentError; },
+            agentStatus: () => Supervisor.Agent);
+        Procs.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(ProcessViewModel.Summary)) PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessesSubtitle))); };
         TogglePower = new Command(Ollama.Toggle);
         DismissError = new Command(() => Ollama.Error = null);
         DismissHotKeyError = new Command(() => Prefs.HotKeyError = null);
@@ -214,6 +219,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             {
                 // Sin el agente (o desactualizado) no hay nada que limpiar: se enseña dónde activarlo. En el notch, que no
                 // se vea nada al pulsar el botón de la versión corta o del dock sería como si no funcionara.
+                settingsTab = SettingsTab.Memory;
                 Show(PanelView.Settings);
                 AttentionRequested?.Invoke();
             }
@@ -245,23 +251,19 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         Notify();
     }
 
+    /// Algo pide que se vea el panel (la pestaña Procesos de Actividad): quien lo aloja lo muestra o lo abre.
     public event Action? ProcessesRequested;
     /// Algo pide que se vea el panel entero (el notch se abre y se fija).
     public event Action? AttentionRequested;
     public ICommand OpenProcesses { get; }
-    private readonly ProcessMonitor processSummaryMonitor = new();
-    private readonly System.Windows.Threading.DispatcherTimer processSummaryTimer = new() { Interval = TimeSpan.FromSeconds(2) };
-    private bool panelVisible, summaryBusy;
-    public bool ProcessSamplingActive => panelVisible && ShowingActivity && !Ollama.IsDemo;
-    public List<ProcessSummaryRow> ProcessSummaryRows { get; private set; } = [];
+    /// Los procesos viven en la pestaña Procesos de Actividad (antes una ventana aparte).
+    public ProcessViewModel Procs { get; }
+    private bool panelVisible;
+    public bool ProcessSamplingActive => panelVisible && ShowingActivity && activityTab == ActivityTab.Processes && !Ollama.IsDemo;
     public string ProcessesTitle => tr("Reconocimiento de procesos");
     public string OpenProcessesLabel => tr("Ver todos los procesos");
-    public string ProcessesHint => (processSummaryUsesPrivate is { } usePrivate
-        ? (usePrivate ? tr("RAM privada residente") : tr("RAM residente total")) + " · " : "")
-        + tr("Las cinco aplicaciones con más RAM. Despliega sus procesos en la ventana para ver detalles o finalizarlos.");
-    public string ProcessesEmpty => tr("El listado se actualiza mientras esta vista está abierta.");
-    public bool NoProcessSummary => ProcessSummaryRows.Count == 0;
-    private bool? processSummaryUsesPrivate;
+    public string ProcessesIntro => tr("Identifica qué aplicaciones usan la RAM y finaliza las que quieras cerrar.");
+    public string ProcessesSubtitle => Procs.Summary;
 
     public void SetPanelVisible(bool visible)
     {
@@ -272,30 +274,37 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     private void UpdateProcessSampling()
     {
         Hub.SetVisible(panelVisible && ShowingHome || peekVisible);
-        if (ProcessSamplingActive) { processSummaryTimer.Start(); _ = RefreshProcessSummary(); }
-        else processSummaryTimer.Stop();
+        Procs.SetSamplingActive(ProcessSamplingActive);
     }
 
-    private async Task RefreshProcessSummary()
+    // MARK: pestañas de Ajustes y de Actividad
+
+    public enum SettingsTab { Ollama, Memory, Notch, Pet, General }
+    public enum ActivityTab { Memory, Processes, History }
+    private SettingsTab settingsTab;
+    private ActivityTab activityTab;
+    public bool ShowingSettingsOllama => settingsTab == SettingsTab.Ollama;
+    public bool ShowingSettingsMemory => settingsTab == SettingsTab.Memory;
+    public bool ShowingSettingsNotch => settingsTab == SettingsTab.Notch;
+    public bool ShowingSettingsPet => settingsTab == SettingsTab.Pet;
+    public bool ShowingSettingsGeneral => settingsTab == SettingsTab.General;
+    public bool ShowingActivityMemory => activityTab == ActivityTab.Memory;
+    public bool ShowingActivityProcesses => activityTab == ActivityTab.Processes;
+    public bool ShowingActivityHistory => activityTab == ActivityTab.History;
+    public string TabsLabel => tr("Secciones");
+    public SettingsTab CurrentSettingsTab { get => settingsTab; set { settingsTab = value; Notify(); } }
+    public ActivityTab CurrentActivityTab { get => activityTab; set { activityTab = value; UpdateProcessSampling(); Notify(); } }
+    public List<Segment> SettingsTabs => new[]
     {
-        if (!ProcessSamplingActive || summaryBusy) return;
-        summaryBusy = true;
-        try
-        {
-            var sample = await processSummaryMonitor.CaptureAsync(Supervisor.GetProcessProtectionPids());
-            var icons = await AppIcons.LoadAsync(sample.Groups.Take(5).Select(g => g.Path));
-            if (!ProcessSamplingActive) return;
-            processSummaryUsesPrivate = sample.UsesPrivateWorkingSet;
-            ProcessSummaryRows = sample.Groups.Where(g => g.RamBytes.HasValue).Take(5).Select(g =>
-                new ProcessSummaryRow(g.Name, g.RamBytes!.Value.MemoryGB(), tr("%d procesos", g.Count),
-                    g.Path != null ? icons.GetValueOrDefault(g.Path) : null)).ToList();
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessSummaryRows)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NoProcessSummary)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProcessesHint)));
-        }
-        catch (Exception e) { AppLog.Write($"muestreo de procesos: {e.Message}"); }
-        finally { summaryBusy = false; }
-    }
+        (SettingsTab.Ollama, "Ollama"), (SettingsTab.Memory, tr("Memoria")), (SettingsTab.Notch, tr("Notch")),
+        (SettingsTab.Pet, tr("Mascota")), (SettingsTab.General, tr("General")),
+    }.Select(t => new Segment(t.Item2, settingsTab == t.Item1, new Command(() => CurrentSettingsTab = t.Item1))).ToList();
+    public List<Segment> ActivityTabs => new[]
+    {
+        (ActivityTab.Memory, tr("Memoria")), (ActivityTab.Processes, tr("Procesos")), (ActivityTab.History, tr("Historial")),
+    }.Select(t => new Segment(t.Item2, activityTab == t.Item1, new Command(() => CurrentActivityTab = t.Item1))).ToList();
+    public string NotchSectionTitle => tr("Notch y bandeja");
+    public string PetSectionTitle => tr("Mascota");
 
     private Theme T => Theme.Current;
     private static Brush B(Color c) => Theme.Brush(c);
@@ -683,6 +692,12 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
         }
     }
+    /// El panel de la bandeja lleva una sombra negra abajo y una línea sobre el pie; el notch de cristal no (se funde).
+    public bool FlatFooter => !wideLayout;
+    /// En el notch el pie va al final de cada página (dentro del desplazamiento); en el panel de la bandeja, fijo abajo.
+    public bool NotchFooter => wideLayout;
+    /// En el notch el pie queda dentro de la esquina redondeada (26 px de radio): la misma distancia al lado y abajo, para que sea simétrico con la curva.
+    public Thickness FooterMargin => wideLayout ? new Thickness(22, 2, 22, 19) : new Thickness(14, 9, 14, 9);
     public ObservableCollection<ModelRow> Models { get; } = [];
     private string modelsSignature = "";
     private string? confirmingDelete;
@@ -1045,7 +1060,6 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
     public string BrandName => AppInfo.Signature;
     /// Los atajos ya están en el menú y en Ajustes: el pie deja sitio a la firma.
-    public string FooterText => tr("No afiliado a Ollama");
 
     // MARK: listas (solo se regeneran si cambian, para no perder el «hover»)
 

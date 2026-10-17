@@ -10,6 +10,8 @@ public static class NotchLayout
     public const double PillWidth = 230, PillHeight = 37;   // 37: la fila compacta de las live activities de Droppy
     /// Los botones flotantes que cuelgan debajo del notch abierto: su tamaño y el hueco que los separa.
     public const double DockWidth = 276, DockHeight = 34, DockGap = 8;
+    /// La lente de cristal del dock sobresale de la barra por arriba y por abajo: la ventana deja ese margen (DIP) a cada lado.
+    public const double DockPad = 6;
     /// La zona que lo despierta: un poco más ancha que la pastilla y hasta el borde de la pantalla.
     private const double HotSide = 24, HotBelow = 4;
 
@@ -39,6 +41,10 @@ public static class NotchLayout
         int width = Px(widthDip, scale), top = island.Bottom + Px(DockGap, scale), centerX = island.Left + island.Width / 2;
         return new() { Left = centerX - width / 2, Top = top, Right = centerX - width / 2 + width, Bottom = top + Px(DockHeight, scale) };
     }
+
+    /// El rectángulo de los botones con el margen por arriba y por abajo para la lente (lo que ocupa su ventana).
+    public static Win32.RECT WithOvershoot(Win32.RECT dock, double scale) =>
+        new() { Left = dock.Left, Right = dock.Right, Top = dock.Top - Px(DockPad, scale), Bottom = dock.Bottom + Px(DockPad, scale) };
 
     public static Win32.RECT Union(Win32.RECT a, Win32.RECT b) => new()
     {

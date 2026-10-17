@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.11.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.20.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -60,7 +60,7 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🔍 | **Detecta tu instalación** | La app de Ollama, un servicio de Windows (NSSM, WinSW, `sc create`…), una tarea programada o un `ollama serve` a mano. Lo apaga por el mismo camino por el que arranca. |
 | 🧹 | **Libera la memoria sin uso** | Tras 5, 15, 30 o 60 minutos sin generar, saca el modelo de la memoria. Ollama sigue encendido y lo recarga con el siguiente mensaje. **Ctrl+Alt+S** lo duerme al momento. |
 | 🧽 | **Liberar RAM** | Limpieza automática al pasar de tu porcentaje (repite tras una pausa mínima mientras siga alta), cada cierto tiempo o con presión crítica; también con el botón o **Ctrl+Alt+L**. Protege modelos, juegos y la app que estás usando. No necesita Mem Reduct. |
-| 🔎 | **Reconocimiento de procesos** | Actividad muestra las cinco aplicaciones que más RAM usan. Abre la ventana completa (su botón ✕ o Esc la cierran y vuelven al panel) para ver RAM/CPU, desplegar PIDs, buscar y filtrar, o finalizar una aplicación, proceso o árbol tras confirmar. |
+| 🔎 | **Reconocimiento de procesos** | La pestaña **Procesos** de Actividad, dentro del notch (o del panel de la bandeja): RAM y CPU por aplicación, PIDs desplegables, búsqueda, filtros, orden, pausa y actualizar, y finalizar a la fuerza una aplicación, un proceso o un árbol tras una confirmación que sale ahí mismo. |
 | 🎮 | **Modo juego** | Abres un juego de Steam, Epic, Riot, EA, GOG, Rockstar o Xbox (o uno que añadas) y Ollama se apaga para dejarle la RAM y la VRAM; al salir vuelve a encenderse por el mismo camino. |
 | 🛟 | **Vigilante** | Si Ollama se cae o se cuelga, lo reinicia con el mismo mecanismo (hasta 3 veces en 10 minutos). |
 | 🔔 | **Notificaciones** | Avisos nativos de Windows cuando un modelo se duerme, Ollama se cae, la memoria llega a crítica, empieza un juego o termina una descarga; cada uno con su interruptor. |
@@ -72,13 +72,13 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🔗 | **Enlaces** | `istargetsleeping://on`, `off`, `toggle`, `sleep`, `load/<modelo>`… para Stream Deck, PowerToys o scripts. |
 | 🎯 | **Estado de un vistazo** | La mira en la bandeja, con punto azul, ámbar o sin punto; un radar gira mientras Ollama se enciende o se apaga, y el ojo se abre con un modelo cargado. |
 | 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y se asea a su manera mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera — dormida, sin salir de la cama. Apagadas por defecto; [más abajo](#-mascotas). |
-| 🪟 | **Dock tipo notch** | Opcional (Ajustes > General): una pastilla pegada al borde superior de la pantalla, en el monitor donde está el cursor, con los tres datos que elijas (estado, modelo y RAM por defecto; también puedes elegir la música que suena, con su indicador y su título desplazándose). Pasa el ratón para una vista corta que personalizas con tus widgets (por defecto Ollama: estado, RAM y GPU, Liberar RAM, Liberar modelo, Procesos); haz clic para el Home. Dos tiras de iconos debajo dan navegación de un clic (Inicio, Ollama, Actividad, Widgets, Ajustes) y hasta cuatro favoritos que eliges tú. Se oculta mientras algo está a pantalla completa. |
-| 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario, Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con sus controles). Cada uno se adapta a su sitio y a sus compañeros. Todo se lee en local. |
-| ⚡ | **Actividades en vivo** | Junto a la pastilla cerrada del notch, lo que pasa ahora: liberando RAM, Ollama encendiéndose o apagándose, memoria crítica, el volumen cuando cambia, un Pomodoro en marcha, Mantener despierto y, si lo activas, la música que suena. Hasta dos a la vez, cada una con su interruptor. El widget de Música salta de pista al deslizarlo con el ratón o con dos dedos en el trackpad, y su barra de progreso se puede pulsar. |
+| 🪟 | **Dock tipo notch** | Opcional (Ajustes > General): una pastilla pegada al borde superior de la pantalla, en el monitor donde está el cursor, con los tres datos que elijas (estado, modelo y RAM por defecto; también puedes elegir la música que suena, con su indicador y su título desplazándose). Pasa el ratón para una vista corta que personalizas con tus widgets (por defecto Ollama: estado, RAM y GPU, Liberar RAM, Liberar modelo, Procesos); haz clic para el Home. Dos tiras de iconos debajo dan navegación de un clic (Inicio, Widgets y Ajustes, y Ollama y Actividad si los activas) y hasta cuatro favoritos que eliges tú, con un botón de fijar que mantiene el notch abierto. El panel es negro puro arriba y se funde en cristal líquido (lo de detrás, desenfocado), las cápsulas del dock también son de cristal y, si pulsas y arrastras por sus botones, una lente de cristal te sigue y abre la página donde cae. Se oculta mientras algo está a pantalla completa. |
+| 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario (un mes con flechas, una agenda de recordatorios que añades con una regla de días que arrastras, y los eventos de un archivo .ics opcional), Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con controles macizos, aleatorio y repetir, y el color de la portada). Los widgets van directamente sobre el cristal, sin tarjetas, en dos columnas que se rellenan por la más corta. Todo se lee en local. |
+| ⚡ | **Actividades en vivo** | En cápsulas a los dos lados de la pastilla cerrada del notch, lo que pasa ahora: a la izquierda, lo de Ollama (liberando RAM, encendiéndose o apagándose, memoria crítica); a la derecha, el volumen cuando cambia, un Pomodoro en marcha, Mantener despierto y, si lo activas, la música que suena. Hasta una a la izquierda y dos a la derecha, cada una con su interruptor. El widget de Música salta de pista al deslizarlo con el ratón o con dos dedos en el trackpad, y su barra de progreso se puede pulsar. |
 | 📥 | **Bandeja de archivos, portapapeles y favoritos de apps** | Arrastra archivos o carpetas al notch y esperan en su página Bandeja (solo sus rutas, en memoria) hasta que los arrastras de vuelta, copias su ruta, los enseñas en el Explorador o los comprimes todos en el Escritorio. Las filas enseñan miniaturas de las imágenes e iconos de Material para las carpetas, con cuántos elementos y cuánto pesa cada carpeta; el doble clic abre un elemento, una carpeta se puede abrir como proyecto en el widget Código, puedes pegar archivos que copiaste en el Explorador, arrastrar todo de una vez y, si quieres, recordar la bandeja entre sesiones (Ajustes > General, solo las rutas). El historial del portapapeles, opcional (Ajustes > General, apagado por defecto), guarda los últimos 25 textos que copias, solo en memoria, y se salta lo que los gestores de contraseñas marcan como privado. Los archivos de texto de la bandeja se pueden editar y guardar ahí mismo (Ctrl+S) para cambios rápidos mientras programas, y el widget **Código** es un IDE pequeño: eliges una carpeta y obtienes su árbol de archivos (con los iconos de Material Icon Theme), pestañas, un visor de imágenes y un editor de texto con colores de sintaxis para Markdown, código, JSON, YAML, XML y más. Los favoritos también pueden abrir cualquier app o archivo que elijas. |
 | ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
-| 🖤 | **Vidrio negro** | Vidrio negro ahumado sobre el acrílico real de Windows 11, tarjetas translúcidas e interfaz monocroma con color solo para el estado. El ícono de la bandeja sigue el modo de la barra de tareas. |
+| 🖤 | **Vidrio negro** | En el panel de la bandeja, vidrio negro ahumado sobre el acrílico real de Windows 11; en el notch, negro puro que se funde en cristal líquido (desenfoca lo de detrás y lo tiñe para que el texto se lea). Tarjetas translúcidas e interfaz monocroma con color solo para el estado (y el color de la portada para la música). El ícono de la bandeja sigue el modo de la barra de tareas. |
 | 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256, solo extrae archivos ZIP permitidos en su carpeta temporal y vuelve atrás automáticamente si algo falla. |
 | 🔒 | **Privado** | Habla con tus motores de modelos locales. Sin cuentas, telemetría ni analítica. La búsqueda opcional de actualizaciones y sus descargas contactan con GitHub; los datos de procesos se quedan en tu PC. |
 
@@ -99,6 +99,8 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 **1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
+
+**1.20.0 está en desarrollo** (aún no publicada; la última descarga es la 1.11.0): el notch pasa a ser de cristal líquido (negro puro que se funde en vidrio esmerilado, cápsulas de cristal en el dock y una lente de cristal que arrastras por él), widgets sin tarjetas en dos columnas, un widget de Música teñido con la portada y un calendario con una agenda de recordatorios locales y un archivo .ics opcional, actividades en vivo a los dos lados del notch, un botón de fijar, Ajustes y Actividad en pestañas y el reconocimiento de procesos dentro del notch.
 
 **1.11.0 ya está publicada** (16 de octubre de 2026): la música que suena en la pastilla cerrada del notch (con su título
 desplazándose) y una bandeja de archivos mucho mejor (miniaturas, tamaño de carpetas, abrir como proyecto, pegar, arrastrar
@@ -310,17 +312,17 @@ Con Ollama apagado, usa lo elegido en Ajustes o el último mecanismo recordado e
   Las solicitudes del panel, atajo y CLI se serializan; si el agente sigue activo, permanece pendiente e impide
   otra limpieza. *Quitar* (o el desinstalador) borra la tarea y la carpeta. Actualiza el agente anterior desde
   Ajustes para usar las nuevas operaciones.
-- **Reconocimiento de procesos:** Actividad muestra las cinco aplicaciones que más RAM usan. **Ver todos los
-  procesos** abre una ventana con RAM, porcentaje de RAM física, CPU, usuario y estado, agrupada por ruta del
+- **Reconocimiento de procesos:** la pestaña **Procesos** de Actividad (a la que también llevan todos los botones
+  **Ver todos los procesos**) lista las aplicaciones que usan RAM dentro del notch, o del panel de la bandeja, con RAM,
+  porcentaje de RAM física, CPU, usuario y estado, agrupada por ruta del
   ejecutable, propietario y sesión. Despliega los PIDs para ver ruta, padre y memoria comprometida. Busca por
   nombre, ejecutable, ruta o PID; filtra por tipo y RAM mínima; ordena por RAM, CPU, nombre, cantidad o PID.
   Usa RAM privada residente donde Windows la admite y etiqueta el fallback como RAM residente total. Los datos
   inaccesibles quedan «No disponible» y las sumas pueden diferir de la RAM global.
-- La ventana actualiza cada dos segundos mientras está visible; al minimizar o cerrar deja de muestrear.
-  **Pausar** y **Actualizar** permiten controlarlo. Guarda tamaño, posición y ordenación; búsqueda y filtros son
-  temporales. La consulta y finalización normal funcionan sin instalar el agente.
+- La lista actualiza cada dos segundos solo mientras la pestaña está visible. **Pausar** y **Actualizar** permiten
+  controlarlo. Guarda la ordenación (pulsar el criterio activo la invierte); búsqueda y filtros son temporales. La consulta y finalización normal funcionan sin instalar el agente.
 - **Finalizar procesos:** **Finalizar aplicación** incluye sus procesos agrupados y descendientes; **Finalizar
-  proceso**, solo el PID elegido; **Finalizar árbol**, también sus descendientes. Siempre pide confirmación con
+  proceso**, solo el PID elegido; **Finalizar árbol**, también sus descendientes. Siempre pide confirmación ahí mismo, con
   alcance, PIDs y memoria. El cierre es forzado y puede perder trabajo sin guardar. Bloquea procesos críticos de
   Windows y los propios; revalida PID y hora de creación y comprueba cada salida. Ante acceso denegado ofrece
   **Reintentar como administrador**, con UAC propio y una orden separada del agente. La tarea de limpieza no admite
@@ -384,6 +386,10 @@ archivos de paginación; llegar a su límite puede impedir nuevas reservas aunqu
 - Los widgets del notch leen tu PC en local (CPU, memoria, contadores de disco y red, batería, reloj) y no envían
   nada. Las notas son texto plano en `%LOCALAPPDATA%\isTargetSleeping\notes.txt`; Mantener despierto pide a Windows
   que no suspenda hasta que lo apagues o cierres la app.
+- El cristal líquido del notch copia la zona de pantalla que queda tras el notch abierto una vez cada vez que se abre, la reduce
+  a unas decenas de celdas de color en memoria y nunca la guarda ni la envía. Los recordatorios del calendario se guardan en
+  `settings.json`; el archivo `.ics` opcional solo se lee desde la ruta que elijas (solo se guarda la ruta) y no se envía nada:
+  sin cuentas ni red.
 - El widget de Música y la actividad «Música sonando» leen en local la sesión de medios que expone Windows (título, artista,
   portada) y solo mientras uno de los dos está en uso; no se guarda ni se envía nada.
 - La bandeja de archivos guarda solo las rutas de lo que sueltas (nunca copias), en memoria salvo que le pidas recordarlas entre sesiones (entonces solo las rutas van a `settings.json`); el .zip solo se crea cuando

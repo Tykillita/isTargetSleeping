@@ -63,7 +63,7 @@
 <section class="hero">
   <div class="contenedor">
     <img class="hero-icono" src="media/istargetsleeping-icon.svg" alt="Ícono de isTargetSleeping" width="104" height="104">
-    <p class="eyebrow" data-i18n="hero.eyebrow">Versión 1.11.0 · Windows nativo</p>
+    <p class="eyebrow" data-i18n="hero.eyebrow">Versión 1.20.0 en desarrollo · Windows nativo</p>
     <h1 data-i18n="hero.titulo">Un notch para Windows: Ollama, tu PC y tus herramientas, a un vistazo.</h1>
     <p class="hero-sub" data-i18n="hero.sub">isTargetSleeping vive junto al reloj de Windows o, si quieres, en el borde de la pantalla como un notch. Enciende y apaga Ollama, duerme a sus modelos cuando no trabajan y te devuelve la RAM, y suma widgets: sistema, reloj, Pomodoro, notas…</p>
     <div class="hero-cta">
@@ -261,7 +261,7 @@
       <article class="tarjeta tarjeta--hielo s3 revela">
         <p class="eyebrow" data-i18n="proc.eyebrow">Reconocimiento de procesos</p>
         <h3 data-i18n="proc.titulo">La RAM, aplicación por aplicación.</h3>
-        <p data-i18n="proc.texto">Actividad muestra las cinco que más consumen. Abre la ventana completa, ordena por RAM o CPU, filtra y despliega cada PID con sus detalles.</p>
+        <p data-i18n="proc.texto">La pestaña Procesos de Actividad, dentro del notch: RAM y CPU por aplicación, ordena, filtra y despliega cada PID con sus detalles. El cierre forzado pide confirmación ahí mismo.</p>
         <ul class="minilista">
           <li><span data-i18n="proc.app">Finalizar aplicación</span><span data-i18n="proc.grupo">grupo y descendientes</span></li>
           <li><span data-i18n="proc.pid">Finalizar proceso</span><span data-i18n="proc.uno">solo el PID elegido</span></li>
@@ -306,7 +306,7 @@
       <article class="tarjeta tarjeta--oscura s3 revela">
         <p class="eyebrow" data-i18n="vidrio.eyebrow">Apariencia</p>
         <h3 data-i18n="vidrio.titulo">Vidrio negro sobre Windows 11.</h3>
-        <p data-i18n="vidrio.texto">Acrílico real, tarjetas translúcidas y una interfaz monocroma donde el color solo significa estado. El ícono de la bandeja sigue el modo de tu barra de tareas.</p>
+        <p data-i18n="vidrio.texto">Acrílico real en la bandeja y, en el notch, negro puro que se funde en cristal líquido. Interfaz monocroma donde el color solo significa estado (y el de la portada, en la música). El ícono de la bandeja sigue el modo de tu barra de tareas.</p>
       </article>
 
       <article class="tarjeta s3 revela">
@@ -321,11 +321,11 @@
           <div>
             <p class="eyebrow" data-i18n="notch.eyebrow">Notch</p>
             <h3 data-i18n="notch.titulo">Tu panel, en el borde de la pantalla.</h3>
-            <p data-i18n="notch.texto">Un dock opcional, pegado arriba y con vidrio, que se abre al pasar el ratón. Se activa en Ajustes &gt; General.</p>
+            <p data-i18n="notch.texto">Un dock opcional, pegado arriba: negro puro que se funde en cristal líquido, con cápsulas de cristal y una lente que arrastras. Se abre al pasar el ratón. Se activa en Ajustes &gt; General.</p>
             <ul>
               <li data-i18n="notch.l1">Pasa el ratón: una vista corta con el estado, la RAM y la GPU, y los botones Liberar RAM, Liberar modelo y Procesos.</li>
               <li data-i18n="notch.l2">Haz clic: el Home con tus widgets, en dos columnas. Esc o un clic fuera lo cierran.</li>
-              <li data-i18n="notch.l3">Debajo, dos tiras de iconos: cinco páginas (Inicio, Ollama, Actividad, Widgets, Ajustes) y hasta cuatro favoritos de un toque que eliges tú. Aparece en el monitor donde está el cursor y se oculta con un juego o un vídeo a pantalla completa.</li>
+              <li data-i18n="notch.l3">Debajo, dos cápsulas de cristal: las páginas (Inicio, Widgets y Ajustes; Ollama y Actividad si los activas) y hasta cuatro favoritos de un toque que eliges tú. Pulsa y arrastra por los botones: una lente de cristal te sigue y abre la página donde cae. Un botón de fijar mantiene el notch abierto. Aparece en el monitor donde está el cursor y se oculta con un juego o un vídeo a pantalla completa.</li>
             </ul>
           </div>
           <div class="mascotas-arte">
@@ -343,11 +343,11 @@
             <p data-i18n="widg.texto">Cuatro celdas que ordenas a tu gusto en la página Widgets. Cada widget se activa solo si lo quieres.</p>
             <ul>
               <li data-i18n="widg.l1">Ollama: encender, apagar, memoria y GPU, siempre a la vista.</li>
-              <li data-i18n="widg.l2">Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario, Batería y Música con portada y controles.</li>
+              <li data-i18n="widg.l2">Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario con agenda de recordatorios y archivo .ics opcional, Batería y Música con portada, controles, aleatorio y repetir.</li>
               <li data-i18n="widg.l3">Pomodoro con aviso, Mantener despierto y Notas que se guardan solas, en tu PC.</li>
-              <li data-i18n="widg.l5">Junto a la pastilla cerrada aparecen las actividades en vivo: liberando RAM, Ollama encendiéndose, memoria crítica, el Pomodoro y, si lo activas, la música que suena.</li>
+              <li data-i18n="widg.l5">A los lados de la pastilla cerrada aparecen las actividades en vivo: a la izquierda las de Ollama (liberando RAM, encendiéndose, memoria crítica); a la derecha el volumen, el Pomodoro y, si lo activas, la música que suena.</li>
               <li data-i18n="widg.l6">Arrastra archivos al notch y esperan en la Bandeja hasta que los sueltas donde quieras; los de texto se editan ahí mismo. El historial del portapapeles es opcional, solo texto y solo en memoria, y los favoritos también abren tus apps. El widget Código es un IDE pequeño: árbol de archivos con los iconos de Material Icon Theme, pestañas, visor de imágenes y editor. La pastilla cerrada también puede enseñar la música que suena, con su título desplazándose.</li>
-              <li data-i18n="widg.l4">Cada widget cambia de vista según su sitio y su compañía. La pastilla cerrada, la vista al pasar el ratón y los favoritos también los eliges tú.</li>
+              <li data-i18n="widg.l4">Los widgets van sobre el cristal, sin tarjetas, en dos columnas que se rellenan sin huecos. Cada widget cambia de vista según su sitio y su compañía. La pastilla cerrada, la vista al pasar el ratón y los favoritos también los eliges tú.</li>
             </ul>
           </div>
           <div class="mascotas-arte">
@@ -459,7 +459,7 @@
     <div class="cabecera revela">
       <p class="eyebrow" data-i18n="priv.eyebrow">Privacidad</p>
       <h2 data-i18n="priv.titulo">Todo ocurre en tu PC.<br>Y ya.</h2>
-      <p data-i18n="priv.sub">Habla con la API local de Ollama en <code>127.0.0.1:11434</code> (u <code>OLLAMA_HOST</code>, si lo defines) y con los puertos locales de los otros motores. Los widgets leen datos de tu propio PC y no envían nada; la bandeja (que solo recuerda sus rutas si lo pides) y el portapapeles (opcional) viven en memoria. Las páginas web solo se abren cuando haces clic.</p>
+      <p data-i18n="priv.sub">Habla con la API local de Ollama en <code>127.0.0.1:11434</code> (u <code>OLLAMA_HOST</code>, si lo defines) y con los puertos locales de los otros motores. Los widgets leen datos de tu propio PC y no envían nada (el cristal del notch usa una copia de la pantalla que solo vive en memoria; los recordatorios del calendario se guardan en tus ajustes); la bandeja (que solo recuerda sus rutas si lo pides) y el portapapeles (opcional) viven en memoria. Las páginas web solo se abren cuando haces clic.</p>
     </div>
     <div class="garantias">
       <div class="garantia revela">
@@ -685,7 +685,7 @@
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
       <span data-i18n="cta.windows">Descargar para Windows</span>
     </a>
-    <p class="hero-meta" data-i18n="cierre.meta">Versión 1.11.0 · Windows 10 y 11 · x64 y ARM64</p>
+    <p class="hero-meta" data-i18n="cierre.meta">Versión 1.20.0 en desarrollo · la descarga disponible es 1.11.0 · Windows 10 y 11 · x64 y ARM64</p>
   </div>
 </section>
 
@@ -740,7 +740,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.11.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.20.0 (en desarrollo)</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>
