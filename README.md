@@ -104,7 +104,7 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.20.0 is in development** (not published yet; the latest download is 1.11.0): the notch becomes liquid glass (true black fading into frosted glass, glass dock capsules and a glass lens you drag across the dock), widgets with no cards laid out in two columns, a Music widget tinted with the cover and a calendar with an agenda of local reminders and an optional .ics file, live activities on both sides of the notch, a pin button, Settings and Activity in tabs, and the process explorer inside the notch.
+**1.20.0 is out** (October 17, 2026): the notch becomes liquid glass (true black fading into frosted glass, glass dock capsules and a glass lens you drag across the dock), widgets with no cards laid out in two columns, a Music widget tinted with the cover and a calendar with an agenda of local reminders and an optional .ics file, live activities on both sides of the notch, a pin button, Settings and Activity in tabs, and the process explorer inside the notch.
 
 **1.11.0 is out** (October 16, 2026): the music playing in the closed notch pill (with a scrolling title) and a much
 better file tray (thumbnails, folder sizes, open as a project, paste, drag all and optional memory between sessions).

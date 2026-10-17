@@ -100,7 +100,7 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.20.0 está en desarrollo** (aún no publicada; la última descarga es la 1.11.0): el notch pasa a ser de cristal líquido (negro puro que se funde en vidrio esmerilado, cápsulas de cristal en el dock y una lente de cristal que arrastras por él), widgets sin tarjetas en dos columnas, un widget de Música teñido con la portada y un calendario con una agenda de recordatorios locales y un archivo .ics opcional, actividades en vivo a los dos lados del notch, un botón de fijar, Ajustes y Actividad en pestañas y el reconocimiento de procesos dentro del notch.
+**1.20.0 ya está publicada** (17 de octubre de 2026): el notch pasa a ser de cristal líquido (negro puro que se funde en vidrio esmerilado, cápsulas de cristal en el dock y una lente de cristal que arrastras por él), widgets sin tarjetas en dos columnas, un widget de Música teñido con la portada y un calendario con una agenda de recordatorios locales y un archivo .ics opcional, actividades en vivo a los dos lados del notch, un botón de fijar, Ajustes y Actividad en pestañas y el reconocimiento de procesos dentro del notch.
 
 **1.11.0 ya está publicada** (16 de octubre de 2026): la música que suena en la pastilla cerrada del notch (con su título
 desplazándose) y una bandeja de archivos mucho mejor (miniaturas, tamaño de carpetas, abrir como proyecto, pegar, arrastrar
