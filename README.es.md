@@ -106,7 +106,7 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.25.0 está en desarrollo**: el trabajo de las versiones 1.21–1.25 añade audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. Aún no está publicada; consulta el [changelog](CHANGELOG.md).
+**1.25.0 ya está disponible** (19 de octubre de 2026): reúne audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. [Descarga la versión para Windows](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) o consulta el [changelog](CHANGELOG.md).
 
 **1.20.0 ya está publicada** (17 de octubre de 2026): el notch pasa a ser de cristal líquido (negro puro que se funde en vidrio esmerilado, cápsulas de cristal en el dock y una lente de cristal que arrastras por él), widgets sin tarjetas en dos columnas, un widget de Música teñido con la portada y un calendario con una agenda de recordatorios locales y un archivo .ics opcional, actividades en vivo a los dos lados del notch, un botón de fijar, Ajustes y Actividad en pestañas y el reconocimiento de procesos dentro del notch.
 

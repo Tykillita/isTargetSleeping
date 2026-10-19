@@ -110,7 +110,7 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
 
-**1.25.0 is in development**: the 1.21–1.25 work adds per-app audio and notch HUDs, a drag-and-drop widget editor with live system charts, local coding-agent sessions with searchable recent history and progressive details, calendar progress and meeting links, optional city weather, local OCR and a saved teleprompter. It is not published yet; see the [changelog](CHANGELOG.md).
+**1.25.0 is available** (October 19, 2026): it brings per-app audio and notch HUDs, a drag-and-drop widget editor with live system charts, local coding-agent sessions with searchable recent history and progressive details, calendar progress and meeting links, optional city weather, local OCR and a saved teleprompter. [Download the Windows release](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) or see the [changelog](CHANGELOG.md).
 
 **1.20.0 is out** (October 17, 2026): the notch becomes liquid glass (true black fading into frosted glass, glass dock capsules and a glass lens you drag across the dock), widgets with no cards laid out in two columns, a Music widget tinted with the cover and a calendar with an agenda of local reminders and an optional .ics file, live activities on both sides of the notch, a pin button, Settings and Activity in tabs, and the process explorer inside the notch.
 
