@@ -26,6 +26,20 @@ public partial class ContentView : UserControl
         IsVisibleChanged += (_, _) => model.SetPanelVisible(IsVisible);
     }
 
+    private void OnWidgetRowDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(string)) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnWidgetHomeDrop(object sender, DragEventArgs e)
+    {
+        if (DataContext is not PanelViewModel model || e.Data.GetData(typeof(string)) is not string source) return;
+        if (sender is FrameworkElement { DataContext: WidgetSlot target }) model.MoveWidgetBefore(source, target.Id);
+        else model.AddWidgetToDraft(source);
+        e.Handled = true;
+    }
+
     /// La confirmación de finalizar procesos sale debajo de la lista: se lleva a la vista para que no pase desapercibida.
     private void OnConfirmationVisible(object sender, DependencyPropertyChangedEventArgs e)
     {

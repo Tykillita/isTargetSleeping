@@ -5,61 +5,45 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
-## [1.20.0] — 2026-10-17
+## [1.25.0] — 2026-10-19
 
 ### Added
-- The notch is liquid glass, like Droppy's: the open panel is solid black (#000000) at the top, next to the camera, and fades into
-  real frosted glass, with the wallpaper and windows behind it blurred and slightly saturated, and a thin rim that catches the light
-  at the corners. The tint darkens by itself over bright backgrounds so the text stays readable. What's behind the notch is copied
-  once each time it opens and reduced to a few dozen colored cells in memory (never saved or sent anywhere), so if what's behind
-  changes while the notch stays open, the glass keeps the picture from when it opened. High contrast stays solid.
-- Glass lens in the dock, in the style of iOS 26's Liquid Glass tab bar: one glass indicator travels between the buttons. Press and
-  hold a button and it swells into a capsule taller than the bar, magnifies the icons under it and follows your pointer with a
-  springy, slightly stretchy motion; let go and it settles on the closest button and opens that page. A plain click makes it glide
-  to the button too. The color fringes (chromatic aberration) come from the icons themselves: they split into red and blue only
-  while the lens is pressed, more towards its edge and trailing when it moves fast. Reduced motion skips the animation.
-- Calendar with an agenda, like Droppy's: the month (name in red, today in a red circle, dots on days with something, arrows to
-  change month and a "+" to add) on the left and the agenda on the right, grouped by day. Reminders are local (saved in the app's
-  settings, nothing leaves the PC), have an orange ring you tick when done, and can be removed. Events come from an optional .ics
-  file you pick under Widgets (Google Calendar, Outlook and Apple export it; weekly, daily, monthly and yearly repeats are
-  understood; the file is only read, no account, no network). Adding a reminder opens a panel with the text, a ruler you drag to
-  pick the day, the time and "Done". The smaller calendar views show what's next.
-- Live activities on both sides of the closed notch, each in its own black capsule that fades in from the notch and opens it on
-  click: Ollama's (freeing RAM, powering on or off, critical memory) on the left, and everything else (Pomodoro, music, volume,
-  keep-awake) on the right, up to one and two at a time. They are measured before they show, so they never flash over the notch.
-- A pin button in the dock keeps the notch open while you work in another window.
-- Music: shuffle and repeat buttons, shown only when the player supports them (Spotify does; browsers rarely).
+- Give the AI Agents widget fixed Active/Recent tabs, a 12-hour local history of finished or inactive sessions, and search and filters for recent sessions by agent, project and state.
+- Show an expandable session overview with elapsed inactivity, completed-command counts and unique edited-file counts based only on explicit log events and paths.
+- **Phase 1 (1.21.0) — Audio and notch controls.** A local audio widget controls each active Windows audio session, remembers its level by executable and adds mute. Optional notch HUDs report brightness on supported internal displays, Caps Lock/Num Lock and connected audio endpoints. Settings add glass intensity and a list of apps that hide the notch.
+- **Phase 2 (1.22.0) — Widget editor and system graphs.** Customize Home by adding, dragging, reordering and resizing compatible widgets, then save or discard the draft (four cells maximum). System charts show two chosen metrics or all six in the wide view, and sample only while visible.
+- **Phase 3 (1.23.0) — Local coding-agent activity.** An optional widget lists recent active Claude Code and Codex CLI sessions and shows project, state, current and recent tools, file, changed-line counts and short agent-message excerpts. User prompts and thinking stay hidden; log data never leaves the PC.
+- **Phase 4 (1.24.0) — Calendar, weather, OCR and teleprompter.** Calendar events show remaining progress and meeting links. Optional Open-Meteo weather uses the city you choose. Windows OCR copies recognized text from a tray image or selected screen region to the clipboard. A local teleprompter saves its script and scroll settings.
 
 ### Changed
-- The dock is two liquid-glass capsules (pages and favorites) in the same black as the island, see-through towards the bottom,
-  with a thin rim, the icons set loose inside, a translucent glass circle behind the selected page and a small bounce when you press
-  a button. By default it has Home, Widgets and Settings, plus your favorites; the Ollama and Activity page buttons are optional
-  (turn them on under "Dock buttons" on the Widgets page; Activity is still one click away from the chart button in the header).
-  The dock only shows when you click the notch: the hover view is just the short view.
-- The Music widget looks like Droppy's: bold double arrows and a bar-style pause without discs, shuffle and repeat as drawn glass
-  squares, remaining time ("-3:02"), and the color of the cover tints the progress bar, the equalizer and the active buttons. The
-  closed pill shows the cover next to the title and a tinted equalizer. The one-cell card is vertical, with a big cover that
-  matches the calendar's height, in the full view and stays horizontal in the hover view.
-- Widgets sit straight on the notch glass, with no card, fill or border behind them (as in Droppy); only what has to read as
-  relief (buttons, agenda rows) keeps its glass. Margins between widgets are tighter.
-- Home widgets are placed in two columns that fill by the shorter one (masonry) instead of rows as tall as the tallest widget, so a
-  short widget no longer leaves a gap beside a tall one; two-cell widgets still take the full width.
-- The "By CodeSentry - Tykillita" footer sits at the end of each page in the notch (it scrolls with it) instead of staying pinned
-  over whatever scrolls underneath.
-- Settings and Activity are organized in tabs instead of one long scroll of mixed cards. Settings: Ollama (idle release, game
-  mode, other engines, integrations), Memory (free RAM and notifications), Notch (dock, clipboard, tray), Pet and General
-  (shortcuts, login, updates, language, logs). Activity: Memory (week, chart, memory now, GPUs), Processes and History (clients and
-  events).
-- The process explorer is no longer a separate window: it is the Processes tab of Activity, inside the notch (and the tray
-  panel). Same search, filters, sorting (press the active criterion to reverse it), minimum RAM, expandable app groups, pause and
-  refresh, and the same sampling rules (it only samples while the tab is visible). Ending a process asks for confirmation right
-  there, with the exact list of what will close, the access-denied retry as administrator included; nothing is ended before you
-  accept. The "top five apps" summary that preceded it is gone, and every "View all processes" button now opens the tab.
+- Keep “Needs attention” visible after a session goes inactive, and show how long it has been waiting; label stale working sessions as inactive instead of guessing they are paused.
+- Keep recent messages, tools and file details collapsed until requested; never expose user prompts, raw command arguments or command output.
+- Refine the AI Agents widget with a quieter glass surface, a labeled activity detail and a more balanced two-column session layout.
+- Show every recent active Claude Code and Codex session in a selectable roster, with readable project names, live tool activity and short agent-message excerpts; user prompts and thinking remain hidden.
+- New controls use the shared spring motion and liquid-glass styling; reduced-motion preference disables these animations. Audio sliders change the same per-app levels as the Windows mixer.
+- All network features are optional and off by default: automatic update checks remain manual unless enabled, and weather sends the chosen city only when enabled.
 
 ### Fixed
+- Hide the calendar's next-event bar when there is no upcoming or active event.
+- Match the calendar's current-day marker to the reference with a 30-pixel circle and roomier date rows.
+- Replace the Home "Customize widgets" label with an accessible edit icon.
+- Read large Codex session logs from a bounded tail and recognize its current activity events in the Agents widget.
+- Prioritize the brightness live indicator over lower-priority right-side activities and replay every Windows brightness event, including repeated reports of the same percentage.
+- Align Home widget headers by row; each row now starts together and waits for its tallest widget.
+- The brightness HUD now checks the internal display once per second, so short changes are not missed by the previous four-second interval.
+- Restore the RAM-cleaning notch indicator for settings left with only the three optional HUDs by an older build.
+- Listen for Windows brightness-change events as well as polling the current level, so brightness updates appear promptly.
+- Detect Fn+F5/F6 brightness-key events as a fallback and confirm the internal display level changed before showing the notch HUD.
+- Keep the Agents recent-session toggle readable in narrow layouts and use Claude Code titles or a Codex session ID suffix for session names.
+- Distinguish active agent tools from completed work and summarize recent actions such as edited files and ran commands.
+- Preserve agent work-summary categories beyond the six visible activity rows and collapse repeated identical tool events.
+- Render scheduled-session heartbeat metadata as a readable automation result instead of raw XML, and use its automation ID as the session title.
+- Keep the recent-session list selected across live refreshes while other sessions are active.
+- Keep the Active/Recent selector visible in both widget layouts, including when either list is empty.
 - Music from a web app installed from the browser (YouTube Music in Chrome or Edge) showed a long internal identifier where the app
   name goes. Known apps and browsers now show their name (Spotify, YouTube Music, Chrome, Edge…) and an unknown internal
   identifier shows nothing.
+- Notch HUD, AI agent, weather and OCR switches now refresh immediately and preserve the default live activities when toggled.
 
 ## [1.11.0] — 2026-10-16
 

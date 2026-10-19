@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Diagnostics;
 using System.Windows.Input;
 using static IsTargetSleeping.L10n;
 
@@ -12,10 +13,14 @@ public sealed record CalendarDay(string Text, bool Today, bool InMonth, DateOnly
 }
 
 /// Un recordatorio o un evento en la lista de la agenda.
-public sealed record AgendaRow(string Title, string TimeText, bool IsReminder, bool Done, ICommand Toggle, ICommand Remove, string RemoveHelp, string ToggleHelp)
+public sealed record AgendaRow(string Title, string TimeText, bool IsReminder, bool Done, ICommand Toggle, ICommand Remove, string RemoveHelp, string ToggleHelp,
+    Uri? Meeting = null, ICommand? Join = null)
 {
     public bool IsEvent => !IsReminder;
     public double TitleAlpha => Done ? 0.5 : 1;
+    public bool HasMeeting => Meeting is not null;
+    public string JoinHelp => tr("Unirse a %@", Title);
+    public string JoinLabel => tr("Unirse");
 }
 
 /// Los de un mismo día, con su cabecera («HOY (SEMANA 42)», «JUEVES, 27 OCT (SEMANA 43)»).
@@ -49,6 +54,7 @@ public sealed class ClockWidget : WidgetModel
         Add = new Command(AddItem);
         PickIcs = new Command(ChooseIcs);
         ClearIcs = new Command(() => { prefs.SetList(PrefKeys.CalendarIcs, []); ics = []; icsSource = default; Rebuild(); });
+        JoinCurrentMeeting = new Command(() => OpenMeeting(CurrentMeeting));
     }
 
     public string Time { get; private set; } = "";
@@ -65,6 +71,22 @@ public sealed class ClockWidget : WidgetModel
     public string NextTitle { get; private set; } = "";
     public string NextWhen { get; private set; } = "";
     public bool HasNext { get; private set; }
+    private AgendaItem? ActiveEvent => local.Concat(ics).FirstOrDefault(i => i.Kind == AgendaKind.Event && i.Start <= now && i.End is { } end && end > now);
+    public bool HasCurrentEvent => ActiveEvent is not null;
+    public string CurrentEventTitle => ActiveEvent?.Title ?? "";
+    public string CurrentEventRemaining => ActiveEvent?.End is { } end ? tr("Quedan %@", end.Subtract(now).ToString(end - now >= TimeSpan.FromHours(1) ? "h\\:mm" : "m\\:ss", culture)) : "";
+    public double CurrentEventProgress
+    {
+        get
+        {
+            var item = ActiveEvent;
+            if (item?.End is not { } end || end <= item.Start) return 0;
+            return Math.Clamp((now - item.Start).TotalSeconds / (end - item.Start).TotalSeconds, 0, 1);
+        }
+    }
+    private Uri? CurrentMeeting => ActiveEvent is { } item ? MeetingLink.Extract(item.Url, item.Location, item.Description) : null;
+    public bool HasCurrentMeeting => CurrentMeeting is not null;
+    public ICommand JoinCurrentMeeting { get; }
     public ICommand PrevMonth { get; }
     public ICommand NextMonth { get; }
     public ICommand ThisMonth { get; }
@@ -76,6 +98,7 @@ public sealed class ClockWidget : WidgetModel
     public string NextHelp => tr("Mes siguiente");
     public string TodayHelp => tr("Volver a hoy");
     public string AddHelp => tr("Añadir un recordatorio");
+    public string JoinLabel => tr("Unirse");
     public string AddSend => tr("Añadir");
     public string DoneLabel => tr("Hecho");
     public string TitleHint => tr("Nuevo recordatorio");
@@ -185,8 +208,20 @@ public sealed class ClockWidget : WidgetModel
         return $"{label} ({tr("SEMANA %@", Agenda.IsoWeek(day))})";
     }
 
-    private AgendaRow Row(AgendaItem item) => new(item.Title, item.Kind == AgendaKind.Event ? (item.AllDay ? tr("Todo el día") : item.Start.ToString("t", culture)) : item.Start.ToString("t", culture),
-        item.Kind == AgendaKind.Reminder, item.Done, new Command(() => Complete(item)), new Command(() => Remove(item)), tr("Quitar"), item.Done ? tr("Marcar como pendiente") : tr("Marcar como hecho"));
+    private AgendaRow Row(AgendaItem item)
+    {
+        var meeting = item.Kind == AgendaKind.Event ? MeetingLink.Extract(item.Url, item.Location, item.Description) : null;
+        return new AgendaRow(item.Title, item.Kind == AgendaKind.Event ? (item.AllDay ? tr("Todo el día") : item.Start.ToString("t", culture)) : item.Start.ToString("t", culture),
+            item.Kind == AgendaKind.Reminder, item.Done, new Command(() => Complete(item)), new Command(() => Remove(item)), tr("Quitar"),
+            item.Done ? tr("Marcar como pendiente") : tr("Marcar como hecho"), meeting, meeting is null ? null : new Command(() => OpenMeeting(meeting)));
+    }
+
+    private static void OpenMeeting(Uri? uri)
+    {
+        if (uri is null) return;
+        try { Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true }); }
+        catch (Exception e) { AppLog.Write($"calendario: {e.Message}"); }
+    }
 
     private void Complete(AgendaItem item)
     {

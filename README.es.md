@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.20.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.0-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -74,12 +74,18 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🐾 | **Mascotas con personalidad** | Elige a **Mira**, una **llama**, una **capibara** o un **gatito naranja**. Una vive en la barra de tareas (sobre Inicio, a su izquierda o de paseo) y cuenta lo que hace Ollama: duerme en su cama, come mientras carga un modelo, teclea mientras genera y se asea a su manera mientras libera RAM. Cada una reacciona a tus clics y a tu cursor a su manera — dormida, sin salir de la cama. Apagadas por defecto; [más abajo](#-mascotas). |
 | 🪟 | **Dock tipo notch** | Opcional (Ajustes > General): una pastilla pegada al borde superior de la pantalla, en el monitor donde está el cursor, con los tres datos que elijas (estado, modelo y RAM por defecto; también puedes elegir la música que suena, con su indicador y su título desplazándose). Pasa el ratón para una vista corta que personalizas con tus widgets (por defecto Ollama: estado, RAM y GPU, Liberar RAM, Liberar modelo, Procesos); haz clic para el Home. Dos tiras de iconos debajo dan navegación de un clic (Inicio, Widgets y Ajustes, y Ollama y Actividad si los activas) y hasta cuatro favoritos que eliges tú, con un botón de fijar que mantiene el notch abierto. El panel es negro puro arriba y se funde en cristal líquido (lo de detrás, desenfocado), las cápsulas del dock también son de cristal y, si pulsas y arrastras por sus botones, una lente de cristal te sigue y abre la página donde cae. Se oculta mientras algo está a pantalla completa. |
 | 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario (un mes con flechas, una agenda de recordatorios que añades con una regla de días que arrastras, y los eventos de un archivo .ics opcional), Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con controles macizos, aleatorio y repetir, y el color de la portada). Los widgets van directamente sobre el cristal, sin tarjetas, en dos columnas que se rellenan por la más corta. Todo se lee en local. |
+| 🎚️ | **Audio por app y HUDs** | El widget Audio controla y recuerda el nivel del mezclador de Windows de cada app con una sesión activa. Los HUDs opcionales del notch muestran volumen, Bloq Mayús/Bloq Núm, brillo en pantallas internas compatibles y conexiones de audio. |
+| 🧩 | **Editor de widgets y gráficas del sistema** | Añade, arrastra, ordena y ensancha widgets compatibles del Home (hasta cuatro celdas); guarda o descarta los cambios. Elige dos gráficas del sistema entre seis métricas o consulta las seis en la vista ancha. |
+| 🤖 | **Actividad de agentes de código** | El selector fijo separa sesiones activas y recientes de Claude Code y Codex. En Recientes puedes consultar sesiones terminadas o inactivas hasta 12 horas, buscar por nombre, proyecto, agente o actividad y filtrar por agente, proyecto y estado. El resumen cuenta llamadas de herramientas completadas y archivos distintos solo cuando la ruta aparece explícitamente en el log; las sesiones que necesitan atención conservan ese estado y muestran cuánto llevan inactivas. Los detalles de herramientas, archivos y mensajes se despliegan bajo demanda. No muestra prompts, argumentos ni salidas completas de comandos; los logs se leen en local y nunca se envían. |
+| 📅 | **Calendario, tiempo, OCR y teleprompter** | Los eventos del calendario muestran progreso y enlaces de reunión; el tiempo opcional consulta la ciudad elegida en Open-Meteo; el OCR local copia texto de una imagen de la Bandeja o de una región de pantalla; el teleprompter guarda el texto localmente. |
+| 🫧 | **Más controles del notch** | Ajusta el fundido del cristal, oculta el notch en apps elegidas y usa el estilo de movimiento compartido; el OSD de volumen de Windows sigue disponible. |
+
 | ⚡ | **Actividades en vivo** | En cápsulas a los dos lados de la pastilla cerrada del notch, lo que pasa ahora: a la izquierda, lo de Ollama (liberando RAM, encendiéndose o apagándose, memoria crítica); a la derecha, el volumen cuando cambia, un Pomodoro en marcha, Mantener despierto y, si lo activas, la música que suena. Hasta una a la izquierda y dos a la derecha, cada una con su interruptor. El widget de Música salta de pista al deslizarlo con el ratón o con dos dedos en el trackpad, y su barra de progreso se puede pulsar. |
 | 📥 | **Bandeja de archivos, portapapeles y favoritos de apps** | Arrastra archivos o carpetas al notch y esperan en su página Bandeja (solo sus rutas, en memoria) hasta que los arrastras de vuelta, copias su ruta, los enseñas en el Explorador o los comprimes todos en el Escritorio. Las filas enseñan miniaturas de las imágenes e iconos de Material para las carpetas, con cuántos elementos y cuánto pesa cada carpeta; el doble clic abre un elemento, una carpeta se puede abrir como proyecto en el widget Código, puedes pegar archivos que copiaste en el Explorador, arrastrar todo de una vez y, si quieres, recordar la bandeja entre sesiones (Ajustes > General, solo las rutas). El historial del portapapeles, opcional (Ajustes > General, apagado por defecto), guarda los últimos 25 textos que copias, solo en memoria, y se salta lo que los gestores de contraseñas marcan como privado. Los archivos de texto de la bandeja se pueden editar y guardar ahí mismo (Ctrl+S) para cambios rápidos mientras programas, y el widget **Código** es un IDE pequeño: eliges una carpeta y obtienes su árbol de archivos (con los iconos de Material Icon Theme), pestañas, un visor de imágenes y un editor de texto con colores de sintaxis para Markdown, código, JSON, YAML, XML y más. Los favoritos también pueden abrir cualquier app o archivo que elijas. |
 | ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | En el panel de la bandeja, vidrio negro ahumado sobre el acrílico real de Windows 11; en el notch, negro puro que se funde en cristal líquido (desenfoca lo de detrás y lo tiñe para que el texto se lea). Tarjetas translúcidas e interfaz monocroma con color solo para el estado (y el color de la portada para la música). El ícono de la bandeja sigue el modo de la barra de tareas. |
-| 🔄 | **Actualizaciones** | Busca versiones estables nuevas en GitHub, muestra las notas y solo instala cuando pulsas **Actualizar** — verificada con SHA-256, solo extrae archivos ZIP permitidos en su carpeta temporal y vuelve atrás automáticamente si algo falla. |
+| 🔄 | **Actualizaciones** | Opcionales y apagadas por defecto. Si las activas, busca versiones estables en GitHub; tú decides cuándo instalar. Verifica SHA-256 y vuelve atrás si algo falla. |
 | 🔒 | **Privado** | Habla con tus motores de modelos locales. Sin cuentas, telemetría ni analítica. La búsqueda opcional de actualizaciones y sus descargas contactan con GitHub; los datos de procesos se quedan en tu PC. |
 
 ## 📥 Instalar
@@ -99,6 +105,8 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 **1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
+
+**1.25.0 está en desarrollo**: el trabajo de las versiones 1.21–1.25 añade audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. Aún no está publicada; consulta el [changelog](CHANGELOG.md).
 
 **1.20.0 ya está publicada** (17 de octubre de 2026): el notch pasa a ser de cristal líquido (negro puro que se funde en vidrio esmerilado, cápsulas de cristal en el dock y una lente de cristal que arrastras por él), widgets sin tarjetas en dos columnas, un widget de Música teñido con la portada y un calendario con una agenda de recordatorios locales y un archivo .ics opcional, actividades en vivo a los dos lados del notch, un botón de fijar, Ajustes y Actividad en pestañas y el reconocimiento de procesos dentro del notch.
 
@@ -352,7 +360,7 @@ Con Ollama apagado, usa lo elegido en Ajustes o el último mecanismo recordado e
   igual. **LM Studio** (**experimental, sin probar**): solo si `lms.exe` está instalado; puerto 1234,
   `/api/v0/models`, `lms server start|stop` y `lms unload --all`.
 - **Actualizaciones:** repositorio público oficial **Tykillita/isTargetSleeping** configurado por defecto.
-  La búsqueda automática comienza activada, al arrancar y cada 24 horas; puedes apagarla en Ajustes. Conserva las
+  La búsqueda automática es opcional y está apagada por defecto; si la activas, comienza al arrancar y cada 24 horas. Conserva las
   preferencias explícitas existentes, incluido `updateCheck: false` y un `updateRepo` personalizado.
   **Buscar actualizaciones ahora** en Ajustes y en el menú de la bandeja funciona aunque la búsqueda automática
   esté apagada. Respeta los tiempos de espera de GitHub y diferencia errores, paquetes incompatibles y ausencia
@@ -376,7 +384,7 @@ archivos de paginación; llegar a su límite puede impedir nuevas reservas aunqu
 ## 🔒 Privacidad
 
 - Se conecta a la API local de Ollama (`127.0.0.1:11434` u `OLLAMA_HOST`) y a los puertos locales de los otros motores.
-- La búsqueda automática de actualizaciones (activada inicialmente y opcional en Ajustes) consulta `api.github.com`
+- Si la activas, la búsqueda automática de actualizaciones consulta `api.github.com`
   al arrancar y cada 24 horas, sin credenciales. Al pulsar **Actualizar**, descarga el paquete y su comprobante
   desde GitHub y sus servidores `release-assets.githubusercontent.com`/`objects.githubusercontent.com`. GitHub
   recibe tu IP y el identificador de la app; no se envían modelos, conversaciones, ajustes ni historial de uso.
@@ -396,6 +404,10 @@ archivos de paginación; llegar a su límite puede impedir nuevas reservas aunqu
   lo pides, en tu Escritorio. El historial del portapapeles, opcional (apagado por defecto), guarda hasta 25 textos copiados
   solo en memoria: nunca en disco, nunca imágenes ni archivos, se salta lo que los gestores de contraseñas marcan como
   privado y se vacía al apagarlo o cerrar la app. Un favorito de app guarda solo su ruta en `settings.json`, y lo mismo la carpeta del widget Código, que solo lee y escribe los archivos que abres ahí. El editor de la bandeja trabaja sobre el propio archivo: conserva su codificación y sus saltos de línea, guarda a través de un archivo temporal y avisa en vez de sobrescribir un archivo que cambió en el disco; el texto sin guardar vive solo en memoria.
+- El audio por app, las métricas del sistema, el estado de teclas, el brillo y la detección de conexiones de audio se leen en local. El volumen por app modifica el mismo nivel que el mezclador de Windows.
+- El widget opcional de agentes lee, solo para lectura, los logs locales de Claude Code y Codex CLI. Recientes conserva hasta 12 horas las sesiones terminadas y las que llevan cinco minutos sin actividad; las sesiones que necesitan atención mantienen esa etiqueta y muestran el tiempo transcurrido. Los contadores usan llamadas completadas y rutas de archivo explícitas. Mensajes breves, herramientas y archivos solo aparecen en el detalle expandido; nunca se muestran prompts del usuario, argumentos o salidas completas de comandos, ni se envían datos.
+- El tiempo está apagado por defecto. Al activarlo, la ciudad que elijas se envía a Open-Meteo para consultar coordenadas y pronósticos; no se solicita la ubicación de Windows. El OCR se ejecuta localmente y copia el texto reconocido al portapapeles. El texto del teleprompter se guarda en los ajustes locales.
+
 - Nombres, PIDs, rutas, usuarios y métricas de RAM/CPU se leen localmente; el reconocimiento de procesos no envía
   esos datos a ningún servicio externo.
 - Ajustes en `%LOCALAPPDATA%\isTargetSleeping\settings.json`, historial de 90 días en `stats.json` y su propio

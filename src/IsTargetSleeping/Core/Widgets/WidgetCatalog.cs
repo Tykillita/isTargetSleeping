@@ -30,6 +30,10 @@ public static class WidgetCatalog
         new("battery", "Batería", "", 1),
         new("code", "Código", "", 2),
         new("media", "Música", "", 1),
+        new("audio", "Audio por app", "", 1),
+        new("agents", "Agentes de IA", "", 1),
+        new("weather", "Tiempo", "", 1),
+        new("teleprompter", "Teleprompter", "", 1),
     ];
 
     public static readonly IReadOnlyList<string> DefaultWidgets = ["ollama", "system", "clock"];
@@ -99,7 +103,17 @@ public static class FavoriteCatalog
 /// El orden y la elección de widgets del Home. Todo son funciones puras: la interfaz solo guarda el resultado.
 public static class WidgetLayout
 {
-    public static int Cells(IEnumerable<string> ids) => ids.Sum(id => WidgetCatalog.Find(id)?.Cells ?? 0);
+    public static string BaseId(string id) => id.Split('@', 2)[0];
+    public static int Span(string id)
+    {
+        var baseId = BaseId(id);
+        var info = WidgetCatalog.Find(baseId);
+        if (info is null) return 0;
+        var canResize = info.Cells == 1 && baseId is "system" or "clock" or "pomodoro" or "awake" or "battery" or "media" or "audio" or "agents" or "weather" or "teleprompter";
+        var suffix = id.IndexOf('@');
+        return canResize && suffix >= 0 && int.TryParse(id[(suffix + 1)..], out int span) && span is 1 or 2 ? span : info.Cells;
+    }
+    public static int Cells(IEnumerable<string> ids) => ids.Sum(Span);
 
     /// Lo guardado (null = nunca se tocó) sin ids desconocidos ni repetidos; lo que no cabe en cuatro celdas se descarta.
     public static List<string> Normalize(IEnumerable<string>? stored, IEnumerable<string>? defaults = null)
@@ -107,18 +121,39 @@ public static class WidgetLayout
         var result = new List<string>();
         foreach (var id in stored ?? defaults ?? WidgetCatalog.DefaultWidgets)
         {
-            if (WidgetCatalog.Find(id) is not { } info || result.Contains(id)) continue;
-            if (Cells(result) + info.Cells <= WidgetCatalog.MaxCells) result.Add(id);
+            var baseId = BaseId(id);
+            if (WidgetCatalog.Find(baseId) is not { } info || result.Any(x => BaseId(x) == baseId)) continue;
+            var span = Span(id);
+            var canResize = span != info.Cells;
+            var normalized = canResize ? $"{baseId}@{span}" : baseId;
+            if (Cells(result) + span <= WidgetCatalog.MaxCells) result.Add(normalized);
         }
         return result;
     }
 
     public static bool CanAdd(IReadOnlyList<string> ids, string id) =>
-        WidgetCatalog.Find(id) is { } info && !ids.Contains(id) && Cells(ids) + info.Cells <= WidgetCatalog.MaxCells;
+        WidgetCatalog.Find(BaseId(id)) is { } info && ids.All(x => BaseId(x) != BaseId(id)) && Cells(ids) + info.Cells <= WidgetCatalog.MaxCells;
 
     public static List<string> Add(IReadOnlyList<string> ids, string id) => CanAdd(ids, id) ? [.. ids, id] : [.. ids];
 
-    public static List<string> Remove(IReadOnlyList<string> ids, string id) => ids.Where(i => i != id).ToList();
+    public static List<string> Remove(IReadOnlyList<string> ids, string id) => ids.Where(i => BaseId(i) != BaseId(id)).ToList();
+
+    public static bool CanResize(string id) => Span(id) > 0 && WidgetCatalog.Find(BaseId(id))?.Cells == 1
+        && BaseId(id) is "system" or "clock" or "pomodoro" or "awake" or "battery" or "media" or "audio" or "agents" or "weather" or "teleprompter";
+
+    public static List<string> ToggleWidth(IReadOnlyList<string> ids, string id)
+    {
+        var index = ids.ToList().FindIndex(x => BaseId(x) == BaseId(id));
+        if (index < 0 || !CanResize(id)) return [.. ids];
+        var result = ids.ToList();
+        int target = Span(result[index]) == 1 ? 2 : 1;
+        var token = target == WidgetCatalog.Find(BaseId(id))!.Cells ? BaseId(id) : $"{BaseId(id)}@{target}";
+        if (Cells(result) - Span(result[index]) + target > WidgetCatalog.MaxCells) return result;
+        result[index] = token;
+        return result;
+    }
+
+    public static bool DragResizeTriggered(bool wide, double delta) => wide ? delta <= -36 : delta >= 36;
 
     /// Cuántas celdas ocupa de verdad cada widget: una fila mide dos. Los de dos celdas llenan una fila; los de una se emparejan
     /// y el que se queda solo en su fila (sin compañero) se ensancha a las dos y cambia a su vista ancha.
@@ -127,9 +162,11 @@ public static class WidgetLayout
         var rows = new List<List<(string Id, int Cells)>>();
         foreach (var id in ids)
         {
-            var cells = WidgetCatalog.Find(id)?.Cells ?? 1;
+            var baseId = BaseId(id);
+            var cells = Span(id);
+            if (cells == 0) continue;
             if (rows.Count == 0 || rows[^1].Sum(w => w.Cells) + cells > 2) rows.Add([]);
-            rows[^1].Add((id, cells));
+            rows[^1].Add((baseId, cells));
         }
         return rows.SelectMany(row => row.Select(w => (w.Id, row.Count == 1 ? 2 : w.Cells))).ToList();
     }
@@ -138,10 +175,27 @@ public static class WidgetLayout
     public static List<string> Move(IReadOnlyList<string> ids, string id, int delta)
     {
         var list = ids.ToList();
-        var from = list.IndexOf(id);
+        var from = list.FindIndex(x => BaseId(x) == BaseId(id));
         var to = from + delta;
         if (from < 0 || to < 0 || to >= list.Count) return list;
         (list[from], list[to]) = (list[to], list[from]);
+        return list;
+    }
+
+    public static List<string> MoveBefore(IReadOnlyList<string> ids, string sourceId, string targetId)
+    {
+        var list = ids.ToList();
+        int from = list.FindIndex(x => BaseId(x) == BaseId(sourceId));
+        int to = list.FindIndex(x => BaseId(x) == BaseId(targetId));
+        if (to < 0 || from == to) return list;
+        if (from < 0)
+        {
+            if (CanAdd(list, sourceId)) list.Insert(to, sourceId);
+            return list;
+        }
+        var item = list[from]; list.RemoveAt(from);
+        if (from < to) to--;
+        list.Insert(to, item);
         return list;
     }
 }

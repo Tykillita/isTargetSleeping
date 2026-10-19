@@ -63,7 +63,7 @@
 <section class="hero">
   <div class="contenedor">
     <img class="hero-icono" src="media/istargetsleeping-icon.svg" alt="Ícono de isTargetSleeping" width="104" height="104">
-    <p class="eyebrow" data-i18n="hero.eyebrow">Versión 1.20.0 · Windows nativo</p>
+    <p class="eyebrow" data-i18n="hero.eyebrow">1.25.0 en desarrollo · Windows nativo</p>
     <h1 data-i18n="hero.titulo">Un notch para Windows: Ollama, tu PC y tus herramientas, a un vistazo.</h1>
     <p class="hero-sub" data-i18n="hero.sub">isTargetSleeping vive junto al reloj de Windows o, si quieres, en el borde de la pantalla como un notch. Enciende y apaga Ollama, duerme a sus modelos cuando no trabajan y te devuelve la RAM, y suma widgets: sistema, reloj, Pomodoro, notas…</p>
     <div class="hero-cta">
@@ -73,7 +73,7 @@
       </a>
       <a class="enlace" href="#como-funciona" data-i18n="cta.como">Así funciona</a>
     </div>
-    <p class="hero-meta" data-i18n="hero.meta">Gratis y de código abierto · Última versión publicada: 1.20.0 · Windows 10 y 11 · x64 y ARM64</p>
+    <p class="hero-meta" data-i18n="hero.meta">Gratis y de código abierto · Próxima versión en desarrollo: 1.25.0 · Última publicada: 1.20.0 · Windows 10 y 11 · x64 y ARM64</p>
 
     <div class="escritorio" aria-label="El panel de isTargetSleeping abierto en el escritorio de Windows" data-i18n-aria="hero.escritorio">
       <img class="ventana ventana--ajustes" data-src-lang="media/settings-preview-{lang}.png" src="media/settings-preview-es.png" alt="" loading="lazy">
@@ -361,6 +361,25 @@
   </div>
 </section>
 
+<!-- Próxima versión: no hay enlaces de descarga hasta publicar la release. -->
+<section class="seccion seccion--gris" id="proxima">
+  <div class="contenedor">
+    <div class="cabecera revela">
+      <p class="eyebrow" data-i18n="dev.eyebrow">En desarrollo · 1.21.0 → 1.25.0</p>
+      <h2 data-i18n="dev.titulo">Más funciones, en el mismo notch.</h2>
+      <p data-i18n="dev.sub">La siguiente etapa reúne audio por app, un editor de widgets, tarjetas de sistema y herramientas locales para tu trabajo diario.</p>
+    </div>
+    <div class="bento">
+      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f1">1.21.0 · Audio y HUDs</p><h3 data-i18n="dev.f1t">Control por app</h3><p data-i18n="dev.f1d">Deslizadores del mezclador de Windows, indicadores del notch y controles para ocultarlo en apps elegidas.</p></article>
+      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f2">1.22.0 · Widgets y sistema</p><h3 data-i18n="dev.f2t">Personaliza el Home</h3><p data-i18n="dev.f2d">Arrastra, ordena y ensancha widgets; consulta gráficas en vivo de las métricas del PC.</p></article>
+      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f3">1.23.0 · Agentes locales</p><h3 data-i18n="dev.f3t">Claude Code y Codex</h3><p data-i18n="dev.f3d">Lista las sesiones activas con nombre, herramienta, resumen del trabajo terminado y fragmentos breves de mensajes del agente. Agrupa llamadas repetidas y presenta los resultados de automatizaciones de forma legible. Los prompts del usuario no se muestran; todo se procesa en el PC.</p></article>
+      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f4">1.24.0 · Calendario y herramientas</p><h3 data-i18n="dev.f4t">Más en local</h3><p data-i18n="dev.f4d">Progreso de eventos y enlaces de reunión, tiempo opcional por ciudad, OCR local y teleprompter.</p></article>
+      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f5">1.25.0 · Agentes interactivos</p><h3 data-i18n="dev.f5t">Explora cada sesión</h3><p data-i18n="dev.f5d">Alterna entre sesiones activas y recientes, busca y filtra hasta 12 horas de historial, consulta resúmenes basados en actividad confirmada y expande los detalles cuando los necesites. Sin prompts ni comandos completos.</p></article>
+    </div>
+    <p class="hero-meta" data-i18n="dev.estado">En desarrollo; la última versión publicada sigue siendo 1.20.0.</p>
+  </div>
+</section>
+
 <!-- ============ Cómo funciona ============ -->
 <section class="seccion" id="como-funciona">
   <div class="contenedor">
@@ -459,7 +478,7 @@
     <div class="cabecera revela">
       <p class="eyebrow" data-i18n="priv.eyebrow">Privacidad</p>
       <h2 data-i18n="priv.titulo">Todo ocurre en tu PC.<br>Y ya.</h2>
-      <p data-i18n="priv.sub">Habla con la API local de Ollama en <code>127.0.0.1:11434</code> (u <code>OLLAMA_HOST</code>, si lo defines) y con los puertos locales de los otros motores. Los widgets leen datos de tu propio PC y no envían nada (el cristal del notch usa una copia de la pantalla que solo vive en memoria; los recordatorios del calendario se guardan en tus ajustes); la bandeja (que solo recuerda sus rutas si lo pides) y el portapapeles (opcional) viven en memoria. Las páginas web solo se abren cuando haces clic.</p>
+      <p data-i18n="priv.sub">Habla con la API local de Ollama en <code>127.0.0.1:11434</code> (u <code>OLLAMA_HOST</code>, si lo defines) y con los puertos locales de los otros motores. Los widgets leen tu PC en local; los logs de agentes solo se leen si activas esa función y nunca salen del equipo. En la app puedes ver fragmentos breves de mensajes del agente, nunca prompts del usuario. El tiempo, apagado por defecto, envía únicamente la ciudad que eliges a Open-Meteo. El cristal del notch usa una copia de pantalla solo en memoria; las páginas se abren cuando haces clic.</p>
     </div>
     <div class="garantias">
       <div class="garantia revela">
@@ -474,8 +493,8 @@
       </div>
       <div class="garantia revela">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-        <h3 data-i18n="priv.c3">Una sola salida, opcional</h3>
-        <p data-i18n="priv.c3t">Buscar actualizaciones en GitHub, sin credenciales. Se apaga en Ajustes y no sube modelos, prompts ni ajustes.</p>
+        <h3 data-i18n="priv.c3">Dos conexiones opcionales</h3>
+        <p data-i18n="priv.c3t">Si activas las actualizaciones, consultan GitHub. El tiempo, apagado por defecto, envía solo la ciudad elegida a Open-Meteo. Ambos servicios son opcionales; no se suben modelos, prompts ni ajustes.</p>
       </div>
     </div>
     <p class="privada-pie" data-i18n="priv.admin">UAC se solicita al activar o actualizar el agente de RAM, al controlar Ollama como servicio si hace falta, o cuando eliges reintentar una finalización de procesos como administrador.</p>
@@ -661,7 +680,7 @@
       </details>
       <details>
         <summary data-i18n="faq.q9">¿Cómo se actualiza?</summary>
-        <div class="respuesta"><p data-i18n="faq.a9">Busca versiones estables en GitHub al arrancar y cada 24 h, te enseña las notas y solo instala cuando pulsas Actualizar. Verifica el SHA-256 y, si algo falla, vuelve sola a la versión anterior.</p></div>
+        <div class="respuesta"><p data-i18n="faq.a9">Las búsquedas son opcionales y están apagadas por defecto. Si las activas, consultan GitHub al arrancar y cada 24 h. Tú decides cuándo instalar; verifica SHA-256 y vuelve a la versión anterior si algo falla.</p></div>
       </details>
       <details>
         <summary data-i18n="faq.q10">¿Funciona en Mac o Linux?</summary>
@@ -740,7 +759,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.20.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.25.0 en desarrollo</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

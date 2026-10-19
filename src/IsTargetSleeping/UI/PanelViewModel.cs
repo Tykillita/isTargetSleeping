@@ -189,7 +189,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         ToggleWatchdog = new Command(() => Prefs.Toggle(PrefKeys.Watchdog));
         ToggleGameMode = new Command(() => Supervisor.SetGameMode(!Supervisor.GameModeEnabled));
         ToggleGameRestore = new Command(() => Prefs.Toggle(PrefKeys.GameRestore));
-        ToggleUpdateCheck = new Command(() => { Prefs.Toggle(PrefKeys.UpdateCheck); _ = Supervisor.CheckUpdates(); });
+        ToggleUpdateCheck = new Command(() => { Prefs.Toggle(PrefKeys.UpdateCheck, false); _ = Supervisor.CheckUpdates(); });
         OpenLog = new Command(() => Prefs.OpenLog?.Invoke());
         OpenEngineLog = new Command(() => Paths.OpenLog(Supervisor.LlamaCpp.LogPath));
         PowerAnyway = new Command(Supervisor.PowerAnyway);
@@ -209,6 +209,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         ToggleTrayPin = new Command(() => { TrayPin.SetPinned(!TrayPin.Pinned); Notify(); });
         OpenTrayFallback = new Command(() => Paths.Open("ms-settings:taskbar"));
         ToggleReducedMotion = new Command(Prefs.ToggleReducedMotion);
+        SetGlassLevel = new ParamCommand(v => { if (v is double d) Prefs.SetGlassLevel(d); });
         ToggleNotchDock = new Command(() => Prefs.Toggle(PrefKeys.NotchDock, false));
         ToggleTaskbarPet = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPet, false));
         TogglePetInteractive = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPetInteractive));
@@ -273,7 +274,8 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
     private void UpdateProcessSampling()
     {
-        Hub.SetVisible(panelVisible && ShowingHome || peekVisible);
+        Hub.SetVisible(panelVisible && ShowingHome, WidgetIds);
+        Hub.SetPeekVisible(peekVisible, PeekIds);
         Procs.SetSamplingActive(ProcessSamplingActive);
     }
 
@@ -957,6 +959,21 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
     public string NotificationsTitle => tr("Notificaciones");
     public List<SwitchRow> NotificationRows { get; private set; } = [];
+    public List<SwitchRow> HudRows { get; private set; } = [];
+    public List<SwitchRow> LocalFeatureRows { get; private set; } = [];
+    public double GlassLevel => Prefs.GlassLevel;
+    public string GlassLevelText => tr("Nivel de cristal: %@", $"{Math.Round(GlassLevel * 100):0}%");
+    public ICommand SetGlassLevel { get; }
+    public string HiddenAppsTitle => tr("Ocultar en apps");
+    public string HiddenAppsDetail => tr("Una app por línea. El notch se oculta y deja pasar los clics sobre esas apps.");
+    public string HiddenAppsText
+    {
+        get => string.Join(Environment.NewLine, Prefs.List(PrefKeys.HiddenApps));
+        set => Prefs.SetList(PrefKeys.HiddenApps, (value ?? "").Split(["\r\n", "\n", ";"], StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => Path.GetFileNameWithoutExtension(x.Trim())).Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase));
+    }
+    public string WeatherCityTitle => tr("Ciudad para Tiempo");
+    public string WeatherCityText { get => Prefs.WeatherCity; set => Prefs.SetWeatherCity(value ?? ""); }
 
     public string IntegrationsTitle => tr("Integraciones");
     public string LinksHint => tr("Enlaces para Stream Deck, PowerToys, scripts o una nota: ábrelos con start o desde el navegador.");
@@ -1030,8 +1047,8 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public ICommand TogglePetInteractive { get; }
     public bool ShowUpdateSetting => Supervisor.UpdatesAvailable;
     public string UpdateCheckTitle => tr("Buscar actualizaciones");
-    public string UpdateCheckDetail => tr("Al arrancar y cada 24 horas en GitHub (%@). Tú decides cuándo instalar.", AppInfo.UpdateRepo);
-    public bool UpdateCheckOn => Prefs.Switch(PrefKeys.UpdateCheck);
+    public string UpdateCheckDetail => tr("Si lo activas, busca al arrancar y cada 24 horas en GitHub (%@). Tú decides cuándo instalar.", AppInfo.UpdateRepo);
+    public bool UpdateCheckOn => Prefs.Switch(PrefKeys.UpdateCheck, false);
     public string LanguageTitle => tr("Idioma");
     public string LanguageHelp => tr("La app se reinicia al cambiarlo");
     public List<Segment> LanguageSegments { get; private set; } = [];
@@ -1156,7 +1173,8 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var segSignature = $"{Ollama.IdleReleaseMinutes}#{pref}#{string.Join(",", Ollama.Mechanisms.Select(b => b.Key))}#{Prefs.Language}"
                            + $"#{string.Join(",", games)}#{string.Join(",", ignored)}#{notices}#{engineIdle}#{Supervisor.UpdatesAvailable}"
                            + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanCooldown}#{Supervisor.CleanInterval}#{cleanSwitches}"
-                           + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}";
+                           + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}#{string.Join(",", ActivityIds)}"
+                           + $"#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}";
         if (segSignature == segmentsSignature) return;
         segmentsSignature = segSignature;
         IdleSegments = Segments(Ollama.IdleReleaseMinutes, m => Ollama.IdleReleaseMinutes = m);
@@ -1185,6 +1203,28 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var kinds = Enum.GetValues<Notice>().Where(n => n != Notice.Update || Supervisor.UpdatesAvailable).ToList();
         NotificationRows = kinds.Select((n, i) => new SwitchRow(n.Title(), null, Prefs.Switch(n.Key(), n.DefaultOn()),
             new Command(() => Prefs.Toggle(n.Key(), n.DefaultOn())), i > 0)).ToList();
+        var enabledHud = ActivityIds;
+        HudRows = new[] { "brightness", "locks", "bluetooth" }.Select((id, i) =>
+        {
+            var info = ActivityCatalog.Find(id)!;
+            var detail = id switch
+            {
+                "brightness" => tr("Solo pantallas internas compatibles. El aviso de Windows permanece."),
+                "locks" => tr("Muestra Bloq. Mayús o Bloq. Núm tras pulsarlos."),
+                _ => tr("Detecta salidas de audio Bluetooth al conectarse o desconectarse."),
+            };
+            return new SwitchRow(info.Title, detail, enabledHud.Contains(id),
+                new Command(() => Prefs.SetList(PrefKeys.NotchActivities, ActivityCatalog.Toggle(ActivityIds, id))), i > 0);
+        }).ToList();
+        LocalFeatureRows =
+        [
+            new(tr("Agentes de IA"), tr("Lee metadatos de sesiones locales de Claude Code y Codex; apagado por defecto."),
+                Prefs.Switch(PrefKeys.AgentsEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.AgentsEnabled, false)), false),
+            new(tr("Tiempo con Open-Meteo"), tr("Envía solo la ciudad elegida; apagado por defecto."),
+                Prefs.Switch(PrefKeys.WeatherEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.WeatherEnabled, false)), true),
+            new(tr("OCR de pantalla"), tr("Ctrl+Alt+I selecciona una región y copia el texto reconocido; el procesamiento es local."),
+                Prefs.Switch(PrefKeys.OcrEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.OcrEnabled, false)), true),
+        ];
 
         var areas = Supervisor.Areas;
         (CleanAreas Area, string Title, string Hint)[] areaList =

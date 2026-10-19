@@ -1,0 +1,4 @@
+{"type":"user","message":{"content":"PRIVATE_USER_PROMPT_MARKER"}}
+{"type":"assistant","message":{"content":[{"type":"text","text":"I am checking the sample file and its references."}]},"cwd":"C:/projects/sample-project"}
+{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"C:/projects/sample-project/Widget.cs"}}]}}
+{"type":"custom-title","customTitle":"Update sample project","sessionId":"claude-1"}

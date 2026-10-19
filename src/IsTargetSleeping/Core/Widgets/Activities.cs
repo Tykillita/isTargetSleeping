@@ -10,7 +10,7 @@ public sealed record ActivityInfo(string Id, string Key, string Glyph, int Prior
 }
 
 /// Una actividad que está ocurriendo (texto ya listo para enseñar).
-public sealed record Activity(string Id, string Glyph, string Text, int Priority, bool Left = false);
+public sealed record Activity(string Id, string Glyph, string Text, int Priority, bool Left = false, double Progress = -1);
 
 public static class ActivityCatalog
 {
@@ -29,6 +29,11 @@ public static class ActivityCatalog
         new("pomodoro", "Pomodoro en marcha", "", 50),
         // Apagada por defecto: leer qué suena es lo único que mira lo que hace el usuario fuera de la app.
         new("media", "Música sonando", "", 40, DefaultOn: false),
+        new("brightness", "Brillo cambiado", "", 96, DefaultOn: false),
+        new("locks", "Bloq. Mayús o Bloq. Núm", "", 34, DefaultOn: false),
+        new("bluetooth", "Auricular Bluetooth", "", 33, DefaultOn: false),
+        new("agents", "Agente trabajando", "", 32, DefaultOn: false),
+        new("meeting", "Evento en curso", "", 31),
         new("awake", "Mantener despierto", "", 10),
     ];
 

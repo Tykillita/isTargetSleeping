@@ -22,7 +22,72 @@ public partial class App : Application
     private PanelViewModel model = null!;
     private TrayAnimator animator = null!;
     private TaskbarPet? pet;
+    private System.Windows.Point widgetDragStart;
+    private double widgetResizeDelta;
+    private bool widgetResizeDone;
+    private bool widgetResizeWide;
     public bool EnsureTrayReady() => tray?.EnsureReady() == true;
+
+    private void OnWidgetRowMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        widgetDragStart = e.GetPosition((IInputElement)sender);
+    }
+
+    private void OnWidgetRowMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed || sender is not FrameworkElement { DataContext: WidgetRow { CanDrag: true, WidgetId: { } id } } row
+            || e.OriginalSource is ButtonBase) return;
+        var point = e.GetPosition(row);
+        if (Math.Abs(point.X - widgetDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(point.Y - widgetDragStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+        DragDrop.DoDragDrop(row, new DataObject(typeof(string), id), DragDropEffects.Move);
+    }
+
+    private void OnWidgetRowDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(typeof(string)) ? DragDropEffects.Move : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnWidgetRowDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(string)) is string source && sender is FrameworkElement { DataContext: WidgetRow { DropBefore: { } drop } })
+            drop.Execute(source);
+        e.Handled = true;
+    }
+
+    private void OnWidgetHomeDrop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(typeof(string)) is string source)
+        {
+            if (sender is FrameworkElement { DataContext: WidgetSlot target }) model.MoveWidgetBefore(source, target.Id);
+            else model.AddWidgetToDraft(source);
+        }
+        e.Handled = true;
+    }
+
+    private void OnWidgetResizeDragStarted(object sender, DragStartedEventArgs e)
+    {
+        widgetResizeDelta = 0;
+        widgetResizeDone = false;
+        widgetResizeWide = sender is Thumb { DataContext: WidgetSlot slot } && slot.ResizeWide;
+    }
+
+    private void OnWidgetResizeDragDelta(object sender, DragDeltaEventArgs e)
+    {
+        if (widgetResizeDone || sender is not Thumb { DataContext: WidgetSlot slot }) return;
+        widgetResizeDelta += e.HorizontalChange;
+        if (!WidgetLayout.DragResizeTriggered(widgetResizeWide, widgetResizeDelta)) return;
+        slot.Resize.Execute(null);
+        widgetResizeDone = true;
+        e.Handled = true;
+    }
+
+    private void OnWidgetResizeDragCompleted(object sender, DragCompletedEventArgs e)
+    {
+        widgetResizeDelta = 0;
+        widgetResizeDone = false;
+    }
 
     public void StartTray(bool launchedAtLogin, string? pending = null)
     {
@@ -41,7 +106,8 @@ public partial class App : Application
         tray.RightClick += ShowMenu;
         tray.HotKeyPressed += key =>
         {
-            if (key == HotKey.Sleep) supervisor.Sleep();
+            if (key == HotKey.Ocr) _ = ReadScreenOcr();
+            else if (key == HotKey.Sleep) supervisor.Sleep();
             else if (key == HotKey.Clean) _ = supervisor.Clean(CleanReason.Manual);
             else ollama.Toggle();
         };
@@ -58,6 +124,7 @@ public partial class App : Application
         supervisor.Changed += Repaint;
 
         prefs.OnHotKeyChange = ApplyHotKeys;
+        prefs.OnOcrHotKeyChange = _ => ApplyHotKeys(prefs.HotKeyEnabled);
         prefs.Changed += Repaint;   // ícono con el % o animado
         // Aplazado: el interruptor está dentro de la vista que va a cambiar de ventana.
         prefs.Changed += () => Dispatcher.BeginInvoke(ApplyNotchDock);
@@ -93,10 +160,12 @@ public partial class App : Application
     {
         supervisor?.Stop();
         notch?.Stop();
+        model?.Hub.Dispose();
         model?.SetPanelVisible(false);
         HotKey.Power.Unregister();
         HotKey.Sleep.Unregister();
         HotKey.Clean.Unregister();
+        HotKey.Ocr.Unregister();
         ollama?.Stats.Flush();
         pet?.Dispose();
         tray?.Dispose();
@@ -107,13 +176,25 @@ public partial class App : Application
     private void ApplyHotKeys(bool on)
     {
         var failed = new List<string>();
-        foreach (var (key, wanted) in new[] { (HotKey.Power, on), (HotKey.Sleep, prefs.SleepHotKeyEnabled), (HotKey.Clean, prefs.Switch(PrefKeys.CleanHotKey)) })
+        foreach (var (key, wanted) in new[] { (HotKey.Power, on), (HotKey.Sleep, prefs.SleepHotKeyEnabled), (HotKey.Clean, prefs.Switch(PrefKeys.CleanHotKey)), (HotKey.Ocr, prefs.Switch(PrefKeys.OcrEnabled, false)) })
         {
             if (!wanted) key.Unregister();
             else if (!key.Register()) failed.Add(key.Display);
         }
         prefs.HotKeyError = failed.Count == 0 ? null
             : tr("No se pudo activar el atajo %@. Puede que otra app ya lo use.", string.Join(", ", failed));
+    }
+
+    private async Task ReadScreenOcr()
+    {
+        try
+        {
+            var text = await OcrRegionWindow.ReadScreenSelection();
+            if (text is null) return;
+            if (text.Length > 0) Clipboard.SetText(text);
+            else tray.Notify(tr("OCR"), tr("No se encontró texto en la selección."));
+        }
+        catch (Exception e) { AppLog.Write($"OCR: {e.Message}"); tray.Notify(tr("OCR"), tr("No se pudo leer la selección: %@", e.Message)); }
     }
 
     /// El panel es siempre vidrio negro; lo que cambia con el sistema es el ícono de

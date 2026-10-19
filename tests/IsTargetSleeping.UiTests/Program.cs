@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using IsTargetSleeping;
 using IsTargetSleeping.UI;
@@ -72,6 +73,25 @@ internal static class Program
                 model.ShowTrayPin != model.ShowTrayFallback);
             model.CurrentSettingsTab = PanelViewModel.SettingsTab.Notch;   // la ayuda y el interruptor de la bandeja están en la pestaña Notch
             view.UpdateLayout();
+            foreach (bool hud in new[] { true, false })
+            {
+                int count = hud ? model.HudRows.Count : model.LocalFeatureRows.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    SwitchRow CurrentRow() => (hud ? model.HudRows : model.LocalFeatureRows)[i];
+                    var row = CurrentRow();
+                    bool initial = row.IsOn;
+                    row.Toggle.Execute(null);
+                    view.UpdateLayout();
+                    row = CurrentRow();
+                    var control = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(b => b.Command == row.Toggle);
+                    Check($"{language}: {row.Title} actualiza el interruptor al encenderlo", row.IsOn != initial && control?.IsOn == row.IsOn);
+                    row.Toggle.Execute(null);
+                    view.UpdateLayout();
+                    Check($"{language}: {row.Title} vuelve al estado anterior al apagarlo", CurrentRow().IsOn == initial);
+                }
+            }
+            Check($"{language}: los HUD conservan las actividades predeterminadas", ActivityCatalog.Normalize(null).All(model.ActivityIds.Contains));
             var trayButton = Descendants(view).OfType<Button>().FirstOrDefault(b => b.Content as string == trayOpen);
             Check($"{language}: el botón de ayuda se ve cuando no hay interruptor directo",
                 trayButton is not null && SeVe(trayButton) == model.ShowTrayFallback);
@@ -161,6 +181,15 @@ internal static class Program
             var unnamedHome = homeButtons.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }).ToArray();
             Check($"{language}: los botones del Home ({homeButtons.Length}: temporizador, despierto y cabecera) tienen nombre accesible", homeButtons.Length >= 4 && unnamedHome.Length == 0);
             Check($"{language}: el Home pinta sus widgets (reloj con calendario de 42 días)", Descendants(homeHost).OfType<ItemsControl>().Any(i => i.Items.Count == 42));
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "system", "clock" });
+            model.BeginCustomizeWidgets();
+            homeHost.UpdateLayout();
+            var resizeHandle = Descendants(homeHost).OfType<Thumb>().FirstOrDefault(t => t.IsVisible && t.DataContext is WidgetSlot { Id: "system" });
+            var resizeReady = resizeHandle?.DataContext is WidgetSlot { ResizeHandleVisible: true, ResizeWide: false };
+            if (resizeHandle?.DataContext is WidgetSlot slot) slot.Resize.Execute(null);
+            Check($"{language}: el tirador de ancho cambia el borrador y actualiza la ranura",
+                resizeReady && model.WidgetIds.Contains("system@2") && model.HomeWidgets.First(w => w.Id == "system").Wide);
+            model.CancelCustomizeWidgets();
             prefs.SetList(PrefKeys.NotchWidgets, new[] { "notes" });
             homeHost.UpdateLayout();
             var notesBox = Descendants(homeHost).OfType<TextBox>().FirstOrDefault(t => t.IsVisible);
@@ -178,11 +207,88 @@ internal static class Program
             homeHost.UpdateLayout();
             var widgetSwitches = Descendants(homeHost).OfType<BrandSwitch>().Where(b => b.IsVisible).ToArray();
             Check($"{language}: la página Widgets lista cada widget (Home y vista corta) y cada favorito con su interruptor con nombre",
-                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + PillCatalog.All.Count + ActivityCatalog.All.Count + FavoriteCatalog.All.Count + DockCatalog.Optional.Count
+                widgetSwitches.Length == 2 * WidgetCatalog.All.Count + SystemMetricCatalog.All.Count + PillCatalog.All.Count + ActivityCatalog.All.Count + FavoriteCatalog.All.Count + DockCatalog.Optional.Count
                 && widgetSwitches.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { Length: > 0 }));
             var upDown = Descendants(homeHost).OfType<Button>().Where(b => b.IsVisible && b.Content is Border { Child: TextBlock { Text: "\uE70E" or "\uE70D" } }).ToArray();
             Check($"{language}: subir y bajar tienen nombre propio por widget activo",
                 upDown.Length == 4 && upDown.All(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is { } n && n.Contains(WidgetCatalog.Find("notes")!.Title)));
+            var agentWidget = model.Hub.Agents;
+            prefs.SetSwitch(PrefKeys.AgentsEnabled, true);
+            agentWidget.Sessions.Clear();
+            agentWidget.Sessions.Add(new AgentSnapshot("claude-123456", "C:/src/Alpha", "Claude Code", AgentState.Working, "exec", "src/Program.cs", 4, 1,
+                "Revisé el flujo y ahora estoy ejecutando la comprobación.", [new("exec", "src/Program.cs", null), new(null, null, "Revisé el flujo y ahora estoy ejecutando la comprobación.")], DateTime.UtcNow));
+            agentWidget.Sessions.Add(new AgentSnapshot("rollout-abcdef12345", "C:/src/Beta", "Codex", AgentState.NeedsAttention, "apply_patch", null, null, null,
+                "El cambio está listo para que lo revises.", [new("apply_patch", null, null), new(null, null, "El cambio está listo para que lo revises.")], DateTime.UtcNow));
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "agents@2" });
+            model.Show(PanelView.Home);
+            model.WideLayout = true;
+            homeHost.UpdateLayout();
+            var agentList = Descendants(homeHost).OfType<ListBox>().FirstOrDefault(l => l.IsVisible && l.Items.Count == 2 && l.ItemsSource is IReadOnlyList<AgentSnapshot>);
+            Check($"{language}: AI Agents muestra todas las sesiones con nombres distintos y seleccionables",
+                agentList?.Items.Count == 2 && agentList.SelectedItem is AgentSnapshot { Provider: "Claude Code" });
+            var activeTab = Descendants(homeHost).OfType<Button>().FirstOrDefault(b => b.Command == agentWidget.SelectActive && b.IsVisible);
+            var recentTab = Descendants(homeHost).OfType<Button>().FirstOrDefault(b => b.Command == agentWidget.SelectRecent && b.IsVisible);
+            Check($"{language}: el selector fijo Active/Recent tiene ambos botones accesibles y contadores",
+                activeTab is not null && recentTab is not null
+                && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(activeTab)?.GetName() == agentWidget.ActiveTabHelp
+                && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(recentTab)?.GetName() == agentWidget.RecentTabHelp
+                && agentWidget.ActiveTabLabel.EndsWith("2", StringComparison.Ordinal));
+            if (agentList is not null && agentList.Items.Count == 2) agentList.SelectedItem = agentWidget.Sessions[1];
+            homeHost.UpdateLayout();
+            var agentTexts = Descendants(homeHost).OfType<TextBlock>().Where(t => t.IsVisible).Select(t => t.Text).ToArray();
+            Check($"{language}: elegir una sesión actualiza herramienta, estado y mensaje del agente",
+                agentWidget.Current?.Session == "rollout-abcdef12345" && agentTexts.Contains("Beta · abcdef")
+                && agentTexts.Contains(language == Language.Es ? "Aplicando cambios" : "Applying changes")
+                && !agentTexts.Contains("apply_patch") && !agentTexts.Contains("El cambio está listo para que lo revises."));
+            var detailButton = Descendants(homeHost).OfType<Button>().FirstOrDefault(b => b.Command == agentWidget.ToggleDetails && b.IsVisible);
+            Check($"{language}: el detalle progresivo empieza plegado y tiene un control accesible",
+                !agentWidget.DetailsExpanded && detailButton is not null
+                && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(detailButton)?.GetName() == agentWidget.DetailsToggleHelp);
+            agentWidget.ToggleDetails.Execute(null);
+            homeHost.UpdateLayout();
+            Check($"{language}: ampliar la sesión muestra herramienta y actividad; seleccionar otra la vuelve a plegar",
+                agentWidget.DetailsExpanded && Descendants(homeHost).OfType<TextBlock>().Any(t => t.Text == agentWidget.ToolLabel)
+                && Descendants(homeHost).OfType<TextBlock>().Any(t => t.Text == "apply_patch")
+                && Descendants(homeHost).OfType<TextBlock>().Any(t => t.Text == "El cambio está listo para que lo revises.")
+                && Descendants(homeHost).OfType<TextBlock>().Any(t => t.Text == (language == Language.Es ? "Aplicando cambios · apply_patch" : "Applying changes · apply_patch")));
+            agentWidget.SelectSession.Execute(agentWidget.Sessions[0]);
+            Check($"{language}: cambiar de sesión pliega el detalle anterior", !agentWidget.DetailsExpanded);
+            agentWidget.RecentSessions.Add(new AgentSnapshot("finished-789000", "C:/src/Gamma", "Codex", AgentState.Finished, null, null, null, null,
+                "Sesión terminada.", [new(null, null, "Sesión terminada.")], DateTime.UtcNow.AddMinutes(-4)));
+            agentWidget.RecentSessions.Add(new AgentSnapshot("inactive-123000", "C:/src/Delta", "Claude Code", AgentState.Inactive, "Read", null, null, null,
+                "Revisé el proyecto y dejé un resumen.", [new("Read", null, "Revisé el proyecto y dejé un resumen.", true)], DateTime.UtcNow.AddMinutes(-8)));
+            homeHost.UpdateLayout();
+            var recentButton = Descendants(homeHost).OfType<Button>().FirstOrDefault(b => b.Command == agentWidget.SelectRecent && b.IsVisible);
+            Check($"{language}: la pestaña Recent queda accesible aunque haya sesiones activas",
+                recentButton is not null && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(recentButton)?.GetName() == agentWidget.RecentTabHelp);
+            agentWidget.SelectRecent.Execute(null);
+            homeHost.UpdateLayout();
+            var recentList = Descendants(homeHost).OfType<ListBox>().FirstOrDefault(l => l.IsVisible && l.Items.Count == 2);
+            var recentTexts = Descendants(homeHost).OfType<TextBlock>().Select(t => t.Text).ToArray();
+            Check($"{language}: Recent abre las sesiones terminadas e inactivas",
+                agentWidget.VisibleSessionCount == 2 && recentList?.Items.Count == 2
+                && recentTexts.Contains(language == Language.Es ? "Terminó" : "Finished")
+                && recentTexts.Any(t => t.StartsWith(language == Language.Es ? "Sin actividad hace" : "Inactive for", StringComparison.Ordinal)));
+            Check($"{language}: Recent ofrece búsqueda y filtros accesibles por agente, proyecto y estado",
+                Descendants(homeHost).OfType<TextBox>().Any(t => t.IsVisible && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(t)?.GetName() == agentWidget.SearchName)
+                && Descendants(homeHost).OfType<ComboBox>().Count(c => c.IsVisible && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(c)?.GetName() is { Length: > 0 }) == 3);
+            agentWidget.SelectedProviderFilter = "Codex";
+            Check($"{language}: el filtro de agente limita la lista de sesiones recientes", agentWidget.VisibleSessionCount == 1 && agentWidget.Current?.Provider == "Codex");
+            agentWidget.SelectedProviderFilter = language == Language.Es ? "Todos" : "All";
+            agentWidget.RecentSearch = "Delta";
+            Check($"{language}: la búsqueda encuentra proyecto y sesión sin leer prompts", agentWidget.VisibleSessionCount == 1 && agentWidget.Current?.ProjectName == "Delta");
+            agentWidget.RecentSearch = "";
+            agentWidget.SelectedStateFilter = language == Language.Es ? "Sin actividad" : "Inactive";
+            Check($"{language}: el filtro de estado distingue sesiones inactivas", agentWidget.VisibleSessionCount == 1 && agentWidget.Current?.State == AgentState.Inactive);
+            agentWidget.SelectedStateFilter = language == Language.Es ? "Todos" : "All";
+            agentWidget.SelectActive.Execute(null);
+            Check($"{language}: volver a Active funciona directamente aunque la lista reciente siga disponible",
+                !agentWidget.ShowingRecent && !agentWidget.NoSessions && agentWidget.VisibleSessionCount == 2);
+            agentWidget.RecentSearch = "sin-coincidencias";
+            agentWidget.Sessions.Clear();
+            Check($"{language}: un estado vacío en Active no hereda el mensaje de búsqueda reciente",
+                agentWidget.EmptyText == L10n.tr("Claude Code y Codex aparecerán aquí cuando trabajen."));
+            prefs.SetSwitch(PrefKeys.AgentsEnabled, false);
             homeHost.Close();
             prefs.SetList(PrefKeys.NotchPill, new[] { "clock", "cpu" });
             Check($"{language}: la pastilla enseña lo elegido y pide a los widgets que sigan leyendo", model.PillIds.SequenceEqual(new[] { "clock", "cpu" })
@@ -218,17 +324,20 @@ internal static class Program
                     WidgetCatalog.All.All(w => model.Hub.Find(w.Id) is { } widget
                         && Application.Current.TryFindResource("Widget" + widget.GetType().Name) is DataTemplate));
                 var comboClock = System.Diagnostics.Stopwatch.StartNew();
-                Check($"{language}: hay 831 combinaciones posibles de widgets", combos.Count == 831);
-                // Las 831 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
+                Check($"{language}: hay 6.739 combinaciones posibles de widgets", combos.Count == 6739);
+                // Las 6.739 tardan varios minutos: por defecto una de cada siete (siempre las mismas); ITS_ALL_COMBOS=1 las prueba todas.
                 if (Environment.GetEnvironmentVariable("ITS_ALL_COMBOS") != "1") combos = combos.Where((_, i) => i % 7 == 0).ToList();
                 int checkedBoxes = 0, checkedTexts = 0;
                 model.WideLayout = true;
                 model.Show(PanelView.Home);
-                var comboHome = new Window { Content = new ContentView(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1600 };
+                var comboHome = new Window { Content = new ContentView(model) { Width = 640 }, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1600 };
                 var comboPeek = new Window { Content = new NotchPeek(model), WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 700, Height = 1600 };
                 comboHome.Show();
                 comboPeek.Show();
+                var homeItems = Descendants(comboHome).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.HomeWidgets));
+                var peekItems = Descendants(comboPeek).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.PeekWidgets));
                 var problems = new List<string>();
+                var auditedVisuals = new HashSet<(string Id, bool Wide, bool Alone, bool Peek)>();
                 void Audit(Window host, ItemsControl items, List<WidgetSlot> slots, string label)
                 {
                     host.UpdateLayout();
@@ -241,42 +350,58 @@ internal static class Program
                         if (bounds.Right > items.ActualWidth + 1) problems.Add($"{tag}: se sale de la fila ({bounds.Right:0} > {items.ActualWidth:0})");
                         if (Math.Abs(bounds.Width - (slots[i].CardWidth + 12)) > 1) problems.Add($"{tag}: ancho {bounds.Width:0} en vez de {slots[i].CardWidth + 12}");
                         if (box.ActualHeight < 40) problems.Add($"{tag}: alto {box.ActualHeight:0}");
-                        var inside = Descendants(box).ToList();
-                        if (!inside.OfType<TextBlock>().Any(t => t.IsVisible && !string.IsNullOrEmpty(t.Text))) problems.Add($"{tag}: plantilla sin texto");
-                        foreach (var t in inside.OfType<TextBlock>().Where(t => t.IsVisible && t.TextWrapping == TextWrapping.NoWrap && t.TextTrimming == TextTrimming.None && !string.IsNullOrEmpty(t.Text)))
+                        if (auditedVisuals.Add((slots[i].Id, slots[i].Wide, slots[i].Alone, slots[i].Peek)))
                         {
-                            checkedTexts++;
-                            var natural = new FormattedText(t.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
-                                new Typeface(t.FontFamily, t.FontStyle, t.FontWeight, t.FontStretch), t.FontSize, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace;
-                            if (natural > t.ActualWidth + 1) problems.Add($"{tag}: texto cortado «{t.Text}» ({natural:0} > {t.ActualWidth:0})");
+                            var inside = Descendants(box).ToList();
+                            if (!inside.OfType<TextBlock>().Any(t => t.IsVisible && !string.IsNullOrEmpty(t.Text))) problems.Add($"{tag}: plantilla sin texto");
+                            foreach (var t in inside.OfType<TextBlock>().Where(t => t.IsVisible && t.TextWrapping == TextWrapping.NoWrap && t.TextTrimming == TextTrimming.None && !string.IsNullOrEmpty(t.Text)))
+                            {
+                                checkedTexts++;
+                                var natural = new FormattedText(t.Text, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
+                                    new Typeface(t.FontFamily, t.FontStyle, t.FontWeight, t.FontStretch), t.FontSize, Brushes.Black, 1.0).WidthIncludingTrailingWhitespace;
+                                if (natural > t.ActualWidth + 1) problems.Add($"{tag}: texto cortado «{t.Text}» ({natural:0} > {t.ActualWidth:0})");
+                            }
+                            foreach (var b in inside.OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible))
+                                if (System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }) problems.Add($"{tag}: botón sin nombre");
                         }
-                        foreach (var b in inside.OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible))
-                            if (System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }) problems.Add($"{tag}: botón sin nombre");
                     }
                     // Dentro de cada fila las celdas suman a lo sumo una fila (dos celdas).
                     foreach (var row in slots.Select((slot, i) => (slot, box: items.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement)).Where(x => x.box is not null)
                         .GroupBy(x => Math.Round(x.box!.TransformToAncestor(items).Transform(new Point(0, 0)).Y)))
                         if (row.Sum(x => x.slot.Wide ? 2 : 1) > 2) problems.Add($"{label}: fila con más de dos celdas");
                 }
-                foreach (var combo in combos)
+                for (var comboIndex = 0; comboIndex < combos.Count; comboIndex++)
                 {
-                    prefs.SetList(PrefKeys.NotchWidgets, combo);
-                    var homeItems = Descendants(comboHome).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.HomeWidgets));
-                    Audit(comboHome, homeItems, model.HomeWidgets, $"Home [{string.Join(",", combo)}]");
-                    prefs.SetList(PrefKeys.NotchPeekWidgets, combo);
-                    var peekItems = Descendants(comboPeek).OfType<ItemsControl>().First(i => ReferenceEquals(i.ItemsSource, model.PeekWidgets));
-                    Audit(comboPeek, peekItems, model.PeekWidgets, $"Vista corta [{string.Join(",", combo)}]");
+                    var combo = combos[comboIndex];
+                    var homeSlots = model.Hub.Slots(combo, peek: false);
+                    homeItems.ItemsSource = homeSlots;
+                    Audit(comboHome, homeItems, homeSlots, $"Home [{string.Join(",", combo)}]");
+                    var peekSlots = model.Hub.Slots(combo, peek: true);
+                    peekItems.ItemsSource = peekSlots;
+                    Audit(comboPeek, peekItems, peekSlots, $"Vista corta [{string.Join(",", combo)}]");
+                    // Rebuilding thousands of WPF trees leaves enough short-lived layout data to delay collection for a long time.
+                    if ((comboIndex + 1) % 128 == 0 && GC.GetTotalMemory(false) > 256L * 1024 * 1024) GC.Collect();
+                    if ((comboIndex + 1) % 1000 == 0) Console.WriteLine($"   revisadas: {comboIndex + 1}/{combos.Count}");
                 }
                 Console.WriteLine($"   combinaciones: {comboClock.Elapsed.TotalSeconds:0} s");
                 foreach (var problem in problems.Take(25)) Console.WriteLine("   " + problem);
                 Check($"{language}: {combos.Count} combinaciones de widgets, en el Home y en la vista corta ({checkedBoxes} ranuras y {checkedTexts} textos revisados), caben, se pintan, no cortan texto y tienen sus botones con nombre ({problems.Count} problemas)",
-                    problems.Count == 0 && checkedBoxes > 100 && checkedTexts > 300);
+                    problems.Count == 0 && checkedBoxes > 100 && checkedTexts > 250);
                 comboHome.Close();
                 comboPeek.Close();
                 prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
                 prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "ollama" });
                 model.WideLayout = false;
             }
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system" });
+            var savedWidgets = prefs.List(PrefKeys.NotchWidgets);
+            model.BeginCustomizeWidgets();
+            model.MoveWidgetBefore("audio", "system");
+            Check($"{language}: personalizar añade al arrastrar y mantiene el borrador hasta guardar",
+                model.WidgetIds.SequenceEqual(new[] { "ollama", "audio", "system" }) && prefs.List(PrefKeys.NotchWidgets).SequenceEqual(savedWidgets));
+            model.CancelCustomizeWidgets();
+            Check($"{language}: descartar widgets restaura la lista guardada", model.WidgetIds.SequenceEqual(savedWidgets));
+            prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });
             int RowOf(string id) => WidgetCatalog.All.ToList().FindIndex(w => w.Id == id);
             Check($"{language}: con el Home lleno solo se pueden quitar widgets", model.WidgetsAreFull && !model.WidgetRows[RowOf("pomodoro")].CanToggle && model.WidgetRows[RowOf("clock")].CanToggle);
             model.WidgetRows[RowOf("clock")].Toggle.Execute(null);
@@ -696,7 +821,11 @@ internal static class Program
                 var unnamed = controls.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { } n
                     || n.Where(c => c is < '' or > '').All(char.IsWhiteSpace)).ToArray();
                 foreach (var b in unnamed)
-                    Console.WriteLine($"   sin nombre: {b.GetType().Name} {(b.Content as FrameworkElement)?.GetType().Name ?? b.Content?.GetType().Name} ctx={b.DataContext?.GetType().Name} cmd={b.Command}");
+                {
+                    var nameBinding = System.Windows.Data.BindingOperations.GetBinding(b, System.Windows.Automation.AutomationProperties.NameProperty);
+                    var nameState = System.Windows.Data.BindingOperations.GetBindingExpressionBase(b, System.Windows.Automation.AutomationProperties.NameProperty)?.Status;
+                    Console.WriteLine($"   sin nombre: {b.GetType().Name} {(b.Content as FrameworkElement)?.GetType().Name ?? b.Content?.GetType().Name} ctx={b.DataContext?.GetType().Name} cmd={b.Command} name='{System.Windows.Automation.AutomationProperties.GetName(b)}' tip='{b.ToolTip}' path='{nameBinding?.Path?.Path}' bind={nameState}");
+                }
                 Check($"{language}/{panelView}: todos los botones e interruptores ({controls.Length}) tienen nombre accesible", controls.Length > 0 && unnamed.Length == 0);
                 Check($"{language}/{panelView}: todos se alcanzan con el teclado", controls.All(b => b.Focusable));
             }

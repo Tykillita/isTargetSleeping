@@ -25,9 +25,9 @@ internal static class UpdateTests
         try
         {
             defaultsField.SetValue(null, System.Text.Json.Nodes.JsonNode.Parse("{}"));
-            check("búsqueda activada sin una preferencia guardada", Defaults.GetBool("updateCheck", true));
+            check("búsqueda apagada sin una preferencia guardada", !Defaults.GetBool("updateCheck", false));
             defaultsField.SetValue(null, System.Text.Json.Nodes.JsonNode.Parse("{\"updateCheck\":false,\"updateRepo\":\"custom/repo\"}"));
-            check("conserva búsqueda desactivada y repositorio personalizado", !Defaults.GetBool("updateCheck", true) && AppInfo.UpdateRepo == "custom/repo");
+            check("conserva búsqueda desactivada y repositorio personalizado", !Defaults.GetBool("updateCheck", false) && AppInfo.UpdateRepo == "custom/repo");
         }
         finally { defaultsField.SetValue(null, previousDefaults); }
 
@@ -196,7 +196,13 @@ internal static class UpdateTests
             Updater.DeleteStaging(staging);
             // target procede de CreateTempSubdirectory: no contiene datos del usuario.
             if (Path.GetDirectoryName(target) == Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar)
-                && Path.GetFileName(target).StartsWith("its-update-target-")) Directory.Delete(target, recursive: true);
+                && Path.GetFileName(target).StartsWith("its-update-target-"))
+                for (int retry = 0; retry < 20; retry++)
+                {
+                    try { if (Directory.Exists(target)) Directory.Delete(target, recursive: true); break; }
+                    catch (IOException) when (retry < 19) { await Task.Delay(100); }
+                    catch (UnauthorizedAccessException) when (retry < 19) { await Task.Delay(100); }
+                }
         }
     }
 

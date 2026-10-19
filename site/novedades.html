@@ -58,6 +58,8 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#proxima" data-i18n="nov.proximaLink">En desarrollo · 1.21–1.25</a>
+
       <a href="#v1-20-0">1.20.0</a>
       <a href="#v1-11-0">1.11.0</a>
       <a href="#v1-10-0">1.10.0</a>
@@ -81,6 +83,25 @@
      y en inglés (claves nov.* en site.js). Lo pendiente va en #proxima hasta que se sube la versión. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version version--proxima" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.21.0 → 1.25.0</div>
+        <span class="version-fecha" data-i18n="nov.proxima.estado">En desarrollo</span>
+        <span class="salto salto--feature" data-i18n="nov.s.feature">Feature</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.resumen">La siguiente etapa añade audio por app, edición de widgets, actividad local de agentes y herramientas para calendario, tiempo, OCR y lectura en cámara. La versión 1.25 mejora la navegación, búsqueda y detalle de las sesiones de agentes.</p>
+        <div class="grupo"><h3 data-i18n="nov.g.nuevo">Nuevo</h3><div class="novedades">
+          <div class="novedad"><b data-i18n="nov.proxima.audioT">1.21.0 · Audio y HUDs</b><span data-i18n="nov.proxima.audioD">Control del volumen del mezclador por app, niveles recordados, HUDs opcionales para brillo, teclas de bloqueo y conexiones de audio, intensidad del cristal y ocultación por app.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.widgetsT">1.22.0 · Editor y sistema</b><span data-i18n="nov.proxima.widgetsD">Añade, reordena y ensancha widgets del Home; las gráficas muestran dos métricas elegidas o las seis en la vista ancha.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.agentesT">1.23.0 · Agentes locales</b><span data-i18n="nov.proxima.agentesD">Lista sesiones activas de Claude Code y Codex con nombre, herramienta actual, resumen de acciones y mensajes breves; las automatizaciones muestran un resultado legible. Los logs se procesan en local.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.herramientasT">1.24.0 · Calendario y herramientas</b><span data-i18n="nov.proxima.herramientasD">Progreso del evento y botón para unirse a la reunión; tiempo opcional con la ciudad que elijas; OCR local hacia el portapapeles y teleprompter con texto local.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.agentesPlusT">1.25.0 · AI Agents interactivo</b><span data-i18n="nov.proxima.agentesPlusD">Un selector fijo separa sesiones activas y recientes. Busca y filtra 12 horas de historial local, muestra contadores basados en llamadas y rutas confirmadas, conserva el estado de atención y permite desplegar herramientas, archivos y mensajes breves bajo demanda.</span></div>
+        </div></div>
+        <p class="hero-meta" data-i18n="nov.proxima.noPublicado">En desarrollo. La última release publicada es la 1.20.0; esta versión aún no tiene descargas.</p>
+      </div>
+    </article>
+
     <article class="version" id="v1-20-0">
       <div class="version-meta">
         <div class="version-num">1.20.0</div>
@@ -566,7 +587,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">Versión 1.20.0</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.25.0 en desarrollo</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

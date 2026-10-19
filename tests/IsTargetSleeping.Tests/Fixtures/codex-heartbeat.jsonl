@@ -1,0 +1,2 @@
+{"type":"response_item","payload":{"type":"session_meta","cwd":"C:/automation/daily-check"}}
+{"type":"response_item","payload":{"type":"message","role":"assistant","phase":"final","content":[{"type":"output_text","text":"<heartbeat><automation_id>scheduled-check-example</automation_id><decision>DONT_NOTIFY</decision><message>No new result was found; no notification was sent.</message></heartbeat>"}]}}

@@ -327,7 +327,7 @@ public sealed partial class Supervisor
 
     public async Task CheckUpdates(bool manual = false)
     {
-        if (!UpdatesAvailable || (!manual && !Prefs.Switch(PrefKeys.UpdateCheck)) || Ollama.IsDemo
+        if (!UpdatesAvailable || (!manual && !Prefs.Switch(PrefKeys.UpdateCheck, false)) || Ollama.IsDemo
             || UpdateStatus == UpdateStatus.Checking || UpdateBusy) return;
         if (UpdateRetryAt > DateTimeOffset.UtcNow)
         {

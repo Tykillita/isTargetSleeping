@@ -19,6 +19,11 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WidgetCatalog.cs" Link="Core\Widgets\WidgetCatalog.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Pomodoro.cs" Link="Core\Widgets\Pomodoro.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Activities.cs" Link="Core\Widgets\Activities.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AudioMixer.cs" Link="Core\Widgets\AudioMixer.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\SeriesBuffer.cs" Link="Core\Widgets\SeriesBuffer.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AgentLogs.cs" Link="Core\Widgets\AgentLogs.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WeatherModel.cs" Link="Core\Widgets\WeatherModel.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MeetingLink.cs" Link="Core\Widgets\MeetingLink.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\FileTray.cs" Link="Core\Widgets\FileTray.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ClipboardHistory.cs" Link="Core\Widgets\ClipboardHistory.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\TextFile.cs" Link="Core\Widgets\TextFile.cs" />
@@ -63,6 +68,7 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetParticles.cs" Link="Core\PetParticles.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetDirector.cs" Link="Core\PetDirector.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\TaskbarPetLayout.cs" Link="Core\TaskbarPetLayout.cs" />
+    <None Update="Fixtures\*.jsonl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="PublishUpdateProbe" AfterTargets="Build">

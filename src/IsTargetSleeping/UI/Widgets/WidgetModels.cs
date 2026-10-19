@@ -9,19 +9,25 @@ using static IsTargetSleeping.L10n;
 namespace IsTargetSleeping.UI;
 
 /// Un widget colocado en un sitio: el Home o la vista al pasar el ratón, con una o dos celdas. Su plantilla elige la variante.
-public sealed class WidgetSlot(WidgetModel model, int span, bool peek, bool alone = false)
+public sealed class WidgetSlot(WidgetModel model, int span, int storedSpan, bool peek, bool alone = false, bool customizing = false, Action<string>? resize = null)
 {
     public WidgetModel Model { get; } = model;
     public string Id => Model.Id;
+    public ICommand Resize { get; } = new Command(() => resize?.Invoke(model.Id));
     public bool Wide => span == 2;
+    public bool ResizeWide => storedSpan == 2;
     public bool Compact => !Wide;
+    public bool CompactFull => Compact && Full;
+    public bool WideFull => Wide && Full;
     /// Es el único widget de su lista: llena su celda con una vista grande en vez de dejar sitio vacío.
     public bool Alone => alone;
-    public bool WideAlone => Wide && alone && !peek;   // en la vista corta se queda baja
+    public bool WideAlone => Wide && alone && !Peek;   // en la vista corta se queda baja
     public bool WideCompanion => Wide && !WideAlone;
     /// En la vista al pasar el ratón los widgets van más densos (sin lo secundario).
     public bool Peek { get; } = peek;
     public bool Full => !Peek;
+    public bool ResizeHandleVisible => !Peek && customizing && WidgetLayout.CanResize(Id);
+    public string ResizeHelp => tr("Cambiar el ancho de %@", Model.Title);
     /// Una celda mide 294 y dos 600: con 6 de margen a cada lado, dos de una celda caben en una fila de 640.
     public double CardWidth => Wide ? 600 : 294;
 }
@@ -54,6 +60,8 @@ public sealed class OllamaWidget(PanelViewModel panel) : WidgetModel(WidgetCatal
 }
 
 /// CPU, RAM, GPU, disco y red: la RAM y la GPU ya las muestrea el panel; el resto, aquí cada segundo.
+public sealed record SystemMetricCard(string Id, string Title, string Value, double Fraction, double[] Samples);
+
 public sealed class SystemWidget(PanelViewModel panel) : WidgetModel(WidgetCatalog.Find("system")!)
 {
     public PanelViewModel Panel { get; } = panel;
@@ -65,6 +73,10 @@ public sealed class SystemWidget(PanelViewModel panel) : WidgetModel(WidgetCatal
     public double DiskFraction { get; private set; }
     public string DiskLabel { get; private set; } = "";
     public string NetLabel { get; private set; } = "";
+    public List<SystemMetricCard> Cards { get; private set; } = [];
+    public List<SystemMetricCard> AllCards { get; private set; } = [];
+    public string PeekSummary => $"CPU {CpuLabel} · RAM {Panel.UsedLabel}";
+    private readonly Dictionary<string, SeriesBuffer> series = SystemMetricCatalog.All.ToDictionary(id => id, _ => new SeriesBuffer(60));
 
     private Win32.FILETIME idle, kernel, user;
     private bool hasCpu;
@@ -81,8 +93,31 @@ public sealed class SystemWidget(PanelViewModel panel) : WidgetModel(WidgetCatal
         }
         if (ticks++ % 10 == 0) ReadDisk();
         ReadNetwork(now);
+        SampleMetrics();
         Raise();
     }
+
+    private void SampleMetrics()
+    {
+        var values = new Dictionary<string, (string Title, string Value, double Fraction)>
+        {
+            ["cpu"] = (tr("CPU"), CpuLabel, CpuFraction),
+            ["ram"] = ("RAM", Panel.UsedLabel, Panel.UsedFraction),
+            ["gpu"] = ("GPU", Panel.ShowGpu ? Panel.GpuUsedLabel : tr("No disponible"), Panel.ShowGpu ? Panel.GpuUsedFraction : 0),
+            ["disk"] = (tr("Disco"), DiskLabel, DiskFraction),
+            ["battery"] = (tr("Batería"), Panel.Hub.BatteryInfo.HasBattery ? Panel.Hub.BatteryInfo.Label : tr("No disponible"), Panel.Hub.BatteryInfo.HasBattery ? Panel.Hub.BatteryInfo.Fraction : 0),
+            ["network"] = (tr("Red"), NetLabel, NetFraction),
+        };
+        foreach (var item in series) item.Value.Add(values[item.Key].Fraction);
+        AllCards = SystemMetricCatalog.All.Select(id => Card(id, values[id])).ToList();
+        var selected = SystemMetricCatalog.Normalize(Panel.Prefs.List(PrefKeys.SystemMetrics));
+        Cards = selected.Select(id => Card(id, values[id])).ToList();
+    }
+
+    private SystemMetricCard Card(string id, (string Title, string Value, double Fraction) value) =>
+        new(id, value.Title, value.Value, value.Fraction, series[id].Snapshot());
+
+    private double NetFraction { get; set; }
 
     private void ReadDisk()
     {
@@ -110,7 +145,12 @@ public sealed class SystemWidget(PanelViewModel panel) : WidgetModel(WidgetCatal
             }
             var seconds = (now - netAt).TotalSeconds;
             if (netAt != default && seconds > 0)
-                NetLabel = $"↓ {Rate((received - netReceived) / seconds)}   ↑ {Rate((sent - netSent) / seconds)}";
+            {
+                var down = Math.Max(0, (received - netReceived) / seconds);
+                var up = Math.Max(0, (sent - netSent) / seconds);
+                NetFraction = Math.Clamp(Math.Max(down, up) / 10_485_760, 0, 1);
+                NetLabel = $"↓ {Rate(down)}   ↑ {Rate(up)}";
+            }
             (netReceived, netSent, netAt) = (received, sent, now);
         }
         catch { NetLabel = tr("No disponible"); }
@@ -248,12 +288,24 @@ public sealed class BatteryWidget() : WidgetModel(WidgetCatalog.Find("battery")!
     }
 }
 
+/// Sesiones activas del mezclador de Windows. El usuario mueve los controles del sistema, no un volumen separado.
+public sealed class AudioWidget(Prefs prefs) : WidgetModel(WidgetCatalog.Find("audio")!)
+{
+    public AudioSessions Sessions { get; } = new(prefs);
+    public string EmptyText => Sessions.EmptyText;
+    public string ActiveText => tr("%@ apps con audio", Sessions.Active.Count);
+    public bool HasSessions => Sessions.Active.Count > 0;
+    public bool NoSessions => !HasSessions;
+    public override void Tick(DateTime now) { Sessions.Refresh(); Raise(); }
+}
+
 /// Los widgets del notch y su reloj de un segundo: solo corre con el Home a la vista o con algo en marcha (temporizador).
-public sealed class WidgetHub
+public sealed class WidgetHub : IDisposable
 {
     private readonly Dictionary<string, WidgetModel> all;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
-    private bool visible;
+    private bool homeVisible, peekVisible;
+    private HashSet<string> homeNeeds = [], peekNeeds = [];
 
     public PomodoroWidget Pomodoro { get; } = new();
     public StayAwakeWidget Awake { get; } = new();
@@ -264,6 +316,14 @@ public sealed class WidgetHub
     public BatteryWidget BatteryInfo { get; } = new();
     public MediaWidget Media { get; } = new();
     public AudioVolume Volume { get; } = new();
+    public AudioWidget Audio { get; }
+    public SystemHuds Huds { get; }
+    public AgentsWidget Agents { get; }
+    public WeatherWidget Weather { get; }
+    public TeleprompterWidget Teleprompter { get; }
+    private bool activityNeeds;
+    private bool agentActivityNeeds;
+    private bool meetingActivityNeeds;
     private HashSet<string> pillNeeds = [];
     public event Action<string, string>? Finished;
     /// Cada segundo, tras leer los datos: la pastilla cerrada se repinta con ellos.
@@ -275,9 +335,15 @@ public sealed class WidgetHub
         SystemStats = new SystemWidget(panel);
         Code = new CodeWidget(panel.Prefs);
         ClockInfo = new ClockWidget(panel.Prefs);
+        Audio = new AudioWidget(panel.Prefs);
+        Agents = new AgentsWidget(panel.Prefs);
+        Weather = new WeatherWidget(panel.Prefs);
+        Teleprompter = new TeleprompterWidget(panel.Prefs, persist: !panel.Ollama.IsDemo);
+        Huds = new SystemHuds();
+        Huds.Changed += () => Ticked?.Invoke();
         all = new WidgetModel[]
         {
-            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media, Code,
+            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, BatteryInfo, Media, Code, Audio, Agents, Weather, Teleprompter,
         }.ToDictionary(w => w.Id);
         Pomodoro.Finished += (title, text) => Finished?.Invoke(title, text);
         Pomodoro.PropertyChanged += (_, _) => Sync();
@@ -285,12 +351,23 @@ public sealed class WidgetHub
     }
 
     public WidgetModel? Find(string id) => all.GetValueOrDefault(id);
-    public List<WidgetSlot> Slots(IReadOnlyList<string> ids, bool peek) =>
-        WidgetLayout.Arrange(ids).Select(p => Find(p.Id) is { } w ? new WidgetSlot(w, p.Span, peek, ids.Count == 1) : null).OfType<WidgetSlot>().ToList();
+    public List<WidgetSlot> Slots(IReadOnlyList<string> ids, bool peek, bool customizing = false, Action<string>? resize = null) =>
+        WidgetLayout.Arrange(ids).Select(p => Find(p.Id) is { } w
+            ? new WidgetSlot(w, p.Span, WidgetLayout.Span(ids.FirstOrDefault(id => WidgetLayout.BaseId(id) == p.Id) ?? p.Id), peek, ids.Count == 1, customizing, resize)
+            : null).OfType<WidgetSlot>().ToList();
 
-    public void SetVisible(bool value)
+    public void SetVisible(bool value, IEnumerable<string>? widgetIds = null)
     {
-        visible = value;
+        homeVisible = value;
+        homeNeeds = [.. widgetIds ?? []];
+        Sync();
+        if (value) Tick();
+    }
+
+    public void SetPeekVisible(bool value, IEnumerable<string>? widgetIds = null)
+    {
+        peekVisible = value;
+        peekNeeds = [.. widgetIds ?? []];
         Sync();
         if (value) Tick();
     }
@@ -303,9 +380,20 @@ public sealed class WidgetHub
         if (pillNeeds.Count > 0) Tick();
     }
 
+    public void SetActivityNeeds(IEnumerable<string> enabled)
+    {
+        var ids = enabled.ToArray();
+        agentActivityNeeds = ids.Contains("agents");
+        meetingActivityNeeds = ids.Contains("meeting");
+        activityNeeds = agentActivityNeeds || meetingActivityNeeds || ids.Any(id => id is "brightness" or "locks" or "bluetooth");
+        Huds.Configure(ids);
+        if (!activityNeeds) Huds.Refresh();
+        Sync();
+    }
+
     private void Sync()
     {
-        if (visible || Pomodoro.Running || pillNeeds.Count > 0) timer.Start();
+        if (homeVisible || peekVisible || Pomodoro.Running || pillNeeds.Count > 0 || activityNeeds) timer.Start();
         else timer.Stop();
     }
 
@@ -313,7 +401,12 @@ public sealed class WidgetHub
     {
         var now = DateTime.Now;
         foreach (var widget in all.Values)
-            if (visible || widget.Always || pillNeeds.Contains(widget.Id)) widget.Tick(now);
+            if (homeVisible && homeNeeds.Contains(widget.Id) || peekVisible && peekNeeds.Contains(widget.Id)
+                || widget.Always || pillNeeds.Contains(widget.Id) || widget.Id == "agents" && agentActivityNeeds) widget.Tick(now);
+        if (meetingActivityNeeds && !(homeVisible && homeNeeds.Contains("clock")) && !(peekVisible && peekNeeds.Contains("clock"))) ClockInfo.Tick(now);
+        if (activityNeeds) Huds.Refresh();
         Ticked?.Invoke();
     }
+
+    public void Dispose() { Huds.Dispose(); Audio.Sessions.Dispose(); }
 }

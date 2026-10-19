@@ -133,11 +133,15 @@ public sealed class MemoryBar : FrameworkElement
 /// uso en gris translúcido y, encima, la parte del modelo en blanco.
 public sealed class Sparkline : FrameworkElement
 {
+    public static readonly DependencyProperty ValuesProperty = DependencyProperty.Register(
+        nameof(Values), typeof(IReadOnlyList<double>), typeof(Sparkline),
+        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
     public static readonly DependencyProperty SamplesProperty = DependencyProperty.Register(
         nameof(Samples), typeof(IReadOnlyList<MemorySample>), typeof(Sparkline),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
     public IReadOnlyList<MemorySample>? Samples { get => (IReadOnlyList<MemorySample>?)GetValue(SamplesProperty); set => SetValue(SamplesProperty, value); }
+    public IReadOnlyList<double>? Values { get => (IReadOnlyList<double>?)GetValue(ValuesProperty); set => SetValue(ValuesProperty, value); }
 
     public Sparkline()
     {
@@ -154,6 +158,21 @@ public sealed class Sparkline : FrameworkElement
         var guide = new Pen(Theme.Brush(t.Line), 1);
         guide.Freeze();
         dc.DrawLine(guide, new Point(0, Math.Round(h * 0.5) + 0.5), new Point(w, Math.Round(h * 0.5) + 0.5));
+
+        if (Values is { Count: > 1 } values)
+        {
+            var line = new StreamGeometry();
+            using (var ctx = line.Open())
+            {
+                ctx.BeginFigure(new Point(0, h * (1 - Math.Clamp(values[0], 0, 1))), false, false);
+                for (int i = 1; i < values.Count; i++)
+                    ctx.LineTo(new Point(w * i / (values.Count - 1), h * (1 - Math.Clamp(values[i], 0, 1))), true, false);
+            }
+            line.Freeze();
+            var pen = new Pen(Theme.Brush(t.Accent), 1.3);
+            dc.DrawGeometry(null, pen, line);
+            return;
+        }
 
         var samples = Samples;
         if (samples is null || samples.Count < 2) return;
@@ -285,5 +304,33 @@ public sealed class Spinner : FrameworkElement
             g.ArcTo(new Point(c.X + r, c.Y), new Size(r, r), 0, false, SweepDirection.Clockwise, true, false);
         }
         dc.DrawGeometry(null, new Pen(Theme.Brush(t.Secondary), stroke) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, arc);
+    }
+}
+
+/// Anillo discreto para el progreso de un evento activo.
+public sealed class ActivityRing : FrameworkElement
+{
+    public static readonly DependencyProperty ProgressProperty = DependencyProperty.Register(nameof(Progress), typeof(double), typeof(ActivityRing),
+        new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.AffectsRender));
+    public double Progress { get => (double)GetValue(ProgressProperty); set => SetValue(ProgressProperty, value); }
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        double size = Math.Min(ActualWidth, ActualHeight), stroke = Math.Max(1.4, size / 8), radius = (size - stroke) / 2;
+        var center = new Point(size / 2, size / 2);
+        var theme = Theme.Current;
+        dc.DrawEllipse(null, new Pen(Theme.Brush(Theme.WithOpacity(theme.Muted, 0.42)), stroke), center, radius, radius);
+        double sweep = Math.Clamp(Progress, 0, 1) * 360;
+        if (sweep < 1) return;
+        var start = new Point(center.X, center.Y - radius);
+        double angle = (sweep - 90) * Math.PI / 180;
+        var end = new Point(center.X + radius * Math.Cos(angle), center.Y + radius * Math.Sin(angle));
+        var arc = new StreamGeometry();
+        using (var path = arc.Open())
+        {
+            path.BeginFigure(start, false, false);
+            path.ArcTo(end, new Size(radius, radius), 0, sweep > 180, SweepDirection.Clockwise, true, false);
+        }
+        dc.DrawGeometry(null, new Pen(Theme.Brush(theme.Accent), stroke) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, arc);
     }
 }

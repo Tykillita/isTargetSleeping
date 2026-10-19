@@ -189,7 +189,7 @@ public sealed class TrayIcon : IDisposable
             added = false;
             Send(Win32.NIM_ADD);
         }
-        else if (msg == Win32.WM_HOTKEY && new[] { HotKey.Power, HotKey.Sleep, HotKey.Clean }.FirstOrDefault(k => k.Matches(wParam)) is { } key)
+        else if (msg == Win32.WM_HOTKEY && new[] { HotKey.Power, HotKey.Sleep, HotKey.Clean, HotKey.Ocr }.FirstOrDefault(k => k.Matches(wParam)) is { } key)
         {
             HotKeyPressed?.Invoke(key);
             handled = true;

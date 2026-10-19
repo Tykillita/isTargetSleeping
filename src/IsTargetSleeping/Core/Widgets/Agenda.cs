@@ -5,7 +5,8 @@ namespace IsTargetSleeping;
 public enum AgendaKind { Reminder, Event }
 
 /// Una cosa de la agenda del widget de calendario: un recordatorio local (se marca hecho) o un evento de un archivo .ics (solo se lee).
-public sealed record AgendaItem(string Id, string Title, DateTime Start, AgendaKind Kind, bool Done = false, bool AllDay = false);
+public sealed record AgendaItem(string Id, string Title, DateTime Start, AgendaKind Kind, bool Done = false, bool AllDay = false,
+    DateTime? End = null, string? Url = null, string? Location = null, string? Description = null);
 
 public sealed record AgendaDay(DateOnly Day, List<AgendaItem> Items);
 
@@ -90,11 +91,19 @@ public static class Agenda
         if (!ev.TryGetValue("DTSTART", out var s) || !ev.TryGetValue("SUMMARY", out var summary) || !TryDate(s.Value, out var start, out bool allDay)) return;
         var title = Unescape(summary.Value);
         if (title.Length == 0) return;
+        TimeSpan duration = TimeSpan.Zero;
+        if (ev.TryGetValue("DTEND", out var dtEnd) && TryDate(dtEnd.Value, out var end, out _) && end > start) duration = end - start;
+        else if (allDay) duration = TimeSpan.FromDays(1);
+        else duration = TimeSpan.FromHours(1);
+        string? url = ev.TryGetValue("URL", out var urlValue) ? Unescape(urlValue.Value)[..Math.Min(Unescape(urlValue.Value).Length, 2048)] : null;
+        string? location = ev.TryGetValue("LOCATION", out var locValue) ? Unescape(locValue.Value)[..Math.Min(Unescape(locValue.Value).Length, 512)] : null;
+        string? description = ev.TryGetValue("DESCRIPTION", out var descValue) ? Unescape(descValue.Value)[..Math.Min(Unescape(descValue.Value).Length, 4096)] : null;
         string uid = ev.TryGetValue("UID", out var u) ? u.Value : title;
         void Add(DateTime when)
         {
             var day = DateOnly.FromDateTime(when);
-            if (day >= from && day <= to) result.Add(new AgendaItem("ics:" + uid.GetHashCode().ToString("x") + when.ToString("yyyyMMddHHmm"), title, when, AgendaKind.Event, false, allDay));
+            if (day >= from && day <= to) result.Add(new AgendaItem("ics:" + uid.GetHashCode().ToString("x") + when.ToString("yyyyMMddHHmm"), title, when, AgendaKind.Event, false, allDay,
+                when + duration, url, location, description));
         }
         if (!ev.TryGetValue("RRULE", out var rule)) { Add(start); return; }
         var r = rule.Value.Split(';').Select(p => p.Split('=', 2)).Where(p => p.Length == 2).ToDictionary(p => p[0].ToUpperInvariant(), p => p[1]);

@@ -12,9 +12,11 @@ namespace IsTargetSleeping.UI;
 /// Una fila de la bandeja de archivos: se abre (doble clic), se edita o se abre como proyecto, se enseña en el Explorador,
 /// se copia su ruta, se quita y se arrastra hacia fuera.
 public sealed record TrayRow(string Name, string Detail, ImageSource? Icon, bool IsFolder, string Path,
-    ICommand Remove, ICommand Reveal, ICommand CopyPath, ICommand Edit, ICommand Open, ICommand OpenProject)
+    ICommand Remove, ICommand Reveal, ICommand CopyPath, ICommand Edit, ICommand Open, ICommand OpenProject, ICommand ReadText)
 {
     public bool CanEdit => !IsFolder;
+    public bool CanReadText => !IsFolder && CodeTree.IsImage(Path);
+    public string ReadTextHelp => tr("Copiar texto de %@", Name);
     public string EditHelp => tr("Editar «%@»", Name);
     public string OpenHelp => tr("Abrir «%@»", Name);
     public string ProjectHelp => tr("Abrir «%@» como proyecto en Código", Name);
@@ -259,8 +261,22 @@ public sealed partial class PanelViewModel
                 new Command(() => { try { Clipboard.SetText(path); } catch (Exception e) { AppLog.Write($"bandeja: {e.Message}"); } }),
                 new Command(() => OpenEditor(path)),
                 new Command(() => OpenPath(path)),
-                new Command(() => OpenInCode(path)));
+                new Command(() => OpenInCode(path)),
+                new Command(() => _ = ReadTrayImage(path)));
         }).ToList();
+    }
+
+    private async Task ReadTrayImage(string path)
+    {
+        trayStatus = tr("Reconociendo texto…"); Notify();
+        try
+        {
+            var text = await Ocr.ReadImage(path);
+            if (text.Length > 0) { Clipboard.SetText(text); trayStatus = tr("Texto copiado al portapapeles."); }
+            else trayStatus = tr("No se encontró texto en la imagen.");
+        }
+        catch (Exception e) { trayStatus = tr("No se pudo leer la imagen: %@", e.Message); }
+        Notify();
     }
 
     private static void RevealInExplorer(string path)

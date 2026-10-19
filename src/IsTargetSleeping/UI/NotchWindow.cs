@@ -74,6 +74,7 @@ public sealed class NotchWindow : Window
     private double scale = 1;
     private NotchRects rects;
     private bool suppressed, laidOut;
+    private bool hiddenByApp;
     private int ticks, generation;
     private bool? shownOpen;
     /// Lo último que se pintó: si no cambia, no se vuelve a animar (reiniciar la animación a medias la dejaría atascada).
@@ -172,6 +173,7 @@ public sealed class NotchWindow : Window
             if (DockSignature() != dockSignature) RebuildDock();
             RefreshPill();
             PaintTabs();
+            PaintBody();
             // La vista y la corta ya no cambian de tamaño solas (la ventana las recorta): se vuelve a medir con cada cambio.
             if (state.Mode != NotchMode.Collapsed) Dispatcher.BeginInvoke(RelayoutIfContentChanged, DispatcherPriority.Background);
         };
@@ -265,11 +267,30 @@ public sealed class NotchWindow : Window
 
     private void OnTick()
     {
+        bool hideForApp = IsHiddenAppForeground();
+        if (hideForApp != hiddenByApp)
+        {
+            hiddenByApp = hideForApp;
+            if (hideForApp) Hide(); else Apply();
+        }
+        if (hideForApp) return;
         if (!Win32.GetCursorPos(out var cursor)) return;
         if (state.Mode == NotchMode.Collapsed) FollowCursorMonitor(cursor);
         if (++ticks % 12 == 1) suppressed = TaskbarLocator.Suppressed(monitor);   // ~cada 0,5 s
         bool inside = NotchLayout.Contains(state.Mode == NotchMode.Collapsed ? rects.Hot : NotchLayout.Inflate(activeRect, (int)Math.Round(14 * scale)), cursor.X, cursor.Y);
         if (state.Update(inside, suppressed, false, clock.Elapsed.TotalSeconds)) Apply();
+    }
+
+    private bool IsHiddenAppForeground()
+    {
+        var window = Win32.GetForegroundWindow();
+        if (window == IntPtr.Zero || Win32.GetWindowThreadProcessId(window, out int pid) == 0) return false;
+        try
+        {
+            using var process = Process.GetProcessById(pid);
+            return model.Prefs.List(PrefKeys.HiddenApps).Contains(process.ProcessName, StringComparer.OrdinalIgnoreCase);
+        }
+        catch { return false; }
     }
 
     /// Con el notch cerrado, tocar el borde superior de otro monitor lo lleva allí.
@@ -554,14 +575,7 @@ public sealed class NotchWindow : Window
 
     /// El resorte de los botones del dock al pulsar: se hunden un poco y vuelven con un pequeño rebote.
     private void Spring(ScaleTransform scale, double to, int ms, bool bounce)
-    {
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        if (model.Prefs.ReducedMotion) { scale.ScaleX = scale.ScaleY = to; return; }
-        IEasingFunction ease = bounce ? new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 } : new QuadraticEase { EasingMode = EasingMode.EaseOut };
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = ease });
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = ease });
-    }
+        => Motion.Spring(scale, to, ms, model.Prefs.ReducedMotion, bounce);
 
     /// Reposo: el icono suelto sobre la cápsula. Con el ratón encima, un círculo tenue detrás; seleccionado, un círculo claro.
     private void PaintTabs()
@@ -642,8 +656,8 @@ public sealed class NotchWindow : Window
             done?.Invoke();
             return;
         }
-        var ease = new QuadraticEase { EasingMode = EasingMode.EaseOut };
-        var span = TimeSpan.FromMilliseconds(180);
+        var ease = Motion.Ease();
+        var span = Motion.PanelDuration;
         var growH = new DoubleAnimation(height, span) { EasingFunction = ease };
         growH.Completed += (_, _) =>
         {
@@ -742,8 +756,9 @@ public sealed class NotchWindow : Window
         byte tint = (byte)(0x24 + 0x70 * Math.Clamp(backdrop.Luminance, 0, 1));   // sin tarjetas detrás, el tinte es lo que da el contraste
         var g = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
         g.GradientStops.Add(new GradientStop(baseColor, 0));
-        g.GradientStops.Add(new GradientStop(baseColor, 0.5));   // como en Droppy: el negro llega casi hasta la mitad y entonces se abre en cristal
-        g.GradientStops.Add(new GradientStop(Color.FromArgb((byte)Math.Min(255, tint + 0x60), baseColor.R, baseColor.G, baseColor.B), 0.78));
+        double glassLevel = model.Prefs.GlassLevel;
+        g.GradientStops.Add(new GradientStop(baseColor, glassLevel));
+        g.GradientStops.Add(new GradientStop(Color.FromArgb((byte)Math.Min(255, tint + 0x60), baseColor.R, baseColor.G, baseColor.B), Math.Min(.97, glassLevel + .28)));
         g.GradientStops.Add(new GradientStop(Color.FromArgb(tint, baseColor.R, baseColor.G, baseColor.B), 1));
         g.Freeze();
         body.Fill = g;
@@ -825,17 +840,17 @@ public sealed class NotchWindow : Window
     }
 
     /// Salen con un fundido y un pequeño deslizamiento desde el notch; con el notch abierto no hay burbujas (las actividades están en su panel).
-    private void UpdateChip()
+    private void UpdateChip(bool pulseBrightness = false)
     {
         bool closed = state.Mode == NotchMode.Collapsed && shownOpen != true && !state.Hidden;
-        ShowChip(chip, activityRow, chipSlide, closed, -18);
+        ShowChip(chip, activityRow, chipSlide, closed, -18, pulseBrightness);
         ShowChip(chipLeft, activityRowLeft, chipLeftSlide, closed, 18);
     }
 
-    private void ShowChip(Border bubble, Panel row, TranslateTransform slide, bool closed, double from)
+    private void ShowChip(Border bubble, Panel row, TranslateTransform slide, bool closed, double from, bool pulse = false)
     {
         bool want = closed && row.Children.Count > 0;
-        if (want == (bubble.Visibility == Visibility.Visible)) return;
+        if (want == (bubble.Visibility == Visibility.Visible) && !pulse) return;
         bubble.Visibility = want ? Visibility.Visible : Visibility.Collapsed;
         bubble.BeginAnimation(OpacityProperty, null);
         slide.BeginAnimation(TranslateTransform.XProperty, null);
@@ -877,11 +892,13 @@ public sealed class NotchWindow : Window
     }
     private Ellipse? pillDot;
     private string pillSignature = "", activitySignature = "";
+    private long brightnessRevision;
     /// Las actividades en vivo (limpiando, encendiendo, temporizador…) van a la derecha de los datos; la pastilla crece para dar sitio.
     private readonly StackPanel activityRow = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly StackPanel activityRowLeft = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
     private readonly StackPanel pillOuter = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Dictionary<string, Action<string>> activityTexts = [];
+    private readonly Dictionary<string, ActivityRing> activityRings = [];
     private const double MediaTextWidth = 120;   // el título de la canción se desplaza dentro de este ancho: la pastilla no crece con él
     private double pillWidthDip = NotchLayout.PillWidth;
 
@@ -942,6 +959,8 @@ public sealed class NotchWindow : Window
         if (pillDot is not null) pillDot.Fill = model.PillForeground;
 
         var activities = model.LiveActivities;
+        bool brightnessChanged = model.Hub.Huds.BrightnessRevision != brightnessRevision;
+        brightnessRevision = model.Hub.Huds.BrightnessRevision;
         var activityIds = string.Join(",", activities.Select(a => a.Id));
         if (activityIds != activitySignature)
         {
@@ -949,6 +968,7 @@ public sealed class NotchWindow : Window
             activityRow.Children.Clear();
             activityRowLeft.Children.Clear();
             activityTexts.Clear();
+            activityRings.Clear();
             foreach (var activity in activities)
             {
                 // La música lleva el indicador de reproducción y el título con el artista, que se desplaza dentro de un ancho fijo.
@@ -958,17 +978,32 @@ public sealed class NotchWindow : Window
                     activityTexts[activity.Id] = value => { marquee.Text = value; paint(); };
                     continue;
                 }
-                var glyph = new TextBlock { Text = activity.Glyph, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
-                glyph.SetResourceReference(TextBlock.FontFamilyProperty, "Icons");
-                glyph.SetResourceReference(TextBlock.ForegroundProperty, activity.Id switch { "clean" or "power" => "Warm", "pressure" => "Danger", _ => "Secondary" });
+                FrameworkElement glyph;
+                if (activity.Progress >= 0)
+                {
+                    var ring = new ActivityRing { Width = 12, Height = 12, Progress = activity.Progress, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
+                    activityRings[activity.Id] = ring;
+                    glyph = ring;
+                }
+                else
+                {
+                    var icon = new TextBlock { Text = activity.Glyph, FontSize = 11.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 4, 0) };
+                    icon.SetResourceReference(TextBlock.FontFamilyProperty, "Icons");
+                    icon.SetResourceReference(TextBlock.ForegroundProperty, activity.Id switch { "clean" or "power" => "Warm", "pressure" => "Danger", _ => "Secondary" });
+                    glyph = icon;
+                }
                 var text = new TextBlock { FontSize = 10.5, FontFamily = (FontFamily)Application.Current.FindResource("Mono"), VerticalAlignment = VerticalAlignment.Center, MaxWidth = 110, TextTrimming = TextTrimming.CharacterEllipsis };
                 text.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
                 (activity.Left ? activityRowLeft : activityRow).Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), Children = { glyph, text } });
                 activityTexts[activity.Id] = value => text.Text = value;
             }
         }
-        foreach (var activity in activities) activityTexts[activity.Id](activity.Text);
-        UpdateChip();
+        foreach (var activity in activities)
+        {
+            activityTexts[activity.Id](activity.Text);
+            if (activityRings.TryGetValue(activity.Id, out var ring)) ring.Progress = activity.Progress;
+        }
+        UpdateChip(brightnessChanged && activities.Any(a => a.Id == "brightness"));
 
         var unbounded = new Size(double.PositiveInfinity, double.PositiveInfinity);
         pillRow.Measure(unbounded);

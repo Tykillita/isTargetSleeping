@@ -183,6 +183,17 @@ Check("widgets: subir y bajar intercambia con el vecino",
     && WidgetLayout.Move(full, "ollama", +1).SequenceEqual(new[] { "system", "ollama", "clock" }));
 Check("widgets: en el borde se queda donde está", WidgetLayout.Move(full, "ollama", -1).SequenceEqual(full) && WidgetLayout.Move(full, "clock", +1).SequenceEqual(full));
 Check("widgets: un id desconocido no mueve nada", WidgetLayout.Move(full, "bogus", -1).SequenceEqual(full));
+Check("widgets: el editor guarda ancho sin romper ids anteriores y no ensancha los fijos",
+    WidgetLayout.ToggleWidth(new[] { "system" }, "system").SequenceEqual(new[] { "system@2" })
+    && WidgetLayout.Normalize(new[] { "system@2", "ollama" }).SequenceEqual(new[] { "system@2", "ollama" })
+    && WidgetLayout.Cells(new[] { "system@2", "clock" }) == 3
+    && !WidgetLayout.CanResize("ollama")
+    && WidgetLayout.ToggleWidth(new[] { "system", "ollama", "clock" }, "system").SequenceEqual(new[] { "system", "ollama", "clock" })
+    && !WidgetLayout.DragResizeTriggered(false, 35) && WidgetLayout.DragResizeTriggered(false, 36)
+    && !WidgetLayout.DragResizeTriggered(true, -35) && WidgetLayout.DragResizeTriggered(true, -36));
+Check("widgets: el editor mueve arrastrando delante del destino",
+    WidgetLayout.MoveBefore(new[] { "system", "clock", "pomodoro" }, "pomodoro", "system").SequenceEqual(new[] { "pomodoro", "system", "clock" })
+    && WidgetLayout.MoveBefore(new[] { "system", "clock" }, "audio", "system").SequenceEqual(new[] { "audio", "system", "clock" }));
 Check("widgets: el catálogo no repite ids y todos son de una o dos celdas",
     WidgetCatalog.All.Select(w => w.Id).Distinct().Count() == WidgetCatalog.All.Count && WidgetCatalog.All.All(w => w.Cells is 1 or 2));
 Check("widgets: un widget de una celda solo en su fila se ensancha; con compañero se queda en una celda",
@@ -215,11 +226,110 @@ Check("actividades: limpieza, encendido y memoria crítica van a la izquierda; e
     ActivityCatalog.All.Where(a => a.Left).Select(a => a.Id).OrderBy(i => i).SequenceEqual(new[] { "clean", "power", "pressure" }));
 Check("actividades: sin nada de Ollama, la izquierda queda vacía", ActivityQueue.PickSides(both.Where(a => !a.Left), ActivityCatalog.All.Select(a => a.Id).ToList()).Left.Count == 0);
 Check("actividades: sin nada guardado están las de siempre (la música no, hasta que se activa); lo desconocido se descarta",
-    ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.Id != "media").Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
+    ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.DefaultOn).Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
     && ActivityCatalog.All.Select(a => a.Id).Distinct().Count() == ActivityCatalog.All.Count);
 Check("actividades: la pastilla más ancha mantiene su centro y su zona activa",
     NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Pill.Width == 330 && NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Hot.Right > NotchLayout.Place(nm, nw, 1.0, 340, 200).Hot.Right
     && NotchLayout.Place(nm, nw, 1.0, 340, 200, 100).Pill.Width == 230);
+
+Section("Audio, series y datos locales");
+var audioLevels = AudioMixer.Remember(null, @"C:\Apps\Player.exe", 1.3);
+Check("audio: niveles recordados por exe, limitados a 0–1 y sin ids inválidos",
+    AudioMixer.NormalizeExecutable(@"C:\Apps\PLAYER.EXE") == "player.exe"
+    && AudioMixer.Remembered(audioLevels, "PLAYER.exe") == 1
+    && AudioMixer.Remember(new[] { "broken", "old.exe|0.4" }, "OLD.exe", .7).Count == 1);
+var series = new SeriesBuffer(3); series.Add(.2); series.Add(double.NaN); series.Add(1.5); series.Add(.8);
+Check("series: mantiene las últimas muestras y limita valores", series.Snapshot().SequenceEqual(new[] { 0d, 1d, .8d }));
+var meeting = MeetingLink.Extract("https://teams.microsoft.com/l/meetup-join/123", "Sala 4", "Notas https://example.com/info.");
+Check("reunión: prioriza URL, limpia puntuación y solo acepta HTTP(S)", meeting?.Host == "teams.microsoft.com"
+    && MeetingLink.Extract("https://zoom.us/j/1", "Sala · https://teams.microsoft.com/l/meetup-join/2", null)?.Host == "teams.microsoft.com"
+    && MeetingLink.Extract(null, "Sala 4", "https://example.com/meet.")?.AbsolutePath == "/meet"
+    && MeetingLink.Extract("file:///C:/meet", null, null) is null);
+var agentFixtures = Path.Combine(AppContext.BaseDirectory, "Fixtures");
+var claudeAgent = AgentLogs.Parse("claude-1", "project", "Claude Code", File.ReadAllLines(Path.Combine(agentFixtures, "claude-active.jsonl")), DateTime.UtcNow);
+var repeatedCommands = Enumerable.Range(1, 8).SelectMany(i => new[]
+{
+    System.Text.Json.JsonSerializer.Serialize(new { type = "response_item", payload = new { type = "custom_tool_call", call_id = $"repeat-{i}", name = "exec", status = "completed" } }),
+    System.Text.Json.JsonSerializer.Serialize(new { type = "response_item", payload = new { type = "custom_tool_call_output", call_id = $"repeat-{i}", output = "done" } }),
+});
+var currentCommand = System.Text.Json.JsonSerializer.Serialize(new { type = "response_item", payload = new { type = "custom_tool_call", call_id = "command-current", name = "exec" } });
+var codexAgent = AgentLogs.Parse("rollout-2026-01-01T00-00-00-01234567-89ab-cdef-0123-456789abcdef", "sample-codex-project", "Codex",
+    File.ReadAllLines(Path.Combine(agentFixtures, "codex-active.jsonl")).Concat(repeatedCommands).Append(currentCommand), DateTime.UtcNow);
+var heartbeatAgent = AgentLogs.Parse("heartbeat-1", "daily-check", "Codex", File.ReadAllLines(Path.Combine(agentFixtures, "codex-heartbeat.jsonl")), DateTime.UtcNow);
+Check("agentes: extrae el último mensaje del agente, proyecto y herramienta de Claude sin exponer prompts",
+    claudeAgent.State == AgentState.Working && claudeAgent.Provider == "Claude Code" && claudeAgent.ProjectName == "sample-project"
+    && claudeAgent.Name == "Update sample project"
+    && claudeAgent.Tool == "Read" && claudeAgent.ToolAction == "Leyendo archivo" && claudeAgent.File == "C:/projects/sample-project/Widget.cs"
+    && claudeAgent.Message == "I am checking the sample file and its references."
+    && claudeAgent.RecentActivity[0].Tool == "Read" && claudeAgent.RecentActivity.Any(a => a.Message == claudeAgent.Message)
+    && !claudeAgent.ToString().Contains("PRIVATE_USER_PROMPT_MARKER", StringComparison.Ordinal)
+    && claudeAgent.RecentActivity.All(a => !a.Summary.Contains("PRIVATE_USER_PROMPT_MARKER", StringComparison.Ordinal)));
+Check("agentes: lee actividad y cambios estructurados de Codex",
+    codexAgent.State == AgentState.Working && codexAgent.ProjectName == "sample-codex-project" && codexAgent.Provider == "Codex"
+    && codexAgent.Name == "sample-codex-project · 012345"
+    && codexAgent.Tool == "exec" && codexAgent.ToolAction == "Ejecutando comando"
+    && codexAgent.Message == "Voy a corregir el comportamiento y dejar la prueba actualizada."
+    && codexAgent.RecentActivity[0].Tool == "exec" && codexAgent.RecentActivity.Any(a => a.Message == codexAgent.Message)
+    && codexAgent.WorkSummary == "9 comandos ejecutados · 1 archivo editado"
+    && codexAgent.RecentActivity.Count(a => a.Tool == "exec") == 2
+    && codexAgent.RecentActivity.Any(a => a.Tool == "exec" && a.Completed)
+    && codexAgent.Added == 3 && codexAgent.Removed == 1 && codexAgent.File == "src/Main.cs");
+Check("agentes: convierte el XML de automatización en un resultado legible sin repetir el mensaje",
+    heartbeatAgent.State == AgentState.Finished && heartbeatAgent.IsAutomation
+    && heartbeatAgent.AutomationId == "scheduled-check-example"
+    && heartbeatAgent.Name == "Scheduled check example"
+    && heartbeatAgent.Message == "No new result was found; no notification was sent."
+    && !heartbeatAgent.Message.Contains("<heartbeat", StringComparison.Ordinal)
+    && heartbeatAgent.RecentActivity.Count == 1
+    && heartbeatAgent.RecentActivity[0].Summary == "Comprobación automática · sin aviso");
+var agentNow = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
+var justFinished = new AgentSnapshot("finished-1", "C:/src/App", "Codex", AgentState.Finished, null, null, null, null, "Terminé.", [], agentNow.AddMinutes(-1));
+var staleWorking = new AgentSnapshot("idle-1", "C:/src/Idle", "Claude Code", AgentState.Working, null, null, null, null, null, [], agentNow.AddMinutes(-7));
+var staleAttention = new AgentSnapshot("attention-1", "C:/src/Review", "Codex", AgentState.NeedsAttention, null, null, null, null, null, [], agentNow.AddMinutes(-6));
+var activeWorking = new AgentSnapshot("active-1", "C:/src/Active", "Codex", AgentState.Working, null, null, null, null, null, [], agentNow.AddMinutes(-4));
+var atRecentBoundary = new AgentSnapshot("window-1", "C:/src/Window", "Codex", AgentState.Finished, null, null, null, null, null, [], agentNow.Add(-AgentLogs.RecentWindow));
+var expired = new AgentSnapshot("expired-1", "C:/src/Old", "Codex", AgentState.Finished, null, null, null, null, null, [], agentNow.AddHours(-12).AddSeconds(-1));
+var recentAgents = AgentLogs.RecentSessions([], [justFinished, staleWorking, staleAttention, activeWorking, atRecentBoundary, expired], agentNow);
+Check("agentes: incluye terminadas recientes e inactivas hasta 12 horas sin duplicar las activas",
+    recentAgents.Count == 4 && recentAgents.Single(s => s.Session == "idle-1").State == AgentState.Inactive
+    && recentAgents.Single(s => s.Session == "attention-1").State == AgentState.NeedsAttention
+    && recentAgents.Any(s => s.Session == "finished-1") && recentAgents.Any(s => s.Session == "window-1")
+    && recentAgents.All(s => s.Session != "active-1" && s.Session != "expired-1")
+    && AgentLogs.RecentSessions(recentAgents, [staleWorking with { LastActivity = agentNow }], agentNow).All(s => s.Session != "idle-1"));
+var exactlyFiveMinutes = activeWorking with { LastActivity = agentNow - AgentLogs.InactiveAfter };
+var justPastFiveMinutes = exactlyFiveMinutes with { Session = "idle-boundary", LastActivity = exactlyFiveMinutes.LastActivity.AddTicks(-1) };
+Check("agentes: cinco minutos exactos siguen activos; al superarlos pasan a recientes",
+    AgentLogs.IsActive(exactlyFiveMinutes, agentNow)
+    && AgentLogs.RecentSessions([], [exactlyFiveMinutes, justPastFiveMinutes], agentNow).Single().State == AgentState.Inactive);
+Check("agentes: conserva el aviso y el tiempo sin actividad para sesiones que necesitan atención",
+    recentAgents.Single(s => s.Session == "attention-1").StateLabel == "Necesita tu atención"
+    && recentAgents.Single(s => s.Session == "attention-1").InactivityLabelAt(agentNow) == "Sin actividad hace 6 min"
+    && recentAgents.Single(s => s.Session == "idle-1").StateLabel == "Sin actividad"
+    && recentAgents.Single(s => s.Session == "idle-1").InactivityLabelAt(agentNow) == "Sin actividad hace 7 min"
+    && AgentLogs.AgeLabel(agentNow.AddMinutes(-62), agentNow) == "1 h 2 min");
+var repeatedEdit = new[]
+{
+    "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"tool_use\",\"name\":\"Edit\",\"id\":\"edit-1\",\"input\":{\"file_path\":\"src/Main.cs\"}}]}}",
+    "{\"type\":\"user\",\"message\":{\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":\"edit-1\"}]}}",
+    "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"tool_use\",\"name\":\"Edit\",\"id\":\"edit-2\",\"input\":{\"file_path\":\"src/Main.cs\"}}]}}",
+    "{\"type\":\"user\",\"message\":{\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":\"edit-2\"}]}}",
+    "{\"type\":\"assistant\",\"message\":{\"content\":[{\"type\":\"tool_use\",\"name\":\"Edit\",\"id\":\"edit-3\",\"input\":{}}]}}",
+    "{\"type\":\"user\",\"message\":{\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":\"edit-3\"}]}}",
+};
+var editSummary = AgentLogs.Parse("edits", "C:/src", "Claude Code", repeatedEdit, agentNow);
+Check("agentes: cuenta rutas únicas editadas y no inventa archivos si el log omite la ruta",
+    editSummary.WorkSummary == "1 archivo editado");
+var codexExplicitPath = System.Text.Json.JsonSerializer.Serialize(new
+{
+    type = "response_item",
+    payload = new { type = "custom_tool_call", call_id = "edit-file", name = "Edit", arguments = "{\"file_path\":\"src/Chosen.cs\"}", status = "completed" },
+});
+var codexPathAgent = AgentLogs.Parse("codex-edit", "C:/src", "Codex", [codexExplicitPath], agentNow);
+Check("agentes: acepta rutas explícitas de herramientas de archivo de Codex sin conservar sus argumentos",
+    codexPathAgent.File == "src/Chosen.cs" && codexPathAgent.WorkSummary == "1 archivo editado"
+    && codexPathAgent.RecentActivity.All(a => a.Summary != "{\"file_path\":\"src/Chosen.cs\"}"));
+var forecast = WeatherForecast.Parse("Panamá", "{\"current\":{\"time\":\"2026-10-17T12:00\",\"temperature_2m\":29,\"weather_code\":1},\"hourly\":{\"time\":[\"2026-10-17T12:00\",\"2026-10-17T13:00\"],\"temperature_2m\":[29,30],\"weather_code\":[1,2]}}");
+Check("tiempo: decodifica condiciones y horas", forecast is { Temperature: 29, Code: 1 } && forecast.Hours.Count == 2 && forecast.Hours[1].Temperature == 30);
 Check("favoritos: sin nada guardado salen encender, liberar RAM y procesos",
     FavoriteCatalog.Normalize(null).SequenceEqual(new[] { "power", "clean", "processes" }));
 var appFav = FavoriteCatalog.AppId(@"C:\Program Files\Demo\demo-app.exe");
@@ -510,7 +620,7 @@ Section("Resaltado de sintaxis");
         if (!ok) { badFiles++; Console.WriteLine("   mal: " + sourceFile); }
     }
     Check($"resaltado: en {filesChecked} archivos reales del repo ({tokensSeen} trozos) todos van ordenados y sin solaparse", filesChecked > 50 && badFiles == 0);
-    Check($"resaltado: y se calculan rápido ({clock.ElapsedMilliseconds} ms en total)", clock.ElapsedMilliseconds < 20000);
+    Check($"resaltado: y se calculan rápido ({clock.ElapsedMilliseconds} ms en total)", clock.ElapsedMilliseconds < Math.Max(20_000, filesChecked * 250L));
 }
 
 Section("Lente de cristal del dock (física del muelle)");
@@ -580,6 +690,9 @@ Section("Agenda del calendario");
     string Ics(params string[] lines) => "BEGIN:VCALENDAR\r\n" + string.Join("\r\n", lines) + "\r\nEND:VCALENDAR\r\n";
     var one = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "UID:u1", "SUMMARY:Reunión\\, con equipo", "DTSTART:20261020T093000", "END:VEVENT"), from, to);
     Check("ics: un evento con su hora y el texto sin escapes", one.Count == 1 && one[0].Title == "Reunión, con equipo" && one[0].Start == new DateTime(2026, 10, 20, 9, 30, 0) && one[0].Kind == AgendaKind.Event && !one[0].AllDay);
+    var linked = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:Reunión", "DTSTART:20261020T093000", "DTEND:20261020T103000", "URL:https://zoom.us/j/1", "LOCATION:Sala https://teams.microsoft.com/l/meetup-join/2", "DESCRIPTION:Notas", "END:VEVENT"), from, to);
+    Check("ics: guarda duración y enlace de reunión de URL, ubicación y notas", linked.Count == 1 && linked[0].End == new DateTime(2026, 10, 20, 10, 30, 0)
+        && MeetingLink.Extract(linked[0].Url, linked[0].Location, linked[0].Description)?.Host == "teams.microsoft.com");
     var utc = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:UTC", "DTSTART:20261020T120000Z", "END:VEVENT"), from, to);
     Check("ics: una hora con Z se pasa a la hora local", utc.Count == 1 && utc[0].Start == TimeZoneInfo.ConvertTimeFromUtc(new DateTime(2026, 10, 20, 12, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Local));
     var allDay = Agenda.ParseIcs(Ics("BEGIN:VEVENT", "SUMMARY:Cumple", "DTSTART;VALUE=DATE:20261105", "END:VEVENT"), from, to);

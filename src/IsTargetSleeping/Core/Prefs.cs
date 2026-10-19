@@ -13,6 +13,7 @@ public sealed class HotKey
     public static readonly HotKey Power = new(0x544F, 0x4F, "Ctrl+Alt+O");   // 'TO'
     public static readonly HotKey Sleep = new(0x5453, 0x53, "Ctrl+Alt+S");   // 'TS'
     public static readonly HotKey Clean = new(0x544C, 0x4C, "Ctrl+Alt+L");   // 'TL' (L de «liberar»)
+    public static readonly HotKey Ocr = new(0x5449, 0x49, "Ctrl+Alt+I");      // 'TI'
 
     private const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_NOREPEAT = 0x4000;
     private static IntPtr hwnd;
@@ -81,6 +82,17 @@ public static class PrefKeys
     public const string NotchDockPages = "notchDockPages";    // lista: páginas opcionales del dock (ollama, activity); Inicio, Widgets y Ajustes siempre están
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
+    public const string AudioLevels = "audioLevels";          // exe|nivel, volúmenes por app; mezclador local de Windows
+    public const string GlassLevel = "glassLevel";
+    public const string HiddenApps = "notchHiddenApps";
+    public const string AgentsEnabled = "agentsEnabled";
+    public const string WeatherEnabled = "weatherEnabled";
+    public const string WeatherCity = "weatherCity";
+    public const string TeleprompterText = "teleprompterText";
+    public const string TeleprompterSpeed = "teleprompterSpeed";
+    public const string TeleprompterSize = "teleprompterSize";
+    public const string SystemMetrics = "systemMetrics";
+    public const string OcrEnabled = "ocrEnabled";
     public const string TaskbarPet = "taskbarPetEnabled";      // mascota junto a Inicio (apagada por defecto)
     public const string TaskbarPetPlacement = "taskbarPetPlacement";   // above | left | walk
     public const string TaskbarPetSpecies = "taskbarPetSpecies";       // id de la mascota de la colección
@@ -127,6 +139,7 @@ public static class LoginItem
 public sealed class Prefs
 {
     private const string AskedKey = "loginItemAsked";
+    private const string LegacyActivityListMigrated = "notchActivityListMigrated";
 
     public bool ShouldOfferLogin { get; private set; }
     private string? hotKeyError;
@@ -205,6 +218,7 @@ public sealed class Prefs
     {
         if (demoLogin is null) Defaults.Set(key, value);
         else demoSwitches[key] = value;
+        if (key == PrefKeys.OcrEnabled) OnOcrHotKeyChange?.Invoke(value);
         Changed?.Invoke();
     }
 
@@ -225,6 +239,10 @@ public sealed class Prefs
     /// Movimiento reducido: mientras no se toque, lo que diga Windows («Efectos de animación»).
     public bool ReducedMotion => Switch(PrefKeys.ReducedMotion, !Win32.AnimationsEnabled());
     public void ToggleReducedMotion() => SetSwitch(PrefKeys.ReducedMotion, !ReducedMotion);
+    public double GlassLevel => Math.Clamp(Defaults.GetInt(PrefKeys.GlassLevel, 50), 20, 80) / 100.0;
+    public void SetGlassLevel(double value) { Defaults.Set(PrefKeys.GlassLevel, (int)Math.Round(Math.Clamp(value, .2, .8) * 100)); Changed?.Invoke(); }
+    public string WeatherCity => Defaults.GetString(PrefKeys.WeatherCity) ?? "";
+    public void SetWeatherCity(string value) { value = value.Trim(); Defaults.Set(PrefKeys.WeatherCity, value[..Math.Min(value.Length, 80)]); Changed?.Invoke(); }
 
     private readonly Dictionary<string, List<string>> demoLists = [];
     public List<string> List(string key) => demoLogin is null ? Defaults.GetList(key) : [.. demoLists.GetValueOrDefault(key) ?? []];
@@ -242,12 +260,20 @@ public sealed class Prefs
 
     /// Se llama con el estado del atajo principal; el de dormir se lee de SleepHotKeyEnabled.
     public Action<bool>? OnHotKeyChange;
+    public Action<bool>? OnOcrHotKeyChange;
     public Action? OpenLog;
     public event Action? Changed;
     public Language Language { get; private set; } = LanguageExt.Current;
 
     public Prefs()
     {
+        if (!Defaults.GetBool(LegacyActivityListMigrated) && Defaults.Has(PrefKeys.NotchActivities))
+        {
+            var activities = Defaults.GetList(PrefKeys.NotchActivities);
+            if (activities.Count == 3 && activities.ToHashSet(StringComparer.Ordinal).SetEquals(["brightness", "locks", "bluetooth"]))
+                Defaults.SetList(PrefKeys.NotchActivities, [.. activities, "clean"]);
+            Defaults.Set(LegacyActivityListMigrated, true);
+        }
         ShouldOfferLogin = !Defaults.GetBool(AskedKey) && !LoginItem.Enabled;
     }
 
