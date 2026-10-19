@@ -106,8 +106,10 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
 
-**1.25.1 está en desarrollo**: corrige la validación de las actualizaciones para aceptar el ZIP oficial, que incluye
-el archivo de avisos de terceros. La última descarga publicada sigue siendo la 1.25.0 hasta que se publique el parche.
+**1.25.1 ya está disponible** (19 de octubre de 2026): corrige la validación de las actualizaciones para aceptar el ZIP
+oficial, que incluye el archivo de avisos de terceros. Si actualizas desde 1.25.0 o una versión anterior, descarga y
+ejecuta manualmente el instalador 1.25.1 una vez; el actualizador de esas versiones no puede leer este formato. [Descarga
+1.25.1](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.1) o consulta el [changelog](CHANGELOG.md).
 
 **1.25.0 ya está disponible** (19 de octubre de 2026): reúne audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. [Descarga la versión para Windows](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) o consulta el [changelog](CHANGELOG.md).
 
