@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.25.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -85,7 +85,7 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | ♿ | **Teclado y lectores de pantalla** | Cada botón e interruptor se alcanza con Tab, muestra un anillo de foco y tiene nombre accesible; sigue el tema de alto contraste de Windows. |
 | 🌍 | **Español e inglés** | Sigue el idioma de Windows, o elígelo en Ajustes. |
 | 🖤 | **Vidrio negro** | En el panel de la bandeja, vidrio negro ahumado sobre el acrílico real de Windows 11; en el notch, negro puro que se funde en cristal líquido (desenfoca lo de detrás y lo tiñe para que el texto se lea). Tarjetas translúcidas e interfaz monocroma con color solo para el estado (y el color de la portada para la música). El ícono de la bandeja sigue el modo de la barra de tareas. |
-| 🔄 | **Actualizaciones** | Opcionales y apagadas por defecto. Si las activas, busca versiones estables en GitHub; tú decides cuándo instalar. Verifica SHA-256 y vuelve atrás si algo falla. |
+| 🔄 | **Actualizaciones** | Opcionales y apagadas por defecto. Si las activas, busca versiones estables en GitHub; tú decides cuándo instalar. Verifica SHA-256, admite los tres archivos del ZIP oficial y vuelve atrás si algo falla. |
 | 🔒 | **Privado** | Habla con tus motores de modelos locales. Sin cuentas, telemetría ni analítica. La búsqueda opcional de actualizaciones y sus descargas contactan con GitHub; los datos de procesos se quedan en tu PC. |
 
 ## 📥 Instalar
@@ -105,6 +105,9 @@ archivos esperados y mantiene la extracción dentro de su carpeta temporal. Cons
 **1.6.1 ya está publicada** (14 de octubre de 2026): apagar Ollama también cierra el servidor que arrancó esta app,
 aunque después abras la app de Ollama, y liberar RAM ya no hace que el vigilante reinicie Ollama ni que la mascota
 entre y salga de su cama.
+
+**1.25.1 está en desarrollo**: corrige la validación de las actualizaciones para aceptar el ZIP oficial, que incluye
+el archivo de avisos de terceros. La última descarga publicada sigue siendo la 1.25.0 hasta que se publique el parche.
 
 **1.25.0 ya está disponible** (19 de octubre de 2026): reúne audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. [Descarga la versión para Windows](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) o consulta el [changelog](CHANGELOG.md).
 
@@ -367,9 +370,9 @@ Con Ollama apagado, usa lo elegido en Ajustes o el último mecanismo recordado e
   de versiones publicadas.
 - Solo ofrece versiones estables superiores y el paquete correspondiente al proceso x64/ARM64. Muestra versión
   actual, nueva y **Ver novedades**. Al pulsar **Actualizar**, descarga con progreso y cancelación, comprueba
-  SHA-256; el ZIP solo puede contener el ejecutable esperado y `LICENSE`. Esas entradas se asignan a nombres fijos y
-  se comprueba que la extracción no salga de su carpeta temporal. También se valida la versión y arquitectura del
-  ejecutable. Un auxiliar espera el cierre normal, reemplaza el archivo en su ubicación actual y conserva un respaldo
+  SHA-256; el ZIP solo puede contener el ejecutable esperado, `LICENSE` y `THIRD-PARTY-NOTICES.md`. Esas entradas se
+  asignan a nombres fijos y se comprueba que la extracción no salga de su carpeta temporal. También se valida la
+  versión y arquitectura del ejecutable. Un auxiliar espera el cierre normal, reemplaza el archivo en su ubicación actual y conserva un respaldo
   hasta que arranca la nueva bandeja. Si falla, restaura y abre la versión anterior. Conserva ajustes e historial;
   si no puedes escribir en la carpeta, ofrece descarga
   manual. El agente de memoria se actualiza por separado, con su permiso de administrador.

@@ -58,7 +58,8 @@
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
-      <a href="#v1-25-0" data-i18n="nov.proximaLink">1.25.0 · Disponible</a>
+      <a href="#proxima" data-i18n="nov.proximaLink">1.25.1 · En desarrollo</a>
+      <a href="#v1-25-0" data-i18n="nov.publicadaLink">1.25.0 · Disponible</a>
 
       <a href="#v1-20-0">1.20.0</a>
       <a href="#v1-11-0">1.11.0</a>
@@ -79,9 +80,24 @@
   </div>
 </section>
 
-<!-- Cada versión publicada aparece primero y enlaza a su changelog y paquetes. -->
+<!-- La próxima versión en desarrollo aparece antes que las publicadas. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version version--proxima" id="proxima">
+      <div class="version-meta">
+        <div class="version-num">1.25.1</div>
+        <span class="version-fecha" data-i18n="nov.v1_25_1.estado">En desarrollo</span>
+        <span class="salto salto--proxima" data-i18n="nov.s.proxima">Próxima</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.v1_25_1.resumen">Parche del actualizador para reconocer el paquete ZIP oficial y conservar su validación estricta.</p>
+        <div class="grupo"><h3 data-i18n="nov.g.arreglos">Arreglos</h3><div class="novedades">
+          <div class="novedad"><b data-i18n="nov.v1_25_1.actualizadorT">Actualizador compatible con el paquete oficial</b><span data-i18n="nov.v1_25_1.actualizadorD">El ZIP incluye el ejecutable, la licencia y los avisos de terceros. El actualizador acepta esos tres archivos exactos, comprueba el SHA-256 y continúa rechazando entradas inesperadas.</span></div>
+        </div></div>
+        <p class="hero-meta" data-i18n="nov.v1_25_1.pendiente">En desarrollo. La descarga y la fecha se añadirán cuando se publique la versión.</p>
+      </div>
+    </article>
+
     <article class="version" id="v1-25-0">
       <div class="version-meta">
         <div class="version-num">1.25.0</div>

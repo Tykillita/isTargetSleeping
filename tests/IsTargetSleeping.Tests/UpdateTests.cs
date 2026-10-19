@@ -36,7 +36,8 @@ internal static class UpdateTests
         listener.Start();
         string api = $"http://127.0.0.1:{((IPEndPoint)listener.LocalEndpoint).Port}";
         string zipName = $"isTargetSleeping-1.0.0-win-{Updater.Arch}.zip";
-        byte[] package = Zip(("isTargetSleeping.exe", executable), ("LICENSE", "MIT"u8.ToArray()));
+        byte[] package = Zip(("isTargetSleeping.exe", executable), ("LICENSE", "MIT"u8.ToArray()),
+            ("THIRD-PARTY-NOTICES.md", "Third-party notices"u8.ToArray()));
         string sha = Hash(package) + "  " + zipName;
         string release = Release(api, Updater.Arch);
         int releaseCode = 200;
@@ -120,6 +121,10 @@ internal static class UpdateTests
             check("rechaza versión y arquitectura del EXE incorrectas", wrongVersion && wrongArch);
             sha = new string('0', 64);
             check("rechaza SHA distinto", await Reject(() => Updater.Download(found.Info!, testOrigin: api)));
+            package = Zip(("isTargetSleeping.exe", executable), ("LICENSE", "MIT"u8.ToArray()),
+                ("unexpected.txt", "unexpected"u8.ToArray()));
+            sha = Hash(package);
+            check("rechaza archivos ajenos al paquete oficial", await Reject(() => Updater.Download(found.Info!, testOrigin: api)));
             package = Zip(("../isTargetSleeping.exe", executable)); sha = Hash(package);
             check("rechaza rutas fuera del ZIP", await Reject(() => Updater.Download(found.Info!, testOrigin: api)));
             package = Zip(("isTargetSleeping.exe", executable), ("isTargetSleeping.exe", executable)); sha = Hash(package);

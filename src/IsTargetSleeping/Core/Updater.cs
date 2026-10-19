@@ -226,7 +226,7 @@ public static class Updater
                 {
                     // Map archive names to fixed output names; never use the ZIP path as a filesystem path.
                     string? name = entry.FullName == exeName ? exeName
-                        : entry.FullName == "LICENSE" ? "LICENSE" : null;
+                        : entry.FullName is "LICENSE" or "THIRD-PARTY-NOTICES.md" ? entry.FullName : null;
                     if (name is null || !names.Add(name)
                         || (entry.ExternalAttributes >> 16 & 0xF000) == 0xA000 || entry.Length > MaxExtracted
                         || (expanded += entry.Length) > MaxExtracted)

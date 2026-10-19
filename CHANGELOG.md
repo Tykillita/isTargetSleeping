@@ -5,6 +5,11 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.25.1] — 2026-10-19
+
+### Fixed
+- Accept the official package's `THIRD-PARTY-NOTICES.md` entry during verified update extraction, while continuing to reject all unrecognized ZIP entries.
+
 ## [1.25.0] — 2026-10-19
 
 ### Added

@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.25.0-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.1-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -91,7 +91,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | ♿ | **Keyboard and screen readers** | Every button and switch is reachable with Tab, shows a focus ring and has an accessible name; the Windows high-contrast theme is followed. |
 | 🌍 | **English and Spanish** | Follows the Windows language, or pick one in Settings. |
 | 🖤 | **Black glass** | In the tray panel, smoked black glass over Windows 11's real acrylic; in the notch, true black that fades into liquid glass (it blurs what is behind it and tints it so text stays readable). Translucent cards and a monochrome UI with color only for status (and the cover's color for music). The tray icon follows the taskbar mode. |
-| 🔄 | **Updates** | Optional and off by default. When enabled, it checks GitHub for stable releases; you choose when to install, and packages are verified with SHA-256 and rolled back if anything fails. |
+| 🔄 | **Updates** | Optional and off by default. When enabled, it checks GitHub for stable releases; you choose when to install, and packages are verified with SHA-256 and rolled back if anything fails. The updater accepts the three expected files in the official ZIP. |
 | 🔒 | **Private** | Talks to your local model engines. No accounts, telemetry or analytics. Optional update checks and downloads contact GitHub; process data stays on your PC. |
 | 🧾 | **Open source** | MIT licensed. |
 
@@ -109,6 +109,9 @@ stays inside its staging folder. See the [changelog](CHANGELOG.md).
 **1.6.1 is out** (October 14, 2026): turning Ollama off also closes the server this app started, even if you then
 opened the Ollama app, and freeing RAM no longer makes the watchdog restart Ollama or the pet bounce in and out of
 its bed.
+
+**1.25.1 is in development**: fixes update validation for the official ZIP, which includes the third-party notices
+file. The latest published download remains 1.25.0 until the patch is released.
 
 **1.25.0 is available** (October 19, 2026): it brings per-app audio and notch HUDs, a drag-and-drop widget editor with live system charts, local coding-agent sessions with searchable recent history and progressive details, calendar progress and meeting links, optional city weather, local OCR and a saved teleprompter. [Download the Windows release](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) or see the [changelog](CHANGELOG.md).
 
@@ -426,9 +429,9 @@ tray menu works even with automatic checks off. GitHub rate-limit waiting times 
 Only newer stable releases are offered, using the ZIP and SHA-256 for the process architecture (x64 or ARM64).
 The panel shows your current version, the new version and **Release notes**. Nothing installs until you click
 **Update**. Downloads show progress and can be cancelled; packages are checked for SHA-256, and ZIPs can contain
-only the expected executable and `LICENSE`. Those entries map to fixed filenames, and extraction is checked to stay
-inside its staging folder. The expected executable's architecture/version is checked too. A background copy of the
-app waits for normal shutdown, replaces the executable in its current location and keeps a backup until the new tray
+only the expected executable, `LICENSE` and `THIRD-PARTY-NOTICES.md`. Those entries map to fixed filenames, and
+extraction is checked to stay inside its staging folder. The expected executable's architecture/version is checked
+too. A background copy of the app waits for normal shutdown, replaces the executable in its current location and keeps a backup until the new tray
 starts. Failed replacement/startup
 restores and reopens the previous version. Settings and history are preserved. Without folder write permission,
 the app offers a manual GitHub download. Updating the memory agent remains a separate action with its UAC prompt.
