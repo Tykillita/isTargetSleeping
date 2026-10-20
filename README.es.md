@@ -9,7 +9,7 @@
 [English](README.md) · **Español**
 
 <!-- La placa de versión repite VERSION: actualiza las dos a la vez. -->
-[![Version](https://img.shields.io/badge/version-1.25.1-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.2-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -76,7 +76,7 @@ https://github.com/user-attachments/assets/24b2c278-0e21-429a-928e-607cef842813
 | 🧩 | **Widgets** | El Home del notch tiene cuatro celdas que eliges y ordenas en la página Widgets: Ollama, Sistema (CPU, RAM, VRAM, disco, red), Reloj y calendario (un mes con flechas, una agenda de recordatorios que añades con una regla de días que arrastras, y los eventos de un archivo .ics opcional), Pomodoro (con aviso), Mantener despierto, Notas (se guardan solas, en local), Batería y Música (lo que Windows dice que suena, con controles macizos, aleatorio y repetir, y el color de la portada). Los widgets van directamente sobre el cristal, sin tarjetas, en dos columnas que se rellenan por la más corta. Todo se lee en local. |
 | 🎚️ | **Audio por app y HUDs** | El widget Audio controla y recuerda el nivel del mezclador de Windows de cada app con una sesión activa. Los HUDs opcionales del notch muestran volumen, Bloq Mayús/Bloq Núm, brillo en pantallas internas compatibles y conexiones de audio. |
 | 🧩 | **Editor de widgets y gráficas del sistema** | Añade, arrastra, ordena y ensancha widgets compatibles del Home (hasta cuatro celdas); guarda o descarta los cambios. Elige dos gráficas del sistema entre seis métricas o consulta las seis en la vista ancha. |
-| 🤖 | **Actividad de agentes de código** | El selector fijo separa sesiones activas y recientes de Claude Code y Codex. En Recientes puedes consultar sesiones terminadas o inactivas hasta 12 horas, buscar por nombre, proyecto, agente o actividad y filtrar por agente, proyecto y estado. El resumen cuenta llamadas de herramientas completadas y archivos distintos solo cuando la ruta aparece explícitamente en el log; las sesiones que necesitan atención conservan ese estado y muestran cuánto llevan inactivas. Los detalles de herramientas, archivos y mensajes se despliegan bajo demanda. No muestra prompts, argumentos ni salidas completas de comandos; los logs se leen en local y nunca se envían. |
+| 🤖 | **Actividad de agentes de código** | El selector fijo separa sesiones activas y recientes de Claude Code y Codex. En Recientes puedes consultar sesiones terminadas o inactivas hasta 12 horas, buscar por nombre, proyecto, agente o actividad y filtrar por agente, proyecto y estado con menús desplegables adaptados al tema de cristal. El resumen cuenta llamadas de herramientas completadas y archivos distintos solo cuando la ruta aparece explícitamente en el log; las sesiones que necesitan atención conservan ese estado y muestran cuánto llevan inactivas. Los detalles de herramientas, archivos y mensajes se despliegan bajo demanda. No muestra prompts, argumentos ni salidas completas de comandos; los logs se leen en local y nunca se envían. |
 | 📅 | **Calendario, tiempo, OCR y teleprompter** | Los eventos del calendario muestran progreso y enlaces de reunión; el tiempo opcional consulta la ciudad elegida en Open-Meteo; el OCR local copia texto de una imagen de la Bandeja o de una región de pantalla; el teleprompter guarda el texto localmente. |
 | 🫧 | **Más controles del notch** | Ajusta el fundido del cristal, oculta el notch en apps elegidas y usa el estilo de movimiento compartido; el OSD de volumen de Windows sigue disponible. |
 
@@ -110,6 +110,8 @@ entre y salga de su cama.
 oficial, que incluye el archivo de avisos de terceros. Si actualizas desde 1.25.0 o una versión anterior, descarga y
 ejecuta manualmente el instalador 1.25.1 una vez; el actualizador de esas versiones no puede leer este formato. [Descarga
 1.25.1](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.1) o consulta el [changelog](CHANGELOG.md).
+
+**1.25.2 está en desarrollo**: los filtros de sesiones recientes de AI Agents usan ahora menús de cristal legibles, limitados a su tarjeta y con el foco de teclado del tema. Esta versión todavía no está disponible para descargar.
 
 **1.25.0 ya está disponible** (19 de octubre de 2026): reúne audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. [Descarga la versión para Windows](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) o consulta el [changelog](CHANGELOG.md).
 

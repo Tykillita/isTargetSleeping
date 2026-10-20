@@ -80,6 +80,20 @@ Un widget nuevo del notch (`Core/Widgets/WidgetCatalog.cs`) no está terminado h
    `FavoriteCatalog` con sus pruebas.
 5. Documentarlo como el resto de funciones (README, web, novedades, CHANGELOG, traducciones).
 
+## Revisión visual de la interfaz: obligatoria
+
+En cualquier cambio visible de WPF, ejecuta la app o el arnés visual y abre capturas reales de los estados modificados;
+compilar o leer XAML no cuenta como revisión visual. Comprueba en el tamaño real del notch/panel, en español e inglés,
+con tema normal y alto contraste, y a 100 %, 125 % y 150 % cuando el escalado pueda afectar el diseño. Revisa los estados
+cerrado, seleccionado, hover, foco de teclado, deshabilitado y abierto que correspondan, incluidos los menús emergentes.
+
+No dejes controles estándar de Windows sin una plantilla explícita del tema de la app dentro de superficies de cristal.
+Los menús emergentes deben usar los recursos de tema, mantener ancho y alto dentro del espacio previsto, quedar por encima
+del contenido con contraste legible y no tapar títulos/acciones de forma ambigua ni salirse o recortarse. Comprueba que
+filas con texto largo, estados vacíos y el contenido dinámico no causen solapamientos, fondos blancos inesperados o cortes.
+Si no se puede ejecutar o inspeccionar visualmente el estado afectado, informa esa limitación y no afirmes que el diseño
+quedó verificado.
+
 ## Página de novedades: cada versión o feature nueva se documenta
 
 `site/novedades.html` es la documentación pública de cambios, de la versión más nueva a la más antigua.
@@ -113,3 +127,16 @@ Un widget nuevo del notch (`Core/Widgets/WidgetCatalog.cs`) no está terminado h
 
 - Respeta estas reglas también al usar la skill `/commit`.
 - Sin líneas de atribución a Claude en commits, PRs ni archivos.
+
+## Delegación a Codex (equipo Claude + Codex)
+
+Para gastar menos tokens de Claude, la implementación bien especificada se delega a Codex con el subagente
+`codex-worker` (`.claude/agents/codex-worker.md`, que ejecuta `codex exec`). Claude planifica, diseña y revisa.
+
+- **A Codex:** lógica, refactors, migraciones, pruebas y cambios masivos con archivos y criterio de hecho claros.
+- **Se queda en Claude:** diseño y XAML/CSS visual, tareas ambiguas o de riesgo (seguridad, instalador, agente de
+  administrador), y retoques pequeños (≤2 archivos): delegarlos cuesta más de lo que ahorra.
+- **Revisión cruzada:** quien revisa es el otro modelo que el autor, sobre `git diff`, con veredicto
+  APPROVED / WARNING / BLOCKED y un máximo de 3 rondas.
+- Codex siempre en `-s workspace-write` (o `read-only`), nunca `danger-full-access`. Las reglas de reparto
+  definitivas vivirán en `team-policy.json` cuando exista el widget «Equipo».

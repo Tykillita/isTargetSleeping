@@ -5,6 +5,11 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.25.2] — 2026-10-19
+
+### Fixed
+- Restyle the AI Agents history filters with the app's glass theme, bounded dropdowns, readable selected rows and visible keyboard focus instead of the white native Windows menu.
+
 ## [1.25.1] — 2026-10-19
 
 ### Fixed

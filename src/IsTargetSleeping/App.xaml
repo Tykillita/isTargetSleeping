@@ -192,6 +192,104 @@
             </Setter>
         </Style>
 
+        <!-- Menú desplegable de vidrio: evita que la plantilla del sistema pinte controles blancos sobre el notch. -->
+        <Style x:Key="GlassComboBoxItem" TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+            <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="Padding" Value="7,5" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="row" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="row" Property="Background" Value="{DynamicResource Track}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="row" Property="Background" Value="{DynamicResource Accent}" />
+                                <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="GlassComboBoxText">
+            <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        </DataTemplate>
+
+        <Style x:Key="GlassComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource Track}" />
+            <Setter Property="Foreground" Value="{DynamicResource Fg}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardStroke}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="7,3,24,3" />
+            <Setter Property="MinHeight" Value="28" />
+            <Setter Property="FontFamily" Value="{StaticResource Sans}" />
+            <Setter Property="FontSize" Value="10.5" />
+            <Setter Property="ItemContainerStyle" Value="{StaticResource GlassComboBoxItem}" />
+            <Setter Property="ItemTemplate" Value="{StaticResource GlassComboBoxText}" />
+            <Setter Property="MaxDropDownHeight" Value="160" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid SnapsToDevicePixels="True">
+                            <Border x:Name="box" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" />
+                            <ToggleButton Focusable="False" ClickMode="Press" HorizontalAlignment="Right" Width="26"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="arrow" Background="Transparent" CornerRadius="6">
+                                            <TextBlock Text="&#xE70D;" FontFamily="{StaticResource Icons}" FontSize="8.5"
+                                                       Foreground="{DynamicResource Secondary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="arrow" Property="Background" Value="{DynamicResource CardFill}" /></Trigger>
+                                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="arrow" Property="Opacity" Value="0.7" /></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter IsHitTestVisible="False" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                            <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="None"
+                                   PlacementTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}">
+                                <Grid x:Name="DropDown" MinWidth="{TemplateBinding ActualWidth}" MaxWidth="{TemplateBinding ActualWidth}"
+                                      MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True">
+                                    <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource CardStroke}"
+                                            BorderThickness="1" CornerRadius="8" Padding="3">
+                                        <Border.Effect><DropShadowEffect Color="#000000" BlurRadius="14" ShadowDepth="4" Opacity="0.4" /></Border.Effect>
+                                    </Border>
+                                    <ScrollViewer Margin="3" CanContentScroll="True" HorizontalScrollBarVisibility="Disabled" SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource Muted}" /></Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource Accent}" /></Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource Accent}" /></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="box" Property="Opacity" Value="0.5" /></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Selector segmentado con la marca. -->
         <DataTemplate x:Key="SegmentTemplate" DataType="{x:Type ui:Segment}">
             <Button Command="{Binding Pick}" Style="{StaticResource Plain}" AutomationProperties.Name="{Binding Title}">
@@ -748,15 +846,12 @@
           </TextBlock>
         </Grid>
         <UniformGrid Columns="3" Margin="0,4,0,0">
-          <ComboBox ItemsSource="{Binding Model.ProviderOptions}" SelectedItem="{Binding Model.SelectedProviderFilter, UpdateSourceTrigger=PropertyChanged}"
-                    AutomationProperties.Name="{Binding Model.ProviderFilterName}" ToolTip="{Binding Model.ProviderFilterName}" Margin="0,0,4,0"
-                    Background="{DynamicResource Track}" Foreground="{DynamicResource Fg}" BorderBrush="{DynamicResource CardStroke}" Padding="4,2" FontSize="9" />
-          <ComboBox ItemsSource="{Binding Model.ProjectOptions}" SelectedItem="{Binding Model.SelectedProjectFilter, UpdateSourceTrigger=PropertyChanged}"
-                    AutomationProperties.Name="{Binding Model.ProjectFilterName}" ToolTip="{Binding Model.ProjectFilterName}" Margin="0,0,4,0"
-                    Background="{DynamicResource Track}" Foreground="{DynamicResource Fg}" BorderBrush="{DynamicResource CardStroke}" Padding="4,2" FontSize="9" />
-          <ComboBox ItemsSource="{Binding Model.StateOptions}" SelectedItem="{Binding Model.SelectedStateFilter, UpdateSourceTrigger=PropertyChanged}"
-                    AutomationProperties.Name="{Binding Model.StateFilterName}" ToolTip="{Binding Model.StateFilterName}"
-                    Background="{DynamicResource Track}" Foreground="{DynamicResource Fg}" BorderBrush="{DynamicResource CardStroke}" Padding="4,2" FontSize="9" />
+          <ComboBox Style="{StaticResource GlassComboBox}" ItemsSource="{Binding Model.ProviderOptions}" SelectedItem="{Binding Model.SelectedProviderFilter, UpdateSourceTrigger=PropertyChanged}"
+                    AutomationProperties.Name="{Binding Model.ProviderFilterName}" ToolTip="{Binding Model.ProviderFilterName}" Margin="0,0,4,0" />
+          <ComboBox Style="{StaticResource GlassComboBox}" ItemsSource="{Binding Model.ProjectOptions}" SelectedItem="{Binding Model.SelectedProjectFilter, UpdateSourceTrigger=PropertyChanged}"
+                    AutomationProperties.Name="{Binding Model.ProjectFilterName}" ToolTip="{Binding Model.ProjectFilterName}" Margin="0,0,4,0" />
+          <ComboBox Style="{StaticResource GlassComboBox}" ItemsSource="{Binding Model.StateOptions}" SelectedItem="{Binding Model.SelectedStateFilter, UpdateSourceTrigger=PropertyChanged}"
+                    AutomationProperties.Name="{Binding Model.StateFilterName}" ToolTip="{Binding Model.StateFilterName}" />
         </UniformGrid>
       </StackPanel>
     </DataTemplate>

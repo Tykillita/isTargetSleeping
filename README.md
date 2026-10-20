@@ -9,7 +9,7 @@
 **English** · [Español](README.es.md)
 
 <!-- The version badge repeats VERSION: update both together. -->
-[![Version](https://img.shields.io/badge/version-1.25.1-4DA3FF?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.25.2-4DA3FF?style=flat-square)](CHANGELOG.md)
 ![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![Architecture](https://img.shields.io/badge/x64%20%7C%20ARM64-native-111?style=flat-square)
 ![.NET](https://img.shields.io/badge/.NET%2010-WPF%20%2B%20Win32-512BD4?style=flat-square&logo=dotnet&logoColor=white)
@@ -82,7 +82,7 @@ the model sleep when you don't need it and gives you one-click control over Olla
 | 🧩 | **Widgets** | The notch Home holds four cells that you choose and order on the Widgets page: Ollama, System (CPU, RAM, VRAM, disk, network), Clock and calendar (a month with arrows, an agenda of reminders you add with a draggable day ruler, and the events of an optional .ics file), Pomodoro (with a notice), Keep awake, Notes (saved on their own, locally), Battery and Music (what Windows reports as playing, with bold controls, shuffle and repeat, and the cover's color). Widgets sit straight on the glass, with no cards, in two columns that fill by the shorter one. Everything is read locally. |
 | 🎚️ | **Per-app audio and HUDs** | The Audio widget controls and remembers the Windows mixer level for each app with an active audio session. Optional notch HUDs show volume, Caps Lock/Num Lock, brightness on supported internal displays and connected audio endpoints. |
 | 🧩 | **Widget editor and system graphs** | Add, drag, reorder and resize compatible Home widgets (up to four cells); save or discard edits. Choose two live system charts from six metrics, or see all six in the wide view. |
-| 🤖 | **Coding-agent activity** | Fixed tabs separate active and recent Claude Code and Codex sessions. Recent sessions stay available for 12 hours; search by name, project, agent or activity and filter by agent, project and state. Summaries count completed tool calls and distinct edited files only when paths appear explicitly in the log. Sessions needing attention keep that state and show their idle time. Tool, file and message details expand on request. User prompts, command arguments and full command output are never shown; logs stay on your PC. |
+| 🤖 | **Coding-agent activity** | Fixed tabs separate active and recent Claude Code and Codex sessions. Recent sessions stay available for 12 hours; search by name, project, agent or activity and filter by agent, project and state with dropdowns styled to match the glass theme. Summaries count completed tool calls and distinct edited files only when paths appear explicitly in the log. Sessions needing attention keep that state and show their idle time. Tool, file and message details expand on request. User prompts, command arguments and full command output are never shown; logs stay on your PC. |
 | 📅 | **Calendar, weather, OCR and teleprompter** | Calendar events show progress and meeting links; optional weather looks up a city through Open-Meteo; local OCR copies text from a tray image or screen region; the teleprompter stores its script locally. |
 | 🫧 | **More notch controls** | Set the glass fade, hide the notch in chosen apps and use the shared motion style; Windows’ own volume OSD remains available. |
 
@@ -113,6 +113,8 @@ its bed.
 **1.25.1 is available** (October 19, 2026): fixes update validation for the official ZIP, which includes the
 third-party notices file. If you are updating from 1.25.0 or earlier, download and run the 1.25.1 installer manually
 once; the updater in those versions cannot read this package format. [Download 1.25.1](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.1) or see the [changelog](CHANGELOG.md).
+
+**1.25.2 is in development**: the AI Agents recent-session filters now use readable glass-themed dropdowns that stay within their card and match the app's keyboard-focus styling. This version is not available to download yet.
 
 **1.25.0 is available** (October 19, 2026): it brings per-app audio and notch HUDs, a drag-and-drop widget editor with live system charts, local coding-agent sessions with searchable recent history and progressive details, calendar progress and meeting links, optional city weather, local OCR and a saved teleprompter. [Download the Windows release](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) or see the [changelog](CHANGELOG.md).
 
