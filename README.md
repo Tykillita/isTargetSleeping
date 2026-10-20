@@ -114,7 +114,7 @@ its bed.
 third-party notices file. If you are updating from 1.25.0 or earlier, download and run the 1.25.1 installer manually
 once; the updater in those versions cannot read this package format. [Download 1.25.1](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.1) or see the [changelog](CHANGELOG.md).
 
-**1.25.2 is in development**: the AI Agents recent-session filters now use readable glass-themed dropdowns that stay within their card and match the app's keyboard-focus styling. This version is not available to download yet.
+**1.25.2 is available** (October 19, 2026): fixes the AI Agents recent-session filters with readable glass-themed dropdowns that stay within their card and match the app's keyboard-focus styling. [Download 1.25.2](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.2) or see the [changelog](CHANGELOG.md).
 
 **1.25.0 is available** (October 19, 2026): it brings per-app audio and notch HUDs, a drag-and-drop widget editor with live system charts, local coding-agent sessions with searchable recent history and progressive details, calendar progress and meeting links, optional city weather, local OCR and a saved teleprompter. [Download the Windows release](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) or see the [changelog](CHANGELOG.md).
 

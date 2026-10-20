@@ -111,7 +111,7 @@ oficial, que incluye el archivo de avisos de terceros. Si actualizas desde 1.25.
 ejecuta manualmente el instalador 1.25.1 una vez; el actualizador de esas versiones no puede leer este formato. [Descarga
 1.25.1](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.1) o consulta el [changelog](CHANGELOG.md).
 
-**1.25.2 está en desarrollo**: los filtros de sesiones recientes de AI Agents usan ahora menús de cristal legibles, limitados a su tarjeta y con el foco de teclado del tema. Esta versión todavía no está disponible para descargar.
+**1.25.2 ya está disponible** (19 de octubre de 2026): corrige los filtros de sesiones recientes de AI Agents con menús de cristal legibles, limitados a su tarjeta y con el foco de teclado del tema. [Descarga la versión 1.25.2](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.2) o consulta el [changelog](CHANGELOG.md).
 
 **1.25.0 ya está disponible** (19 de octubre de 2026): reúne audio por app y HUDs del notch, un editor de widgets con gráficas del sistema, actividad local de agentes con sesiones recientes buscables y detalles progresivos, progreso de calendario y enlaces de reuniones, tiempo opcional por ciudad, OCR local y un teleprompter guardado. [Descarga la versión para Windows](https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.0) o consulta el [changelog](CHANGELOG.md).
 
