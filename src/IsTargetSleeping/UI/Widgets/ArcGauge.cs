@@ -25,11 +25,16 @@ public sealed class ArcGauge : FrameworkElement
     {
         Loaded += (_, _) => { Theme.Changed += InvalidateVisual; Animate(Progress, fromZero: true); };
         Unloaded += (_, _) => Theme.Changed -= InvalidateVisual;
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible) Animate(Progress, fromZero: true);
+            else BeginAnimation(ShownProperty, null);
+        };
     }
 
     private void Animate(double to, bool fromZero = false)
     {
-        if (!IsLoaded || !SystemParameters.ClientAreaAnimation) { SetValue(ShownProperty, to); return; }
+        if (!IsLoaded || !IsVisible || !SystemParameters.ClientAreaAnimation) { SetValue(ShownProperty, to); return; }
         BeginAnimation(ShownProperty, new DoubleAnimation(fromZero ? 0 : (double)GetValue(ShownProperty), to, TimeSpan.FromMilliseconds(900)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 

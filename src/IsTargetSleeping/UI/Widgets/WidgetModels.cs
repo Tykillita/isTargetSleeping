@@ -594,5 +594,5 @@ public sealed class WidgetHub : IDisposable
     /// El Estante está en el Home o en la vista corta que se ve ahora: ahí van los archivos que se arrastran al notch.
     public bool ShelfShown => homeVisible && homeNeeds.Any(id => WidgetLayout.BaseId(id) == "shelf") || peekVisible && peekNeeds.Any(id => WidgetLayout.BaseId(id) == "shelf");
 
-    public void Dispose() { Notes.Save(); Huds.Dispose(); Audio.Sessions.Dispose(); Leds.Dispose(); }
+    public void Dispose() { Notes.Save(); Huds.Dispose(); Audio.Sessions.Dispose(); Leds.Dispose(); Agents.Dispose(); }
 }

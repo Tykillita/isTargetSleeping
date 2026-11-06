@@ -14,6 +14,12 @@ Si tu trabajo sube la versión de la app, **tú** actualizas en el mismo trabajo
 
 El detalle completo está en la sección «Obligatorio en cada versión nueva» de [CLAUDE.md](CLAUDE.md).
 
+## Imágenes oficiales por versión
+
+En los README, `site/novedades.html`, la web oficial, portadas y videos usa capturas de la versión actual con
+notch. No reutilices imágenes de versiones anteriores a la llegada del notch ni las presentes como la interfaz
+actual. Regenera en español e inglés las capturas públicas desde el código de cada versión.
+
 ## Revisión visual obligatoria de WPF
 
 Antes de cerrar cualquier cambio visible, ejecuta la app o el arnés visual y revisa capturas reales del estado afectado;

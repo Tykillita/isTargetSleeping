@@ -262,7 +262,7 @@ public static class Cli
         if (args.Contains("appwindow"))   // la ventana de la app entera (pestañas arriba), sobre un escritorio simulado
         {
             var appView = args.Contains("processes") ? PanelView.Processes : args.Contains("widgets") ? PanelView.Widgets : PanelView.Settings;
-            var appRoot = AppWindow.Preview(supervisor, appView);
+            var appRoot = AppWindow.Preview(supervisor, appView, snapshotModel.CurrentSettingsTab);
             var surface = new System.Windows.Controls.Border { Width = 980, Height = 660, Background = Theme.Brush(Theme.Hex(0x161616)), Child = appRoot };
             surface.Measure(new Size(980, 660));
             surface.Arrange(new Rect(0, 0, 980, 660));

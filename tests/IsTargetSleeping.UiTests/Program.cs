@@ -390,10 +390,15 @@ internal static class Program
             notch.Close();
             // Home y Widgets: widgets elegibles y ordenables, favoritos configurables y nombres accesibles.
             model.Show(PanelView.Home);
-            Check($"{language}: el Home empieza con los widgets de siempre", model.HomeWidgets.Select(w => w.Id).SequenceEqual(new[] { "ollama", "system", "clock" }));
+            var defaultPages = PanelViewModel.HomePages(model.WidgetIds);
+            Check($"{language}: Home empieza con Ollama y Sistema; Reloj conserva su página propia",
+                model.HomeWidgets.Select(w => w.Id).SequenceEqual(["ollama", "system"])
+                && defaultPages.Count == 2 && defaultPages[1].SequenceEqual(["clock"]));
             Check($"{language}: el Home lleva el logo y el estado en la cabecera", model.ShowingBrand && !model.ShowingSecondary && model.HeaderTitle == AppInfo.Name);
             prefs.SetList(PrefKeys.NotchWidgets, new[] { "pomodoro", "awake", "clock", "battery" });
-            Check($"{language}: elegir widgets cambia el Home y mantiene su orden", model.HomeWidgets.Select(w => w.Id).SequenceEqual(new[] { "pomodoro", "awake", "clock", "battery" }));
+            Check($"{language}: elegir widgets llena Home hasta cuatro celdas y conserva el orden de las páginas",
+                model.HomeWidgets.Select(w => w.Id).SequenceEqual(["pomodoro", "awake", "clock"])
+                && model.HomeDots.Select(dot => dot.Title).SequenceEqual([L10n.tr("Inicio"), WidgetCatalog.Find("battery")!.Title]));
             var homeKeep = model.HomeWidgets;
             model.Notify();
             Check($"{language}: un refresco no recrea la lista del Home (no se pierde el foco)", ReferenceEquals(homeKeep, model.HomeWidgets));
@@ -401,6 +406,31 @@ internal static class Program
             model.WideLayout = true;
             homeHost.Show();
             homeHost.UpdateLayout();
+            var expectedPages = PanelViewModel.HomePages(["ollama", "system", "clock", "battery", "media"]);
+            Check($"{language}: Home conserva cuatro celdas y cada widget posterior tiene su propia página",
+                expectedPages.Count == 4 && expectedPages[0].SequenceEqual(["ollama", "system"])
+                && expectedPages[1].SequenceEqual(["clock"]) && expectedPages[2].SequenceEqual(["battery"])
+                && expectedPages[3].SequenceEqual(["media"]));
+            prefs.SetList(PrefKeys.NotchWidgets, ["ollama", "system", "clock", "battery", "media"]);
+            homeHost.UpdateLayout();
+            bool dotsNamed = Descendants(homeHost).OfType<Button>().Any(b => b.IsVisible
+                && System.Windows.Automation.AutomationProperties.GetName(b) == WidgetCatalog.Find("battery")!.Title);
+            bool pageLabels = model.ShowHomePager && model.HomeDots.Select(dot => dot.Title).SequenceEqual(
+                [L10n.tr("Inicio"), WidgetCatalog.Find("clock")!.Title, WidgetCatalog.Find("battery")!.Title, WidgetCatalog.Find("media")!.Title]);
+            model.HomeDots[2].Pick.Execute(null);
+            homeHost.UpdateLayout();
+            bool singleWidgetPage = model.HomeWidgets.Count == 1 && model.HomeWidgets[0].Id == "battery" && model.HomeDots[2].IsSelected;
+            model.PrevHomePage.Execute(null);
+            model.PrevHomePage.Execute(null);
+            homeHost.UpdateLayout();
+            Check($"{language}: el paginador superior recorre Home y las páginas con nombres accesibles", dotsNamed && pageLabels
+                && singleWidgetPage && model.HomeWidgets.Select(w => w.Id).SequenceEqual(["ollama", "system"]));
+            prefs.SetList(PrefKeys.NotchWidgets, ["clock"]);
+            homeHost.UpdateLayout();
+            var calendarGrid = Descendants(homeHost).OfType<GridPanel>().FirstOrDefault();
+            Check($"{language}: el calendario solo conserva su vista amplia sin la fila vacía inferior",
+                model.HomeWidgets.SingleOrDefault() is { WideAlone: true } && calendarGrid is not null
+                && calendarGrid.ActualHeight > GridPanel.RowHeight && calendarGrid.ActualHeight < GridPanel.RowHeight * 2);
             var homeButtons = Descendants(homeHost).OfType<System.Windows.Controls.Primitives.ButtonBase>().Where(b => b.IsVisible).ToArray();
             var unnamedHome = homeButtons.Where(b => System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(b)?.GetName() is not { Length: > 0 }).ToArray();
             Check($"{language}: los botones del Home ({homeButtons.Length}: temporizador, despierto y cabecera) tienen nombre accesible", homeButtons.Length >= 4 && unnamedHome.Length == 0);

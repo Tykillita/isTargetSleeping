@@ -35,9 +35,10 @@ public sealed class AppWindow : Window
     }
 
     /// El contenido de la ventana sin abrirla, para las capturas (`--snapshot … appwindow`).
-    internal static FrameworkElement Preview(Supervisor supervisor, PanelView view)
+    internal static FrameworkElement Preview(Supervisor supervisor, PanelView view, PanelViewModel.SettingsTab settingsTab)
     {
         var window = new AppWindow(supervisor);
+        window.model.CurrentSettingsTab = settingsTab;
         window.Go(view);
         window.root.Measure(new Size(980, 660));
         window.root.Arrange(new Rect(0, 0, 980, 660));

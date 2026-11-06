@@ -28,8 +28,9 @@ public sealed class GridPanel : Panel
             int cols = Math.Clamp(slot?.Span ?? (child.DesiredSize.Width > CellWidth * 1.5 ? 2 : 1), 1, 2);
             int slotRows = slot?.Rows ?? 1;
             int rows = Math.Max(slotRows, (int)Math.Ceiling((child.DesiredSize.Height - 0.5) / RowHeight));
-            // Si el contenido pidió más filas de las suyas, mide lo que necesita (no las filas enteras); si no, sus filas.
-            double height = child.DesiredSize.Height > slotRows * RowHeight ? child.DesiredSize.Height : rows * RowHeight;
+            // El calendario solo conserva su variante amplia, pero no la segunda fila vacía de su celda 2×2.
+            double height = slot is { Id: "clock", WideAlone: true } ? child.DesiredSize.Height
+                : child.DesiredSize.Height > slotRows * RowHeight ? child.DesiredSize.Height : rows * RowHeight;
             int row = 0, col = 0;
             for (bool found = false; !found; row++)
                 for (int c = 0; c <= 2 - cols && !found; c++)

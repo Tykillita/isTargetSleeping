@@ -10,9 +10,23 @@ internal static class PerformanceTests
 {
     public static void Run(Action<string, bool> check)
     {
+        static List<AgentSnapshot> WaitFor(AgentsWatcher watcher, Func<List<AgentSnapshot>, bool> ready)
+        {
+            var until = DateTime.UtcNow.AddSeconds(3);
+            List<AgentSnapshot> result = [];
+            do
+            {
+                result = watcher.ReadRecent();
+                if (ready(result)) return result;
+                System.Threading.Thread.Sleep(10);
+            } while (DateTime.UtcNow < until);
+            return result;
+        }
+
         var root = Path.Combine(Path.GetTempPath(), "its-agent-cache-" + Guid.NewGuid().ToString("N"));
         var oldCodex = Environment.GetEnvironmentVariable("CODEX_HOME");
         var oldClaude = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
+        var watcher = new AgentsWatcher();
         try
         {
             var codex = Path.Combine(root, "codex");
@@ -24,7 +38,6 @@ internal static class PerformanceTests
             Environment.SetEnvironmentVariable("CLAUDE_CONFIG_DIR", claude);
             var path = Path.Combine(sessions, "rollout-test.jsonl");
             File.WriteAllText(path, "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_started\"}}\n");
-            var watcher = new AgentsWatcher();
             var first = watcher.ReadRecent().Single();
             var unchanged = watcher.ReadRecent().Single();
             check("agentes: archivo sin cambios reutiliza el resultado", ReferenceEquals(first, unchanged) && first.State == AgentState.Working);
@@ -32,25 +45,72 @@ internal static class PerformanceTests
             check("agentes: cambiar el idioma renueva el resultado", !ReferenceEquals(unchanged, watcher.ReadRecent().Single()));
             L10n.Init(Language.Es);
             File.AppendAllText(path, "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_complete\"}}\n");
-            var finished = watcher.ReadRecent().Single();
+            var finished = WaitFor(watcher, sessions => sessions.SingleOrDefault(s => s.Session == "rollout-test")?.State == AgentState.Finished).Single();
             check("agentes: un registro agregado actualiza el estado", !ReferenceEquals(first, finished) && finished.State == AgentState.Finished);
             File.WriteAllText(path, "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_started\"}}\n");
-            check("agentes: un registro truncado se vuelve a leer", watcher.ReadRecent().Single().State == AgentState.Working);
+            var restarted = WaitFor(watcher, sessions => sessions.SingleOrDefault(s => s.Session == "rollout-test")?.State == AgentState.Working).Single();
+            check("agentes: un registro truncado se vuelve a leer", restarted.State == AgentState.Working);
             File.AppendAllText(path, "{\"type\":\"event_msg\",\"payload\":{");
             check("agentes: un registro parcial no altera el estado", watcher.ReadRecent().Single().State == AgentState.Working);
             File.AppendAllText(path, "\"type\":\"task_complete\"}}\n");
-            check("agentes: al completar el registro parcial se actualiza", watcher.ReadRecent().Single().State == AgentState.Finished);
+            var completed = WaitFor(watcher, sessions => sessions.SingleOrDefault(s => s.Session == "rollout-test")?.State == AgentState.Finished).Single();
+            check("agentes: al completar el registro parcial se actualiza", completed.State == AgentState.Finished);
             File.Delete(path);
-            var afterDelete = watcher.ReadRecent();
+            var afterDelete = WaitFor(watcher, sessions => sessions.Count == 0);
             var cache = (System.Collections.IDictionary)typeof(AgentsWatcher).GetField("cache", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(watcher)!;
             check("agentes: eliminar el registro libera el resultado cacheado", afterDelete.Count == 0 && cache.Count == 0);
+
+            var claudeDir = Path.Combine(claude, "projects", "project");
+            Directory.CreateDirectory(claudeDir);
+            File.WriteAllText(Path.Combine(claudeDir, "session-claude.jsonl"), "{\"type\":\"event_msg\",\"payload\":{\"type\":\"task_started\"}}\n");
+            var claudeFound = WaitFor(watcher, sessions => sessions.Any(s => s.Session == "session-claude" && s.Provider == "Claude Code"));
+            check("agentes: descubre sesiones nuevas en carpetas anidadas", claudeFound.Any(s => s.Session == "session-claude"));
         }
         finally
         {
+            watcher.Dispose();
             Environment.SetEnvironmentVariable("CODEX_HOME", oldCodex);
             Environment.SetEnvironmentVariable("CLAUDE_CONFIG_DIR", oldClaude);
             if (Directory.Exists(root)) Directory.Delete(root, true);
         }
+
+        var gauge = new ArcGauge { Visibility = Visibility.Hidden };
+        var gaugeHost = new Window
+        {
+            Content = gauge, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false,
+            Left = -20000, Top = -20000, Width = 72, Height = 72,
+        };
+        try
+        {
+            gaugeHost.Show();
+            gaugeHost.UpdateLayout();
+            var shown = (DependencyProperty)typeof(ArcGauge).GetField("ShownProperty", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            gauge.Progress = 0.75;
+            bool hiddenSnaps = gauge.IsLoaded && !gauge.IsVisible && Math.Abs((double)gauge.GetValue(shown) - 0.75) < 0.001
+                && !DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated;
+            gauge.Visibility = Visibility.Visible;
+            gaugeHost.UpdateLayout();
+            var frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+            bool visibleAfterShow = gauge.IsVisible;
+            bool canAnimate = SystemParameters.ClientAreaAnimation;
+            bool animatedAfterShow = DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated;
+            bool animatesWhenShown = canAnimate
+                ? visibleAfterShow && animatedAfterShow
+                : visibleAfterShow && !DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated && Math.Abs((double)gauge.GetValue(shown) - 0.75) < 0.001;
+            gauge.Progress = 0.25;
+            bool animatesWhileVisible = canAnimate
+                ? DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated
+                : !DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated && Math.Abs((double)gauge.GetValue(shown) - 0.25) < 0.001;
+            gauge.Visibility = Visibility.Hidden;
+            bool stopsWhenHidden = !DependencyPropertyHelper.GetValueSource(gauge, shown).IsAnimated;
+            check("anillos: no animan cambios ocultos y retoman al mostrarse",
+                hiddenSnaps && animatesWhenShown && animatesWhileVisible && stopsWhenHidden);
+        }
+        finally { gaugeHost.Close(); }
+
+        if (Environment.GetEnvironmentVariable("ITS_ONLY_ARC_GAUGE") == "1") return;
 
         var oldData = Environment.GetEnvironmentVariable("ITS_DATA_DIR");
         var data = Path.Combine(Path.GetTempPath(), "its-perf-data-" + Guid.NewGuid().ToString("N"));

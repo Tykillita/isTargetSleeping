@@ -1,105 +1,40 @@
-# Presentation sources / Fuentes de la presentación
+# Tour source / Fuentes del recorrido
 
-`index.html` contains the original eleven-scene storyboard, bilingual script,
-timings, easing, transitions and animations. `render.cjs` samples it deterministically
-at 1920 × 1080, 30 fps, for exactly 77 seconds (2310 frames).
+`index.html` is an eight-scene, 77-second storyboard in English and Spanish. It embeds the website notch simulator and its animated states for the mascot, compact pill, music, lyrics and system views, modeled on the notch's behavior in the app. The Ollama state stays hidden. The desktop scene uses the current `AppWindow` Settings › General page, with bilingual labels and demo data.
 
-`../audio/tour-soundtrack.m4a` is the original soundtrack, shared by both languages.
-The renderer copies the AAC stream without re-encoding, preserving music, effects,
-timing and fades. SHA-256 of the source file:
-`ca75fa81af140e7a531eceb8a1859ab19690b89e3edf8d64782ad742518eae89`.
+The simulator uses its own sample data; it is not a live recording of the app. The Settings screen is a real WPF capture from the current source and uses demo data.
 
-`reference-sprites.json` retains the original cell geometry and frame counts.
-The generator fills those cells with current procedural pet frames from the app's
-`--export-pet`, including each species' real animation profile. Native screenshots
-come from `../MediaCapture`, which references current app sources and renders WPF
-at 384 DPI (4×). It uses demo data without starting engines or changing preferences.
+The soundtrack in `../audio/tour-soundtrack.m4a` is shared by both languages and copied into the videos without audio re-encoding. SHA-256: `ca75fa81af140e7a531eceb8a1859ab19690b89e3edf8d64782ad742518eae89`.
 
-Install Python with Pillow, numpy and imageio-ffmpeg, Node.js, Chrome, and the .NET 10 SDK:
+Install Python with Pillow and imageio-ffmpeg, Node.js, Chrome and the .NET 10 SDK. Puppeteer is already available through `obj/tour-tooling` in this workspace; to prepare it in a clean checkout:
 
 ```powershell
-python -m pip install --target obj/tour-tooling Pillow numpy imageio-ffmpeg==0.6.0
+python -m pip install --target obj/tour-tooling Pillow imageio-ffmpeg==0.6.0
 npm install --prefix obj/tour-tooling puppeteer-core@25.12.0
 python docs/generate-tours.py --capture
 ```
 
-Review scene stills before replacing videos:
+Review scenes before encoding or replacing the public tour:
 
 ```powershell
-python docs/generate-tours.py --stills 4.5,10,18.5,25,38,44.5,52,58,65,70.5,75
+python docs/generate-tours.py --stills 3,8,16,23,34,46,56,66,73,75
 python docs/tour/verify.py
 ```
 
-Review images live in `obj/tour-work/review/`. Final videos and posters replace the
-tracked files only after a successful encode. `--chrome`, `--node` and `--dotnet`
-accept custom runtime paths. `--lang es|en` renders one language.
+Review frames are saved in `obj/tour-work/review/`. Final MP4s and posters replace the tracked files only after a successful encode. `--lang es|en` renders one language; `--chrome`, `--node` and `--dotnet` accept custom runtime paths.
 
-The GitHub README players use [GitHub video attachments](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
-After regenerating a tour, upload the original MP4 as an attachment to this repository and replace its
-`https://github.com/user-attachments/assets/…` URL, on its own line, in the matching README.
-Upload the file without re-encoding so its picture and soundtrack stay identical.
-Keep the tracked MP4 in `docs/video/` as the shared source for the website and downloads.
-
-The separate Reels edition shares this storyboard: eleven scenes, the same script,
-77 seconds, scene crossfades, logo animation, pet profiles and music. `reel.css` and
-`reel.js` compose 1080 × 1920 frames with larger text, camera moves over the native
-screenshots, three pages of feature cards and a two-column pet gallery. Content
-stays within a conservative mobile safe area; the landscape files are preserved.
-`reel-events.json` supplies both the animated cursor/ripples and the synthesized
-mouse press/release sounds. Music stays at its original gain; the mix is checked
-for clipping and encoded once as 256 kb/s AAC, then copied to both Reels.
-
-```powershell
-# Reuse the prepared current app captures and sprites; refresh with --capture above when needed.
-python docs/generate-reels.py --stills 4.5,10,18.5,23,26.3,30,33,36,39,44.5,52,58,65,70.5,75
-$env:NODE_PATH = "$PWD/obj/tour-tooling/node_modules"
-node docs/tour/verify-reel.cjs
-python docs/generate-reels.py
-python docs/tour/verify-reels.py
-```
-
-Final MP4s are `../video/isTargetSleeping-reel-{es,en}.mp4`, with covers in
-`../images/reel-{es,en}.jpg`. Stills, mouse-only/mixed WAVs and verification reports
-stay in `obj/tour-work/`. No external music or stock assets are required.
+The site reads `../video/isTargetSleeping-tour-{es,en}.mp4` and `../images/tour-{es,en}.jpg`. README pages link to the deployed tour. Keep the MP4 in `docs/video/` as the shared source for the website and download.
 
 ---
 
-`index.html` conserva las once escenas originales, el guion en ambos idiomas,
-los tiempos, las curvas de movimiento, las transiciones y las animaciones.
-`render.cjs` exporta 1920 × 1080 a 30 fps: 77 segundos y 2310 fotogramas exactos.
+`index.html` presenta un guion de ocho escenas y 77 segundos, en español e inglés. Inserta el simulador del notch de la web y sus estados animados de mascota, pastilla compacta, música, letras y sistema, inspirados en el comportamiento del notch de la app. La vista de Ollama permanece oculta. La escena de escritorio usa la página actual de `AppWindow` en Ajustes › General, con etiquetas en ambos idiomas y datos de demostración.
 
-La pista original `../audio/tour-soundtrack.m4a` se copia sin volver a comprimirla:
-se conservan música, efectos, sincronización y fundidos. El SHA-256 figura arriba.
-`reference-sprites.json` conserva las celdas y cantidades de fotogramas del montaje;
-sus imágenes se regeneran con los perfiles y dibujos actuales de `--export-pet`.
+El simulador usa sus propios datos de ejemplo; no es una grabación en directo de la app. La pantalla de Ajustes es una captura WPF real del código actual con datos de demostración.
 
-`../MediaCapture` usa las vistas WPF de la app actual a 384 DPI (4×), con datos de
-ejemplo. No enciende motores ni modifica preferencias. Los comandos anteriores
-instalan las dependencias, regeneran los medios y permiten revisar fotogramas.
-Las revisiones quedan en `obj/tour-work/review/`; los videos y portadas solo se
-sustituyen tras una exportación correcta. Los parámetros de rutas y de idioma
-permiten usar otros ejecutables o exportar un solo idioma.
+La pista de `../audio/tour-soundtrack.m4a` se comparte entre idiomas y se copia a los videos sin volver a comprimir el audio. El SHA-256 figura arriba.
 
-`verify.py` comprueba resolución, duración, cantidad de fotogramas, resolución de
-las capturas y coincidencia exacta del audio en ambos videos.
+Instala Python con Pillow e imageio-ffmpeg, Node.js, Chrome y .NET 10. Puppeteer ya está disponible en `obj/tour-tooling` en este workspace. En un checkout limpio, los comandos anteriores instalan las dependencias, compilan la app actual, regeneran capturas y portadas y preparan los videos.
 
-Los reproductores de los README usan [videos adjuntos de GitHub](https://docs.github.com/es/get-started/writing-on-github/working-with-advanced-formatting/attaching-files).
-Tras regenerar un recorrido, sube su MP4 original como adjunto de este repositorio y sustituye su URL
-`https://github.com/user-attachments/assets/…`, en una línea independiente, en el README del idioma
-correspondiente. Sube el archivo sin volver a comprimirlo para conservar
-la imagen y el sonido exactos. El MP4 de `docs/video/` sigue siendo la fuente compartida por la web
-y las descargas.
+Revisa fotogramas con `--stills` antes de codificar o sustituir el recorrido público. Las revisiones quedan en `obj/tour-work/review/`; los MP4 y pósteres solo se reemplazan al terminar correctamente. `--lang es|en` exporta un idioma y los parámetros `--chrome`, `--node` y `--dotnet` permiten elegir otras rutas.
 
-La edición aparte para Reels comparte las once escenas, el guion, los 77 segundos,
-los fundidos de escena, la animación del logo, los perfiles de mascotas y la música.
-`reel.css` y `reel.js` componen 1080 × 1920 con textos ampliados, acercamientos a las
-capturas nativas, tres páginas de funciones y las mascotas en dos columnas. Los
-contenidos respetan el área visible del móvil; los videos horizontales se conservan.
-`reel-events.json` sincroniza cursor, ondas y sonidos de pulsación y liberación del
-mouse. La música conserva su volumen; se comprueba que la mezcla no sature y se
-comprime una sola vez en AAC a 256 kb/s, compartido por los dos Reels.
-
-Los comandos anteriores revisan fotogramas y generan ambos idiomas. La exportación
-solo sustituye los MP4 y portadas nuevos tras completarse correctamente. Las
-comprobaciones cubren textos, clics, resolución, fotogramas, duración, audio y
-conservación de los videos originales. No se necesitan música ni recursos externos.
+La web usa `../video/isTargetSleeping-tour-{es,en}.mp4` y `../images/tour-{es,en}.jpg`. Los README enlazan el recorrido publicado. Conserva los MP4 de `docs/video/` como fuente compartida por la web y las descargas.

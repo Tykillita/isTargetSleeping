@@ -96,7 +96,7 @@
                 <TextBlock Text="{Binding Subtitle}" FontFamily="{StaticResource Mono}" FontSize="10.5"
                            Foreground="{DynamicResource Muted}" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <!-- Paginador del Home: siempre a la vista en la cabecera, sea cual sea el alto del widget -->
+            <!-- Paginador de Home y de sus páginas de widgets: siempre visible en la cabecera -->
             <Border Grid.Column="2" CornerRadius="12" Padding="2" Margin="0,0,8,0" VerticalAlignment="Center" Background="{DynamicResource ButtonHover}"
                     Visibility="{Binding ShowHomePager, Converter={StaticResource Visible}}">
               <StackPanel Orientation="Horizontal">

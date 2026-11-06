@@ -266,6 +266,40 @@ textarea.note{width:100%;margin-top:8px;border:1px solid color-mix(in srgb,var(-
 .fld{display:block;margin:10px 0 0}.fld>span{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
 .fld input:not([type=checkbox]),.fld select{width:100%;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--mut) 35%,transparent);border-radius:12px;padding:9px 12px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
 .chk{display:flex;align-items:center;gap:8px;margin:10px 0 0;font-size:15px}.chk input{width:20px;height:20px;flex:none}.tools{display:flex;flex-wrap:wrap;gap:0 16px}
+.provider-panel{position:relative;overflow:hidden;margin:0 0 22px;padding:16px;border:1px solid color-mix(in srgb,var(--ac) 28%,var(--mut) 18%);border-radius:22px;background:linear-gradient(145deg,color-mix(in srgb,var(--ac) 9%,var(--card)),var(--card) 58%);box-shadow:inset 0 1px color-mix(in srgb,#fff 7%,transparent)}
+.provider-panel::before{content:"";position:absolute;top:0;left:18px;width:48px;height:2px;background:var(--ac);box-shadow:0 0 14px color-mix(in srgb,var(--ac) 72%,transparent)}
+.provider-head{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:10px}
+.provider-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:color-mix(in srgb,var(--ac) 16%,var(--card2));color:var(--ac)}
+.provider-mark svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.provider-title{min-width:0}.provider-kicker{display:block;color:var(--ac);font-size:10px;font-weight:700;letter-spacing:.14em}
+.provider-title h2{margin:2px 0 0;color:var(--tx);font-size:17px;font-weight:650;letter-spacing:-.02em;text-transform:none}
+.provider-state{display:inline-flex;align-items:center;gap:6px;max-width:128px;padding:6px 9px;border:1px solid color-mix(in srgb,var(--mut) 24%,transparent);border-radius:999px;background:color-mix(in srgb,var(--bg) 55%,transparent);color:var(--mut);font-size:10px;font-weight:650;line-height:1.2;text-align:center}
+.provider-state::before{content:"";width:7px;height:7px;flex:none;border-radius:50%;background:currentColor}
+.provider-state[data-state=ready]{color:var(--ok)}.provider-state[data-state=setup]{color:var(--ac)}.provider-state[data-state=pending]{color:var(--ac)}.provider-state[data-state=error]{color:var(--bad)}
+.provider-intro{margin:11px 0 17px;color:var(--mut);font-size:13px;line-height:1.45}
+#stProvider.provider-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;overflow:visible;padding:0;background:none}
+#stProvider.provider-controls>*{min-width:0;margin:0;padding:0;border:0}
+#stProvider .provider-stage>span{display:flex;align-items:center;gap:7px;margin-bottom:7px;color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+#stProvider .provider-stage[data-step]>span::before{content:attr(data-step);display:grid;place-items:center;width:19px;height:19px;border-radius:7px;background:color-mix(in srgb,var(--ac) 16%,var(--card2));color:var(--ac);font-size:9px;letter-spacing:0}
+#stProvider .fld input:not([type=checkbox]),#stProvider .fld select{height:48px;padding:0 13px;border-color:color-mix(in srgb,var(--ac) 22%,var(--mut) 28%);border-radius:14px;background:color-mix(in srgb,var(--bg) 86%,var(--card));font-size:15px;transition:border-color .16s,box-shadow .16s}
+#stProvider .fld select{appearance:none;padding-right:36px;background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);background-position:calc(100% - 17px) 20px,calc(100% - 12px) 20px;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+#stProvider .fld input:focus-visible,#stProvider .fld select:focus-visible{outline:2px solid color-mix(in srgb,var(--ac) 55%,transparent);outline-offset:2px;border-color:var(--ac)}
+#stProviderModel{display:grid;gap:9px;min-width:0}
+.provider-model-note,.provider-note{grid-column:1/-1;margin:0;padding:9px 11px;border-left:2px solid color-mix(in srgb,var(--ac) 72%,transparent);border-radius:0 10px 10px 0;background:color-mix(in srgb,var(--ac) 7%,var(--card));color:var(--mut);font-size:12px;line-height:1.4}
+#nimboCustomModelField{margin:0}
+#stProviderAuth{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0}
+#stProviderAuth .fld{margin:0;min-width:0}
+#stProviderAuth .provider-login{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:46px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--ac) 38%,var(--mut) 20%);border-radius:13px;background:color-mix(in srgb,var(--ac) 9%,var(--card));color:var(--tx);font:inherit;font-size:14px;font-weight:600;text-align:left}
+#stProviderAuth .provider-login::after{content:"↗";color:var(--ac);font-size:17px}
+#stProviderAuth .provider-login:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+#stProviderAuth .chk{grid-column:1/-1;margin:0;color:var(--tx);font-size:13px}
+.provider-save-button{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:49px;margin-top:15px;padding:12px 16px;border:0;border-radius:15px;background:var(--ac);color:var(--onac);font:inherit;font-size:15px;font-weight:700;box-shadow:0 5px 18px color-mix(in srgb,var(--ac) 22%,transparent);transition:transform .15s,opacity .15s}
+.provider-save-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.provider-save-button:active:not(:disabled){transform:scale(.985)}.provider-save-button:focus-visible{outline:2px solid var(--tx);outline-offset:3px}.provider-save-button:disabled{opacity:.65}
+.provider-status{display:flex;align-items:flex-start;gap:8px;min-height:36px;margin:10px 0 0;padding:9px 11px;border-radius:12px;background:color-mix(in srgb,var(--mut) 9%,transparent);color:var(--mut);font-size:12px;line-height:1.4}
+.provider-status::before{content:"";width:7px;height:7px;flex:none;margin-top:4px;border-radius:50%;background:var(--mut)}
+.provider-status[data-state=ready]::before{background:var(--ok)}.provider-status[data-state=pending]::before{background:var(--ac)}.provider-status[data-state=error]::before{background:var(--bad)}
+@media(min-width:620px){#stProvider.provider-controls{grid-template-columns:repeat(2,minmax(0,1fr))}#stProvider>#stProviderAuth{grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr))}}
 .addrow{display:block;width:100%;border:0;background:none;color:var(--ac);font:600 16px inherit;padding:13px;text-align:left}
 #sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end}
 #sheet .scrim{position:absolute;inset:0;background:rgba(0,0,0,.5);animation:fade .2s ease-out}
@@ -461,11 +495,17 @@ form.addbar{display:flex;gap:8px;margin:0 0 6px;padding:0;align-items:stretch;ba
   <section class="view hide" id="v-settings" aria-label="Ajustes">
     <div class="scroll">
       <h1>Ajustes</h1>
-      <h2>Proveedor de Nimbo</h2>
-      <p class="sub">El servidor sigue en esta PC. El proveedor, el modelo y las credenciales se cambian aquí y se aplican sin reiniciar.</p>
-      <div class="group" id="stProvider"></div>
-      <div class="btns"><button class="go" id="nimboProviderSave" type="button">Guardar y usar</button></div>
-      <p class="sub" id="nimboProviderStatus" role="status" aria-live="polite"></p>
+      <div class="provider-panel">
+        <div class="provider-head">
+          <span class="provider-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h4.5a3 3 0 0 1 3 3v4a3 3 0 0 0 3 3H18"/><circle cx="5" cy="7" r="2"/><circle cx="19" cy="17" r="2"/><circle cx="13.5" cy="12" r="1.5"/></svg></span>
+          <div class="provider-title"><span class="provider-kicker">RUTA ACTIVA</span><h2>Proveedor de Nimbo</h2></div>
+          <span class="provider-state" id="nimboProviderReadiness" data-state="loading">Cargando</span>
+        </div>
+        <p class="provider-intro">Elige qué servicio responde y con qué modelo. Las claves se guardan cifradas en esta PC.</p>
+        <div class="group provider-controls" id="stProvider"></div>
+        <button class="provider-save-button" id="nimboProviderSave" type="button"><span id="nimboSaveLabel">Guardar y usar</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <p class="provider-status" id="nimboProviderStatus" role="status" aria-live="polite"></p>
+      </div>
       <h2>General</h2>
       <div class="group" id="stGeneral"></div>
       <h2>Notificaciones</h2>
@@ -935,37 +975,67 @@ function setRow(title,sub,control,stack){const r=h('div','row'+(stack?' col':'')
 let providerStatus=null;
 const providerNames=[['ollama','Ollama local'],['ollama-cloud','Ollama Cloud'],['codex','Codex (OAuth de esta PC)'],['grok','Grok / xAI'],['gemini','Gemini'],['anthropic','Claude API']];
 const providerModels={ollama:'gemma4:latest','ollama-cloud':'gemma4:31b',grok:'grok-4.7',gemini:'gemini-3.8-flash',anthropic:'claude-haiku-4-5-20251001'};
+const codexModelChoices=[['','Predeterminado de Codex CLI'],['gpt-6.1-sol','GPT-6.1 Sol · equilibrado'],['gpt-6-astra','GPT-6 Astra · máxima capacidad'],['gpt-6.1-terra','GPT-6.1 Terra · rápido y preciso'],['gpt-6-luna','GPT-6 Luna · ligero'],['gpt-6-sol','GPT-6 Sol · generación anterior'],['gpt-5.6-sol','GPT-5.6 Sol'],['gpt-5.6-terra','GPT-5.6 Terra'],['gpt-5.6-luna','GPT-5.6 Luna']];
 function providerDefaultModel(p,auth){return p==='ollama-cloud'&&auth==='ollama_oauth'?'gemma4:cloud':providerModels[p]||''}
 function providerProfile(p,a){return providerStatus?.profiles?.[p+':'+a]||null}
-function providerAuthFor(p){return p==='ollama'?'local':p==='codex'?'oauth':p===providerStatus?.provider?providerStatus.auth:'api_key'}
-function providerField(title,node){const f=h('label','fld');f.append(h('span','',title),node);return f}
+function providerAuthFor(p){if(p==='ollama')return'local';if(p==='codex')return'oauth';if(p===providerStatus?.provider)return providerStatus.auth;const oauth=p==='gemini'?'oauth':p==='ollama-cloud'?'ollama_oauth':'';return oauth&&providerProfile(p,oauth)&&!providerProfile(p,'api_key')?oauth:'api_key'}
+function providerField(title,node,step){const f=h('label','fld');if(step){f.classList.add('provider-stage');f.dataset.step=step}f.append(h('span','',title),node);return f}
+function setProviderBadge(state,text){const b=$('#nimboProviderReadiness');if(b){b.dataset.state=state;b.textContent=text}}
+function markProviderDirty(){setProviderBadge('pending','Cambios sin guardar');const p=$('#nimboProviderStatus');if(p){p.dataset.state='pending';p.textContent='Guarda para aplicar estos cambios a Nimbo.'}}
+function renderProviderModel(value){
+ const host=$('#stProviderModel');if(!host)return;host.replaceChildren();
+ if($('#nimboProvider').value==='codex'){
+  const select=h('select');select.id='nimboModel';select.setAttribute('aria-label','Modelo de Codex');
+  for(const [v,label] of codexModelChoices){const o=h('option','',label);o.value=v;select.append(o)}
+  if(value&&!codexModelChoices.some(([id])=>id===value)){const saved=h('option','',`Guardado: ${value} (fuera del catálogo actual)`);saved.value=value;select.append(saved)}
+  select.value=value||'';select.addEventListener('change',markProviderDirty);
+  host.append(providerField('Modelo de Codex CLI',select,'02'),h('p','provider-model-note','Opciones tomadas del catálogo del Codex CLI instalado. El acceso de tu cuenta se confirma al conversar; el predeterminado sigue el modelo que Codex recomiende.'));
+  return;
+ }
+ const model=h('input');model.id='nimboModel';model.maxLength=160;model.autocomplete='off';model.placeholder=providerDefaultModel($('#nimboProvider').value,$('#nimboAuth')?.value)||'ID del modelo';model.value=value||'';model.addEventListener('input',markProviderDirty);
+ host.append(providerField('Modelo',model,'02'));
+}
+function providerReadyState(d){
+ if(d.provider==='ollama')return['ready','Local'];
+ if(d.provider==='codex')return d.configured?['ready','CLI disponible']:['setup','Falta Codex CLI'];
+ if(d.provider==='ollama-cloud'&&d.auth==='ollama_oauth')return d.configured?['ready','Ollama disponible']:['setup','Falta Ollama'];
+ if(d.provider==='gemini'&&d.auth==='oauth')return d.configured?['ready','Proyecto listo']:['setup','Revisa gcloud'];
+ return d.has_api_key?['ready','Clave guardada']:['setup','Falta la clave'];
+}
+function providerStatusMessage(d){
+ if(d.provider==='ollama')return'Usará Ollama en esta PC. Asegúrate de que esté activo y tenga disponible el modelo elegido.';
+ if(d.provider==='codex')return d.configured?'Usará la sesión de Codex CLI de esta PC; el acceso al modelo se confirma al conversar.':'No encuentro Codex CLI en esta PC.';
+ if(d.provider==='ollama-cloud'&&d.auth==='ollama_oauth')return d.configured?'Usará la sesión de Ollama y su servicio local; el modelo corre en la nube.':'No encuentro Ollama CLI en esta PC.';
+ if(d.provider==='gemini'&&d.auth==='oauth')return d.configured?'Usará Google Cloud ADC; el login se confirma al conversar.':'Configura el proyecto y gcloud en esta PC.';
+ return d.has_api_key?'Clave guardada cifrada en esta PC.':'Añade una clave API para completar la conexión.';
+}
 function renderProviderAuth(){
  const g=$('#stProviderAuth'),provider=$('#nimboProvider').value,old=providerStatus;
  g.replaceChildren();const prior=old&&old.provider===provider;
  let auth=provider==='ollama'?'local':provider==='codex'?'oauth':'api_key';
  if(provider==='gemini'||provider==='ollama-cloud')auth=prior?($('#nimboAuth')?.value||old.auth):'api_key';
  const profile=providerProfile(provider,auth),hasKey=!!profile?.has_api_key;
- const note=t=>g.append(h('p','sub inline',t));
+ const note=t=>g.append(h('p','provider-note',t));
  if(provider==='ollama'){note('Usa Ollama en esta PC. No necesita clave API.')}
  else if(provider==='codex'){
   note('Nimbo usa la sesión que guarda Codex CLI en esta PC. Guarda el proveedor y el botón abre el login local si hace falta.');
-  const b=h('button','row','Iniciar sesión con Codex en esta PC');b.type='button';b.onclick=()=>startProviderLogin('codex');g.append(b);
+  const b=h('button','provider-login','Iniciar sesión con Codex en esta PC');b.type='button';b.onclick=()=>startProviderLogin('codex');g.append(b);
  }else if(provider==='ollama-cloud'){
   const mode=h('select');mode.id='nimboAuth';mode.setAttribute('aria-label','Autenticación de Ollama Cloud');
   for(const [v,label] of [['api_key','Clave API directa (sin Ollama instalado)'],['ollama_oauth','OAuth de Ollama en esta PC']]){const o=h('option','',label);o.value=v;mode.append(o)}
-  mode.value=auth;mode.onchange=()=>{$('#nimboModel').value=providerProfile(provider,mode.value)?.model||providerDefaultModel(provider,mode.value);renderProviderAuth()};g.append(providerField('Autenticación',mode));
+  mode.value=auth;mode.onchange=()=>{renderProviderModel(providerProfile(provider,mode.value)?.model||providerDefaultModel(provider,mode.value));renderProviderAuth();markProviderDirty()};g.append(providerField('Autenticación',mode));
   if(auth==='ollama_oauth'){
    note('Usa la sesión de Ollama y su servidor local para enviar al cloud. No descarga pesos ni carga un modelo en la PC.');
-   const b=h('button','row','Iniciar sesión con Ollama en esta PC');b.type='button';b.onclick=()=>startProviderLogin('ollama-cloud');g.append(b);
+   const b=h('button','provider-login','Iniciar sesión con Ollama en esta PC');b.type='button';b.onclick=()=>startProviderLogin('ollama-cloud');g.append(b);
   }else{addProviderKey(g,hasKey);note('La API directa no necesita la app de Ollama; usa una clave de ollama.com.')}
  }else if(provider==='gemini'){
   const mode=h('select');mode.id='nimboAuth';mode.setAttribute('aria-label','Autenticación de Gemini');
   for(const [v,label] of [['api_key','Clave API de AI Studio'],['oauth','OAuth de Google Cloud']]){const o=h('option','',label);o.value=v;mode.append(o)}
-  mode.value=auth;mode.onchange=()=>{$('#nimboModel').value=providerProfile(provider,mode.value)?.model||providerDefaultModel(provider,mode.value);renderProviderAuth()};g.append(providerField('Autenticación',mode));
+  mode.value=auth;mode.onchange=()=>{renderProviderModel(providerProfile(provider,mode.value)?.model||providerDefaultModel(provider,mode.value));renderProviderAuth();markProviderDirty()};g.append(providerField('Autenticación',mode));
   if(auth==='oauth'){
-   const project=h('input');project.id='nimboProject';project.maxLength=200;project.autocomplete='off';project.placeholder='ID del proyecto de Google Cloud';project.value=profile?.project||'';g.append(providerField('Proyecto de Google Cloud',project));
+   const project=h('input');project.id='nimboProject';project.maxLength=200;project.autocomplete='off';project.placeholder='ID del proyecto de Google Cloud';project.value=profile?.project||'';project.addEventListener('input',markProviderDirty);g.append(providerField('Proyecto de Google Cloud',project));
    note('Usa un proyecto con Generative Language API habilitada y OAuth configurado. El login abre Google en esta PC para crear las credenciales ADC de Nimbo.');
-   const b=h('button','row','Iniciar sesión con Google en esta PC');b.type='button';b.onclick=()=>startProviderLogin('gemini');g.append(b);
+   const b=h('button','provider-login','Iniciar sesión con Google en esta PC');b.type='button';b.onclick=()=>startProviderLogin('gemini');g.append(b);
   }else addProviderKey(g,hasKey);
  }else{
   addProviderKey(g,hasKey);
@@ -974,30 +1044,35 @@ function renderProviderAuth(){
  }
 }
 function addProviderKey(g,hasKey){
- const key=h('input');key.id='nimboApiKey';key.type='password';key.maxLength=4096;key.autocomplete='new-password';key.placeholder=hasKey?'Guardada; déjala vacía para conservarla':'Pega tu clave API';g.append(providerField('Clave API',key));
- if(hasKey){const l=h('label','chk'),c=h('input');c.id='nimboClearKey';c.type='checkbox';l.append(c,document.createTextNode(' Borrar la clave guardada al guardar'));g.append(l);noteProviderKey(g)}
+ const key=h('input');key.id='nimboApiKey';key.type='password';key.maxLength=4096;key.autocomplete='new-password';key.placeholder=hasKey?'Guardada; déjala vacía para conservarla':'Pega tu clave API';key.addEventListener('input',markProviderDirty);g.append(providerField('Clave API',key));
+ if(hasKey){const l=h('label','chk'),c=h('input');c.id='nimboClearKey';c.type='checkbox';c.addEventListener('change',markProviderDirty);l.append(c,document.createTextNode(' Borrar la clave guardada al guardar'));g.append(l);noteProviderKey(g)}
 }
-function noteProviderKey(g){g.append(h('p','sub inline','La clave guardada nunca se muestra y se conserva cifrada en esta PC.'))}
+function noteProviderKey(g){g.append(h('p','provider-note','La clave guardada nunca se muestra y se conserva cifrada en esta PC.'))}
 function renderProviderForm(d){
  providerStatus=d;const g=$('#stProvider');g.replaceChildren();
- const select=h('select');select.id='nimboProvider';select.setAttribute('aria-label','Proveedor de Nimbo');
+ const select=h('select');select.id='nimboProvider';select.setAttribute('aria-label','Servicio de IA para Nimbo');
  for(const [v,label] of providerNames){const o=h('option','',label);o.value=v;select.append(o)}
- select.value=d.provider;select.onchange=()=>{const p=select.value,a=providerAuthFor(p);$('#nimboModel').value=providerProfile(p,a)?.model||providerDefaultModel(p,a);renderProviderAuth()};
- g.append(providerField('Proveedor',select));
- const model=h('input');model.id='nimboModel';model.maxLength=160;model.autocomplete='off';model.placeholder=providerDefaultModel(d.provider,d.auth)||'Predeterminado del proveedor';model.value=d.model||'';g.append(providerField('Modelo',model));
+ select.value=d.provider;select.onchange=()=>{const p=select.value,a=providerAuthFor(p);renderProviderModel(providerProfile(p,a)?.model||providerDefaultModel(p,a));renderProviderAuth();markProviderDirty()};
+ g.append(providerField('Servicio de IA',select,'01'));
+ const modelHost=h('div','provider-model-host');modelHost.id='stProviderModel';g.append(modelHost);renderProviderModel(d.model||providerDefaultModel(d.provider,d.auth));
  const authFields=h('div');authFields.id='stProviderAuth';g.append(authFields);
  renderProviderAuth();
  const p=$('#nimboProviderStatus');
- p.textContent=d.provider==='codex'?(d.configured?'Usará la sesión de Codex CLI en esta PC; el login se comprueba al conversar.':'No encuentro Codex CLI en esta PC.'):d.provider==='ollama-cloud'&&d.auth==='ollama_oauth'?(d.configured?'Usará la sesión de Ollama; hace falta que su servicio local esté activo, pero el modelo corre en el cloud.':'No encuentro Ollama CLI en esta PC.'):d.provider==='gemini'&&d.auth==='oauth'?(d.configured?'Usará Google Cloud ADC; el login se comprueba al conversar.':'Configura el proyecto y gcloud en esta PC.'):d.configured?'Configuración lista para usar.':'Falta la clave API o la herramienta de autenticación de este proveedor.';
+ const [state,label]=providerReadyState(d);setProviderBadge(state,label);p.dataset.state=d.configured?'ready':'setup';p.textContent=providerStatusMessage(d);
 }
-async function loadProviderSettings(){const {ok,d}=await api('GET','/v1/provider');if(ok)renderProviderForm(d);else $('#nimboProviderStatus').textContent=d.message||'No se pudo leer el proveedor de Nimbo.'}
+async function loadProviderSettings(){setProviderBadge('loading','Cargando');try{const {ok,d}=await api('GET','/v1/provider');if(ok)renderProviderForm(d);else{setProviderBadge('error','Sin acceso');const p=$('#nimboProviderStatus');p.dataset.state='error';p.textContent=d.message||'No se pudo leer el proveedor de Nimbo.'}}catch{setProviderBadge('error','Sin conexión');const p=$('#nimboProviderStatus');p.dataset.state='error';p.textContent='No se pudo leer la configuración del proveedor.'}}
 async function saveProviderSettings(showToast=true){
  const provider=$('#nimboProvider').value,auth=provider==='ollama'?'local':provider==='codex'?'oauth':provider==='gemini'||provider==='ollama-cloud'?$('#nimboAuth').value:'api_key';
- const {ok,d}=await api('PUT','/v1/provider',{provider,model:$('#nimboModel').value,auth,api_key:$('#nimboApiKey')?.value||'',project:$('#nimboProject')?.value||'',clear_api_key:$('#nimboClearKey')?.checked||false});
- if(ok){renderProviderForm(d);if(showToast)toast('Proveedor guardado y aplicado a Nimbo.');return true}
- toast(d.message||'No se pudo guardar el proveedor');return false
+ const model=$('#nimboModel').value;
+ const button=$('#nimboProviderSave'),label=$('#nimboSaveLabel');button.disabled=true;label.textContent='Guardando…';
+ try{
+  const {ok,d}=await api('PUT','/v1/provider',{provider,model,auth,api_key:$('#nimboApiKey')?.value||'',project:$('#nimboProject')?.value||'',clear_api_key:$('#nimboClearKey')?.checked||false});
+  if(ok){renderProviderForm(d);if(showToast)toast('Proveedor guardado y aplicado a Nimbo.');return true}
+  setProviderBadge('error','No se guardó');const p=$('#nimboProviderStatus');p.dataset.state='error';p.textContent=d.message||'No se pudo guardar el proveedor.';toast(d.message||'No se pudo guardar el proveedor');return false
+ }catch{setProviderBadge('error','Sin conexión');const p=$('#nimboProviderStatus');p.dataset.state='error';p.textContent='No se pudo guardar. Comprueba la conexión con Nimbo.';toast('No se pudo guardar el proveedor.');return false}
+ finally{button.disabled=false;label.textContent='Guardar y usar'}
 }
-async function startProviderLogin(provider){if(!await saveProviderSettings(false))return;const {ok,d}=await api('POST','/v1/provider/login/'+provider,{});toast(ok?'Se abrió el inicio de sesión en esta PC.':d.message||'No se pudo iniciar sesión')}
+async function startProviderLogin(provider){if(!await saveProviderSettings(false))return;try{const {ok,d}=await api('POST','/v1/provider/login/'+provider,{});toast(ok?'Se abrió el inicio de sesión en esta PC.':d.message||'No se pudo iniciar sesión')}catch{toast('No se pudo abrir el inicio de sesión en esta PC.')}}
 $('#nimboProviderSave').onclick=()=>saveProviderSettings();
 async function loadSettings(){
  loadProviderSettings();loadPush();await loadPolicy();const g=$('#stGeneral'),t=$('#stTools');g.replaceChildren();t.replaceChildren();
@@ -1016,7 +1091,7 @@ async function loadSettings(){
  try{const r=await fetch('/v1/activity?n=20');const d=await r.json();
   if(!d.items.length)a.append(h('div','act','Todavía no ha hecho nada.'));
   for(const e of d.items){const row=h('div','act',e.summary);row.append(h('small','',new Date(e.ts*1000).toLocaleString('es',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})+' · '+e.channel+' · '+e.outcome));a.append(row)}}catch{}
- $('#stFoot').textContent='isTargetSleeping · Mascota conectada · web v29'}
+ $('#stFoot').textContent='isTargetSleeping · Mascota conectada · web v30'}
 $('#actClear').onclick=async()=>{await fetch('/v1/activity',{method:'DELETE',headers:{'X-CSRF':csrf||''}});loadSettings()};
 $('#stOut').onclick=()=>$('#out').click();
 

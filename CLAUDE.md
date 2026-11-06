@@ -37,6 +37,13 @@ Cuando se sube la versión (ver la tabla de abajo), el agente debe:
    https://istargetsleeping.web.app (o por qué no todavía) y qué falta. Igual para los README. Si algo de la web o
    de los README no se pudo actualizar, se dice y se explica por qué; nunca se omite en silencio.
 
+## Imágenes oficiales: solo capturas de la app con notch
+
+En `README.md`, `README.es.md`, `site/novedades.html`, la web oficial y sus portadas o videos, usa capturas de
+la versión actual de la app, que ya incluye el notch. No reutilices imágenes de versiones anteriores a la llegada
+del notch ni las presentes como la interfaz actual. Al preparar una versión nueva, regenera en español e inglés
+las capturas que vayas a publicar desde el código de esa versión.
+
 ## Versión global: se sube en cada commit con cambios de la app
 
 Formato `MAJOR.MINOR.PATCH` (SemVer, lo exigen `package.ps1` y `packaging/verify-release.ps1`).

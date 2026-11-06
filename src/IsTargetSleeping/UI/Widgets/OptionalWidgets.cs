@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
@@ -189,6 +190,8 @@ public sealed class AgentsWidget : WidgetModel
         RebuildVisibleSessions();
     }
 
+    public void Dispose() { if (!reading) watcher.Dispose(); }
+
     /// Sesiones de muestra para la galería de widgets (no se leen del disco).
     public void LoadDemo()
     {
@@ -264,6 +267,7 @@ public sealed class AgentsWidget : WidgetModel
     {
         if (!Enabled)
         {
+            if (!reading) watcher.Dispose();
             if (Sessions.Count > 0) Sessions.Clear();
             if (RecentSessions.Count > 0) RecentSessions.Clear();
             seenAutomationCompletions.Clear(); seenAutomationOrder.Clear(); automationNotices.Clear(); currentAutomationNotice = null;
@@ -276,7 +280,7 @@ public sealed class AgentsWidget : WidgetModel
         _ = Task.Run(() => watcher.ReadRecent(includeRecentHistory)).ContinueWith(task => Application.Current.Dispatcher.BeginInvoke(() =>
         {
             reading = false;
-            if (!Enabled) { Sessions.Clear(); RecentSessions.Clear(); seenAutomationCompletions.Clear(); seenAutomationOrder.Clear(); automationNotices.Clear(); currentAutomationNotice = null; historyRead = false; showingRecent = false; selectedSession = null; Raise(); return; }
+            if (!Enabled) { watcher.Dispose(); Sessions.Clear(); RecentSessions.Clear(); seenAutomationCompletions.Clear(); seenAutomationOrder.Clear(); automationNotices.Clear(); currentAutomationNotice = null; historyRead = false; showingRecent = false; selectedSession = null; Raise(); return; }
             if (task.Status == TaskStatus.RanToCompletion)
             {
                 var newCompletions = AgentLogs.NewlyFinishedAutomations(task.Result, seenAutomationCompletions);
@@ -329,11 +333,16 @@ public sealed class AgentsWidget : WidgetModel
     }
 }
 
-public sealed class AgentsWatcher
+public sealed class AgentsWatcher : IDisposable
 {
-    // shortcut: recorre las rutas en cada lectura; usar vigilancia incremental si recorrerlas llega a ser costoso.
+    private readonly record struct Change(string Path, string? OldPath, bool Codex, WatcherChangeTypes Type);
     private readonly Dictionary<string, (long Length, DateTime Modified, DateTime Created, AgentSnapshot Snapshot)> cache = new(StringComparer.OrdinalIgnoreCase);
-    private string? language;
+    private readonly Dictionary<string, (FileInfo File, bool Codex)> files = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentQueue<Change> changes = new();
+    private FileSystemWatcher? claudeWatcher, codexWatcher;
+    private string? claudeRoot, codexRoot, language;
+    private DateTime nextRescan;
+    private int needsRescan = 1;
 
     public List<AgentSnapshot> ReadRecent(bool includeRecentHistory = false)
     {
@@ -346,28 +355,17 @@ public sealed class AgentsWatcher
         if (string.IsNullOrWhiteSpace(claudeHome)) claudeHome = Path.Combine(userProfile, ".claude");
         var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
         if (string.IsNullOrWhiteSpace(codexHome)) codexHome = Path.Combine(userProfile, ".codex");
-        var roots = new[] { (Path: Path.Combine(claudeHome, "projects"), Codex: false), (Path: Path.Combine(codexHome, "sessions"), Codex: true) };
-        var files = new List<(FileInfo File, bool Codex)>();
-        foreach (var (root, codex) in roots)
-        {
-            try
-            {
-                if (!Directory.Exists(root)) continue;
-                var pattern = codex ? "rollout-*.jsonl" : "*.jsonl";
-                files.AddRange(Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories)
-                    .Select(p => new FileInfo(p)).Where(f => f.LastWriteTimeUtc <= now && f.LastWriteTimeUtc >= (includeRecentHistory ? historyCutoff : liveCutoff))
-                    .Select(f => (f, codex)));
-            }
-            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
-        }
-        var liveFiles = files.Where(f => f.File.LastWriteTimeUtc >= liveCutoff);
-        IEnumerable<(FileInfo File, bool Codex)> recentFiles = includeRecentHistory ? files.Where(f => f.File.LastWriteTimeUtc < liveCutoff) : Enumerable.Empty<(FileInfo, bool)>();
-        files = liveFiles.Concat(recentFiles).GroupBy(f => f.File.FullName, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
-        var present = files.Select(f => f.File.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var claudeSessions = Path.GetFullPath(Path.Combine(claudeHome, "projects"));
+        var codexSessions = Path.GetFullPath(Path.Combine(codexHome, "sessions"));
+        EnsureFiles(claudeSessions, codexSessions, now);
+        var cutoff = includeRecentHistory ? historyCutoff : liveCutoff;
+        var recentFiles = files.Values.Where(f => f.File.LastWriteTimeUtc >= cutoff && f.File.LastWriteTimeUtc <= now)
+            .OrderByDescending(f => f.File.LastWriteTimeUtc).ToList();
+        var present = recentFiles.Select(f => f.File.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var path in cache.Keys.Where(path => !present.Contains(path)).ToArray()) cache.Remove(path);
         var claudeScheduledTasks = ReadClaudeScheduledTasks();
         var result = new List<AgentSnapshot>();
-        foreach (var entry in files.OrderByDescending(f => f.File.LastWriteTimeUtc))
+        foreach (var entry in recentFiles)
         {
             try
             {
@@ -403,6 +401,127 @@ public sealed class AgentsWatcher
             .OrderBy(s => s.State == AgentState.Finished)
             .ThenByDescending(s => s.State == AgentState.NeedsAttention)
             .ThenByDescending(s => s.LastActivity).ToList();
+    }
+
+    private void EnsureFiles(string claudeSessions, string codexSessions, DateTime now)
+    {
+        if (!string.Equals(claudeRoot, claudeSessions, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(codexRoot, codexSessions, StringComparison.OrdinalIgnoreCase))
+        {
+            claudeWatcher?.Dispose(); codexWatcher?.Dispose();
+            claudeWatcher = codexWatcher = null;
+            claudeRoot = claudeSessions; codexRoot = codexSessions;
+            files.Clear(); cache.Clear(); nextRescan = default;
+            while (changes.TryDequeue(out _)) { }
+            Interlocked.Exchange(ref needsRescan, 1);
+        }
+        claudeWatcher ??= Watch(claudeSessions, codex: false);
+        codexWatcher ??= Watch(codexSessions, codex: true);
+        if (claudeWatcher is null && Directory.Exists(claudeSessions) || codexWatcher is null && Directory.Exists(codexSessions))
+            Interlocked.Exchange(ref needsRescan, 1);
+
+        if (Interlocked.Exchange(ref needsRescan, 0) != 0 || now >= nextRescan)
+        {
+            while (changes.TryDequeue(out _)) { }
+            files.Clear();
+            var historyCutoff = now - AgentLogs.RecentWindow;
+            Scan(claudeSessions, codex: false, historyCutoff);
+            Scan(codexSessions, codex: true, historyCutoff);
+            // shortcut: a directory move can evade file events; the five-minute rescan repairs the index.
+            nextRescan = now.AddMinutes(5);
+            return;
+        }
+        while (changes.TryDequeue(out var change)) Apply(change);
+    }
+
+    private FileSystemWatcher? Watch(string root, bool codex)
+    {
+        if (!Directory.Exists(root)) return null;
+        try
+        {
+            var watcher = new FileSystemWatcher(root)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite | NotifyFilters.Size,
+            };
+            watcher.Created += (_, e) => Queue(e, codex);
+            watcher.Changed += (_, e) => Queue(e, codex);
+            watcher.Deleted += (_, e) => Queue(e, codex);
+            watcher.Renamed += (_, e) => Queue(e, codex);
+            watcher.Error += (_, _) => Interlocked.Exchange(ref needsRescan, 1);
+            watcher.EnableRaisingEvents = true;
+            return watcher;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { return null; }
+    }
+
+    private void Queue(FileSystemEventArgs e, bool codex)
+    {
+        var oldPath = (e as RenamedEventArgs)?.OldFullPath;
+        if (IsSessionLog(e.FullPath, codex) || oldPath is not null && IsSessionLog(oldPath, codex))
+            changes.Enqueue(new(e.FullPath, oldPath, codex, e.ChangeType));
+        else if (e.ChangeType != WatcherChangeTypes.Changed) Interlocked.Exchange(ref needsRescan, 1);
+    }
+
+    private static bool IsSessionLog(string path, bool codex)
+    {
+        var name = Path.GetFileName(path);
+        return name.EndsWith(".jsonl", StringComparison.OrdinalIgnoreCase)
+            && (!codex || name.StartsWith("rollout-", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void Scan(string root, bool codex, DateTime historyCutoff)
+    {
+        try
+        {
+            if (!Directory.Exists(root)) return;
+            var pattern = codex ? "rollout-*.jsonl" : "*.jsonl";
+            foreach (var path in Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var file = new FileInfo(path);
+                    file.Refresh();
+                    if (file.Exists && file.LastWriteTimeUtc >= historyCutoff) files[file.FullName] = (file, codex);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
+    private void Apply(Change change)
+    {
+        var root = change.Codex ? codexRoot : claudeRoot;
+        if (root is null) return;
+        if (change.OldPath is { } oldPath && oldPath.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            Remove(oldPath);
+        if (!change.Path.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) return;
+        if (change.Type == WatcherChangeTypes.Deleted) { Remove(change.Path); return; }
+        try
+        {
+            var file = new FileInfo(change.Path);
+            file.Refresh();
+            if (file.Exists && IsSessionLog(file.FullName, change.Codex))
+            {
+                files[file.FullName] = (file, change.Codex);
+                cache.Remove(file.FullName);
+            }
+            else Remove(file.FullName);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { Remove(change.Path); }
+    }
+
+    private void Remove(string path) { files.Remove(path); cache.Remove(path); }
+
+    public void Dispose()
+    {
+        claudeWatcher?.Dispose(); codexWatcher?.Dispose();
+        claudeWatcher = codexWatcher = null;
+        claudeRoot = codexRoot = null;
+        files.Clear(); cache.Clear(); nextRescan = default;
+        while (changes.TryDequeue(out _)) { }
+        Interlocked.Exchange(ref needsRescan, 1);
     }
 
     private static string? ReadCodexAutomationName(string id)

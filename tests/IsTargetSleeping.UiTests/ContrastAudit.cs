@@ -139,7 +139,10 @@ internal static class ContrastAudit
         Directory.CreateDirectory(folder);
         foreach (double dpi in name.StartsWith("gallery-transition", StringComparison.Ordinal) ? new[] { 96d } : new[] { 96d, 120d, 144d })
         {
-            var image = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth * dpi / 96), (int)Math.Ceiling(content.ActualHeight * dpi / 96), dpi, dpi, PixelFormats.Pbgra32);
+            int width = (int)Math.Ceiling(content.ActualWidth * dpi / 96);
+            int height = (int)Math.Ceiling(content.ActualHeight * dpi / 96);
+            var rendered = new RenderTargetBitmap(width, height, dpi, dpi, PixelFormats.Pbgra32);
+            rendered.Render(content);
             // RenderTargetBitmap does not include the DWM acrylic backdrop.
             var background = Theme.Flat ? Theme.Current.Bg : Theme.Hex(0x050506);
             var preview = new DrawingVisual();
@@ -147,8 +150,9 @@ internal static class ContrastAudit
             {
                 var bounds = new Rect(0, 0, content.ActualWidth, content.ActualHeight);
                 drawing.DrawRectangle(Theme.Brush(Color.FromRgb(background.R, background.G, background.B)), null, bounds);
-                drawing.DrawRectangle(new VisualBrush(content), null, bounds);
+                drawing.DrawImage(rendered, bounds);
             }
+            var image = new RenderTargetBitmap(width, height, dpi, dpi, PixelFormats.Pbgra32);
             image.Render(preview);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(image));
@@ -232,6 +236,7 @@ internal static class ContrastAudit
             bool mediaOnly = Environment.GetEnvironmentVariable("ITS_ONLY_MEDIA") == "1";
             bool foldersOnly = Environment.GetEnvironmentVariable("ITS_ONLY_WIDGET_FOLDERS") == "1";
             bool calendarOnly = Environment.GetEnvironmentVariable("ITS_ONLY_CALENDAR_SETTINGS") == "1";
+            bool homePagesOnly = Environment.GetEnvironmentVariable("ITS_ONLY_HOME_PAGES") == "1";
             var languages = cameraOnly ? Environment.GetEnvironmentVariable("ITS_CAMERA_LANGUAGE")?.ToLowerInvariant() switch
             {
                 "es" => new[] { Language.Es },
@@ -256,7 +261,7 @@ internal static class ContrastAudit
             foreach (var language in languages)
             {
                 L10n.Init(language);
-                if (!clipboardOnly && !cameraOnly && !mediaOnly) AuditFavoriteAppIcon(check, language);
+                if (!clipboardOnly && !cameraOnly && !mediaOnly && !homePagesOnly) AuditFavoriteAppIcon(check, language);
                 var prefs = new Prefs();
                 prefs.LoadDemo();
                 if (!clipboardOnly && !mediaOnly) prefs.SetSwitch(PrefKeys.ClipboardHistory, true);
@@ -278,6 +283,79 @@ internal static class ContrastAudit
                     m.BodyMaxHeight = 3000;
                     m.Procs.Apply(sample);
                     return m;
+                }
+                if (homePagesOnly)
+                {
+                    prefs.SetList(PrefKeys.NotchWidgets, ["clock"]);
+                    var calendarReview = NewModel(true);
+                    calendarReview.Show(PanelView.Home);
+                    var calendarReviewView = new ContentView(calendarReview);
+                    var calendarReviewWindow = Host(calendarReviewView);
+                    calendarReviewWindow.Show();
+                    calendarReviewWindow.UpdateLayout();
+                    Pump(() => false, 0.6);
+                    Capture(calendarReviewView, language, "calendar-solo-wide");
+                    if (calendarReview.HomeWidgets.SingleOrDefault()?.Model is ClockWidget calendarWidget)
+                    {
+                        calendarWidget.ToggleAdder.Execute(null);
+                        calendarReviewWindow.UpdateLayout();
+                        Pump(() => false, 0.2);
+                        Capture(calendarReviewView, language, "calendar-adder-open");
+                    }
+                    calendarReviewWindow.Close();
+                    calendarReview.Hub.Dispose();
+                    prefs.SetList(PrefKeys.NotchWidgets, []);
+                    var widgetGalleryReview = NewModel(true);
+                    widgetGalleryReview.Show(PanelView.Widgets);
+                    widgetGalleryReview.GalleryDots.First(dot => dot.Name == WidgetCatalog.Find("notes")!.Title).Select.Execute(null);
+                    widgetGalleryReview.GallerySizes.First(chip => chip.Label == "1×1").Select.Execute(null);
+                    var widgetGalleryReviewView = new ContentView(widgetGalleryReview);
+                    var widgetGalleryReviewWindow = Host(widgetGalleryReviewView, activate: true);
+                    widgetGalleryReviewWindow.Show();
+                    widgetGalleryReviewWindow.UpdateLayout();
+                    var widgetGalleryReviewPanel = All<Border>(widgetGalleryReviewView).First(border => border.Name == "GalleryPanel");
+                    void CaptureWidgetGalleryReview(string state)
+                    {
+                        widgetGalleryReviewWindow.UpdateLayout();
+                        Pump(() => false, 0.3);
+                        Capture(widgetGalleryReviewPanel, language, state);
+                    }
+                    CaptureWidgetGalleryReview("widget-add-home");
+                    var galleryAddReview = All<Button>(widgetGalleryReviewPanel).First(button => button.Name == "GalleryAddButton");
+                    Keyboard.Focus(galleryAddReview);
+                    Pump(() => galleryAddReview.IsKeyboardFocused, 1);
+                    CaptureWidgetGalleryReview("widget-add-home-focus");
+                    widgetGalleryReview.Prefs.SetList(PrefKeys.NotchWidgets, ["ollama@2x2"]);
+                    widgetGalleryReview.Notify();
+                    CaptureWidgetGalleryReview("widget-add-page");
+                    widgetGalleryReview.Prefs.SetList(PrefKeys.NotchWidgets, ["ollama@2x2", "system@2x2", "clock@2x2"]);
+                    widgetGalleryReview.Notify();
+                    CaptureWidgetGalleryReview("widget-add-disabled");
+                    widgetGalleryReviewWindow.Close();
+                    widgetGalleryReview.Hub.Dispose();
+                    prefs.SetList(PrefKeys.NotchWidgets, ["ollama", "system", "clock", "battery", "media"]);
+                    var pagesHomeOnly = NewModel(true);
+                    pagesHomeOnly.Show(PanelView.Home);
+                    var pagesViewOnly = new ContentView(pagesHomeOnly);
+                    var pagesWindowOnly = Host(pagesViewOnly, activate: true);
+                    pagesWindowOnly.Show();
+                    pagesWindowOnly.UpdateLayout();
+                    Pump(() => false, 0.6);
+                    Capture(pagesViewOnly, language, "home-widget-pages");
+                    var nextPageOnly = All<Button>(pagesViewOnly).FirstOrDefault(b => AutomationProperties.GetName(b) == pagesHomeOnly.NextPageLabel);
+                    if (nextPageOnly is not null) Keyboard.Focus(nextPageOnly);
+                    Pump(() => nextPageOnly?.IsKeyboardFocused == true, 1);
+                    check($"{language}/Home con páginas: el paginador recibe el foco", nextPageOnly?.IsKeyboardFocused == true);
+                    pagesWindowOnly.UpdateLayout();
+                    Pump(() => false, 0.2);
+                    Capture(pagesViewOnly, language, "home-widget-pages-focus");
+                    pagesHomeOnly.HomeDots[2].Pick.Execute(null);
+                    pagesWindowOnly.UpdateLayout();
+                    Pump(() => false, 0.6);
+                    Capture(pagesViewOnly, language, "home-single-widget-page");
+                    pagesWindowOnly.Close();
+                    pagesHomeOnly.Hub.Dispose();
+                    continue;
                 }
                 if (Environment.GetEnvironmentVariable("ITS_PREVIEW_FOLDER_WINDOW") == "1")
                 {
@@ -1295,9 +1373,29 @@ internal static class ContrastAudit
                     bool removed = galleryModel.WidgetIds.All(id => WidgetLayout.BaseId(id) != "notes");
                     galleryModel.GallerySizes.First(chip => chip.Label == "2×2").Select.Execute(null);
                     bool sizeChanged = galleryModel.GalleryWidth == 2 * GridPanel.CellWidth && galleryModel.GalleryHeight == 2 * GridPanel.RowHeight;
+                    galleryModel.Prefs.SetList(PrefKeys.NotchWidgets, ["system@2", "clock"]);
+                    galleryModel.Notify();
+                    galleryModel.GalleryDots.First(dot => dot.Name == WidgetCatalog.Find("clock")!.Title).Select.Execute(null);
+                    galleryModel.GallerySizes.First(chip => chip.Label == "2×2").Select.Execute(null);
+                    bool resizeMovesToPage = galleryModel.GalleryAddLabel == L10n.tr("Usar este tamaño en la página");
+                    galleryModel.GalleryAdd.Execute(null);
+                    bool resizeKeepsOrder = PanelViewModel.HomePages(galleryModel.WidgetIds).SelectMany(page => page)
+                        .SequenceEqual(["system@2", "clock@2x2"]);
+                    galleryModel.Prefs.SetList(PrefKeys.NotchWidgets, ["ollama@2x2"]);
+                    galleryModel.Notify();
+                    galleryModel.GalleryDots.First(dot => dot.Name == WidgetCatalog.Find("notes")!.Title).Select.Execute(null);
+                    galleryModel.GallerySizes.First(chip => chip.Label == "1×1").Select.Execute(null);
+                    bool addPageLabel = galleryModel.GalleryAddLabel == L10n.tr("Añadir como página");
+                    galleryModel.GalleryAdd.Execute(null);
+                    bool addedPage = PanelViewModel.HomePages(galleryModel.WidgetIds).Count == 2
+                        && galleryModel.GalleryAddLabel == L10n.tr("Quitar de su página");
+                    galleryModel.GalleryAdd.Execute(null);
+                    bool removedPage = PanelViewModel.HomePages(galleryModel.WidgetIds).Count == 1;
                     galleryModel.Prefs.SetList(PrefKeys.NotchWidgets, ["ollama@2x2", "system@2x2", "clock@2x2"]);
                     galleryModel.Notify();
                     bool disabledAtCapacity = !galleryModel.GalleryCanAdd;
+                    check($"{language}/galería: el tamaño y el botón distinguen Home de una página", resizeMovesToPage && resizeKeepsOrder
+                        && addPageLabel && addedPage && removedPage);
                     check($"{language}/galería: seleccionar tamaño, añadir/quitar y deshabilitar al llenar el Home", added && removed && sizeChanged && disabledAtCapacity);
                     continue;
                 }
@@ -1400,6 +1498,17 @@ internal static class ContrastAudit
                     homeWindow.Show();
                     homeWindow.UpdateLayout();
                     Audit($"Home con {widget.Id}", homeView, true);
+                    if (widget.Id == "clock")
+                    {
+                        Capture(homeView, language, "calendar-solo-wide");
+                        if (home.HomeWidgets.SingleOrDefault()?.Model is ClockWidget clock)
+                        {
+                            clock.ToggleAdder.Execute(null);
+                            homeWindow.UpdateLayout();
+                            Audit("Calendario con formulario abierto", homeView, true);
+                            Capture(homeView, language, "calendar-adder-open");
+                        }
+                    }
                     homeWindow.Close();
                     var peekModel = NewModel(true);
                     var peek = new NotchPeek(peekModel);
@@ -1409,11 +1518,34 @@ internal static class ContrastAudit
                     Audit($"Versión corta con {widget.Id}", peek, true);
                     peekWindow.Close();
                 }
+
+                // Home conserva sus cuatro celdas; cada widget que excede ese espacio ocupa una página propia.
+                prefs.SetList(PrefKeys.NotchWidgets, ["ollama", "system", "clock", "battery", "media"]);
+                var pagedHome = NewModel(true);
+                pagedHome.Show(PanelView.Home);
+                var pagedView = new ContentView(pagedHome);
+                var pagedWindow = Host(pagedView, activate: true);
+                pagedWindow.Show();
+                pagedWindow.UpdateLayout();
+                Audit("Home con páginas de widgets", pagedView, true);
+                Capture(pagedView, language, "home-widget-pages");
+                var nextPage = All<Button>(pagedView).FirstOrDefault(b => AutomationProperties.GetName(b) == pagedHome.NextPageLabel);
+                if (nextPage is not null) Keyboard.Focus(nextPage);
+                Pump(() => nextPage?.IsKeyboardFocused == true, 1);
+                check($"{language}/Home con páginas: el paginador recibe el foco", nextPage?.IsKeyboardFocused == true);
+                pagedWindow.UpdateLayout();
+                Capture(pagedView, language, "home-widget-pages-focus");
+                pagedHome.HomeDots[2].Pick.Execute(null);
+                pagedWindow.UpdateLayout();
+                Audit("Página individual de batería", pagedView, true);
+                Capture(pagedView, language, "home-single-widget-page");
+                pagedWindow.Close();
+
                 prefs.SetList(PrefKeys.NotchWidgets, WidgetCatalog.DefaultWidgets);
                 prefs.SetList(PrefKeys.NotchPeekWidgets, WidgetCatalog.DefaultPeek);
             }
             if (clipboardOnly || cameraOnly || mediaOnly || foldersOnly || calendarOnly
-                || Environment.GetEnvironmentVariable("ITS_ONLY_GALLERY") == "1") return;
+                || homePagesOnly || Environment.GetEnvironmentVariable("ITS_ONLY_GALLERY") == "1") return;
             // Lo que abre ventanas y popups propios (notch, «Acerca de», menú, tooltip) va después de todo lo demás: deja estado en WPF.
             foreach (var language in new[] { Language.En, Language.Es })
             {

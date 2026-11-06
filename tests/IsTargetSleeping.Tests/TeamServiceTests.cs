@@ -104,13 +104,13 @@ internal static class TeamServiceTests
         check("equipo: el registro enseña el comando sin la ruta del intérprete ni sus opciones",
             TeamActivity.FriendlyCommand("\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -Command \"git status\"") == "git status"
             && TeamActivity.FriendlyCommand("git diff --stat") == "git diff --stat" && TeamActivity.FriendlyCommand("bash -lc 'ls src'") == "ls src");
-        // Home: las cuatro primeras celdas se ven al abrirlo y el Home admite más, que aparecen al desplazarte; la vista corta sigue en cuatro.
+        // La lista del Home admite hasta doce celdas en orden; la vista corta conserva su tope de cuatro.
         var six = new[] { "system", "clock", "pomodoro", "awake", "battery", "media" };
-        check("Home: admite más de cuatro celdas (hasta doce) y conserva su orden, mientras que la vista corta se queda en cuatro",
+        check("Home: guarda hasta doce celdas en orden, mientras que la vista corta conserva su tope de cuatro",
             WidgetLayout.Normalize(six, max: WidgetCatalog.MaxHomeCells).SequenceEqual(six) && WidgetLayout.Normalize(six).Count == 4 && WidgetLayout.Normalize(six).SequenceEqual(six.Take(4))
             && WidgetCatalog.MaxHomeCells > WidgetCatalog.MaxCells && WidgetLayout.Cells(WidgetLayout.Normalize(WidgetCatalog.All.Select(w => w.Id), max: WidgetCatalog.MaxHomeCells)) <= WidgetCatalog.MaxHomeCells);
         var full4 = new List<string> { "system", "clock", "pomodoro", "awake" };
-        check("Home: con las cuatro celdas de la primera pantalla llenas aún se puede añadir (hasta doce), y a la vista corta no",
+        check("Home: con cuatro celdas ocupadas aún se puede añadir un widget para otra página, y a la vista corta no",
             WidgetLayout.CanAdd(full4, "battery", WidgetCatalog.MaxHomeCells) && !WidgetLayout.CanAdd(full4, "battery") && WidgetLayout.Add(full4, "battery", WidgetCatalog.MaxHomeCells).Count == 5
             && WidgetLayout.ToggleWidth(full4, "clock", WidgetCatalog.MaxHomeCells).Contains("clock@2") && !WidgetLayout.ToggleWidth(full4, "clock").Contains("clock@2"));
 

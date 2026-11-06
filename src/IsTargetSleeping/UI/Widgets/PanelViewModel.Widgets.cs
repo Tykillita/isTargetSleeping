@@ -207,7 +207,7 @@ public sealed partial class PanelViewModel
     public string SaveWidgetsLabel => tr("Guardar");
     public string CancelWidgetsLabel => tr("Descartar");
     public bool NoHomeWidgets => HomeWidgets.Count == 0;
-    public string WidgetsIntro => tr("Elige qué ve el Home del notch y en qué orden. Se ven %d celdas por página; las demás, al pasar de página con las flechas (caben %d).", PanelViewModel.HomePageCells, WidgetCatalog.MaxHomeCells);
+    public string WidgetsIntro => tr("Elige qué ve el Home del notch y en qué orden. Home muestra hasta %d celdas; cada widget restante tiene su página propia (hasta %d celdas en total).", PanelViewModel.HomePageCells, WidgetCatalog.MaxHomeCells);
     public string WidgetsCells => tr("%d de %d celdas en uso", WidgetLayout.Area(WidgetIds), WidgetCatalog.MaxHomeCells);
     public string WidgetsFull => tr("Quita otro widget para hacer sitio.");
     public string WidgetShelfIntro => tr("Arrastra aquí para añadir; arrastra los widgets del Home para reordenarlos.");
@@ -448,18 +448,23 @@ public sealed partial class PanelViewModel
     public ICommand PrevHomePage => new Command(() => StepHomePage(-1));
     public ICommand NextHomePage => new Command(() => StepHomePage(1));
 
-    /// Reparte los widgets en páginas de HomePageCells celdas, sin cambiar su orden; uno más grande que la página va solo.
+    /// Home reúne los widgets que caben en sus cuatro celdas; cada widget que exceda ese espacio ocupa una página propia.
     public static List<List<string>> HomePages(IEnumerable<string> ids)
     {
         var pages = new List<List<string>>();
+        var home = new List<string>();
         int used = 0;
         foreach (var id in ids)
         {
             int area = WidgetLayout.Span(id) * WidgetLayout.Rows(id);
-            if (pages.Count == 0 || used + area > HomePageCells) { pages.Add([]); used = 0; }
-            pages[^1].Add(id);
-            used += area;
+            if (pages.Count == 0 && used + area <= HomePageCells)
+            {
+                home.Add(id);
+                used += area;
+            }
+            else pages.Add([id]);
         }
+        if (home.Count > 0) pages.Insert(0, home);
         return pages;
     }
 
@@ -476,7 +481,8 @@ public sealed partial class PanelViewModel
     {
         var pages = HomePages(ids);
         homePage = Math.Clamp(homePage, 0, Math.Max(0, pages.Count - 1));
-        HomeDots = Enumerable.Range(0, pages.Count).Select(i => new Segment(tr("Página %d", i + 1), i == homePage, new Command(() => { int from = homePage; homePage = i; Notify(); HomePageChanged?.Invoke(i >= from ? 1 : -1); }))).ToList();
+        HomeDots = pages.Select((page, i) => new Segment(i == 0 ? tr("Inicio") : WidgetCatalog.Find(WidgetLayout.BaseId(page[0]))?.Title ?? tr("Página %d", i + 1),
+            i == homePage, new Command(() => { int from = homePage; homePage = i; Notify(); HomePageChanged?.Invoke(i >= from ? 1 : -1); }))).ToList();
         // Editando se ve la lista entera (con sus controles); si no, solo la página actual.
         var shown = CustomizingWidgets || pages.Count == 0 ? ids : WidgetLayout.FillPage(pages[homePage], HomePageCells);
         HomeWidgets = Hub.Slots(shown, peek: false, customizing: CustomizingWidgets, resize: ResizeWidgetInDraft);
@@ -598,7 +604,7 @@ public sealed partial class PanelViewModel
     private List<WidgetRow> BuildRows(List<string> ids, string key, string? scope) =>
         WidgetCatalog.All.Select((info, i) =>
         {
-            // El Home admite doce celdas (cuatro a la vista y el resto al desplazarte); la vista corta, cuatro.
+            // La lista admite doce celdas: cuatro en Home y cada widget posterior en su página; la vista corta conserva cuatro.
             bool home = key == PrefKeys.NotchWidgets;
             int max = home ? WidgetCatalog.MaxHomeCells : WidgetCatalog.MaxCells;
             var id = info.Id;

@@ -25,11 +25,6 @@ $files = @(
 foreach ($p in 0..3) { foreach ($e in 0..5) { $files += "docs\images\pet-sprites\p${p}s${e}.png" } }
 foreach ($p in 0..3) { $files += "docs\images\pet-sprites\peek${p}.png" }
 foreach ($lang in 'es', 'en') {
-    $files += "docs\images\panel-$lang.png"
-    $files += "docs\images\notch-$lang.png"
-    $files += "docs\images\home-$lang.png"
-    $files += "docs\images\activity-$lang.png"
-    $files += "docs\images\settings-preview-$lang.png"
     $files += "docs\images\idle-flow-$lang.svg"
     $files += "docs\images\game-mode-$lang.svg"
     $files += "docs\images\pets-home-$lang.svg"

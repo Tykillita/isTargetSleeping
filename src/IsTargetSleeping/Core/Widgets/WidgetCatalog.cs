@@ -24,7 +24,7 @@ public static class WidgetCatalog
 {
     /// La primera pantalla del Home (y la vista al pasar el ratón) cabe en cuatro celdas: un widget ocupa una o dos.
     public const int MaxCells = 4;
-    /// El Home admite más: se ven cuatro celdas por página y las demás están en otras páginas, con flechas.
+    /// El Home muestra cuatro celdas; cada widget restante tiene su propia página. El tope total sigue siendo doce celdas.
     public const int MaxHomeCells = 12;
 
     public static readonly IReadOnlyList<WidgetInfo> All =

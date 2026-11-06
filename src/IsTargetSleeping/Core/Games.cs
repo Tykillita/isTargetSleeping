@@ -164,30 +164,24 @@ public sealed class GameDetector
     {
         var roots = GameLibraries.Roots();
         var visible = VisibleWindowPids(out int foregroundPid);
-        var alive = new HashSet<int>();
         var found = new List<(int Pid, GameInfo Game)>();
 
-        foreach (var p in Process.GetProcesses())
+        foreach (int pid in visible)
         {
-            using (p)
-            {
-                int pid = p.Id;
-                if (pid <= 4 || pid == Environment.ProcessId) continue;
-                alive.Add(pid);
-                if (!paths.TryGetValue(pid, out var path)) paths[pid] = path = Procs.ImagePath(pid);
-                if (path is null || !visible.Contains(pid)) continue;
-                if (ignored.Contains(path, StringComparer.OrdinalIgnoreCase)) continue;
+            if (pid <= 4 || pid == Environment.ProcessId) continue;
+            if (!paths.TryGetValue(pid, out var path)) paths[pid] = path = Procs.ImagePath(pid);
+            if (path is null) continue;
+            if (ignored.Contains(path, StringComparer.OrdinalIgnoreCase)) continue;
 
-                if (custom.Contains(path, StringComparer.OrdinalIgnoreCase))
-                {
-                    found.Add((pid, new GameInfo(Describe(path) ?? Path.GetFileNameWithoutExtension(path), path, pid)));
-                    continue;
-                }
-                if (!GameLibraries.LooksLikeGame(path)) continue;
-                if (GameLibraries.Match(path, roots) is { } name) found.Add((pid, new GameInfo(name, path, pid)));
+            if (custom.Contains(path, StringComparer.OrdinalIgnoreCase))
+            {
+                found.Add((pid, new GameInfo(Describe(path) ?? Path.GetFileNameWithoutExtension(path), path, pid)));
+                continue;
             }
+            if (!GameLibraries.LooksLikeGame(path)) continue;
+            if (GameLibraries.Match(path, roots) is { } name) found.Add((pid, new GameInfo(name, path, pid)));
         }
-        foreach (var pid in paths.Keys.Where(k => !alive.Contains(k)).ToList()) paths.Remove(pid);
+        foreach (var pid in paths.Keys.Where(pid => !visible.Contains(pid)).ToList()) paths.Remove(pid);
 
         if (found.Count > 0) return found.FirstOrDefault(f => f.Pid == foregroundPid).Game ?? found[0].Game;
 

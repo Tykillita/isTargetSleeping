@@ -5,6 +5,15 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.30.0] — 2026-11-06
+
+### Added
+- The expanded notch keeps up to four cells on Home; each additional widget gets a dedicated page reachable from the header pager. Existing widget order and saved selections are preserved, with the twelve-cell total limit unchanged.
+- The private mobile web app can choose Nimbo's provider, model and sign-in method. API keys stay encrypted on the desktop PC.
+
+### Fixed
+- The solo clock and calendar view no longer reserve an unused second row below the calendar and agenda.
+
 ## [1.29.0] — 2026-11-05
 
 ### Fixed

@@ -255,10 +255,14 @@ public sealed partial class PanelViewModel
     public string GalleryPrevHelp => tr("Widget anterior");
     public string GalleryNextHelp => tr("Widget siguiente");
     public string GalleryTitleLabel => tr("Galería de widgets");
-    public string GalleryIntro => tr("Mira cada widget en cada tamaño antes de ponerlo en el Home.");
+    public string GalleryIntro => tr("Mira cada widget en cada tamaño antes de añadirlo al Home o como página.");
     public string GallerySizeLabel => tr("Tamaño");
 
-    private bool GalleryIsOnHome => WidgetIds.Any(x => WidgetLayout.BaseId(x) == GalleryInfo.Id);
+    private List<List<string>> GalleryPages => PanelViewModel.HomePages(WidgetIds);
+    private bool GalleryWidgetIsHome => GalleryPages.FirstOrDefault()?.Any(x => WidgetLayout.BaseId(x) == GalleryInfo.Id) == true;
+    private bool GalleryWidgetIsAdded => WidgetIds.Any(x => WidgetLayout.BaseId(x) == GalleryInfo.Id);
+    private bool GalleryAddsToHome => GalleryPages.Count <= 1 && WidgetLayout.Area(WidgetIds) + GalleryChoice.Cols * GalleryChoice.Rows <= PanelViewModel.HomePageCells;
+    private bool GalleryChoiceIsHome => PanelViewModel.HomePages(GalleryResult()).FirstOrDefault()?.Any(x => WidgetLayout.BaseId(x) == GalleryInfo.Id) == true;
     private string GalleryToken => WidgetLayout.Token(GalleryInfo.Id, GalleryChoice.Cols, GalleryChoice.Rows, home: true);
     private List<string> GalleryResult()
     {
@@ -272,12 +276,15 @@ public sealed partial class PanelViewModel
         }
         return WidgetLayout.CanAdd(ids, GalleryToken, WidgetCatalog.MaxHomeCells, home: true) ? [.. ids, GalleryToken] : ids;
     }
-    // Si ya está en el Home con este tamaño, el botón lo quita (en lugar de quedar apagado).
+    // Si ya está guardado con este tamaño, el botón lo quita (en lugar de quedar apagado).
     private bool GalleryHereAlready => WidgetIds.Contains(GalleryToken);
     public bool GalleryCanAdd => GalleryHereAlready || !GalleryResult().SequenceEqual(WidgetIds);
     public bool GalleryAlreadyAdded => GalleryHereAlready;
-    public string GalleryAddLabel => GalleryHereAlready ? tr("Quitar del Home")
-        : GalleryCanAdd ? (GalleryIsOnHome ? tr("Usar este tamaño en el Home") : tr("Añadir al Home")) : tr("No cabe: quita otro widget");
+    public string GalleryAddLabel => GalleryHereAlready ? (GalleryWidgetIsHome ? tr("Quitar del Home") : tr("Quitar de su página"))
+        : GalleryCanAdd ? GalleryWidgetIsAdded
+            ? (GalleryChoiceIsHome ? tr("Usar este tamaño en el Home") : tr("Usar este tamaño en la página"))
+            : GalleryAddsToHome ? tr("Añadir al Home") : tr("Añadir como página")
+        : tr("No cabe: quita otro widget");
     public ICommand GalleryAdd => new Command(() =>
     {
         if (GalleryHereAlready) { StoreWidgetLayout(PrefKeys.NotchWidgets, WidgetIds.Where(x => x != GalleryToken).ToList()); return; }
