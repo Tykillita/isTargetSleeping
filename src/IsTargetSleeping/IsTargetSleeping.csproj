@@ -55,7 +55,7 @@
                       Condition="'$(AgentExe)' != '' and Exists('$(AgentExe)')" />
   </ItemGroup>
   <!-- Regla: toda build publicada lleva el agente de memoria dentro; sin él «Liberar RAM» falla en silencio. Si falta, la publicación se detiene. -->
-  <Target Name="RequireMemoryAgent" BeforeTargets="CoreCompile" Condition="'$(PublishSingleFile)' == 'true'">
+  <Target Name="RequireMemoryAgent" BeforeTargets="Publish" Condition="'$(PublishSingleFile)' == 'true'">
     <Error Condition="'$(AgentExe)' == '' or !Exists('$(AgentExe)')" Text="Falta el agente de memoria (AgentExe): toda build publicada debe incluirlo. Usa ./build.ps1 o package.ps1." />
   </Target>
 
