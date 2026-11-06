@@ -16,10 +16,10 @@ Un espacio pequeño para lo que usas cada día.
 <img src="https://img.shields.io/badge/x64%20%7C%20ARM64-native-111214?style=for-the-badge" alt="x64 y ARM64">
 <img src="https://img.shields.io/badge/licencia-MIT-19B8FF?style=for-the-badge" alt="Licencia MIT">
 
-<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe"><img src="https://img.shields.io/badge/Descargar%20para%20Windows-x64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Descargar x64"></a>
-<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-arm64.exe"><img src="https://img.shields.io/badge/Descargar%20para%20Windows-ARM64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Descargar ARM64"></a>
+<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe"><img src="https://img.shields.io/badge/Descargar%20para%20Windows-x64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Descargar x64"></a>
+<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe"><img src="https://img.shields.io/badge/Descargar%20para%20Windows-ARM64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Descargar ARM64"></a>
 
-<a href="https://istargetsleeping.web.app/">Explora la nueva web</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.29.0">Novedades de la versión</a> · <a href="CHANGELOG.md">Historial de cambios</a>
+<a href="https://istargetsleeping.web.app/">Explora la nueva web</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.30.0">Novedades de la versión</a> · <a href="CHANGELOG.md">Historial de cambios</a>
 <a href="https://istargetsleeping.web.app/#video">Ver el recorrido de 77 segundos</a>
 
 </div>
@@ -31,7 +31,7 @@ Un espacio pequeño para lo que usas cada día.
   <a href="docs/images/notch-simulator-lyrics-es.png"><img src="docs/images/notch-simulator-lyrics-es.png" width="31%" alt="Letra sincronizada en el simulador animado del notch de la web"></a>
   <a href="docs/images/notch-simulator-system-es.png"><img src="docs/images/notch-simulator-system-es.png" width="31%" alt="Recursos del PC en el simulador animado del notch de la web"></a>
 </p>
-<p align="center"><sub>Simulador animado del notch · Música · Letra · Sistema</sub></p>
+<p align="center"><sub><a href="https://istargetsleeping.web.app/#probar">Explora el simulador animado del notch</a> · Sus transiciones recrean las animaciones del notch de la app · Música · Letra · Sistema</sub></p>
 <p align="center">
   <a href="docs/images/settings-es.png"><img src="docs/images/settings-es.png" width="80%" alt="Ajustes generales en la app de escritorio actual"></a>
 </p>
@@ -84,12 +84,13 @@ Ollama y otros motores locales son una parte de la app. isTargetSleeping puede d
 - Las actualizaciones estables son opcionales y vienen apagadas. Si las activas, la app consulta GitHub, verifica SHA-256 y tú eliges cuándo instalar.
 
 <a id="whats-new"></a>
-## En desarrollo para 1.30.0
+## Novedades de la versión 1.30.0 · 6 de noviembre de 2026
 
 | Área | Qué cambia |
 |---|---|
 | **Páginas de widgets** | Home conserva hasta cuatro celdas. Cada widget adicional aparece en una página propia, accesible desde el control superior. El orden y la configuración existentes se mantienen. |
 | **Proveedor de Nimbo** | Elige desde la web móvil privada el proveedor, el modelo y el método de acceso. Las claves API permanecen cifradas en la PC de escritorio. |
+| **Complemento ESP32 opcional** | Pet 0.2.0 está disponible para x64 y ARM64. Descárgalo desde Ajustes › Notch; la web móvil privada funciona sin placa. |
 | **Calendario más compacto** | Cuando queda solo, el reloj y calendario conserva su vista amplia sin dejar una fila vacía debajo de la agenda. |
 
 ## Novedades de la versión 1.29.0
@@ -118,12 +119,14 @@ El complemento sirve la web desde esta PC mediante Tailscale, dentro de tu tailn
 <a id="downloads"></a>
 ## Descarga e instalación
 
-<strong>Versión estable 1.29.0 · 6 de noviembre de 2026</strong>
+<strong>Versión estable 1.30.0 · 6 de noviembre de 2026</strong>
 
 | Arquitectura | Instalador | Portable |
 |---|---|---|
-| <strong>x64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe">Instalador</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-x64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-x64.zip.sha256">SHA-256</a> |
-| <strong>ARM64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-arm64.exe">Instalador</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-arm64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-arm64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-arm64.zip.sha256">SHA-256</a> |
+| <strong>x64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe">Instalador</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-x64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-x64.zip.sha256">SHA-256</a> |
+| <strong>ARM64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe">Instalador</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-arm64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-arm64.zip.sha256">SHA-256</a> |
+
+<strong>Complemento ESP32 opcional · Pet 0.2.0:</strong> <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-x64.zip">ZIP x64</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-x64.zip.sha256">SHA-256</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-arm64.zip">ZIP ARM64</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-arm64.zip.sha256">SHA-256</a>
 
 - <strong>Instalador:</strong> se instala para tu usuario de Windows sin pedir permisos de administrador. No necesitas instalar .NET.
 - <strong>Portable:</strong> extrae el ZIP donde quieras y ejecuta <code>isTargetSleeping.exe</code>.
@@ -160,7 +163,7 @@ La app de escritorio está escrita en C# con .NET 10, una interfaz WPF nativa e 
     .\build.ps1
     .\build.ps1 -Test
     .\package.ps1 -RequireInstaller
-    .\packaging\verify-release.ps1 -Tag v1.29.0 -VerifyAssets
+    .\packaging\verify-release.ps1 -Tag v1.30.0 -VerifyAssets
 
 El flujo de release ejecuta las pruebas de lógica, valida los recursos y empaqueta x64 y ARM64. La matriz completa de combinaciones WPF queda disponible para el trabajo de interfaz: define <code>ITS_ALL_COMBOS=1</code> antes de ejecutar <code>.\build.ps1 -Test</code>.
 
@@ -179,4 +182,4 @@ El widget Código usa <a href="https://github.com/material-extensions/vscode-mat
 
 ---
 
-<p align="center"><em>Deja descansar al modelo. Mantén despierto el resto de tu escritorio.</em></p>
+<p align="center"><em>Música, actividad y tus herramientas, a un notch de distancia.</em></p>

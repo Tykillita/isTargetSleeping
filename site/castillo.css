@@ -177,10 +177,10 @@ body[data-pagina="castillo"] .nav { width: min(calc(100% - 2 * var(--e) - 8px), 
 .pagina-castillo .sim[data-escena] .sim-pin > .laptop { width: min(100% - 32px, 1180px); margin: 44px auto 0; transform: none; opacity: 1; will-change: auto; }
 .pagina-castillo .sim-pin > .contenedor { margin-top: 8px; }
 .pagina-castillo .sim .try { margin-top: 0; gap: 10px; }
-.pagina-castillo .sim .try button { padding: 10px 20px; border-color: rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .06); color: #f1f3f8; transition: background .2s, border-color .2s, transform .2s; }
-.pagina-castillo .sim .try button:hover { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .45); transform: translateY(-1px); }
-.pagina-castillo .sim .try button[aria-pressed="true"] { background: #f4f5f8; color: #0b0c10; border-color: #f4f5f8; }
-.pagina-castillo .sim .cap { margin-top: 18px; color: rgba(255, 255, 255, .72); }
+.pagina-castillo .sim .try button { padding: 10px 20px; border-color: var(--linea); background: var(--gris); color: var(--tinta); transition: background .2s, border-color .2s, transform .2s; }
+.pagina-castillo .sim .try button:hover { background: color-mix(in srgb, var(--tinta) 10%, var(--fondo)); border-color: color-mix(in srgb, var(--tinta) 40%, var(--linea)); transform: translateY(-1px); }
+.pagina-castillo .sim .try button[aria-pressed="true"] { background: var(--tinta); color: var(--fondo); border-color: var(--tinta); }
+.pagina-castillo .sim .cap { margin-top: 18px; color: var(--tinta-2); }
 .pagina-castillo .sim .mn[data-s="pet"] { --w: 150px; --h: 42px; --r: 21px; --bg: #fff; }
 /* el fondo de la pantalla del simulador es el mismo castillo de la laptop de arriba, más vivo y sin pétalos genéricos */
 .pagina-castillo .sim .wall { background: #0a0d18 url(castillo/img/laptop-fondo.jpg) 50% 30% / cover no-repeat; height: calc(var(--u) * 420px); }
