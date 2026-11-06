@@ -11,6 +11,7 @@ All notable changes to isTargetSleeping. The format follows
 - Existing custom activity lists now include the notification indicator after updating, so notifications can use the closed notch's priority slot as well as the open header.
 - A permission request no longer opens the notch or takes focus while something is full screen (a game, a video) or game mode is on: it waits in the queue (and in the Agents page) and the card opens by itself when you leave full screen. Before, a pinned notch ignored the full-screen rule and could pull you out of the game.
 - «Deny» in the agent permission card is readable in high contrast: the red tint behind its red text is replaced by the theme's plain background.
+- Team task merges now work when Git has no user identity configured; the merge uses a local fallback identity.
 
 ### Added
 - Optional connected pet companion: download the separate desktop server from Settings › Notch. It serves the mobile web app privately over Tailscale, works without an ESP32 board, and can connect a board as an optional client.

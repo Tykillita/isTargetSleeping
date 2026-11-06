@@ -629,6 +629,8 @@ const EN = {
   'nov.v1_29_0.notchD': 'The notch dock and pages move more smoothly. Windows notifications use the high-resolution logo and show Activity actions and download progress.',
   'nov.v1_29_0.arreglosT': 'Permission requests wait during full screen',
   'nov.v1_29_0.arreglosD': 'A request no longer opens the notch or steals focus while you play a game or watch a video; it waits and opens when you leave. Notification priority and Deny text also respect custom activities and high contrast.',
+  'nov.v1_29_0.mergeT': 'Team merges work without a Git identity',
+  'nov.v1_29_0.mergeD': 'Team tasks can be merged even when Git has no user name or email configured; the app supplies a local fallback identity.',
   'nov.v1_28_0.indice': '1.28.0 · Included in 1.29.0',
   'nov.v1_28_0.fecha': 'Included in 1.29.0',
   'nov.v1_28_0.resumen': 'The notch is no longer experimental and becomes the main version: it starts turned on. The tray panel becomes the “Legacy version”.',
