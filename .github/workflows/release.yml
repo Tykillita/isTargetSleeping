@@ -24,9 +24,9 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: .\packaging\verify-release.ps1 -Tag $env:RELEASE_TAG -NotesFile release-notes.md
-      - name: Tests
+      - name: Core logic tests
         shell: pwsh
-        run: .\build.ps1 -Test
+        run: dotnet run --project tests\IsTargetSleeping.Tests -c Release
       - name: Ensure Inno Setup 6
         shell: pwsh
         run: .\packaging\ensure-inno.ps1
