@@ -147,7 +147,7 @@ quedó verificado.
 ## Commits
 
 - Respeta estas reglas también al usar la skill `/commit`.
-- Sin líneas de atribución a Claude en commits, PRs ni archivos.
+- Sin atribuciones de autoría o coautoría a Claude, Codex ni a ninguna otra IA en commits, PRs, releases, paquetes, metadatos de GitHub ni archivos públicos. Los commits usan la identidad del propietario del repositorio.
 
 ## Delegación a Codex (equipo Claude + Codex)
 
