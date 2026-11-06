@@ -292,8 +292,13 @@ internal static class TeamServiceTests
         process.ArgumentList.Add(release);
         using (var child = System.Diagnostics.Process.Start(process)!)
         {
-            var signaled = SpinWait.SpinUntil(() => File.Exists(signal) || child.HasExited, TimeSpan.FromSeconds(10));
-            var childClaimed = File.Exists(signal) && File.ReadAllText(signal) == "claimed";
+            var childClaimed = false;
+            var signaled = SpinWait.SpinUntil(() =>
+            {
+                try { childClaimed = File.ReadAllText(signal) == "claimed"; }
+                catch (IOException) { }
+                return childClaimed || child.HasExited;
+            }, TimeSpan.FromSeconds(10));
             var parentClaim = leaseStoreA.ClaimSchedule(leaseSchedule.Id, Mon.AddDays(1), runNow: true, out _, out var parentLease);
             parentLease?.Dispose();
             File.WriteAllText(release, "release");
