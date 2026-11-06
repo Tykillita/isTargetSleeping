@@ -1,14 +1,14 @@
-/* Borrador local del Castillo Blanco. Todo el estilo nuevo queda dentro de esta página. */
+/* Encabezado compartido; el resto del estilo del Castillo Blanco solo afecta a su portada. */
 body[data-pagina="castillo"] { scroll-padding-top: 72px; }
 /* El nav no ocupa sitio en la página (height 0): el contenedor se pinta encima y puede crecer al abrir el menú sin empujar el contenido. */
-body[data-pagina="castillo"] .nav { position: sticky; top: 0; z-index: 50; width: min(calc(100% - 40px), 1000px); height: 0; margin: 0 auto; border: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
-body[data-pagina="castillo"] .nav .contenedor { position: absolute; top: 0; left: 0; right: 0; width: 100%; max-width: none; height: 58px; padding: 0 20px; gap: 18px; border: 1px solid var(--linea); border-top: 0; border-radius: 0 0 28px 28px; background: var(--fondo); box-shadow: 0 12px 34px rgba(0,0,0,.18); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-body[data-pagina="castillo"] .nav .marca { color: var(--tinta); }
-body[data-pagina="castillo"] .nav-links { display: flex; align-items: center; gap: clamp(12px, 1.45vw, 20px); }
-body[data-pagina="castillo"] .nav-links a { padding: 7px 0; }
-body[data-pagina="castillo"] .castillo-nav-preferencias { display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 12px; }
-body[data-pagina="castillo"] .nav-acciones { gap: 9px; margin-left: 0; }
-body[data-pagina="castillo"] .nav .btn--chico { background: var(--azul); color: var(--fondo); }
+.nav--principal { position: sticky; top: 0; z-index: 50; width: min(calc(100% - 40px), 1000px); height: 0; margin: 0 auto; border: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.nav--principal .contenedor { position: absolute; top: 0; left: 0; right: 0; width: 100%; max-width: none; height: 58px; padding: 0 20px; gap: 18px; border: 1px solid var(--linea); border-top: 0; border-radius: 0 0 28px 28px; background: var(--fondo); box-shadow: 0 12px 34px rgba(0,0,0,.18); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.nav--principal .marca { color: var(--tinta); }
+.nav--principal .nav-links { display: flex; align-items: center; gap: clamp(12px, 1.45vw, 20px); }
+.nav--principal .nav-links a { padding: 7px 0; }
+.nav--principal .castillo-nav-preferencias { display: flex; align-items: center; gap: 8px; margin-left: 6px; padding-left: 12px; }
+.nav--principal .nav-acciones { gap: 9px; margin-left: 0; }
+.nav--principal .btn--chico { background: var(--azul); color: var(--fondo); }
 .castillo-github { display: none; }
 .castillo-menu { display: none; place-items: center; flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--tinta); cursor: pointer; }
 .castillo-menu svg { width: 19px; height: 19px; }
@@ -95,19 +95,19 @@ body[data-pagina="castillo"] .castillo-recorrido--pinned .castillo-fijado { posi
 .pagina-castillo :focus-visible { outline-color: var(--azul-txt); }
 
 @media (max-width: 900px) {
-  body[data-pagina="castillo"] .nav { width: min(calc(100% - 36px), 540px); }
-  body[data-pagina="castillo"] .nav .contenedor { height: auto; min-height: 58px; padding: 8px 16px 12px; gap: 12px; flex-wrap: wrap; }
-  body[data-pagina="castillo"] .nav .marca { order: 1; }
-  body[data-pagina="castillo"] .nav-links { position: static; order: 4; flex: 0 0 100%; width: 100%; display: none; flex-direction: column; align-items: stretch; gap: 3px; padding: 12px 0 0; border-top: 1px solid var(--linea); white-space: normal; }
-  body[data-pagina="castillo"] .nav-links.abierto { display: flex; }
-  body[data-pagina="castillo"] .nav-links a { padding: 11px 14px; border-radius: 12px; }
-  body[data-pagina="castillo"] .nav-links a:hover { background: var(--gris); }
-  body[data-pagina="castillo"] .castillo-nav-preferencias .castillo-github { display: grid; flex: none; place-items: center; width: 36px; height: 36px; margin-right: auto; padding: 0; border-radius: 50%; color: var(--tinta); }
-  body[data-pagina="castillo"] .castillo-nav-preferencias .castillo-github svg { display: block; width: 22px; height: 22px; }
-  body[data-pagina="castillo"] .castillo-nav-preferencias .castillo-github:hover { background: var(--gris); }
-  body[data-pagina="castillo"] .castillo-nav-preferencias { margin: 8px 4px 4px; padding: 14px 10px 4px; justify-content: flex-end; border-left: 0; }
-  .pagina-castillo .castillo-menu { display: grid; order: 2; margin-left: auto; }
-  body[data-pagina="castillo"] .nav-acciones { order: 3; margin-left: 0; }
+  .nav--principal { width: min(calc(100% - 36px), 540px); }
+  .nav--principal .contenedor { height: auto; min-height: 58px; padding: 8px 16px 12px; gap: 12px; flex-wrap: wrap; }
+  .nav--principal .marca { order: 1; }
+  .nav--principal .nav-links { position: static; order: 4; flex: 0 0 100%; width: 100%; display: none; flex-direction: column; align-items: stretch; gap: 3px; padding: 12px 0 0; border-top: 1px solid var(--linea); white-space: normal; }
+  .nav--principal .nav-links.abierto { display: flex; }
+  .nav--principal .nav-links a { padding: 11px 14px; border-radius: 12px; }
+  .nav--principal .nav-links a:hover { background: var(--gris); }
+  .nav--principal .castillo-nav-preferencias .castillo-github { display: grid; flex: none; place-items: center; width: 36px; height: 36px; margin-right: auto; padding: 0; border-radius: 50%; color: var(--tinta); }
+  .nav--principal .castillo-nav-preferencias .castillo-github svg { display: block; width: 22px; height: 22px; }
+  .nav--principal .castillo-nav-preferencias .castillo-github:hover { background: var(--gris); }
+  .nav--principal .castillo-nav-preferencias { margin: 8px 4px 4px; padding: 14px 10px 4px; justify-content: flex-end; border-left: 0; }
+  .nav--principal .castillo-menu { display: grid; order: 2; margin-left: auto; }
+  .nav--principal .nav-acciones { order: 3; margin-left: 0; }
   .castillo-recorrido--pinned { height: auto; }
   .castillo-recorrido--pinned .castillo-fijado { position: relative; top: auto; display: flex; height: auto; min-height: 0; flex-direction: column; overflow: hidden; }
   .castillo-arte { position: absolute; height: min(90svh, 760px); }
@@ -119,19 +119,19 @@ body[data-pagina="castillo"] .castillo-recorrido--pinned .castillo-fijado { posi
   .castillo-recorrido--pinned .castillo-copy { position: relative; inset: auto; width: auto; opacity: 1; visibility: visible; transform: none; }
   .castillo-copy h1, .castillo-copy h2 { font-size: clamp(34px, 9vw, 48px); }
   .castillo-indicador, .castillo-scroll { display: none; }
-  body[data-pagina="castillo"] .nav-acciones { gap: 6px; }
+  .nav--principal .nav-acciones { gap: 6px; }
   .castillo-tarjetas { grid-template-columns: 1fr; }
   .castillo-tarjetas .tarjeta { min-height: 0; }
   .castillo-privacidad-layout { grid-template-columns: 1fr; gap: 12px; }
   .castillo-descarga .descargas-alt { flex-direction: column; }
 }
 @media (max-width: 480px) {
-  body[data-pagina="castillo"] .nav { width: calc(100% - 40px); }
-  body[data-pagina="castillo"] .nav .contenedor { gap: 8px; padding: 8px 10px 12px; }
-  body[data-pagina="castillo"] .nav-acciones { gap: 4px; }
-  body[data-pagina="castillo"] .nav .marca span { display: inline; }
-  body[data-pagina="castillo"] .nav .btn--chico { width: auto; padding: 0 12px; }
-  body[data-pagina="castillo"] .nav .btn--chico span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .nav--principal { width: calc(100% - 40px); }
+  .nav--principal .contenedor { gap: 8px; padding: 8px 10px 12px; }
+  .nav--principal .nav-acciones { gap: 4px; }
+  .nav--principal .marca span { display: inline; }
+  .nav--principal .btn--chico { width: auto; padding: 0 12px; }
+  .nav--principal .btn--chico span { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
   .castillo-acciones { gap: 12px; margin-top: 20px; }
   .castillo-acciones .btn { height: 46px; padding-inline: 14px; font-size: 14px; }
   .castillo-text-link { font-size: 14px; }
@@ -151,24 +151,24 @@ body[data-pagina="castillo"] .castillo-recorrido--pinned .castillo-fijado { posi
 
 /* La barra es UNA sola silueta, como el notch de la app: orejas cóncavas de 24 px arriba, esquinas de 28 px abajo, un canto de luz fino y la sombra siguiendo
    el contorno entero. El cuerpo es un fondo recortado con máscara (no hay piezas pegadas) y la sombra/canto los pone un filtro sobre el conjunto. */
-body[data-pagina="castillo"] .nav { --e: 24px; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .34)); }
-body[data-pagina="castillo"] .nav .contenedor { isolation: isolate; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-body[data-pagina="castillo"] .nav .contenedor { border-radius: 0 0 28px 28px; background: var(--fondo); }
-body[data-pagina="castillo"] .nav .contenedor::before, body[data-pagina="castillo"] .nav .contenedor::after { content: ""; position: absolute; z-index: -1; top: 0; width: var(--e); height: var(--e); pointer-events: none; }
-body[data-pagina="castillo"] .nav .contenedor::before { left: calc(1px - var(--e)); background: radial-gradient(circle at 0 100%, transparent calc(var(--e) - .6px), var(--fondo) var(--e)); }
-body[data-pagina="castillo"] .nav .contenedor::after { right: calc(1px - var(--e)); background: radial-gradient(circle at 100% 100%, transparent calc(var(--e) - .6px), var(--fondo) var(--e)); }
+.nav--principal { --e: 24px; filter: drop-shadow(0 14px 24px rgba(0, 0, 0, .34)); }
+.nav--principal .contenedor { isolation: isolate; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.nav--principal .contenedor { border-radius: 0 0 28px 28px; background: var(--fondo); }
+.nav--principal .contenedor::before, .nav--principal .contenedor::after { content: ""; position: absolute; z-index: -1; top: 0; width: var(--e); height: var(--e); pointer-events: none; }
+.nav--principal .contenedor::before { left: calc(1px - var(--e)); background: radial-gradient(circle at 0 100%, transparent calc(var(--e) - .6px), var(--fondo) var(--e)); }
+.nav--principal .contenedor::after { right: calc(1px - var(--e)); background: radial-gradient(circle at 100% 100%, transparent calc(var(--e) - .6px), var(--fondo) var(--e)); }
 /* margen lateral para que las orejas no se salgan de la pantalla; en móvil son algo más pequeñas para que la barra conserve su ancho */
-body[data-pagina="castillo"] .nav { width: min(calc(100% - 2 * var(--e) - 8px), 1000px); }
-@media (max-width: 900px) { body[data-pagina="castillo"] .nav { width: min(calc(100% - 2 * var(--e) - 8px), 540px); } }
-@media (max-width: 600px) { body[data-pagina="castillo"] .nav { --e: 16px; width: calc(100% - 2 * var(--e)); } }
+.nav--principal { width: min(calc(100% - 2 * var(--e) - 8px), 1000px); }
+@media (max-width: 900px) { .nav--principal { width: min(calc(100% - 2 * var(--e) - 8px), 540px); } }
+@media (max-width: 600px) { .nav--principal { --e: 16px; width: calc(100% - 2 * var(--e)); } }
 
 /* Escritorio: tres zonas. Logo a la izquierda, enlaces centrados, y a la derecha el idioma junto a «Descargar» (JS mueve el idioma ahí; en móvil vive en el menú). */
 @media (min-width: 901px) {
-  body[data-pagina="castillo"] .nav .marca { flex: 1 1 0; }
-  body[data-pagina="castillo"] .nav-acciones { flex: 1 1 0; justify-content: flex-end; gap: 10px; }
-  body[data-pagina="castillo"] .nav-acciones .castillo-nav-preferencias { margin: 0; padding: 0; border: 0; }
-  body[data-pagina="castillo"] .nav-acciones .idioma-btn { height: 34px; min-width: 40px; padding: 0 10px; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; letter-spacing: .04em; transition: background .15s, color .15s; }
-  body[data-pagina="castillo"] .nav-acciones .idioma-btn:hover { background: rgba(255, 255, 255, .1); color: var(--tinta); }
+  .nav--principal .marca { flex: 1 1 0; }
+  .nav--principal .nav-acciones { flex: 1 1 0; justify-content: flex-end; gap: 10px; }
+  .nav--principal .nav-acciones .castillo-nav-preferencias { margin: 0; padding: 0; border: 0; }
+  .nav--principal .nav-acciones .idioma-btn { height: 34px; min-width: 40px; padding: 0 10px; border-radius: 999px; background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; letter-spacing: .04em; transition: background .15s, color .15s; }
+  .nav--principal .nav-acciones .idioma-btn:hover { background: rgba(255, 255, 255, .1); color: var(--tinta); }
 }
 
 /* Simulador «Míralo en el notch»: columna normal (cabecera → portátil → estados → leyenda), sin el recorrido fijado de la portada vieja, que tapaba los botones */
@@ -406,10 +406,10 @@ body[data-pagina="castillo"] .nav { width: min(calc(100% - 2 * var(--e) - 8px), 
 @property --navt { syntax: "<color>"; inherits: true; initial-value: #f2f2f4; }
 @property --navm { syntax: "<color>"; inherits: true; initial-value: #9a9aa1; }
 @property --navl { syntax: "<color>"; inherits: true; initial-value: rgba(255, 255, 255, .13); }
-body[data-pagina="castillo"] .nav { --navf: #000000; --navt: #f2f2f4; --navm: #9a9aa1; --navl: rgba(255, 255, 255, .13); transition: --navf .35s ease, --navt .35s ease, --navm .35s ease, --navl .35s ease;
+.nav--principal { --navf: #000000; --navt: #f2f2f4; --navm: #9a9aa1; --navl: rgba(255, 255, 255, .13); transition: --navf .35s ease, --navt .35s ease, --navm .35s ease, --navl .35s ease;
   --fondo: var(--navf); --tinta: var(--navt); --muted: var(--navm); --azul: var(--navt); --azul-txt: var(--navt); --linea: var(--navl); --gris: color-mix(in srgb, var(--navt) 8%, var(--navf)); }
-body[data-pagina="castillo"] .nav.nav--claro { --navf: #f7f8fb; --navt: #0b0c10; --navm: #5a5e6a; --navl: rgba(0, 0, 0, .12); }
-body[data-pagina="castillo"] .nav.nav--claro { filter: drop-shadow(0 12px 22px rgba(255, 255, 255, .1)) drop-shadow(0 4px 10px rgba(0, 0, 0, .35)); }
+.nav--principal.nav--claro { --navf: #f7f8fb; --navt: #0b0c10; --navm: #5a5e6a; --navl: rgba(0, 0, 0, .12); }
+.nav--principal.nav--claro { filter: drop-shadow(0 12px 22px rgba(255, 255, 255, .1)) drop-shadow(0 4px 10px rgba(0, 0, 0, .35)); }
 
 /* la línea de la letra se resalta casi al instante (la animación de color y el desplazamiento son cortos) para que no vaya detrás del reloj */
 .pagina-castillo .sim .lyr ol { transition: transform .4s cubic-bezier(.3, .7, .2, 1); }
@@ -431,12 +431,12 @@ body[data-pagina="castillo"] .nav.nav--claro { filter: drop-shadow(0 12px 22px r
 .pagina-castillo .sim .l-lyrics .prog i, .pagina-castillo .sim .l-music .prog i { border-radius: 2px; }
 .pagina-castillo .sim .l-lyrics .lyr li { font-weight: 700; color: rgba(255, 255, 255, .34); }
 .pagina-castillo .sim .l-lyrics .lyr li.on { color: #fff; }
-@media (max-width: 900px) { body[data-pagina="castillo"] .nav-links { overflow: hidden; } }
-body[data-pagina="castillo"] .nav .contenedor { transform-origin: 50% 0; }
+@media (max-width: 900px) { .nav--principal .nav-links { overflow: hidden; } }
+.nav--principal .contenedor { transform-origin: 50% 0; }
 /* al recogerse el menú, sus filas no se comprimen ni se recolocan: mantienen su tamaño y simplemente se recortan */
-@media (max-width: 900px) { body[data-pagina="castillo"] .nav-links > * { flex: none; } body[data-pagina="castillo"] .nav-links { contain: layout paint; } }
+@media (max-width: 900px) { .nav--principal .nav-links > * { flex: none; } .nav--principal .nav-links { contain: layout paint; } }
 /* la primera fila (logo, menú, Descargar) no se mueve ni 1 px mientras la barra cambia de altura: sus líneas no se reparten el espacio sobrante */
-@media (max-width: 900px) { body[data-pagina="castillo"] .nav .contenedor { align-content: flex-start; } }
+@media (max-width: 900px) { .nav--principal .contenedor { align-content: flex-start; } }
 
 /* ===== simulador de la barra de tareas (mascotas) ===== */
 .pagina-castillo .castillo-barra { padding: 72px 0 80px; text-align: center; }
@@ -555,44 +555,44 @@ body[data-pagina="castillo"] .nav .contenedor { transform-origin: 50% 0; }
 .pagina-castillo .marco-b .escritorio { --sx: 92px; }
 
 /* La barra blanca se recoge en la mascota del notch tras 25 s sin actividad en la página. */
-body[data-pagina="castillo"] .nav .contenedor { transition: width .55s cubic-bezier(.22,.75,.2,1), height .45s ease, min-height .45s ease, left .55s cubic-bezier(.22,.75,.2,1), transform .55s cubic-bezier(.22,.75,.2,1), padding .35s ease, gap .35s ease, border-radius .45s ease; }
-body[data-pagina="castillo"] .nav .marca,
-body[data-pagina="castillo"] .nav-links,
-body[data-pagina="castillo"] .castillo-menu,
-body[data-pagina="castillo"] .nav-acciones { transition: opacity .18s ease, visibility 0s linear; }
-body[data-pagina="castillo"] .nav-mascota { position: absolute; inset: 0; display: grid; place-items: center; color: #0b0c10; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
-body[data-pagina="castillo"] .nav-mascota svg { width: 56px; height: 30px; overflow: visible; }
-body[data-pagina="castillo"] .nav-mascota .nav-ojos-cerrados,
-body[data-pagina="castillo"] .nav-mascota .nav-ojos-abiertos,
-body[data-pagina="castillo"] .nav-mascota .nav-ojos-felices,
-body[data-pagina="castillo"] .nav-mascota .nav-rubor { opacity: 0; transition: opacity .2s ease; }
-body[data-pagina="castillo"] .nav-mascota .nav-ojos-abiertos { transform-box: fill-box; transform-origin: center; }
-body[data-pagina="castillo"] .nav-mascota .nav-ojos-abiertos ellipse { transform-box: fill-box; transform-origin: center; transition: transform .2s cubic-bezier(.2,.75,.2,1); }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] { --e: 14px; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .contenedor { left: 50%; right: auto; width: 132px; height: 42px; min-height: 42px; padding: 0; gap: 0; flex-wrap: nowrap; transform: translateX(-50%); border: 0; border-radius: 0 0 22px 22px; background: var(--navf); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .marca,
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .nav-links,
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .castillo-menu,
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .nav-acciones { position: absolute; opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, .18s; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota] .nav-mascota { opacity: 1; visibility: visible; transition-delay: .12s, 0s; }
-body[data-pagina="castillo"] .nav.nav--claro:is([data-mascota="mirando-izquierda"], [data-mascota="mirando-derecha"], [data-mascota="despierta"]) .nav-ojos-abiertos { opacity: 1; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="mirando-izquierda"] .nav-ojos-abiertos ellipse { transform: translateX(-2.6px); }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="mirando-derecha"] .nav-ojos-abiertos ellipse { transform: translateX(2.6px); }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="durmiendo"] .nav-ojos-cerrados { opacity: 1; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="despertando"] .nav-ojos-cerrados { opacity: 0; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="despertando"] .nav-ojos-abiertos { opacity: 1; animation: castillo-nav-despertar .42s cubic-bezier(.2,.75,.2,1) both; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="despierta"] .nav-ojos-abiertos { animation: castillo-nav-parpadeo var(--nav-blink-duration, 5.4s) var(--nav-blink-delay, 1s) infinite; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="saludo"] .nav-ojos-felices { opacity: 1; }
-body[data-pagina="castillo"] .nav.nav--claro[data-mascota="saludo"] .nav-rubor { opacity: .82; transition: opacity .2s ease .12s; }
+.nav--principal .contenedor { transition: width .55s cubic-bezier(.22,.75,.2,1), height .45s ease, min-height .45s ease, left .55s cubic-bezier(.22,.75,.2,1), transform .55s cubic-bezier(.22,.75,.2,1), padding .35s ease, gap .35s ease, border-radius .45s ease; }
+.nav--principal .marca,
+.nav--principal .nav-links,
+.nav--principal .castillo-menu,
+.nav--principal .nav-acciones { transition: opacity .18s ease, visibility 0s linear; }
+.nav--principal .nav-mascota { position: absolute; inset: 0; display: grid; place-items: center; color: #0b0c10; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s linear .18s; }
+.nav--principal .nav-mascota svg { width: 56px; height: 30px; overflow: visible; }
+.nav--principal .nav-mascota .nav-ojos-cerrados,
+.nav--principal .nav-mascota .nav-ojos-abiertos,
+.nav--principal .nav-mascota .nav-ojos-felices,
+.nav--principal .nav-mascota .nav-rubor { opacity: 0; transition: opacity .2s ease; }
+.nav--principal .nav-mascota .nav-ojos-abiertos { transform-box: fill-box; transform-origin: center; }
+.nav--principal .nav-mascota .nav-ojos-abiertos ellipse { transform-box: fill-box; transform-origin: center; transition: transform .2s cubic-bezier(.2,.75,.2,1); }
+.nav--principal.nav--claro[data-mascota] { --e: 14px; }
+.nav--principal.nav--claro[data-mascota] .contenedor { left: 50%; right: auto; width: 132px; height: 42px; min-height: 42px; padding: 0; gap: 0; flex-wrap: nowrap; transform: translateX(-50%); border: 0; border-radius: 0 0 22px 22px; background: var(--navf); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.nav--principal.nav--claro[data-mascota] .marca,
+.nav--principal.nav--claro[data-mascota] .nav-links,
+.nav--principal.nav--claro[data-mascota] .castillo-menu,
+.nav--principal.nav--claro[data-mascota] .nav-acciones { position: absolute; opacity: 0; visibility: hidden; pointer-events: none; transition-delay: 0s, .18s; }
+.nav--principal.nav--claro[data-mascota] .nav-mascota { opacity: 1; visibility: visible; transition-delay: .12s, 0s; }
+.nav--principal.nav--claro:is([data-mascota="mirando-izquierda"], [data-mascota="mirando-derecha"], [data-mascota="despierta"]) .nav-ojos-abiertos { opacity: 1; }
+.nav--principal.nav--claro[data-mascota="mirando-izquierda"] .nav-ojos-abiertos ellipse { transform: translateX(-2.6px); }
+.nav--principal.nav--claro[data-mascota="mirando-derecha"] .nav-ojos-abiertos ellipse { transform: translateX(2.6px); }
+.nav--principal.nav--claro[data-mascota="durmiendo"] .nav-ojos-cerrados { opacity: 1; }
+.nav--principal.nav--claro[data-mascota="despertando"] .nav-ojos-cerrados { opacity: 0; }
+.nav--principal.nav--claro[data-mascota="despertando"] .nav-ojos-abiertos { opacity: 1; animation: castillo-nav-despertar .42s cubic-bezier(.2,.75,.2,1) both; }
+.nav--principal.nav--claro[data-mascota="despierta"] .nav-ojos-abiertos { animation: castillo-nav-parpadeo var(--nav-blink-duration, 5.4s) var(--nav-blink-delay, 1s) infinite; }
+.nav--principal.nav--claro[data-mascota="saludo"] .nav-ojos-felices { opacity: 1; }
+.nav--principal.nav--claro[data-mascota="saludo"] .nav-rubor { opacity: .82; transition: opacity .2s ease .12s; }
 @keyframes castillo-nav-despertar { from { opacity: 0; transform: scaleY(.08); } to { opacity: 1; transform: scaleY(1); } }
 @keyframes castillo-nav-parpadeo { 0%, 91%, 100% { transform: scaleY(1); } 93%, 96% { transform: scaleY(.08); } }
 @media (prefers-reduced-motion: reduce) {
-  body[data-pagina="castillo"] .nav .contenedor,
-  body[data-pagina="castillo"] .nav-mascota,
-  body[data-pagina="castillo"] .nav .marca,
-  body[data-pagina="castillo"] .nav-links,
-  body[data-pagina="castillo"] .castillo-menu,
-  body[data-pagina="castillo"] .nav-acciones { transition: none; animation: none; }
+  .nav--principal .contenedor,
+  .nav--principal .nav-mascota,
+  .nav--principal .marca,
+  .nav--principal .nav-links,
+  .nav--principal .castillo-menu,
+  .nav--principal .nav-acciones { transition: none; animation: none; }
 }
 
 /* La cara de los notches de monitor y laptop conserva el mismo tamaño tierno del navbar. */

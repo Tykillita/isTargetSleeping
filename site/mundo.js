@@ -452,15 +452,6 @@
   setTimeout(function t() { pon(); setTimeout(t, 60000); }, 60000 - (Date.now() % 60000));
 })();
 
-// el botón de idioma: en escritorio se sienta junto a «Descargar»; en móvil vuelve a su sitio dentro del menú
-(() => {
-  const pref = document.querySelector('.castillo-nav-preferencias'), enlaces = document.getElementById('castillo-links'), acciones = document.querySelector('.nav-acciones');
-  if (!pref || !enlaces || !acciones) return;
-  const mq = matchMedia('(min-width: 901px)');
-  const coloca = () => (mq.matches ? acciones.insertBefore(pref, acciones.firstChild) : enlaces.appendChild(pref));
-  coloca(); mq.addEventListener('change', coloca);
-})();
-
 // la fecha del notch del simulador, con el idioma de la página
 (() => {
   const pon = () => {

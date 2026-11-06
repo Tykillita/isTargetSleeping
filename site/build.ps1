@@ -9,7 +9,7 @@ $site = $PSScriptRoot
 $media = Join-Path $site 'media'
 $publicUrl = 'https://istargetsleeping.web.app/'
 # Archivos propios de la web (la carpeta castillo/ con sus imágenes se copia entera)
-$siteFiles = 'site.css', 'site.js', 'simulador.js', 'escena.js', 'firebase.js', 'castillo.css', 'castillo.js', 'castillo-intro.js', 'castillo-fx.js', 'mundo.css', 'mundo.js', 'teleprompter.html', 'teleprompter.js'
+$siteFiles = 'site.css', 'site.js', 'simulador.js', 'escena.js', 'firebase.js', 'castillo.css', 'castillo.js', 'castillo-intro.js', 'castillo-fx.js', 'mundo.css', 'mundo.js'
 
 $files = @(
     'Assets\istargetsleeping-icon.svg',
@@ -150,6 +150,9 @@ if ($Out) {
     New-Item -ItemType Directory -Force $dest | Out-Null
     foreach ($file in $siteFiles) {
         Copy-Item -LiteralPath (Join-Path $site $file) -Destination $dest -Force
+    }
+    foreach ($name in 'teleprompter.html', 'teleprompter.js') {
+        Remove-Item -LiteralPath (Join-Path $dest $name) -Force -ErrorAction SilentlyContinue
     }
     Copy-Item -LiteralPath (Join-Path $site 'castillo') -Destination $dest -Recurse -Force
     $outputMedia = Join-Path $dest 'media'

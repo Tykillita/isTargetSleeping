@@ -1249,6 +1249,15 @@ document.querySelectorAll('.pie-idioma [data-lang]').forEach((b) => {
   b.addEventListener('click', () => elegirIdioma(b.dataset.lang));
 });
 
+// el mismo encabezado en todas las páginas: idioma y GitHub se agrupan junto a Descargar en escritorio
+(() => {
+  const pref = document.querySelector('.castillo-nav-preferencias'), enlaces = document.getElementById('castillo-links'), acciones = document.querySelector('.nav-acciones');
+  if (!pref || !enlaces || !acciones) return;
+  const mq = matchMedia('(min-width: 901px)');
+  const coloca = () => (mq.matches ? acciones.insertBefore(pref, acciones.firstChild) : enlaces.appendChild(pref));
+  coloca(); mq.addEventListener('change', coloca);
+})();
+
 // ---------- Tema claro / oscuro / sistema ----------
 // Sin preferencia guardada sigue a Windows; el <head> aplica las preferencias guardadas antes del CSS.
 

@@ -8,28 +8,38 @@
 <meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="castillo.css">
 <script>document.documentElement.dataset.theme='dark'</script>
 </head>
 <body data-pagina="targetos">
 
-<header class="nav">
+<header class="nav nav--principal">
   <div class="contenedor">
-    <a class="marca" href="index.html" aria-label="isTargetSleeping">
-      <img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28">
-      <span>isTargetSleeping</span>
-    </a>
-    <nav class="nav-links" aria-label="Secciones">
+    <a class="marca" href="index.html#inicio" aria-label="isTargetSleeping"><img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28"><span>isTargetSleeping</span></a>
+    <nav class="nav-links" id="castillo-links" aria-label="Secciones" data-i18n-aria="nav.secciones">
+      <a href="index.html#probar" data-i18n="nav.como">Cómo funciona</a>
       <a href="index.html#funciones" data-i18n="nav.funciones">Funciones</a>
-      <a href="index.html#control" data-i18n="nav.como">Cómo funciona</a>
       <a href="index.html#privacidad" data-i18n="nav.privacidad">Privacidad</a>
       <a href="index.html#instalar" data-i18n="nav.instalar">Instalar</a>
+      <a href="index.html#preguntas" data-i18n="nav.preguntas">Preguntas</a>
       <a href="novedades.html" data-i18n="nav.novedades">Novedades</a>
       <a href="targetos.html" aria-current="page" data-i18n="nav.targetos">TargetOS para ESP32</a>
+      <div class="castillo-nav-preferencias">
+        <a class="castillo-github" href="https://github.com/Tykillita/isTargetSleeping" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+        <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
+      </div>
     </nav>
+    <button class="castillo-menu" id="castillo-menu" type="button" aria-label="Menú de navegación" aria-controls="castillo-links" aria-expanded="false" data-i18n-aria="castillo.nav.menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-open" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-close" d="m6 6 12 12M18 6 6 18"/></svg></button>
     <div class="nav-acciones">
-      <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
-      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/latest"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="nav.descargar">Descargar</span></a>
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
     </div>
+    <span class="nav-pintura" aria-hidden="true"></span>
+    <span class="nav-mascota" aria-hidden="true"><svg viewBox="0 0 56 30" focusable="false">
+      <g class="nav-ojos-cerrados" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 12.5q5 1.2 10 0M33 12.5q5 1.2 10 0"/></g>
+      <g class="nav-ojos-abiertos" fill="currentColor"><ellipse cx="18" cy="11" rx="2.5" ry="4.7"/><ellipse cx="38" cy="11" rx="2.5" ry="4.7"/></g>
+      <g class="nav-ojos-felices" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 13q5-8 10 0M33 13q5-8 10 0"/></g>
+      <g class="nav-rubor" fill="#ff8fa8"><ellipse cx="14" cy="19" rx="4" ry="1.8"/><ellipse cx="42" cy="19" rx="4" ry="1.8"/></g>
+    </svg></span>
   </div>
 </header>
 
@@ -157,5 +167,6 @@ python tools/provision.py "$env:LOCALAPPDATA\isTargetSleeping\pet\provision.json
 </footer>
 
 <script src="site.js"></script>
+<script src="castillo.js"></script>
 </body>
 </html>
