@@ -51,7 +51,7 @@ Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD-PARTY-NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{userprograms}\{#AppName}"; Filename: "{app}\{#AppName}.exe"
+Name: "{userprograms}\{#AppName}"; Filename: "{app}\{#AppName}.exe"; AppUserModelID: "CodeSentry.isTargetSleeping"
 
 [Run]
 Filename: "{app}\{#AppName}.exe"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent

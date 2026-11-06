@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Complemento "Mascota conectada" de isTargetSleeping: un programa APARTE (no va enlazado al .exe de la app) que se
+    descarga como funcion adicional. Aloja el servidor local (Kestrel + SQLite) que habla con la mascota de la placa
+    ESP32 y con la web movil. isTargetSleeping solo lo detecta y lo arranca si esta instalado.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>isTargetSleeping-pet</AssemblyName>
+    <RootNamespace>IsTargetSleeping.Pet</RootNamespace>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)PET_VERSION').Trim())</Version>
+    <Product>isTargetSleeping Mascota conectada</Product>
+    <Company>CodeSentry - Tykillita</Company>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="WebPush" Version="1.0.13" />
+    <EmbeddedResource Include="Web\index.html" LogicalName="web.html" />
+    <EmbeddedResource Include="Web\sw.js" LogicalName="sw.js" />
+    <EmbeddedResource Include="Web\jsqr.js" LogicalName="jsqr.js" />
+    <EmbeddedResource Include="Web\manifest.webmanifest" LogicalName="manifest.webmanifest" />
+    <EmbeddedResource Include="Web\logo-180.png" LogicalName="logo-180.png" />
+    <EmbeddedResource Include="Web\logo-512.png" LogicalName="logo-512.png" />
+  </ItemGroup>
+
+</Project>

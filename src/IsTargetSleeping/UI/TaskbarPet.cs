@@ -28,6 +28,7 @@ public sealed class TaskbarPet : IDisposable
     private readonly PetClock petClock;
     private PetDirector director;
     private PixelCanvas? canvas;
+    private byte[]? frameBytes;
     private readonly Win32.WinEventProc foregroundProc;
     private IntPtr foregroundHook;
     private PetSurface? surface, lights;
@@ -153,6 +154,8 @@ public sealed class TaskbarPet : IDisposable
         snapshot = null;
         spot = null;
         drawn = null;
+        canvas = null;
+        frameBytes = null;
         hovered = false;
     }
 
@@ -387,10 +390,11 @@ public sealed class TaskbarPet : IDisposable
             species.Draw(canvas, pose, n);
             ParticleSprites.Draw(canvas, director.Particles.Live, n);
             if (thinking) ParticleSprites.Thinking(canvas, species.Anchors, n, now);
-            var bytes = canvas.ToBgra();
+            if (frameBytes is null || frameBytes.Length != width * height * 4) frameBytes = new byte[width * height * 4];
+            canvas.CopyToBgra(frameBytes);
             // Detrás del logo: lo que cae encima de él no se dibuja (y sus clics van a Inicio).
-            if (covered) Occlude(bytes, width, height, x, y, logo!.Bounds);
-            surface.Render(bytes, width, height, x, y);
+            if (covered) Occlude(frameBytes, width, height, x, y, logo!.Bounds);
+            surface.Render(frameBytes, width, height, x, y);
             drawn = (pose, x, y, n);
             drawnCovered = covered;
         }
@@ -442,6 +446,13 @@ public sealed class TaskbarPet : IDisposable
         }
         if (direction != 0) lastDirection = direction;
         lastMouseX = x;
+        Render();
+    }
+
+    /// Un agente (Claude Code) terminó o espera permiso: la mascota lo celebra o avisa con las reacciones de siempre.
+    public void ReactToAgent(PetReaction reaction)
+    {
+        brain.React(reaction, Now);
         Render();
     }
 

@@ -171,8 +171,8 @@ public sealed partial class PanelViewModel
         var ids = WidgetIds;
         if (!ids.Contains("code"))
         {
-            if (!WidgetLayout.CanAdd(ids, "code")) { trayStatus = tr("Quita otro widget para hacer sitio."); Notify(); return false; }
-            Prefs.SetList(PrefKeys.NotchWidgets, WidgetLayout.Add(ids, "code"));
+            if (!WidgetLayout.CanAdd(ids, "code", WidgetCatalog.MaxHomeCells, home: true)) { trayStatus = tr("Quita otro widget para hacer sitio."); Notify(); return false; }
+            Prefs.SetList(PrefKeys.NotchWidgets, WidgetLayout.Add(ids, "code", WidgetCatalog.MaxHomeCells, home: true));
         }
         if (!Hub.Code.SetRoot(folder)) { trayStatus = tr("La carpeta «%@» no existe.", folder); Notify(); return false; }
         Show(PanelView.Home);
@@ -247,6 +247,9 @@ public sealed partial class PanelViewModel
     private void RebuildTray()
     {
         Tray.Prune();
+        var paths = Tray.Entries.Select(e => e.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in trayThumbnails.Keys.Where(path => !paths.Contains(path)).ToArray()) trayThumbnails.Remove(path);
+        foreach (var path in trayStats.Keys.Where(path => !paths.Contains(path)).ToArray()) trayStats.Remove(path);
         foreach (var entry in Tray.Entries.Where(e => e.IsDirectory)) MeasureFolder(entry.Path);
         var signature = string.Join("|", Tray.Entries.Select(e => e.Path + ":" + (trayStats.TryGetValue(e.Path, out var s) ? $"{s.Files}/{s.Folders}/{s.Bytes}/{s.Truncated}" : "?"))) + "#" + Effective;
         if (signature == traySignature) return;

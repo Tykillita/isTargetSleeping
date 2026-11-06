@@ -138,7 +138,7 @@ public sealed class OllamaController
 
     public async Task Refresh()
     {
-        if (refreshing || IsDemo) return;
+        if (refreshing || IsDemo || UI.Motion.IsAnimating) return;   // el sondeo toca la interfaz: si el notch se está moviendo, espera al siguiente
         refreshing = true;
         try
         {
@@ -166,7 +166,7 @@ public sealed class OllamaController
             Memory = SystemMemory.Current();
             var runners = Loaded.Count > 0 ? await Task.Run(ProcessCpu.RunnerPids) : [];
             ModelMemory = runners.Count > 0 ? await Task.Run(() => runners.Sum(pid => Procs.PrivateBytes(pid) ?? 0)) : 0;
-            (Gpu, GpuAdapters) = await Task.Run(() => (IsTargetSleeping.Gpu.Read(runners), IsTargetSleeping.Gpu.ReadAll(runners)));
+            (Gpu, GpuAdapters) = await Task.Run(() => IsTargetSleeping.Gpu.ReadWithAll(runners));
             var (all, pref) = await Task.Run(() => (Detector.Available(), Detector.Preferred));
             Mechanisms = all;
             Preferred = pref;
@@ -312,6 +312,7 @@ public sealed class OllamaController
         IdleSeconds = idle;
 
         if (IdleLimit is not { } limit || idle < limit || BusyModel is not null || releasing) return;
+        if (PetLease.Active) { tracker.Touch(); return; }   // la mascota conectada está conversando: el modelo no se descarga (y el reloj de inactividad empieza al terminar)
         releasing = true;
         var released = Loaded.ToList();
         var names = released.Select(m => m.Name).ToArray();
@@ -561,6 +562,7 @@ public sealed class OllamaController
             catch (OperationCanceledException) { failure = null; }
             bool cancelled = job.Cancel.IsCancellationRequested;
             Pulling = null;
+            Changed?.Invoke();
             if (failure is not null) error = tr("No se pudo descargar %@: %@", model, failure);
             else if (!cancelled)
             {

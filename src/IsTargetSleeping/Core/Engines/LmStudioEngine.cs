@@ -40,7 +40,12 @@ public sealed class LmStudioEngine : EngineBase
         try
         {
             using var resp = await http.GetAsync($"http://127.0.0.1:{Port}/api/v0/models");
-            if (resp.IsSuccessStatusCode) models = JsonNode.Parse(await resp.Content.ReadAsStringAsync());
+            if (resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                models = JsonNode.Parse(body);
+                Models = LocalModels.ParseLmStudio(body);
+            }
         }
         catch { }
 
@@ -49,6 +54,7 @@ public sealed class LmStudioEngine : EngineBase
             Power = transitionSince is { } t && DateTime.Now - t < TimeSpan.FromSeconds(30) && Power == Power.Starting ? Power.Starting : Power.Off;
             Model = null;
             Memory = 0;
+            Models = [];
             return;
         }
         transitionSince = null;
@@ -75,6 +81,12 @@ public sealed class LmStudioEngine : EngineBase
     });
 
     public override Task Sleep() => Run(() => RunLms("unload --all"));
+
+    /// Los modelos descargados que ve el servidor local (vacío con el servidor apagado) y su estado.
+    public List<LocalModelInfo> Models { get; private set; } = [];
+
+    public Task LoadModel(string id) => Run(() => id.Contains('"') ? Task.FromResult<string?>("id no válido") : RunLms($"load \"{id}\" --yes"));
+    public Task UnloadModel(string id) => Run(() => id.Contains('"') ? Task.FromResult<string?>("id no válido") : RunLms($"unload \"{id}\""));
 
     private static Task<string?> RunLms(string args) => Task.Run(() =>
     {

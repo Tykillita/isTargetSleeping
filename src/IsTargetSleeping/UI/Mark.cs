@@ -6,7 +6,7 @@ using System.Windows.Media.Imaging;
 
 namespace IsTargetSleeping.UI;
 
-/// Ícono de la bandeja, de la cabecera y de la app, todos a partir de `Logo`.
+/// Íconos de la bandeja y de la app, incluida su adaptación para tamaños pequeños.
 public static class Mark
 {
     public enum Dot { None, On, Busy }
@@ -14,13 +14,7 @@ public static class Mark
     public static readonly Color Amber = Theme.Hex(0xD9A441);
     public static readonly Color IconBackground = Theme.Hex(0x0C0C0E);
 
-    /// Bandeja: la mira dibujada a mano para el tamaño del ícono, no el logo grande
-    /// reducido. Las marcas de la cruz son rectángulos encajados en píxeles, el anillo
-    /// tiene un trazo de píxeles enteros y el punto de estado es una insignia con su
-    /// hueco alrededor, como los de Windows. El ojo cuenta el estado del modelo: cerrado
-    /// (con pestañas) mientras duerme y abierto —el centro de la diana— si hay un modelo
-    /// en memoria. Blanco sobre barra oscura y casi negro sobre barra clara, como los
-    /// íconos del sistema; con Ollama apagado, algo más suave (sin quedar lavado).
+    /// Bandeja: mascota adaptada a la rejilla pequeña de Windows.
     public static BitmapSource StatusBitmap(int px, Dot dot, bool dimmed, bool lightTaskbar, bool awake = false) =>
         PoseBitmap(px, new TrayPose(1, 0, 0, 0, 0, 0, awake ? 1 : 0, dot == Dot.None ? 0 : 1, dot == Dot.Busy ? 1 : 0,
             dimmed ? TrayPose.DimInk : 1), lightTaskbar);
@@ -32,128 +26,50 @@ public static class Mark
         return Render(visual, px);
     }
 
-    /// Cualquier fotograma de la animación (`TrayMotion`) con la misma geometría: las
-    /// poses fijas dan exactamente el ícono de siempre. El anillo parcial y el arco del
-    /// radar son arcos con el mismo trazo y extremos redondos; el desplazamiento de las
-    /// marcas se redondea al píxel para que no se emborronen; el ojo pasa del párpado
-    /// (que se desvanece) a la diana (que crece).
     public static void DrawPose(DrawingContext dc, int px, TrayPose pose, bool lightTaskbar)
     {
-        var ink = Theme.WithOpacity(lightTaskbar ? Color.FromRgb(0x1A, 0x1A, 0x1A) : Colors.White, pose.Ink);
-        var brush = Theme.Brush(ink);
-
-        double u = px / 16.0;                                   // rejilla de diseño de 16
-        int sw = px < 20 ? 1 : px < 28 ? 2 : (int)Math.Round(px / 12.0);   // marcas: 1 px a 16, 2 a 20–24, 3 a 32…
-        // El anillo, un poco más grueso que 1 px a 16: un círculo de 1 px se reparte entre
-        // dos píxeles y se ve gris y punteado al lado de las marcas nítidas.
-        double ringW = px < 20 ? 1.5 : sw;
-        double c = Math.Floor(px / 2.0) - (sw % 2 == 1 ? 0.5 : 0);   // centro en medio píxel si el trazo es impar
-        int r = (int)Math.Round(5.25 * u, MidpointRounding.AwayFromZero);   // radio del anillo
-        int tick = (int)Math.Round(3.5 * u, MidpointRounding.AwayFromZero); // largo de cada marca desde el borde
-        int edge = (int)Math.Floor(c - r - sw / 2.0) - (int)Math.Round(1.5 * u);   // dónde empiezan las marcas
-        edge = Math.Max(0, edge);
-        var center = new Point(c, c);
-
-        // Insignia de estado: arriba a la derecha, con un hueco que recorta la mira. Al
-        // saltar crece (y el hueco con ella); al encoger se va apagando.
-        double dotRest = Math.Max(2.5, 2.6 * u), dotR = dotRest * pose.Dot;
-        var dotC = new Point(px - dotRest - 0.25 * u, dotRest + 0.25 * u);
-        bool badge = pose.Dot > 0.01;
-        if (badge)
-        {
-            double holeR = dotR + Math.Max(1, u) * Math.Min(1, pose.Dot);
-            var hole = new EllipseGeometry(dotC, holeR, holeR);
-            dc.PushClip(Geometry.Combine(new RectangleGeometry(new Rect(0, 0, px, px)), hole, GeometryCombineMode.Exclude, null));
-        }
-
-        // El anillo tenue bajo el radar.
-        if (pose.RingFaint > 0.01)
-            dc.DrawEllipse(null, new Pen(Theme.Brush(Theme.WithOpacity(ink, 0.32 * pose.RingFaint)), ringW), center, r, r);
-        // El anillo sólido, centrado abajo: se deshace ◠ → ◡ → ·.
-        if (pose.Ring >= 0.999) dc.DrawEllipse(null, new Pen(brush, ringW), center, r, r);
-        else if (pose.Ring > 0.001) DrawArc(dc, new Pen(brush, ringW), center, r, 180 - 180 * pose.Ring, 360 * pose.Ring);
-        // El arco del radar, de ámbar a tinta mientras se cierra en el anillo.
-        if (pose.ArcLength > 0.5)
-        {
-            var pen = new Pen(Theme.Brush(Lerp(ink, Theme.WithOpacity(Amber, pose.Ink), pose.ArcTint)), ringW);
-            if (pose.ArcLength >= 359.5) dc.DrawEllipse(null, pen, center, r, r);
-            else DrawArc(dc, pen, center, r, pose.ArcStart, pose.ArcLength);
-        }
-
-        // Las cuatro marcas, del borde hacia dentro, cruzando el anillo (con el rebote del fijado).
-        int shift = (int)Math.Round(pose.TickShift * u, MidpointRounding.AwayFromZero);
-        double half = sw / 2.0;
-        int near = edge + shift, far = px - edge - shift;
-        dc.DrawRectangle(brush, null, new Rect(c - half, near, sw, tick));            // N
-        dc.DrawRectangle(brush, null, new Rect(c - half, far - tick, sw, tick));      // S
-        dc.DrawRectangle(brush, null, new Rect(near, c - half, tick, sw));            // O
-        dc.DrawRectangle(brush, null, new Rect(far - tick, c - half, tick, sw));      // E
-
-        if (pose.Eye > 0.01)
-        {
-            // Despierto: el ojo abierto es el centro de la diana; al abrirse crece desde el párpado.
-            double pupil = Math.Max(1.5, 1.75 * u) * pose.Eye;
-            dc.DrawEllipse(brush, null, center, pupil, pupil);
-        }
+        dc.PushTransform(new ScaleTransform(px / 16.0, px / 16.0));
+        var rect = new Rect(0, 0, 16, 16);
+        dc.DrawRoundedRectangle(Theme.Brush(Color.FromRgb(18, 18, 20)), null, rect, 3.2, 3.2);
+        dc.PushClip(new RectangleGeometry(rect, 3.2, 3.2));
+        dc.PushOpacity(pose.Ink);
+        var face = Geometry.Parse("M0,9 C0.4,5.7 3,3.9 6.2,4.1 C9.2,4.3 10.5,5.7 12.5,6.6 C14.8,7.5 16,8.6 16,10.8 L16,16 0,16 Z");
+        dc.DrawGeometry(Brushes.White, null, face);
+        double glance = pose.ArcLength > 0 ? Math.Sin(pose.ArcStart * Math.PI / 180) * 0.65 : 0;
+        var eyePen = new Pen(Brushes.Black, 1.1) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
         if (pose.Eye < 0.99)
         {
-            // Dormido: el párpado cerrado con sus pestañas (sin ellas parece una sonrisa).
-            // Las pestañas salen de la curva del párpado hacia abajo y hacia fuera.
-            bool fading = pose.Eye > 0.01;
-            if (fading) dc.PushOpacity(1 - pose.Eye);
-            double lw = px < 20 ? 1.25 : sw * 0.85;
-            var lid = new Pen(brush, lw) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
-            // Párpado: ancho, altura de los extremos y cuánto baja (más plano a 16 px, o parece una ✓).
-            double w = 2.9 * u, top = c - (px < 20 ? 0.3 : 0.9) * u, sag = (px < 20 ? 1.1 : 1.9) * u;
-            var eye = new StreamGeometry();
-            using (var g = eye.Open())
+            dc.PushOpacity(1 - pose.Eye);
+            foreach (double x in new[] { 4.5, 10.5 })
             {
-                g.BeginFigure(new Point(c - w, top), false, false);
-                g.QuadraticBezierTo(new Point(c, top + 2 * sag), new Point(c + w, top), true, false);
-            }
-            dc.DrawGeometry(null, lid, eye);
-            // Punto de la curva a una fracción t del ancho (t = 0 es el centro).
-            Point On(double t) => new(c + t * w, top + sag * (1 - t * t));
-            double len = 1.25 * u;
-            var mid = On(0);
-            dc.DrawLine(lid, mid, new Point(mid.X, mid.Y + len));
-            if (px >= 20)
-            {
-                foreach (var t in new[] { -0.62, 0.62 })
+                var lid = new StreamGeometry();
+                using (var g = lid.Open())
                 {
-                    var p = On(t);
-                    dc.DrawLine(lid, p, new Point(p.X + Math.Sign(t) * 0.75 * len, p.Y + 0.8 * len));
+                    g.BeginFigure(new Point(x - 1.4 + glance, 9.4), false, false);
+                    g.QuadraticBezierTo(new Point(x + glance, 10.8), new Point(x + 1.4 + glance, 9.4), true, false);
                 }
+                dc.DrawGeometry(null, eyePen, lid);
             }
-            if (fading) dc.Pop();
-        }
-
-        if (badge)
-        {
             dc.Pop();
-            var tint = Lerp(Theme.Current.On, Amber, pose.DotTint);
-            dc.DrawEllipse(Theme.Brush(Theme.WithOpacity(tint, Math.Min(1, pose.Dot))), null, dotC, dotR, dotR);
         }
-    }
-
-    /// Arco de la circunferencia: grados, 0 arriba y en el sentido del reloj.
-    private static void DrawArc(DrawingContext dc, Pen pen, Point center, double r, double start, double length)
-    {
-        pen.StartLineCap = pen.EndLineCap = PenLineCap.Round;
-        Point At(double deg)
+        if (pose.Eye > 0.01)
         {
-            double a = deg * Math.PI / 180;
-            return new(center.X + r * Math.Sin(a), center.Y - r * Math.Cos(a));
+            dc.PushOpacity(pose.Eye);
+            foreach (double x in new[] { 4.5, 10.5 })
+                dc.DrawEllipse(Brushes.Black, null, new Point(x + glance, 9.6), 0.95, 1.4);
+            dc.Pop();
         }
-        var geometry = new StreamGeometry();
-        using (var g = geometry.Open())
+        dc.Pop();
+        dc.Pop();
+        double dot = Math.Max(pose.Dot, pose.ArcLength > 0.5 ? Math.Min(1, pose.ArcLength / 100) : 0);
+        if (dot > 0.01)
         {
-            g.BeginFigure(At(start), false, false);
-            if (length < 0.01) g.LineTo(At(start), true, false);   // un punto: el extremo redondo
-            else g.ArcTo(At(start + length), new Size(r, r), 0, length > 180, SweepDirection.Clockwise, true, false);
+            double radius = 2.15 * Math.Min(1, dot);
+            var center = new Point(13.4, 2.6);
+            dc.DrawEllipse(Theme.Brush(Color.FromRgb(18, 18, 20)), null, center, radius + 0.45, radius + 0.45);
+            dc.DrawEllipse(Theme.Brush(Lerp(Theme.Current.On, Amber, Math.Max(pose.DotTint, pose.ArcTint))), null, center, radius, radius);
         }
-        geometry.Freeze();
-        dc.DrawGeometry(null, pen, geometry);
+        dc.Pop();
     }
 
     private static Color Lerp(Color a, Color b, double t)
@@ -239,14 +155,8 @@ public static class Mark
         return Render(visual, px);
     }
 
-    /// Ícono de la app: el logo azul sobre fondo casi negro.
-    public static BitmapSource AppIcon(int px)
-    {
-        var visual = new DrawingVisual();
-        using (var dc = visual.RenderOpen())
-            Logo.DrawIcon(dc, px, Theme.Brush(IconBackground), Theme.Brush(Theme.Blue));
-        return Render(visual, px);
-    }
+    /// Ícono oficial de la app en el tamaño solicitado.
+    public static BitmapSource AppIcon(int px) => Logo.IconAt(px);
 
     public static BitmapSource Render(Visual visual, int px)
     {
@@ -326,16 +236,15 @@ public sealed class LogoView : FrameworkElement
     public Brush Color { get => (Brush)GetValue(ColorProperty); set => SetValue(ColorProperty, value); }
     public bool IsIcon { get => (bool)GetValue(IsIconProperty); set => SetValue(IsIconProperty, value); }
 
-    public LogoView() => Theme.Changed += InvalidateVisual;
+    public LogoView()
+    {
+        RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.HighQuality);
+        Theme.Changed += InvalidateVisual;
+    }
 
     protected override void OnRender(DrawingContext dc)
     {
         double side = Math.Min(ActualWidth, ActualHeight);
-        if (IsIcon)
-        {
-            Logo.DrawIcon(dc, side, Theme.Brush(Mark.IconBackground), Theme.Brush(Theme.Current.On));
-            return;
-        }
-        Logo.Draw(dc, new Rect(0, 0, side, side), Color, weight: side < 40 ? 1.25 : 1);
+        Logo.DrawIcon(dc, side, Theme.Brush(Mark.IconBackground), Color);
     }
 }

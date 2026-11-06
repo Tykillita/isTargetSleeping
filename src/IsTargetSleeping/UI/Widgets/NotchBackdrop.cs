@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -45,38 +46,87 @@ public sealed class NotchBackdrop
 
     public void Hide()
     {
+        Element.BeginAnimation(UIElement.OpacityProperty, null);
         Element.Opacity = 0;
         small = null;
     }
 
-    /// Copia, desenfoca y enseña la zona `area` (píxeles de pantalla). Devuelve false si no pudo (alto contraste, zona rara o error de GDI):
-    /// entonces el vidrio se queda sin fondo, solo con su tinte.
-    public bool Capture(Win32.RECT area, double scale)
+    /// Copia, desenfoca y enseña la zona `area` (píxeles de pantalla) SIN bloquear la interfaz: la copia y el desenfoque corren en otro hilo y la imagen entra (con un fundido)
+    /// cuando está lista; `done` se llama entonces en el hilo de la interfaz (también si no se pudo: alto contraste, zona rara, error de GDI o una herramienta de captura delante;
+    /// entonces el vidrio se queda sin fondo, solo con su tinte). Antes se esperaba a la copia hasta 250 ms con la interfaz parada, justo cuando el notch empezaba a abrirse
+    /// (con un fondo de vídeo, DWM tarda): la animación de apertura se saltaba casi todos sus fotogramas y se veía a golpes.
+    public void CaptureAsync(Win32.RECT area, double scale, Action done)
     {
         int width = area.Width, height = area.Height;
-        if (SystemParameters.HighContrast || width < 40 || height < 20 || (long)width * height > 6_000_000) { Hide(); return false; }
+        if (Theme.Flat || width < 40 || height < 20 || (long)width * height > 6_000_000) { Hide(); done(); return; }
+        // La copia de pantalla (GDI) espera a DWM: con la herramienta de recortes o una captura en curso puede quedarse esperando y dejar la pantalla
+        // congelada. Mientras una de esas herramientas está delante no se copia.
+        if (DateTime.UtcNow < pausedUntil || CaptureToolInFront()) { Hide(); done(); return; }
+        if (Interlocked.Exchange(ref grabbing, 1) == 1) return;   // una copia anterior sigue en marcha
+        var dispatcher = Element.Dispatcher;
+        int cell = Math.Max(4, (int)Math.Round(14 * scale));
+        _ = Task.Run(() =>
+        {
+            byte[]? reduced = null;
+            int w = 0, h = 0;
+            double luma = 0;
+            var clock = Stopwatch.StartNew();
+            try
+            {
+                var pixels = Grab(area);
+                if (pixels is not null)
+                {
+                    reduced = BackdropBlur.Reduce(pixels, width, height, cell, out w, out h, 1.7, 0.1);
+                    luma = BackdropBlur.Luminance(reduced, w, h);
+                }
+            }
+            catch (Exception e) { AppLog.Write($"fondo del notch: {e.Message}"); }
+            finally { Interlocked.Exchange(ref grabbing, 0); }
+            long took = clock.ElapsedMilliseconds;
+            dispatcher.BeginInvoke(() =>
+            {
+                // Si DWM tarda de más tres veces seguidas, el notch se queda sin fondo de vidrio unos minutos en vez de seguir copiando.
+                if (took > SlowGrabMs * 4 && ++slowGrabs >= 3)
+                {
+                    slowGrabs = 0;
+                    pausedUntil = DateTime.UtcNow.AddMinutes(10);
+                    AppLog.Write($"fondo del notch: la copia de pantalla tardó {took} ms tres veces seguidas; sin fondo de vidrio durante 10 minutos");
+                }
+                else if (took <= SlowGrabMs * 4) slowGrabs = 0;
+                if (reduced is null) { Hide(); done(); return; }
+                Luminance = luma;
+                small = reduced;
+                (smallWidth, smallHeight, cellDip) = (w, h, cell / scale);
+                Version++;
+                var image = BitmapSource.Create(w, h, 96, 96, PixelFormats.Bgra32, null, reduced, w * 4);
+                image.Freeze();
+                Element.Source = image;
+                Element.Width = width / scale;
+                Element.Height = height / scale;
+                bool visible = Element.Opacity > 0;
+                Element.BeginAnimation(UIElement.OpacityProperty, null);
+                if (visible) Element.Opacity = 1;
+                else Element.BeginAnimation(UIElement.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+                done();
+            });
+        });
+    }
+
+    private const int SlowGrabMs = 120;
+    private static DateTime pausedUntil;
+    private static int grabbing, slowGrabs;
+
+    /// La herramienta de recortes (o la barra de juegos) tiene el primer plano.
+    private static bool CaptureToolInFront()
+    {
+        var window = Win32.GetForegroundWindow();
+        if (window == IntPtr.Zero || Win32.GetWindowThreadProcessId(window, out int pid) == 0) return false;
         try
         {
-            var pixels = Grab(area);
-            if (pixels is null) return false;
-            var small = BackdropBlur.Reduce(pixels, width, height, Math.Max(4, (int)Math.Round(14 * scale)), out int w, out int h, 1.7, 0.1);
-            Luminance = BackdropBlur.Luminance(small, w, h);
-            this.small = small;
-            (smallWidth, smallHeight, cellDip) = (w, h, Math.Max(4, (int)Math.Round(14 * scale)) / scale);
-            Version++;
-            var image = BitmapSource.Create(w, h, 96, 96, PixelFormats.Bgra32, null, small, w * 4);
-            image.Freeze();
-            Element.Source = image;
-            Element.Width = width / scale;
-            Element.Height = height / scale;
-            Element.Opacity = 1;
-            return true;
+            using var process = Process.GetProcessById(pid);
+            return ProcessMonitor.IsScreenCapture(process.ProcessName);
         }
-        catch (Exception e)
-        {
-            AppLog.Write($"fondo del notch: {e.Message}");
-            return false;
-        }
+        catch { return false; }
     }
 
     /// Los píxeles de la pantalla en `area` (BGRA, de arriba abajo). Sin CAPTUREBLT, BitBlt deja fuera las ventanas en capas.

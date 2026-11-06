@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -12,11 +13,12 @@ namespace IsTargetSleeping.UI;
 public enum TabKind { Text, Image, Message }
 
 /// Una pestaña del widget Código: un archivo de texto (editable), una imagen (visor) o un aviso (binario o demasiado grande).
-public sealed class CodeTab(string path, TabKind kind) : INotifyPropertyChanged
+public sealed class CodeTab(string path, TabKind kind, string root) : INotifyPropertyChanged
 {
     private string text = "";
     private bool active;
     public string Path { get; } = path;
+    public string Root { get; } = root;
     public string Name { get; } = System.IO.Path.GetFileName(path);
     public TabKind Kind { get; } = kind;
     public TextDoc? Doc { get; set; }
@@ -54,9 +56,8 @@ public sealed record CodeRow(string Name, string Path, int Depth, bool IsDirecto
     public string Help => IsDirectory ? (Expanded ? tr("Contraer «%@»", Name) : tr("Expandir «%@»", Name)) : tr("Abrir «%@»", Name);
 }
 
-/// El widget Código: un IDE pequeño dentro del notch con el árbol de una carpeta, pestañas, visor de imágenes y editor de texto.
-/// Un widget de dos celdas siempre (el árbol y el editor no caben en una): no tiene vista compacta. En la vista corta
-/// solo resume (carpeta y pestañas), porque ahí no se puede escribir. Lo sin guardar vive solo en memoria.
+/// El widget Código: 1×1 resume el proyecto localmente; las vistas anchas abren su árbol, pestañas, visor de imágenes y editor.
+/// En la vista corta solo resume, porque ahí no se puede escribir. Lo sin guardar vive solo en memoria.
 public sealed class CodeWidget : WidgetModel
 {
     public const int MaxTabs = 8;
@@ -64,6 +65,9 @@ public sealed class CodeWidget : WidgetModel
     private readonly HashSet<string> expanded = new(StringComparer.OrdinalIgnoreCase);
     private string? root;
     private string status = "";
+    private string treeNotice = "";
+    private string projectStack = "";
+    private string projectSummary = "";
     private bool conflict;
     private readonly DispatcherTimer flash = new() { Interval = TimeSpan.FromSeconds(3) };
 
@@ -77,11 +81,12 @@ public sealed class CodeWidget : WidgetModel
             if (status == tr("Guardado")) { status = ""; SoftRaise(); }
         };
         OpenFolder = new Command(PickFolder);
-        Refresh = new Command(() => { RebuildRows(); Raise(); });
+        Refresh = new Command(() => { RefreshProjectOverview(); RebuildRows(); Raise(); });
         Save = new Command(() => DoSave(false));
         Overwrite = new Command(() => DoSave(true));
         Reload = new Command(ReloadActive);
         CloseActive = new Command(() => { if (Active is { } tab) CloseTab(tab); });
+        RefreshProjectOverview();
         RebuildRows();
     }
 
@@ -96,9 +101,16 @@ public sealed class CodeWidget : WidgetModel
     public ICommand Reload { get; }
     public ICommand CloseActive { get; }
 
+    /// La vista corta (2×1): los archivos y carpetas de primer nivel como píldoras y las pestañas abiertas, en vez de solo una línea de resumen.
+    public IReadOnlyList<CodeRow> PeekRows => Rows.Where(r => r.Depth == 0).Take(8).ToList();
+    public IReadOnlyList<CodeTab> PeekTabs => Tabs.Take(3).ToList();
+    public bool HasPeekRows => HasRoot && PeekRows.Count > 0;
+    public bool HasPeekTabs => Tabs.Count > 0;
     public bool HasRoot => root is not null;
     public bool NoRoot => root is null;
     public string RootName => root is null ? "" : Path.GetFileName(root.TrimEnd('\\', '/')) is { Length: > 0 } n ? n : root;
+    public string ProjectStack => projectStack;
+    public string ProjectSummary => projectSummary;
     public string EmptyText => tr("Elige una carpeta de proyecto para ver su árbol de archivos, abrirlos en pestañas y editarlos aquí mismo.");
     public string OpenFolderLabel => tr("Abrir carpeta");
     public string OpenFolderHelp => tr("Elige la carpeta del proyecto que enseña el árbol");
@@ -140,7 +152,7 @@ public sealed class CodeWidget : WidgetModel
 
     /// Lo que cabe en la cabecera: un conflicto se resume en pocas palabras (el texto entero va en el tooltip).
     public string ShortStatus => conflict ? tr("Cambió en el disco") : Status;
-    public string Status => status.Length > 0 ? status : Active is { Kind: TabKind.Text } t ? t.Dirty ? tr("Sin guardar") : "" : "";
+    public string Status => status.Length > 0 ? status : treeNotice.Length > 0 ? treeNotice : Active is { Kind: TabKind.Text } t ? t.Dirty ? tr("Sin guardar") : "" : "";
 
     /// La línea de la vista al pasar el ratón: carpeta y pestañas.
     public string Summary => root is null
@@ -176,15 +188,73 @@ public sealed class CodeWidget : WidgetModel
         expanded.Clear();
         prefs.SetList(PrefKeys.CodeRoot, [path]);
         status = "";
+        RefreshProjectOverview();
         RebuildRows();
         Raise();
         return true;
     }
 
+    /// Resumen local y heurístico: marcadores del proyecto y el primer párrafo legible del README, sin ejecutar ni subir archivos.
+    private void RefreshProjectOverview()
+    {
+        if (root is null)
+        {
+            projectStack = tr("Stack sin detectar");
+            projectSummary = tr("Elige una carpeta para ver su resumen y tecnologías.");
+            return;
+        }
+
+        bool Exists(string name) => File.Exists(Path.Combine(root, name));
+        bool Any(string pattern) => Directory.EnumerateFiles(root, pattern, SearchOption.TopDirectoryOnly).Any();
+        try
+        {
+            var stack = new List<string>();
+            bool dotnet = Any("*.sln") || Any("*.slnx") || Any("*.csproj");
+            if (dotnet) { stack.Add("C#"); stack.Add(".NET"); }
+            if (dotnet && Any("*.xaml")) stack.Add("WPF / XAML");
+            if (Exists("package.json")) stack.Add(Exists("tsconfig.json") ? "TypeScript / Node.js" : "Node.js");
+            if (Exists("pyproject.toml") || Exists("requirements.txt")) stack.Add("Python");
+            if (Exists("go.mod")) stack.Add("Go");
+            if (Exists("Cargo.toml")) stack.Add("Rust");
+            if (Exists("pom.xml") || Any("build.gradle*")) stack.Add("Java");
+            if (Exists("composer.json")) stack.Add("PHP");
+            if (Exists("pubspec.yaml")) stack.Add("Flutter / Dart");
+            projectStack = stack.Count == 0 ? tr("Stack sin detectar") : string.Join(" · ", stack.Distinct().Take(3));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            projectStack = tr("Stack sin detectar");
+        }
+        projectSummary = ReadProjectSummary(root) ?? tr("Abre un archivo del árbol para explorar el proyecto.");
+    }
+
+    private static string? ReadProjectSummary(string folder)
+    {
+        foreach (var name in new[] { "README.md", "README.es.md", "README.txt", "README" })
+        {
+            try
+            {
+                var chars = new char[16_384];
+                using var reader = new StreamReader(new FileStream(Path.Combine(folder, name), FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                int read = reader.Read(chars, 0, chars.Length);
+                foreach (var raw in new string(chars, 0, read).Split('\n'))
+                {
+                    var line = raw.Trim().TrimEnd('\r');
+                    if (line.Length == 0 || line.StartsWith('#') || line.StartsWith("![", StringComparison.Ordinal) || line.StartsWith("[!", StringComparison.Ordinal) || line.StartsWith("<!--", StringComparison.Ordinal)) continue;
+                    return line.Length > 150 ? line[..147] + "…" : line;
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { }
+        }
+        return null;
+    }
+
     private void RebuildRows()
     {
-        if (root is null) { Rows = []; return; }
-        Rows = CodeTree.Flatten(root, expanded).Select(e =>
+        if (root is null) { Rows = []; treeNotice = ""; return; }
+        var tree = CodeTree.Flatten(root, expanded);
+        treeNotice = tree.IsPartial ? tr("El árbol es parcial: falta acceso a una carpeta o se alcanzó el límite de filas.") : "";
+        Rows = tree.Rows.Select(e =>
         {
             var entry = e;
             return new CodeRow(e.Name, e.Path, e.Depth, e.IsDirectory, e.Expanded, Active?.Path == e.Path,
@@ -203,6 +273,13 @@ public sealed class CodeWidget : WidgetModel
 
     public void OpenFile(string path)
     {
+        var fileRoot = root;
+        if (fileRoot is null || !CodeTree.IsSafePath(fileRoot, path))
+        {
+            status = tr("No se pudo abrir «%@»: %@", Path.GetFileName(path), tr("El archivo ya no está dentro de la carpeta del proyecto."));
+            Raise();
+            return;
+        }
         if (Tabs.FirstOrDefault(t => string.Equals(t.Path, path, StringComparison.OrdinalIgnoreCase)) is { } existing) { Activate(existing); return; }
         if (Tabs.Count >= MaxTabs)
         {
@@ -210,7 +287,7 @@ public sealed class CodeWidget : WidgetModel
             Raise();
             return;
         }
-        var tab = CodeTree.IsImage(path) ? LoadImage(path) : LoadText(path);
+        var tab = CodeTree.IsImage(path) ? LoadImage(path, fileRoot) : LoadText(path, fileRoot);
         if (tab is null) { Raise(); return; }
         tab.Select = new Command(() => Activate(tab));
         tab.Close = new Command(() => CloseTab(tab));
@@ -218,17 +295,17 @@ public sealed class CodeWidget : WidgetModel
         Activate(tab);
     }
 
-    private CodeTab? LoadText(string path)
+    private CodeTab? LoadText(string path, string fileRoot)
     {
         var (doc, error, message) = TextFile.Load(path);
         var name = Path.GetFileName(path);
-        if (doc is not null) return new CodeTab(path, TabKind.Text) { Doc = doc, Text = doc.Text };
+        if (doc is not null) return new CodeTab(path, TabKind.Text, fileRoot) { Doc = doc, Text = doc.Text };
         if (error == TextFileError.Unreadable)
         {
             status = tr("No se pudo abrir «%@»: %@", name, message ?? tr("no existe"));
             return null;
         }
-        return new CodeTab(path, TabKind.Message)
+        return new CodeTab(path, TabKind.Message, fileRoot)
         {
             Message = error == TextFileError.TooBig
                 ? tr("«%@» es demasiado grande para mostrarlo aquí (máximo 1 MB).", name)
@@ -236,7 +313,7 @@ public sealed class CodeWidget : WidgetModel
         };
     }
 
-    private CodeTab? LoadImage(string path)
+    private CodeTab? LoadImage(string path, string fileRoot)
     {
         try
         {
@@ -247,11 +324,11 @@ public sealed class CodeWidget : WidgetModel
             image.DecodePixelWidth = 1200;
             image.EndInit();
             image.Freeze();
-            return new CodeTab(path, TabKind.Image) { Image = image };
+            return new CodeTab(path, TabKind.Image, fileRoot) { Image = image };
         }
         catch (Exception e) when (e is IOException or NotSupportedException or InvalidOperationException or UnauthorizedAccessException)
         {
-            return new CodeTab(path, TabKind.Message) { Message = tr("No se pudo mostrar «%@»: %@", Path.GetFileName(path), e.Message) };
+            return new CodeTab(path, TabKind.Message, fileRoot) { Message = tr("No se pudo mostrar «%@»: %@", Path.GetFileName(path), e.Message) };
         }
     }
 
@@ -284,6 +361,14 @@ public sealed class CodeWidget : WidgetModel
     private void DoSave(bool overwrite)
     {
         if (Active is not { Kind: TabKind.Text, Doc: { } doc } tab) return;
+        if (!CodeTree.IsSafePath(tab.Root, tab.Path))
+        {
+            status = tr("No se pudo guardar: %@", tr("El archivo ya no está dentro de la carpeta del proyecto."));
+            conflict = false;
+            tab.Raise();
+            SoftRaise();
+            return;
+        }
         bool wasDirty = tab.Dirty;
         var (saved, result, message) = TextFile.Save(doc, tab.Text, overwrite);
         tab.Doc = saved;
@@ -305,6 +390,12 @@ public sealed class CodeWidget : WidgetModel
     private void ReloadActive()
     {
         if (Active is not { Kind: TabKind.Text } tab) return;
+        if (!CodeTree.IsSafePath(tab.Root, tab.Path))
+        {
+            status = tr("No se pudo abrir «%@»: %@", tab.Name, tr("El archivo ya no está dentro de la carpeta del proyecto."));
+            SoftRaise();
+            return;
+        }
         var (doc, _, message) = TextFile.Load(tab.Path);
         if (doc is null)
         {

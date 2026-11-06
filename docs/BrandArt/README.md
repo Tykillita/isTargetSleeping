@@ -1,13 +1,13 @@
 # Provisional cover / Portada provisional
 
 The 1280 × 640 PNG is intended for GitHub Social preview and website sharing. The
-512 × 512 PNG is a transparent white version of the app's native sleeping target.
-Both come from `src/IsTargetSleeping/UI/Logo.cs`; the app icon remains unchanged.
+512 × 512 PNG is a transparent white version of the sleeping mascot mark.
+Both use the official mascot logo from `Assets/istargetsleeping-master.png` and `src/IsTargetSleeping/UI/Logo.cs`.
 The editable SVG cover is included alongside the PNG.
 
 El PNG de 1280 × 640 es para Social preview de GitHub y enlaces de la web. El PNG
-de 512 × 512 es una versión blanca transparente del símbolo nativo de la app.
-Ambos usan `src/IsTargetSleeping/UI/Logo.cs`; el icono de la app se conserva.
+de 512 × 512 es una versión blanca transparente de la mascota.
+Ambos usan el logo oficial de `Assets/istargetsleeping-master.png` y `src/IsTargetSleeping/UI/Logo.cs`.
 La portada SVG editable acompaña al PNG.
 
 From the repository root, on Windows with .NET 10 / Desde la raíz, en Windows:

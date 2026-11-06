@@ -1,20 +1,24 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
+using Windows.Devices.Bluetooth;
+using Windows.Devices.Enumeration;
 
 namespace IsTargetSleeping.UI;
 
-/// <summary>Lee cambios de brillo, teclas de bloqueo y salidas Bluetooth; no oculta los avisos de Windows.</summary>
+/// <summary>Lee cambios de brillo, teclas de bloqueo y aparatos Bluetooth; no oculta los avisos de Windows.</summary>
 public sealed class SystemHuds : IDisposable
 {
     private readonly KeyboardLocks locks;
     private int lastBrightness = -1, ticks;
-    private DateTime brightnessAt, bluetoothAt;
-    private HashSet<string>? bluetoothDevices;
-    private string bluetoothText = "";
+    private DateTime brightnessAt;
+    private Dictionary<string, string>? bluetoothDevices;
+    private (string Name, bool Connected, int? Percent, DeviceKind Kind, DateTime At)? bluetoothInfo;
+    private bool bluetoothReading;
     private bool brightnessEnabled, bluetoothEnabled;
     private bool brightnessReading;
     private CancellationTokenSource? brightnessEvents;
+    private readonly DispatcherTimer brightnessPoll = new() { Interval = TimeSpan.FromSeconds(1) };
     public long BrightnessRevision { get; private set; }
     public event Action? Changed;
 
@@ -29,35 +33,76 @@ public sealed class SystemHuds : IDisposable
             brightnessEvents?.Dispose();
             brightnessEvents = wantsBrightness ? new CancellationTokenSource() : null;
             if (brightnessEvents is { } watcher) _ = Task.Run(() => WatchBrightnessEvents(watcher.Token));
+            if (wantsBrightness) { PollBrightness(); brightnessPoll.Start(); } else brightnessPoll.Stop();
         }
         locks.BrightnessEnabled = wantsBrightness;
         bluetoothEnabled = ids.Contains("bluetooth");
         locks.Enabled = ids.Contains("locks");
+        if (locks.Enabled && !languagePoll.IsEnabled) { lastLanguage = 0; languagePoll.Start(); }
+        else if (!locks.Enabled) languagePoll.Stop();
     }
 
     public SystemHuds()
     {
         locks = new KeyboardLocks(() => Changed?.Invoke(), ProbeBrightnessKey);
+        brightnessPoll.Tick += (_, _) => PollBrightness();
+        languagePoll.Tick += (_, _) => PollLanguage();
+    }
+
+    /// El último cambio de brillo (porcentaje y cuándo), para el aviso del notch.
+    public (int Percent, DateTime At)? BrightnessInfo => lastBrightness >= 0 && brightnessAt != default ? (lastBrightness, brightnessAt) : null;
+    /// La última tecla de bloqueo pulsada (Mayús o Núm), si quedó encendida y cuándo.
+    public (bool Caps, bool On, DateTime At)? LockInfo => locks.Last;
+    /// El último cambio de idioma del teclado: nombre, etiqueta de dos letras y cuándo.
+    public (string Name, string Chip, DateTime At)? LanguageInfo => languageName.Length > 0 ? (languageName, languageChip, languageAt) : null;
+    private int lastLanguage;
+    private string languageName = "", languageChip = "";
+    private DateTime languageAt;
+    private readonly DispatcherTimer languagePoll = new() { Interval = TimeSpan.FromMilliseconds(450) };
+
+    /// Mira la distribución del teclado de la ventana de primer plano; avisa cuando cambia (no al empezar).
+    private void PollLanguage()
+    {
+        var window = Win32.GetForegroundWindow();
+        if (window == IntPtr.Zero) return;
+        uint thread = (uint)Win32.GetWindowThreadProcessId(window, out _);
+        int language = (int)((long)Win32.GetKeyboardLayout(thread) & 0xFFFF);
+        if (language == 0 || language == lastLanguage) return;
+        bool first = lastLanguage == 0;
+        lastLanguage = language;
+        if (first) return;
+        try
+        {
+            var culture = System.Globalization.CultureInfo.GetCultureInfo(language);
+            languageName = culture.DisplayName;
+            languageChip = culture.TwoLetterISOLanguageName.ToUpperInvariant();
+        }
+        catch { return; }
+        languageAt = DateTime.Now;
+        Changed?.Invoke();
     }
 
     public string? Brightness => lastBrightness >= 0 && DateTime.Now - brightnessAt < TimeSpan.FromSeconds(2.2) ? $"{lastBrightness} %" : null;
     public string? LocksText => locks.Recent;
-    public string? Bluetooth => DateTime.Now - bluetoothAt < TimeSpan.FromSeconds(3) ? bluetoothText : null;
+    /// El último aparato Bluetooth que se conectó o desconectó: nombre, si quedó conectado, su batería (si la dice) y cuándo.
+    public (string Name, bool Connected, int? Percent, DeviceKind Kind, DateTime At)? BluetoothInfo => bluetoothInfo;
 
     public void Refresh()
     {
         ticks++;
-        if (brightnessEnabled && !brightnessReading)
+        if (bluetoothEnabled) ReadBluetooth();
+    }
+
+    private void PollBrightness()
+    {
+        if (!brightnessEnabled || brightnessReading) return;
+        brightnessReading = true;
+        _ = Task.Run(ReadBrightness).ContinueWith(task => Application.Current?.Dispatcher.BeginInvoke(() =>
         {
-            brightnessReading = true;
-            _ = Task.Run(ReadBrightness).ContinueWith(task => Application.Current?.Dispatcher.BeginInvoke(() =>
-            {
-                brightnessReading = false;
-                if (!brightnessEnabled || task.Status != TaskStatus.RanToCompletion || task.Result < 0) return;
-                SetBrightness(task.Result, false);
-            }));
-        }
-        if (bluetoothEnabled && ticks % 3 == 0) ReadBluetooth();
+            brightnessReading = false;
+            if (!brightnessEnabled || task.Status != TaskStatus.RanToCompletion || task.Result < 0) return;
+            SetBrightness(task.Result, false);
+        }));
     }
 
     private void SetBrightness(int value, bool isEvent)
@@ -72,130 +117,107 @@ public sealed class SystemHuds : IDisposable
     {
         _ = Task.Run(async () =>
         {
-            await Task.Delay(80);
+            await Task.Delay(40);
             int value = ReadBrightness();
             Application.Current?.Dispatcher.BeginInvoke(() =>
             {
                 if (!brightnessEnabled || value < 0) return;
-                if (lastBrightness < 0) SetBrightness(value, false);
-                else if (lastBrightness != value) SetBrightness(value, true);
+                SetBrightness(value, true);
             });
         });
     }
 
     private void WatchBrightnessEvents(CancellationToken cancellation)
     {
-        object? locator = null, service = null, source = null, current = null;
-        try
+        // Si el vigilante se cae (WMI lo hace), se vuelve a conectar: antes terminaba tras el primer evento y el brillo dejaba de avisar.
+        // No se llama a ReleaseComObject: WMI reparte el mismo objeto de servicio entre las lecturas y el vigilante, y soltarlo a la fuerza estropeaba a los demás.
+        while (!cancellation.IsCancellationRequested)
         {
-            locator = Activator.CreateInstance(Type.GetTypeFromProgID("WbemScripting.SWbemLocator")!)!;
-            dynamic dynamicLocator = locator;
-            service = dynamicLocator.ConnectServer(".", @"root\wmi");
-            dynamic dynamicService = service;
-            source = dynamicService.ExecNotificationQuery("SELECT * FROM WmiMonitorBrightnessEvent");
-            dynamic dynamicSource = source;
-            while (!cancellation.IsCancellationRequested)
+            try
             {
-                try
+                var locator = Activator.CreateInstance(Type.GetTypeFromProgID("WbemScripting.SWbemLocator")!)!;
+                dynamic dynamicLocator = locator;
+                dynamic service = dynamicLocator.ConnectServer(".", @"root\wmi");
+                dynamic source = service.ExecNotificationQuery("SELECT * FROM WmiMonitorBrightnessEvent");
+                while (!cancellation.IsCancellationRequested)
                 {
-                    current = dynamicSource.NextEvent(1000);
-                    if (current is not null)
+                    try
                     {
-                        dynamic item = current;
-                        int value = (int)item.Brightness;
+                        dynamic item = source.NextEvent(1000);
+                        if (item is null) continue;
+                        int value = Convert.ToInt32(item.Properties_.Item("Brightness").Value);   // por Properties_: leer la propiedad directo falla a ratos con «Unspecified error»
                         Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
                             if (brightnessEnabled) SetBrightness(value, true);
                         });
                     }
+                    catch (COMException e) when (e.ErrorCode == unchecked((int)0x80043001)) { }   // sin evento en este segundo
                 }
-                catch (COMException e) when (e.ErrorCode == unchecked((int)0x80043001)) { }
-                finally { if (current is not null) { Release(current); current = null; } }
             }
-        }
-        catch { }
-        finally
-        {
-            if (current is not null) Release(current);
-            if (source is not null) Release(source);
-            if (service is not null) Release(service);
-            if (locator is not null) Release(locator);
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                AppLog.Write($"brillo: el vigilante de eventos se reconecta: {e.Message}");
+                if (cancellation.WaitHandle.WaitOne(2000)) return;
+            }
         }
     }
 
     private void ReadBluetooth()
     {
-        // shortcut: polls audio endpoint IDs every 3 seconds; replace with DeviceWatcher when Windows exposes reliable Bluetooth endpoint changes.
-        IMMDeviceEnumerator? enumerator = null;
-        IMMDeviceCollection? collection = null;
-        try
+        // shortcut: polls connected Bluetooth devices every second; replace with a DeviceWatcher if the delay shows.
+        if (bluetoothReading) return;
+        bluetoothReading = true;
+        _ = Task.Run(async () =>
         {
-            enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-            Marshal.ThrowExceptionForHR(enumerator.EnumAudioEndpoints(0, 1, out collection));
-            Marshal.ThrowExceptionForHR(collection.GetCount(out var count));
-            var current = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            for (uint i = 0; i < count; i++)
+            try
             {
-                if (collection.Item(i, out var device) < 0) continue;
-                if (device.GetId(out var id) >= 0 && (id.Contains("BTH", StringComparison.OrdinalIgnoreCase) || id.Contains("Bluetooth", StringComparison.OrdinalIgnoreCase))) current.Add(id);
-                Release(device);
+                var current = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var selector in new[] { BluetoothDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected), BluetoothLEDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected) })
+                    foreach (var device in await DeviceInformation.FindAllAsync(selector))
+                        if (device.Name.Length > 0) current[device.Id] = device.Name;
+                var before = bluetoothDevices;
+                bluetoothDevices = current;
+                if (before is null) return;   // la primera lectura solo anota lo que ya estaba conectado
+                var joined = current.Where(c => !before.ContainsKey(c.Key)).Select(c => c.Value).FirstOrDefault();
+                var left = before.Where(b => !current.ContainsKey(b.Key)).Select(b => b.Value).FirstOrDefault();
+                if (joined is null && left is null) return;
+                var name = joined ?? left!;
+                var at = DateTime.Now;
+                var kind = DeviceKinds.Classify(name);
+                void Publish(int? percent) => Application.Current?.Dispatcher.BeginInvoke(() => { bluetoothInfo = (name, joined is not null, percent, kind, at); Changed?.Invoke(); });
+                Publish(null);   // la tarjeta sale ya; la batería se añade cuando Windows la tiene
+                if (joined is null) return;
+                foreach (var wait in new[] { 700, 1300 })
+                {
+                    await Task.Delay(wait);
+                    try
+                    {
+                        var battery = (await DeviceBatteryReader.ReadAsync()).FirstOrDefault(b => name.Contains(b.Name, StringComparison.OrdinalIgnoreCase) || b.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+                        if (battery is not null) { Publish(battery.Percent); return; }
+                    }
+                    catch { }
+                }
             }
-            if (bluetoothDevices is not null && !current.SetEquals(bluetoothDevices))
-            {
-                bluetoothText = current.Count > bluetoothDevices.Count ? L10n.tr("Auricular conectado") : L10n.tr("Auricular desconectado");
-                bluetoothAt = DateTime.Now; Changed?.Invoke();
-            }
-            bluetoothDevices = current;
-        }
-        catch { }
-        finally { if (collection is not null) Release(collection); if (enumerator is not null) Release(enumerator); }
+            catch (Exception e) { AppLog.Write($"bluetooth: lectura falló: {e.Message}"); }
+            finally { bluetoothReading = false; }
+        });
     }
 
     private static int ReadBrightness()
     {
-        object? locator = null, service = null, items = null, currentItem = null;
         try
         {
-            locator = Activator.CreateInstance(Type.GetTypeFromProgID("WbemScripting.SWbemLocator")!)!;
+            var locator = Activator.CreateInstance(Type.GetTypeFromProgID("WbemScripting.SWbemLocator")!)!;
             dynamic dynamicLocator = locator;
-            service = dynamicLocator.ConnectServer(".", @"root\wmi");
-            dynamic dynamicService = service;
-            items = dynamicService.ExecQuery("SELECT CurrentBrightness FROM WmiMonitorBrightness");
-            foreach (dynamic item in (dynamic)items)
-            {
-                currentItem = item;
-                var value = (int)item.CurrentBrightness;
-                Release(currentItem); currentItem = null;
-                return value;
-            }
+            dynamic service = dynamicLocator.ConnectServer(".", @"root\wmi");
+            dynamic items = service.ExecQuery("SELECT CurrentBrightness FROM WmiMonitorBrightness");
+            foreach (dynamic item in items) return Convert.ToInt32(item.Properties_.Item("CurrentBrightness").Value);
         }
-        catch { }
-        finally { if (currentItem is not null) Release(currentItem); if (items is not null) Release(items); if (service is not null) Release(service); if (locator is not null) Release(locator); }
+        catch (Exception e) { AppLog.Write($"brillo: lectura falló: {e.Message}"); }
         return -1;
     }
 
-    public void Dispose() { brightnessEvents?.Cancel(); brightnessEvents?.Dispose(); locks.Dispose(); }
-    private static void Release(object value) { if (Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] private class MMDeviceEnumerator { }
-    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig] int EnumAudioEndpoints(int flow, int state, out IMMDeviceCollection devices);
-        void __GetDefaultAudioEndpoint();
-    }
-    [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-C0A2A1A5C3B9"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceCollection
-    {
-        [PreserveSig] int GetCount(out uint count);
-        [PreserveSig] int Item(uint index, out IMMDevice device);
-    }
-    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        void __Activate(); void __OpenPropertyStore();
-        [PreserveSig] int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
-    }
+    public void Dispose() { brightnessPoll.Stop(); brightnessEvents?.Cancel(); brightnessEvents?.Dispose(); locks.Dispose(); }
 }
 
 internal sealed class KeyboardLocks : IDisposable
@@ -222,6 +244,8 @@ internal sealed class KeyboardLocks : IDisposable
         set { if (brightnessEnabled == value) return; brightnessEnabled = value; SyncHook(); }
     }
     public string? Recent => Enabled && DateTime.Now - changedAt < TimeSpan.FromSeconds(2.2) ? text : null;
+    /// La última tecla de bloqueo pulsada: si fue Mayús, si quedó encendida y cuándo.
+    public (bool Caps, bool On, DateTime At)? Last { get; private set; }
     private string? text;
 
     public KeyboardLocks(Action changed, Action brightnessKey)
@@ -231,34 +255,81 @@ internal sealed class KeyboardLocks : IDisposable
         callback = OnKey;
     }
 
+    private Thread? hookThread;
+    private uint hookThreadId;
+
     private void SyncHook()
     {
-        if ((enabled || brightnessEnabled) && hook == IntPtr.Zero) hook = SetWindowsHookEx(WhKeyboardLl, callback, GetModuleHandle(null), 0);
-        else if (!enabled && !brightnessEnabled && hook != IntPtr.Zero) { UnhookWindowsHookEx(hook); hook = IntPtr.Zero; }
+        bool wanted = enabled || brightnessEnabled;
+        if (wanted && hookThread is null) StartHook();
+        else if (!wanted && hookThread is not null) StopHook();
     }
 
+    // El gancho de teclado global vive en un hilo propio con su bucle de mensajes. Windows espera la respuesta del gancho antes de
+    // entregar cada tecla a todo el sistema: en el hilo de la interfaz, cualquier pausa (animaciones, memoria, un cuelgue)
+    // retrasaba el teclado de todo el PC; así, la interfaz puede ir lenta sin tocar el teclado de nadie.
+    private void StartHook()
+    {
+        using var ready = new ManualResetEventSlim();
+        var thread = new Thread(() =>
+        {
+            hookThreadId = GetCurrentThreadId();
+            hook = SetWindowsHookEx(WhKeyboardLl, callback, GetModuleHandle(null), 0);
+            var installed = hook;
+            ready.Set();
+            if (installed == IntPtr.Zero) return;
+            while (GetMessage(out _, IntPtr.Zero, 0, 0) > 0) { }
+            UnhookWindowsHookEx(installed);
+        }) { IsBackground = true, Name = "isTargetSleeping keyboard hook", Priority = ThreadPriority.Highest };
+        thread.Start();
+        ready.Wait(TimeSpan.FromSeconds(2));
+        hookThread = hook == IntPtr.Zero ? null : thread;
+    }
+
+    private void StopHook()
+    {
+        var thread = hookThread;
+        hookThread = null;
+        if (thread is null) return;
+        PostThreadMessage(hookThreadId, 0x0012 /* WM_QUIT */, UIntPtr.Zero, IntPtr.Zero);
+        thread.Join(TimeSpan.FromSeconds(1));
+        hook = IntPtr.Zero;
+    }
+
+    /// Se ejecuta en el hilo del gancho: solo mira la tecla y avisa a la interfaz; nada de trabajo aquí.
     private IntPtr OnKey(int code, IntPtr wParam, IntPtr lParam)
     {
         if (code >= 0)
         {
-            var key = Marshal.PtrToStructure<KbdLlHookStruct>(lParam).VkCode;
+            uint key = (uint)Marshal.ReadInt32(lParam);   // KBDLLHOOKSTRUCT.vkCode es el primer campo
             int message = wParam.ToInt32();
-            if (brightnessEnabled && (message is WmKeyDown or WmSysKeyDown) && (key is 0x74 or 0x75 || key is >= 0x97 and <= 0x9F))
-                brightnessKey();
-            if (enabled && (message is WmKeyUp or WmSysKeyUp) && (key is 0x14 or 0x90))
+            bool brightness = brightnessEnabled && (message is WmKeyDown or WmSysKeyDown)
+                && (key is 0x74 or 0x75 or 0x87 or 0x88 || key is >= 0x97 and <= 0x9F);
+            bool lockKey = enabled && message is WmKeyUp or WmSysKeyUp && key is 0x14 or 0x90;
+            if (brightness) Application.Current?.Dispatcher.BeginInvoke(brightnessKey);
+            if (lockKey)
             {
-                text = L10n.tr(key == 0x14
-                    ? (GetKeyState((int)key) & 1) != 0 ? "Bloq. Mayús activado" : "Bloq. Mayús desactivado"
-                    : (GetKeyState((int)key) & 1) != 0 ? "Bloq. Núm activado" : "Bloq. Núm desactivado");
-                changedAt = DateTime.Now;
-                changed();
+                bool on = (GetKeyState((int)key) & 1) != 0;
+                Application.Current?.Dispatcher.BeginInvoke(() => ShowLock(key == 0x14, on));
             }
         }
-        return CallNextHookEx(hook, code, wParam, lParam);
+        return CallNextHookEx(IntPtr.Zero, code, wParam, lParam);
+    }
+
+    private void ShowLock(bool caps, bool on)
+    {
+        if (!enabled) return;
+        text = L10n.tr(caps ? on ? "Bloq. Mayús activado" : "Bloq. Mayús desactivado" : on ? "Bloq. Núm activado" : "Bloq. Núm desactivado");
+        changedAt = DateTime.Now;
+        Last = (caps, on, changedAt);
+        changed();
     }
 
     public void Dispose() { enabled = brightnessEnabled = false; SyncHook(); }
-    [StructLayout(LayoutKind.Sequential)] private struct KbdLlHookStruct { public uint VkCode, ScanCode, Flags, Time; public IntPtr ExtraInfo; }
+    [StructLayout(LayoutKind.Sequential)] private struct Msg { public IntPtr Hwnd; public uint Message; public UIntPtr WParam; public IntPtr LParam; public uint Time; public int X, Y; }
+    [DllImport("user32.dll")] private static extern int GetMessage(out Msg msg, IntPtr hwnd, uint min, uint max);
+    [DllImport("user32.dll")] private static extern bool PostThreadMessage(uint thread, uint message, UIntPtr wParam, IntPtr lParam);
+    [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
     private delegate IntPtr Win32Hook(int code, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int id, Win32Hook callback, IntPtr module, uint threadId);
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hook);

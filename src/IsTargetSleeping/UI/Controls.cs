@@ -129,6 +129,41 @@ public sealed class MemoryBar : FrameworkElement
     }
 }
 
+/// Barra de uso de una métrica (CPU, RAM, disco…): pista y relleno animado cuyo color avisa de la carga: acento hasta el 70 %, ámbar hasta el 90 % y rojo desde ahí.
+public sealed class UsageBar : FrameworkElement
+{
+    private static readonly DependencyProperty ShownProperty = DependencyProperty.Register(
+        "Shown", typeof(double), typeof(UsageBar), new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty UsedProperty = DependencyProperty.Register(
+        nameof(Used), typeof(double), typeof(UsageBar), new PropertyMetadata(0.0, (d, e) => ((UsageBar)d).Animate((double)e.NewValue)));
+    public double Used { get => (double)GetValue(UsedProperty); set => SetValue(UsedProperty, value); }
+
+    public UsageBar() { Height = 5; Loaded += (_, _) => Theme.Changed += InvalidateVisual; Unloaded += (_, _) => Theme.Changed -= InvalidateVisual; }
+
+    private void Animate(double to)
+    {
+        if (!IsLoaded) { SetValue(ShownProperty, to); return; }
+        BeginAnimation(ShownProperty, new DoubleAnimation(to, TimeSpan.FromMilliseconds(400)) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut } });
+    }
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        var t = Theme.Current;
+        double w = ActualWidth, h = ActualHeight, r = h / 2, shown = Math.Clamp((double)GetValue(ShownProperty), 0, 1);
+        var full = new Rect(0, 0, w, h);
+        dc.PushClip(new RectangleGeometry(full, r, r));
+        dc.DrawRectangle(Theme.Brush(t.Track), null, full);
+        if (shown > 0)
+        {
+            var tone = shown < 0.7 ? t.Accent : shown < 0.9 ? t.Warm : t.Danger;
+            var gradient = new LinearGradientBrush(Theme.WithOpacity(tone, 0.55), tone, 0);
+            gradient.Freeze();
+            dc.DrawRoundedRectangle(gradient, null, new Rect(0, 0, Math.Max(h, w * shown), h), r, r);
+        }
+        dc.Pop();
+    }
+}
+
 /// Gráfica de los últimos 30 min, con el mismo estilo que MemoryBar: la RAM en
 /// uso en gris translúcido y, encima, la parte del modelo en blanco.
 public sealed class Sparkline : FrameworkElement
@@ -169,7 +204,19 @@ public sealed class Sparkline : FrameworkElement
                     ctx.LineTo(new Point(w * i / (values.Count - 1), h * (1 - Math.Clamp(values[i], 0, 1))), true, false);
             }
             line.Freeze();
-            var pen = new Pen(Theme.Brush(t.Accent), 1.3);
+            // El área bajo la curva, que se funde hacia abajo: se lee de un vistazo cuánto y cómo ha ido.
+            var area = new StreamGeometry();
+            using (var ctx = area.Open())
+            {
+                ctx.BeginFigure(new Point(0, h), true, true);
+                for (int i = 0; i < values.Count; i++) ctx.LineTo(new Point(w * i / (values.Count - 1), h * (1 - Math.Clamp(values[i], 0, 1))), true, false);
+                ctx.LineTo(new Point(w, h), true, false);
+            }
+            area.Freeze();
+            var below = new LinearGradientBrush(Theme.WithOpacity(t.Accent, 0.32), Theme.WithOpacity(t.Accent, 0.02), 90);
+            below.Freeze();
+            dc.DrawGeometry(below, null, area);
+            var pen = new Pen(Theme.Brush(t.Accent), 1.4) { LineJoin = PenLineJoin.Round };
             dc.DrawGeometry(null, pen, line);
             return;
         }
@@ -217,39 +264,74 @@ public sealed class Sparkline : FrameworkElement
     }
 }
 
-/// Íconos pequeños de los .exe (para «Quién lo despierta»), con caché.
+/// Íconos de apps extraídos de Windows, con caché.
 public static class AppIcons
 {
     private static readonly Dictionary<string, ImageSource?> cache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, ImageSource?> largeCache = new(StringComparer.OrdinalIgnoreCase);
+    [System.Runtime.InteropServices.DllImport("shell32.dll", EntryPoint = "SHDefExtractIconW", CharSet = System.Runtime.InteropServices.CharSet.Unicode, ExactSpelling = true)]
+    private static extern int SHDefExtractIcon(string path, int index, uint flags, out IntPtr largeIcon, IntPtr smallIcon, uint iconSize);
     [System.Runtime.InteropServices.DllImport("ole32.dll")]
     private static extern int CoInitializeEx(IntPtr reserved, uint mode);
     [System.Runtime.InteropServices.DllImport("ole32.dll")]
     private static extern void CoUninitialize();
 
-    public static ImageSource? For(string? path)
+    public static ImageSource? For(string? path, bool large = false)
     {
         if (string.IsNullOrEmpty(path)) return null;
         lock (cache)
         {
-            if (cache.TryGetValue(path, out var known)) return known;
-            if (cache.Count >= 2048) cache.Remove(cache.Keys.First());
-            if (!File.Exists(path)) return cache[path] = null;
+            var icons = large ? largeCache : cache;
+            if (icons.TryGetValue(path, out var known)) return known;
+            if (icons.Count >= 2048) icons.Remove(icons.Keys.First());
+            if (!File.Exists(path)) return icons[path] = null;
             ImageSource? image = null;
-            var info = new Win32.SHFILEINFO();
-            if (Win32.SHGetFileInfo(path, 0, ref info, System.Runtime.InteropServices.Marshal.SizeOf<Win32.SHFILEINFO>(),
-                    Win32.SHGFI_ICON | Win32.SHGFI_SMALLICON) != IntPtr.Zero && info.hIcon != IntPtr.Zero)
+            IntPtr hIcon = IntPtr.Zero;
+            if (large && string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase))
             {
+                try { SHDefExtractIcon(path, 0, 0, out hIcon, IntPtr.Zero, 256); }
+                catch { }
+            }
+            if (hIcon == IntPtr.Zero)
+            {
+                var info = new Win32.SHFILEINFO();
+                if (Win32.SHGetFileInfo(path, 0, ref info, System.Runtime.InteropServices.Marshal.SizeOf<Win32.SHFILEINFO>(),
+                        Win32.SHGFI_ICON | (large ? Win32.SHGFI_LARGEICON : Win32.SHGFI_SMALLICON)) != IntPtr.Zero)
+                    hIcon = info.hIcon;
+            }
+            if (hIcon != IntPtr.Zero)
                 try
                 {
-                    image = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(info.hIcon, Int32Rect.Empty,
+                    var bitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHIcon(hIcon, Int32Rect.Empty,
                         System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
+                    image = large ? TrimTransparent(bitmap) : bitmap;
                     image.Freeze();
                 }
                 catch { }
-                finally { Win32.DestroyIcon(info.hIcon); }
-            }
-            return cache[path] = image;
+                finally { Win32.DestroyIcon(hIcon); }
+            return icons[path] = image;
         }
+    }
+
+    private static ImageSource TrimTransparent(System.Windows.Media.Imaging.BitmapSource source)
+    {
+        int width = source.PixelWidth, height = source.PixelHeight;
+        if (width <= 0 || height <= 0) return source;
+        var pixels = new System.Windows.Media.Imaging.FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+        var bytes = new byte[checked(width * height * 4)];
+        pixels.CopyPixels(bytes, width * 4, 0);
+        int left = width, top = height, right = -1, bottom = -1;
+        for (int y = 0; y < height; y++)
+            for (int x = 0, offset = y * width * 4 + 3; x < width; x++, offset += 4)
+                if (bytes[offset] != 0)
+                {
+                    left = Math.Min(left, x); top = Math.Min(top, y);
+                    right = Math.Max(right, x); bottom = Math.Max(bottom, y);
+                }
+        if (right < left || left == 0 && top == 0 && right == width - 1 && bottom == height - 1) return source;
+        var cropped = new System.Windows.Media.Imaging.CroppedBitmap(source, new Int32Rect(left, top, right - left + 1, bottom - top + 1));
+        cropped.Freeze();
+        return cropped;
     }
 
     public static Task<IReadOnlyDictionary<string, ImageSource?>> LoadAsync(IEnumerable<string?> paths)
@@ -332,5 +414,55 @@ public sealed class ActivityRing : FrameworkElement
             path.ArcTo(end, new Size(radius, radius), 0, sweep > 180, SweepDirection.Clockwise, true, false);
         }
         dc.DrawGeometry(null, new Pen(Theme.Brush(theme.Accent), stroke) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, arc);
+    }
+}
+
+/// El anillo de batería de la pastilla cerrada: un aro tenue con un arco blanco que marca la carga (rojo con poca y sin enchufar) y un rayo dentro
+/// mientras carga. Se repinta con cada dato nuevo y con el tema.
+public sealed class BatteryRing : FrameworkElement
+{
+    public static readonly DependencyProperty FractionProperty = DependencyProperty.Register(nameof(Fraction), typeof(double), typeof(BatteryRing),
+        new FrameworkPropertyMetadata(0d, FrameworkPropertyMetadataOptions.AffectsRender));
+    public static readonly DependencyProperty ChargingProperty = DependencyProperty.Register(nameof(Charging), typeof(bool), typeof(BatteryRing),
+        new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+    /// El color del anillo mientras carga (sin él, el del tema): el verde de la cabecera de la vista corta.
+    public Brush? ChargingBrush { get; set; }
+    public double Fraction { get => (double)GetValue(FractionProperty); set => SetValue(FractionProperty, value); }
+    public bool Charging { get => (bool)GetValue(ChargingProperty); set => SetValue(ChargingProperty, value); }
+
+    protected override void OnRender(DrawingContext dc)
+    {
+        double size = Math.Min(ActualWidth, ActualHeight), stroke = Math.Max(2, size / 8), radius = (size - stroke) / 2;
+        var center = new Point(size / 2, size / 2);
+        var theme = Theme.Current;
+        bool low = !Charging && Fraction <= 0.15;
+        var ink = Charging && ChargingBrush is not null ? ChargingBrush : Theme.Brush(low ? theme.Danger : theme.Fg);
+        dc.DrawEllipse(null, new Pen(Theme.Brush(Theme.WithOpacity(theme.Fg, 0.28)), stroke), center, radius, radius);
+        double sweep = Math.Clamp(Fraction, 0.04, 1) * 360;
+        if (sweep >= 359.5)
+            dc.DrawEllipse(null, new Pen(ink, stroke), center, radius, radius);
+        else
+        {
+            var start = new Point(center.X, center.Y - radius);
+            double angle = (sweep - 90) * Math.PI / 180;
+            var end = new Point(center.X + radius * Math.Cos(angle), center.Y + radius * Math.Sin(angle));
+            var arc = new StreamGeometry();
+            using (var path = arc.Open())
+            {
+                path.BeginFigure(start, false, false);
+                path.ArcTo(end, new Size(radius, radius), 0, sweep > 180, SweepDirection.Clockwise, true, false);
+            }
+            dc.DrawGeometry(null, new Pen(ink, stroke) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round }, arc);
+        }
+        if (!Charging) return;
+        // El rayo: dos triángulos que se tocan en el centro.
+        double u = size / 18;
+        var bolt = new StreamGeometry();
+        using (var path = bolt.Open())
+        {
+            path.BeginFigure(new Point(10.2 * u, 3.6 * u), true, true);
+            foreach (var (x, y) in new[] { (5.6, 9.8), (8.6, 9.8), (7.6, 14.6), (12.4, 8.2), (9.4, 8.2) }) path.LineTo(new Point(x * u, y * u), true, false);
+        }
+        dc.DrawGeometry(ink, null, bolt);
     }
 }

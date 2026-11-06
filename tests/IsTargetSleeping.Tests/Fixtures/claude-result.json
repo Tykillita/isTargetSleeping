@@ -1,0 +1,1 @@
+{"type":"result","subtype":"success","is_error":false,"result":"listo","session_id":"b1c3ecfd-cf82-45ea-afb9-aca9799a2cae","total_cost_usd":0.0042,"usage":{"input_tokens":120,"cache_creation_input_tokens":3000,"cache_read_input_tokens":500,"output_tokens":45}}

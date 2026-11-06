@@ -13,13 +13,135 @@
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="12,6" />
     </Style>
+    <!-- Flecha de página (como en Nusa): un círculo gris de 16 px con un chevron blanco fino y pequeño -->
+    <Style x:Key="PageArrow" TargetType="Button" BasedOn="{StaticResource Plain}">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="44" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Grid Background="Transparent">
+              <Ellipse x:Name="disc" Width="16" Height="16" Fill="#474747" />
+              <ContentPresenter x:Name="chev" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="disc" Property="Fill" Value="#5C5C5C" /></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="disc" Property="Fill" Value="#8E8E93" /></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </UserControl.Resources>
-  <!-- La versión corta del notch (al pasar el ratón): los widgets que elijas en la página Widgets. Un clic abre el Home. -->
-  <StackPanel Margin="8,4,8,4" MinHeight="60">
-    <ItemsControl ItemsSource="{Binding PeekWidgets}" Focusable="False" HorizontalAlignment="Center">
-      <ItemsControl.ItemsPanel><ItemsPanelTemplate><ui:MasonryPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-    </ItemsControl>
-    <TextBlock Text="{Binding PeekEmpty}" Style="{StaticResource Hint}" Margin="14,12" TextWrapping="Wrap"
-               Visibility="{Binding NoPeekWidgets, Converter={StaticResource Visible}}" />
+  <!-- La versión corta del notch (al pasar el ratón): una página por widget (o por 2 o 4, según Ajustes); cabecera con batería, fecha y hora; flechas,
+       puntos, rueda y ← → para cambiar de página; el mini dock sale por debajo al pasar el ratón por los puntos. Las medidas son las de Nusa (420 × 140). -->
+  <StackPanel>
+  <Grid x:Name="top" MinHeight="60">
+    <!-- Con la vista de letras, el borde de abajo se tiñe con el color de la portada -->
+    <StackPanel x:Name="pageHost" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="{Binding PeekContentAlign}" Margin="{Binding PeekContentMargin}">
+      <ItemsControl ItemsSource="{Binding PeekWidgets}" Focusable="False" HorizontalAlignment="Center">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><ui:MasonryPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      </ItemsControl>
+      <TextBlock Text="{Binding PeekEmpty}" Style="{StaticResource Hint}" Margin="14,12" TextWrapping="Wrap"
+                 Visibility="{Binding NoPeekWidgets, Converter={StaticResource Visible}}" />
+    </StackPanel>
+    <Canvas IsHitTestVisible="False"><Image x:Name="oldPage" Stretch="Fill" Visibility="Collapsed" /></Canvas>
+    <!-- Fecha y hora centradas en la vista corta; el indicador en vivo queda anclado a la derecha. -->
+    <Grid x:Name="header" Grid.Row="0" Width="420" Height="30" VerticalAlignment="Top" HorizontalAlignment="Center" IsHitTestVisible="False"
+            Visibility="{Binding ShowPeekHeader, Converter={StaticResource Visible}}">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <ui:BatteryRing x:Name="headerRing" Width="18" Height="18" Margin="0,0,7,0" />
+        <TextBlock x:Name="headerDate" FontSize="14" Foreground="{DynamicResource Fg}" />
+        <TextBlock x:Name="headerTime" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource Fg}" Margin="7,0,0,0" />
+      </StackPanel>
+      <Canvas Width="19" Height="19" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8.5,16,0">
+      <!-- El ecualizador de la pastilla cerrada (cuatro barras gruesas que suben y bajan), en la esquina de la cabecera mientras suena la música -->
+      <!-- La campana de avisos (como en Nusa: blanca con un punto rojo); ocupa el sitio del ecualizador mientras haya un aviso sin ver -->
+      <Canvas x:Name="headerBell" Width="18" Height="18" Visibility="Collapsed">
+        <Canvas x:Name="bellBody" Width="18" Height="18" RenderTransformOrigin="0.5,0.13">
+          <Canvas.RenderTransform><RotateTransform Angle="0" /></Canvas.RenderTransform>
+          <Path Data="M9,2.8 C6.1,2.8 4.8,5 4.8,7.4 V10.6 L3.2,13.2 H14.8 L13.2,10.6 V7.4 C13.2,5 11.9,2.8 9,2.8 Z" Stroke="White" StrokeThickness="1.9" StrokeLineJoin="Round" />
+          <Path Data="M7.3,15.3 A1.8,1.8 0 0 0 10.7,15.3" Stroke="White" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+        </Canvas>
+        <Ellipse Canvas.Left="11.2" Canvas.Top="0.2" Width="6" Height="6" Fill="#FF3B30" />
+      </Canvas>
+      <!-- El Pomodoro en marcha (como en Nusa): un disco con aro coral y un mar de arena que se mueve dentro mientras pasa el tiempo (dos olas que corren en sentidos contrarios y se balancean) -->
+      <Canvas x:Name="headerPomo" Width="19" Height="19" Visibility="Collapsed">
+        <Ellipse Width="19" Height="19" Fill="#2A0A14" />
+        <Canvas x:Name="pomoSand" Width="19" Height="19">
+          <Canvas.Clip><EllipseGeometry Center="9.5,9.5" RadiusX="9.3" RadiusY="9.3" /></Canvas.Clip>
+          <Path x:Name="pomoWaveBack" Fill="#B8403F" Data="M0,0 Q4.75,-4 9.5,0 T19,0 T28.5,0 T38,0 V24 H0 Z" Canvas.Top="9">
+            <Path.RenderTransform><TranslateTransform X="0" /></Path.RenderTransform>
+          </Path>
+          <Path x:Name="pomoWaveFront" Fill="#F25A56" Data="M0,0 Q4.75,-3.2 9.5,0 T19,0 T28.5,0 T38,0 V24 H0 Z" Canvas.Top="10.5" RenderTransformOrigin="0,0">
+            <Path.RenderTransform><TransformGroup><ScaleTransform ScaleY="1" /><TranslateTransform X="-19" /></TransformGroup></Path.RenderTransform>
+          </Path>
+        </Canvas>
+        <Ellipse Width="19" Height="19" Stroke="#E8736F" StrokeThickness="1" />
+      </Canvas>
+      <Canvas x:Name="headerEq" Width="18" Height="18" Visibility="Collapsed">
+        <Rectangle x:Name="eq1" Canvas.Left="1.6" Canvas.Top="2" Width="2.8" Height="14" RadiusX="1.4" RadiusY="1.4" Fill="White" RenderTransformOrigin="0.5,1"><Rectangle.RenderTransform><ScaleTransform ScaleY="0.3" /></Rectangle.RenderTransform></Rectangle>
+        <Rectangle x:Name="eq2" Canvas.Left="5.7" Canvas.Top="2" Width="2.8" Height="14" RadiusX="1.4" RadiusY="1.4" Fill="White" RenderTransformOrigin="0.5,1"><Rectangle.RenderTransform><ScaleTransform ScaleY="1" /></Rectangle.RenderTransform></Rectangle>
+        <Rectangle x:Name="eq3" Canvas.Left="9.8" Canvas.Top="2" Width="2.8" Height="14" RadiusX="1.4" RadiusY="1.4" Fill="White" RenderTransformOrigin="0.5,1"><Rectangle.RenderTransform><ScaleTransform ScaleY="0.45" /></Rectangle.RenderTransform></Rectangle>
+        <Rectangle x:Name="eq4" Canvas.Left="13.9" Canvas.Top="2" Width="2.8" Height="14" RadiusX="1.4" RadiusY="1.4" Fill="White" RenderTransformOrigin="0.5,1"><Rectangle.RenderTransform><ScaleTransform ScaleY="0.85" /></Rectangle.RenderTransform></Rectangle>
+      </Canvas>
+    </Canvas>
+    </Grid>
+    <Button Grid.Row="0" Style="{StaticResource PageArrow}" Click="OnPrev" HorizontalAlignment="Left" Margin="6,0,0,0"
+            AutomationProperties.Name="{Binding PrevPageLabel}" ToolTip="{Binding PrevPageLabel}"
+            Visibility="{Binding ShowPageArrows, Converter={StaticResource Visible}}"><Path Data="M 6.2,0 L 1.4,4 L 6.2,8" Stroke="White" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="8" Height="8" Stretch="None" /></Button>
+    <Button Grid.Row="0" Style="{StaticResource PageArrow}" Click="OnNext" HorizontalAlignment="Right" Margin="0,0,9,0"
+            AutomationProperties.Name="{Binding NextPageLabel}" ToolTip="{Binding NextPageLabel}"
+            Visibility="{Binding ShowPageArrows, Converter={StaticResource Visible}}"><Path Data="M 1.8,0 L 6.6,4 L 1.8,8" Stroke="White" StrokeThickness="1.9" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Width="8" Height="8" Stretch="None" /></Button>
+  </Grid>
+  <!-- Los puntos quedan fijos; el mini dock ocupa la extensión nueva del notch, dentro del mismo pie y zona de hover. -->
+  <Border x:Name="peekFooter" Margin="0,-14,0,0" Background="Transparent" Visibility="{Binding ShowPageArrows, Converter={StaticResource Visible}}"
+          MouseEnter="OnFooterEnter" MouseLeave="OnFooterLeave">
+    <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="14" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+      <Grid x:Name="pager" Grid.Row="0" Height="14" Background="Transparent">
+        <ItemsControl x:Name="dots" ItemsSource="{Binding PeekDots}" Focusable="False" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Command="{Binding Pick}" Style="{StaticResource Plain}" Height="14" AutomationProperties.Name="{Binding Title}" ToolTip="{Binding Title}">
+                <Border x:Name="dot" Width="4" Height="4" CornerRadius="2" Margin="3.5,0" Background="#737373" />
+              </Button>
+              <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                  <Setter TargetName="dot" Property="Width" Value="14" />
+                  <Setter TargetName="dot" Property="Background" Value="White" />
+                </DataTrigger>
+              </DataTemplate.Triggers>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+      <Border x:Name="dockRow" Grid.Row="1" Visibility="Collapsed" Opacity="0" Height="22" Margin="0,0,0,14" Background="Transparent">
+    <Border CornerRadius="11" Padding="4,0" Height="22" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#121212">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <ItemsControl ItemsSource="{Binding PeekIcons}" Focusable="False" VerticalAlignment="Center">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Command="{Binding Pick}" Style="{StaticResource Plain}" Width="28" Height="22" AutomationProperties.Name="{Binding Title}" ToolTip="{Binding Title}">
+                <TextBlock x:Name="glyph" Text="{Binding Glyph}" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="#A1A1A6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Button>
+              <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True"><Setter TargetName="glyph" Property="Foreground" Value="#FF4D6D" /></DataTrigger>
+              </DataTemplate.Triggers>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Rectangle Width="1" Height="12" Fill="#3A3A3C" Margin="3,0" VerticalAlignment="Center" />
+        <Button Command="{Binding OpenFullFromPeek}" Style="{StaticResource Plain}" Width="28" Height="22" AutomationProperties.Name="{Binding PeekOpenFullLabel}" ToolTip="{Binding PeekOpenFullLabel}">
+          <TextBlock Text="&#xE740;" FontFamily="{StaticResource Icons}" FontSize="12" Foreground="#A1A1A6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Button>
+      </StackPanel>
+    </Border>
+      </Border>
+    </Grid>
+  </Border>
   </StackPanel>
 </UserControl>

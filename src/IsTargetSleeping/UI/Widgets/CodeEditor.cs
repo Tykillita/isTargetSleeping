@@ -124,7 +124,7 @@ public sealed class CodeEditor : TextEditor
 
     private void Recolor()
     {
-        var language = SystemParameters.HighContrast ? null : SyntaxHighlighter.LanguageOf(FileName);
+        var language = Theme.Flat ? null : SyntaxHighlighter.LanguageOf(FileName);
         colorizer.Tokens = SyntaxHighlighter.Tokenize(Text, language);
         TextArea.TextView.Redraw();
     }

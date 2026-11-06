@@ -66,14 +66,24 @@ public static class PrefKeys
     public const string CleanCooldown = "cleanCooldown";      // int, min entre limpiezas por % (sin valor: 5)
     public const string CleanOnCritical = "cleanOnCritical";
     public const string CleanOnGame = "cleanOnGame";
+    public const string TrayPinned = "trayPinned";            // el ícono siempre en la barra y no en el menú ^ (encendido por defecto)
     public const string TrayPercent = "trayPercent";          // ícono con el % de RAM (apagado por defecto)
     public const string MainModel = "mainModel";              // string, se carga al encender Ollama ("" = ninguno)
-    public const string NotchDock = "notchDock";              // dock tipo notch arriba, en lugar del panel de la bandeja (experimental)
+    public const string LegacyPanel = "legacyPanel";          // versión legacy: panel de la bandeja en lugar del notch (apagado por defecto)
     public const string NotchWidgets = "notchWidgets";        // lista: ids de los widgets del Home, en orden (sin valor: los de siempre)
     public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: ids de los widgets de la vista corta (al pasar el ratón); sin valor: Ollama
     public const string NotchActivities = "notchActivities";   // lista: actividades en vivo permitidas junto a la pastilla (sin valor: todas)
     public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
     public const string ClipboardHistory = "clipboardHistory"; // historial de texto copiado, solo en memoria (apagado por defecto)
+    public const string AgentDecisionSeconds = "agentDecisionSeconds"; // segundos que espera tu respuesta a un permiso antes de dejarlo a la terminal (280 por defecto)
+    public const string AgentNotify = "agentNotify";            // cuánto te molestan los agentes: all (por defecto), important o nothing
+    public const string AgentSnooze = "agentSnooze";            // hasta cuándo están pospuestos los avisos de agentes (fecha ISO)
+    public const string AgentGlow = "agentGlow";                // la luz del notch según lo que hacen los agentes (encendida por defecto)
+    public const string AgentsDock = "agentsDock";              // la página Agentes en el dock aunque no se aprueben permisos (apagado por defecto)
+    public const string PetChatter = "petChatter";              // charla ambiente de la mascota: off (por defecto), rare o normal
+    public const string ChatSpeak = "chatSpeak";                // la mascota lee sus respuestas en voz alta (voz de Windows, local; apagado por defecto)
+    public const string ChatDock = "chatDock";                  // una página de chat con la mascota en el dock (apagado por defecto)
+    public const string CameraDock = "cameraDock";              // muestra una pestaña de vista previa de cámara en el dock (apagado por defecto)
     public const string CalendarItems = "calendarItems";      // lista: los recordatorios del widget de calendario (una línea cada uno; solo locales)
     public const string CalendarIcs = "calendarIcs";          // lista de un valor: la ruta del archivo .ics que lee el widget de calendario
     public const string CodeRoot = "codeRoot";                // lista de un valor: la carpeta del widget Código (solo la ruta)
@@ -82,12 +92,36 @@ public static class PrefKeys
     public const string NotchDockPages = "notchDockPages";    // lista: páginas opcionales del dock (ollama, activity); Inicio, Widgets y Ajustes siempre están
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
+    public const string NotchPeekLayout = "notchPeekLayout";  // lista de un valor: cuántos widgets por página al pasar el ratón (1, 2 o 4; sin valor: 1)
+    public const string AgentSounds = "agentSounds";          // el aviso sonoro cuando un agente pide permiso o termina (encendido por defecto)
+    public const string AgentApprovals = "agentApprovals";    // aprobar permisos de Claude Code desde el notch (hooks en ~/.claude/settings.json; apagado por defecto)
+    public const string NotchMascot = "notchMascot";          // la mascota se asoma al notch cerrado cuando no pasa nada (apagado por defecto)
+    public const string NotchLyrics = "notchLyrics";             // letras sincronizadas (manda título y artista a lrclib.net); se activan al pulsar el botón de letras (apagado por defecto)
+    public const string NotchLyricsView = "notchLyricsView";     // la vista de letra de la música abierta (la última que se dejó; cerrada por defecto)
+    public const string NotchLyricsPill = "notchLyricsPill";     // con letras, el notch cerrado enseña la línea que se canta en vez de la hora (encendido por defecto)
+    public const string HideInFullscreen = "notchHideFullscreen";   // el notch se aparta ante apps a pantalla completa (encendido por defecto)
+    public const string NotchOpenMode = "notchOpenMode";         // lista de un valor: «hover» (por defecto) o «click»: cómo se abre la vista corta
+    public const string NotchAnimSpeed = "notchAnimSpeed";       // lista de un valor: «normal» (por defecto) o «fast»
+    public const string NotchScreenMode = "notchScreenMode";     // lista de un valor: «selected» (por defecto: las pantallas de NotchScreens, el principal si no hay ninguna) o «cursor» (una ventana que sigue al cursor)
+    public const string NotchScreens = "notchScreens";           // lista: monitores elegidos (`szDevice`) cuando el modo es «selected»; vacía = el principal
+    public const string NotchMinimal = "notchMinimal";       // notch mínimo: sin nada que enseñar, la pastilla cerrada es una franja fina (apagado por defecto)
     public const string AudioLevels = "audioLevels";          // exe|nivel, volúmenes por app; mezclador local de Windows
     public const string GlassLevel = "glassLevel";
+    public const string LedDevices = "ledDevices";          // lista: tiras LED guardadas («dirección|nombre|familia|encendida|color|brillo|efecto|velocidad»)
+    public const string LedTimers = "ledTimers";            // lista: alarmas de las luces («on|off|minuto|días|activa»)
+    public const string LedSelected = "ledSelected";        // la tira elegida
+    public const string ThemeStyle = "themeStyle";            // «glass» (cristal negro, por defecto) o «outline» (claro con contornos)
     public const string HiddenApps = "notchHiddenApps";
     public const string AgentsEnabled = "agentsEnabled";
+    public const string PetApproveRisky = "petApproveRisky";   // la mascota puede permitir peticiones delicadas (AgentRisk) desde el telefono o la placa; apagado por defecto
+    public const string UsageEnabled = "usageEnabled";        // Uso de IA: sesiones locales, Muse, gasto de Grok API y Ollama local; apagado por defecto
     public const string WeatherEnabled = "weatherEnabled";
     public const string WeatherCity = "weatherCity";
+    public const string TeamRoot = "teamRoot";                // lista de un valor: la carpeta del proyecto del widget Equipo (solo la ruta)
+    public const string TeamView = "teamView";                // lista de un valor: Pipeline, Timeline o Crew (cómo se dibuja el avance del equipo)
+    public const string TeamReviewPlan = "teamReviewPlan";    // el equipo se para a enseñar el plan antes de implementar
+    public const string TeamEffort = "teamEffort";            // lista de un valor: Auto, Low, Medium, High o Max (esfuerzo de los agentes del equipo)
+    public const string TeamPreset = "teamPreset";            // lista de un valor: el reparto del widget Equipo
     public const string TeleprompterText = "teleprompterText";
     public const string TeleprompterSpeed = "teleprompterSpeed";
     public const string TeleprompterSize = "teleprompterSize";
@@ -140,6 +174,7 @@ public sealed class Prefs
 {
     private const string AskedKey = "loginItemAsked";
     private const string LegacyActivityListMigrated = "notchActivityListMigrated";
+    private const string NoticeActivityMigrated = "notchNoticeActivityMigrated";
 
     public bool ShouldOfferLogin { get; private set; }
     private string? hotKeyError;
@@ -237,9 +272,38 @@ public sealed class Prefs
     }
 
     /// Movimiento reducido: mientras no se toque, lo que diga Windows («Efectos de animación»).
+    /// Lo que el usuario quiere para el ícono de la bandeja: fuera del menú ^ salvo que lo apague (en el menú del ícono o en Ajustes).
+    public bool TrayPinned => Switch(PrefKeys.TrayPinned, true);
+    public void SetTrayPinned(bool on) { SetSwitch(PrefKeys.TrayPinned, on); TrayPin.SetPinned(on); }
     public bool ReducedMotion => Switch(PrefKeys.ReducedMotion, !Win32.AnimationsEnabled());
     public void ToggleReducedMotion() => SetSwitch(PrefKeys.ReducedMotion, !ReducedMotion);
+    public bool NotchMascot => Switch(PrefKeys.NotchMascot, false);
+    public void ToggleNotchMascot() => SetSwitch(PrefKeys.NotchMascot, !NotchMascot);
+    public bool AgentApprovals => Switch(PrefKeys.AgentApprovals, false);
+    public void ToggleAgentApprovals() => SetSwitch(PrefKeys.AgentApprovals, !AgentApprovals);
+    public bool AgentGlow => Switch(PrefKeys.AgentGlow, true);
+    public void ToggleAgentGlow() => SetSwitch(PrefKeys.AgentGlow, !AgentGlow);
+    public bool AgentSounds => Switch(PrefKeys.AgentSounds, true);
+    public void ToggleAgentSounds() => SetSwitch(PrefKeys.AgentSounds, !AgentSounds);
+    /// «Abrir el notch»: al pasar el ratón (por defecto) o con un clic en la pastilla.
+    public bool OpenOnClick => StoredList(PrefKeys.NotchOpenMode)?.FirstOrDefault() == "click";
+    /// Multiplica las duraciones del notch: 1 normal, 0,6 con «Rápida».
+    public double AnimSpeed => StoredList(PrefKeys.NotchAnimSpeed)?.FirstOrDefault() == "fast" ? 0.6 : 1.0;
+    public bool Lyrics => Switch(PrefKeys.NotchLyrics, false);
+    public bool LyricsPill => Switch(PrefKeys.NotchLyricsPill, true);
+    public void ToggleLyricsPill() => SetSwitch(PrefKeys.NotchLyricsPill, !LyricsPill);
+    public void ToggleLyrics() => SetSwitch(PrefKeys.NotchLyrics, !Lyrics);
+    /// Si la música estaba con la letra abierta al cerrar: al reiniciar vuelve a como se dejó (cerrada por defecto, aunque las letras estén activadas).
+    public bool LyricsView => Lyrics && Switch(PrefKeys.NotchLyricsView, false);
+    public void SetLyricsView(bool open) => SetSwitch(PrefKeys.NotchLyricsView, open);
+    public bool HideInFullscreen => Switch(PrefKeys.HideInFullscreen, true);
+    public void ToggleHideInFullscreen() => SetSwitch(PrefKeys.HideInFullscreen, !HideInFullscreen);
+    public bool NotchMinimal => Switch(PrefKeys.NotchMinimal, false);
+    public void ToggleNotchMinimal() => SetSwitch(PrefKeys.NotchMinimal, !NotchMinimal);
     public double GlassLevel => Math.Clamp(Defaults.GetInt(PrefKeys.GlassLevel, 50), 20, 80) / 100.0;
+    /// El estilo «claro con contornos»: fondo blanco, texto negro y cada superficie con su contorno fino, como el alto contraste pero a gusto del usuario.
+    public bool OutlineTheme => Defaults.GetString(PrefKeys.ThemeStyle) == "outline";
+    public void SetOutlineTheme(bool on) { Defaults.Set(PrefKeys.ThemeStyle, on ? "outline" : "glass"); Changed?.Invoke(); }
     public void SetGlassLevel(double value) { Defaults.Set(PrefKeys.GlassLevel, (int)Math.Round(Math.Clamp(value, .2, .8) * 100)); Changed?.Invoke(); }
     public string WeatherCity => Defaults.GetString(PrefKeys.WeatherCity) ?? "";
     public void SetWeatherCity(string value) { value = value.Trim(); Defaults.Set(PrefKeys.WeatherCity, value[..Math.Min(value.Length, 80)]); Changed?.Invoke(); }
@@ -274,10 +338,21 @@ public sealed class Prefs
                 Defaults.SetList(PrefKeys.NotchActivities, [.. activities, "clean"]);
             Defaults.Set(LegacyActivityListMigrated, true);
         }
+        if (!Defaults.GetBool(NoticeActivityMigrated))
+        {
+            // Las listas guardadas no heredan actividades nuevas de los valores por defecto.
+            if (Defaults.Has(PrefKeys.NotchActivities))
+            {
+                var activities = Defaults.GetList(PrefKeys.NotchActivities);
+                if (!activities.Contains("notice")) Defaults.SetList(PrefKeys.NotchActivities, [.. activities, "notice"]);
+            }
+            Defaults.Set(NoticeActivityMigrated, true);
+        }
         ShouldOfferLogin = !Defaults.GetBool(AskedKey) && !LoginItem.Enabled;
     }
 
     private bool? demoLogin;
+    internal bool IsDemo => demoLogin is not null;
     public bool OpensAtLogin => demoLogin ?? LoginItem.Enabled;
 
     /// Para las capturas: sin la pregunta de inicio de sesión y con el atajo activo.

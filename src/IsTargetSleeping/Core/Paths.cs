@@ -38,8 +38,10 @@ public static class AppInfo
 public static class Paths
 {
     /// %LOCALAPPDATA%\isTargetSleeping: ajustes y logs propios.
+    /// ITS_DATA_DIR redirige la carpeta de datos (pruebas y ejecuciones de prueba sin tocar los datos reales).
     public static string DataDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppInfo.Name);
+        Environment.GetEnvironmentVariable("ITS_DATA_DIR") is { Length: > 0 } custom ? custom
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppInfo.Name);
 
     public static string LogsDir => Path.Combine(DataDir, "Logs");
     public static string OwnLog => Path.Combine(LogsDir, "ollama.log");
@@ -72,22 +74,31 @@ public static class Paths
 public static class AppLog
 {
     private static readonly object gate = new();
+    private static string? lastMessage;
+    private static DateTime lastAt;
+    private static int repeats;
     public static string File => Path.Combine(Paths.LogsDir, "app.log");
 
     public static void Write(string message)
     {
         lock (gate)
         {
+            // El mismo aviso en bucle (llegó a 2.500 líneas del mismo error) no llena el disco: se cuenta y se resume.
+            if (message == lastMessage && DateTime.Now - lastAt < TimeSpan.FromSeconds(60)) { repeats++; return; }
+            string summary = repeats > 0 ? $"{Stamp()}  (el aviso anterior se repitió {repeats} veces más){Environment.NewLine}" : "";
+            (lastMessage, lastAt, repeats) = (message, DateTime.Now, 0);
             try
             {
                 Directory.CreateDirectory(Paths.LogsDir);
                 var info = new FileInfo(File);
                 if (info.Exists && info.Length > 1_000_000) System.IO.File.Move(File, File + ".1", overwrite: true);
-                System.IO.File.AppendAllText(File, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {message}{Environment.NewLine}");
+                System.IO.File.AppendAllText(File, $"{summary}{Stamp()}  {message}{Environment.NewLine}");
             }
             catch { }
         }
     }
+
+    private static string Stamp() => DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 }
 
 /// Ajustes persistentes, en un JSON pequeño.

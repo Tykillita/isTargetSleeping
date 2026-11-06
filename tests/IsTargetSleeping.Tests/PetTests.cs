@@ -5,6 +5,14 @@ internal static class PetTests
 {
     public static void Run(Action<string, bool> check)
     {
+        var pixels = new PixelCanvas(2, 1);
+        pixels.Pixels[0] = 0x80FF0000;
+        var reused = Enumerable.Repeat((byte)255, 8).ToArray();
+        pixels.CopyToBgra(reused);
+        check("mascota: el búfer reutilizado conserva alfa y limpia píxeles transparentes", reused.SequenceEqual(new byte[] { 0, 0, 128, 128, 0, 0, 0, 0 }));
+        pixels.Clear();
+        pixels.CopyToBgra(reused);
+        check("mascota: el búfer no conserva restos del fotograma anterior", reused.All(b => b == 0));
         check("catálogo: cuatro IDs permanentes en orden", PetCatalog.All.Select(p => p.Id).SequenceEqual(new[] { "mira", "llama", "capybara", "orange-cat" }));
         check("ajustes antiguos o especie desconocida: Mira", PetCatalog.Find(null).Id == "mira" && PetCatalog.Find("unknown").Id == "mira");
         var mixed = PetPose.Lerp(new(EarL: -1, EarR: 1, Tail: -1, Stretch: 0), new(EarL: 1, EarR: -1, Tail: 1, Stretch: 1), 0.5);

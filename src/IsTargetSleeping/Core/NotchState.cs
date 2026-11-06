@@ -11,7 +11,7 @@ public enum NotchMode { Collapsed, Expanded, Pinned }
 ///  - Con una app a pantalla completa en ese monitor se oculta, salvo que esté fijada.
 public sealed class NotchState
 {
-    public const double EnterDelay = 0.15, LeaveDelay = 0.4;
+    public const double EnterDelay = 0.10, LeaveDelay = 0.15;   // al salir se cierra casi al instante, como en Nusa (≈0,1 s); el borde extra de la zona evita cierres por un roce
 
     public NotchMode Mode { get; private set; }
     public bool Hidden { get; private set; }
@@ -49,6 +49,13 @@ public sealed class NotchState
     {
         Hidden = false;
         Reset(NotchMode.Pinned);
+    }
+
+    /// Con «abrir con clic»: un clic en la pastilla abre la vista corta, que se cierra sola al salir el ratón.
+    public void Expand()
+    {
+        Hidden = false;
+        Reset(NotchMode.Expanded);
     }
 
     /// Perdió el foco o se pulsó Esc: vuelve a la pastilla, esté como esté.

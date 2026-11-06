@@ -10,3 +10,4 @@ _site/
 .firebase/
 firebase-debug.log
 artifacts/
+.team/

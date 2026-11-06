@@ -33,6 +33,13 @@ public enum CleanAreas
     Slow = Standby | ModifiedList,
 }
 
+public static class CleanAreasRules
+{
+    /// Las limpiezas automáticas (porcentaje, intervalo, presión crítica, juego) nunca incluyen las zonas lentas: con la RAM alta
+    /// repetirían cada pocos minutos justo lo que congela el PC. Solo a mano, cuando el usuario está mirando.
+    public static CleanAreas ForAutomatic(CleanAreas areas) => areas & ~CleanAreas.Slow;
+}
+
 /// Lo que la app le pide al agente con privilegios, como un único argumento
 /// (`$(Arg0)` de la tarea programada): `a=e7;k=1234,5678`.
 ///  - a: zonas (hexadecimal)  · k: PIDs que no se tocan  · r: solicitud  · i: identidades que no se tocan.

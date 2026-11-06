@@ -36,6 +36,9 @@ public static class L10n
         return JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
     }
 
+    /// Un número con los miles de la lengua de la app (no de la región de Windows): «24.600» en español, «24,600» en inglés.
+    public static string Number(long n) => n.ToString("N0", CultureInfo.GetCultureInfo(Effective == "es" ? "es-ES" : "en-US"));
+
     public static string tr(string key) =>
         table is not null && table.TryGetValue(key, out var value) ? value : key;
 

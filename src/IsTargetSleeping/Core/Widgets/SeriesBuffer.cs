@@ -20,6 +20,12 @@ public static class SystemMetricCatalog
 {
     public static readonly IReadOnlyList<string> All = ["cpu", "ram", "gpu", "disk", "battery", "network"];
     public static readonly IReadOnlyList<string> Defaults = ["cpu", "ram"];
+    public static readonly IReadOnlyList<WidgetFolder> Folders =
+    [
+        new("compute", "Cómputo", ["cpu", "gpu"]),
+        new("memory", "Memoria y disco", ["ram", "disk"]),
+        new("power", "Energía y red", ["battery", "network"]),
+    ];
     public static List<string> Normalize(IEnumerable<string>? values)
     {
         var selected = (values ?? Defaults).Where(All.Contains).Distinct().Take(2).ToList();

@@ -53,6 +53,11 @@ public static class FileDrag
         element.ClearValue(StartProperty);
         var existing = Split(GetPath(element)).Where(p => File.Exists(p) || Directory.Exists(p)).ToArray();
         if (existing.Length == 0) return;
-        DragDrop.DoDragDrop(element, new DataObject(DataFormats.FileDrop, existing), DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+        Active = element;
+        try { DragDrop.DoDragDrop(element, new DataObject(DataFormats.FileDrop, existing), DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link); }
+        finally { Active = null; }
     }
+
+    /// El elemento desde el que se está arrastrando ahora (null si el arrastre viene de fuera): el notch no trata como «soltar archivos» lo que sale de su propio Estante.
+    public static DependencyObject? Active { get; private set; }
 }

@@ -16,13 +16,27 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Gpu.cs" Link="Core\Gpu.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\NotchLayout.cs" Link="Core\NotchLayout.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\NotchState.cs" Link="Core\NotchState.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\NotchMascotCycle.cs" Link="Core\NotchMascotCycle.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\NotchVisibility.cs" Link="Core\NotchVisibility.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\NotchScreens.cs" Link="Core\NotchScreens.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\NotchHud.cs" Link="Core\NotchHud.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Lyrics.cs" Link="Core\Lyrics.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WidgetCatalog.cs" Link="Core\Widgets\WidgetCatalog.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Pomodoro.cs" Link="Core\Widgets\Pomodoro.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Activities.cs" Link="Core\Widgets\Activities.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\CameraUsage.cs" Link="Core\CameraUsage.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AudioMixer.cs" Link="Core\Widgets\AudioMixer.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\SeriesBuffer.cs" Link="Core\Widgets\SeriesBuffer.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AgentLogs.cs" Link="Core\Widgets\AgentLogs.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AgentResume.cs" Link="Core\Widgets\AgentResume.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AgentTerminal.cs" Link="Core\Widgets\AgentTerminal.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AgentGit.cs" Link="Core\Widgets\AgentGit.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WeatherModel.cs" Link="Core\Widgets\WeatherModel.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\AiUsage.cs" Link="Core\Widgets\AiUsage.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\NotesStore.cs" Link="Core\Widgets\NotesStore.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\TodoStore.cs" Link="Core\Widgets\TodoStore.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ShelfStore.cs" Link="Core\Widgets\ShelfStore.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Engines\LocalModels.cs" Link="Core\Engines\LocalModels.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MeetingLink.cs" Link="Core\Widgets\MeetingLink.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\FileTray.cs" Link="Core\Widgets\FileTray.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ClipboardHistory.cs" Link="Core\Widgets\ClipboardHistory.cs" />
@@ -37,6 +51,12 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\FileIconMap.cs" Link="Core\Widgets\FileIconMap.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryBreakdown.cs" Link="Core\MemoryBreakdown.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Watchdog.cs" Link="Core\Watchdog.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\CaptureToolGuard.cs" Link="Core\CaptureToolGuard.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\WeatherPlaces.cs" Link="Core\Widgets\WeatherPlaces.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MoonPhase.cs" Link="Core\Widgets\MoonPhase.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\DeviceBatteries.cs" Link="Core\Widgets\DeviceBatteries.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\LedProtocol.cs" Link="Core\Widgets\LedProtocol.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\LedDevices.cs" Link="Core\Widgets\LedDevices.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Games.cs" Link="Core\Games.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Clients.cs" Link="Core\Clients.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Stats.cs" Link="Core\Stats.cs" />
@@ -46,6 +66,19 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\OllamaApi.cs" Link="Core\OllamaApi.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\L10n.cs" Link="Core\L10n.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Paths.cs" Link="Core\Paths.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentHooks.cs" Link="Core\Agents\AgentHooks.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentSounds.cs" Link="Core\Agents\AgentSounds.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentRisk.cs" Link="Core\Agents\AgentRisk.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentAlerts.cs" Link="Core\Agents\AgentAlerts.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentGlow.cs" Link="Core\Agents\AgentGlow.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AwayDigest.cs" Link="Core\Agents\AwayDigest.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentNotifyPolicy.cs" Link="Core\Agents\AgentNotifyPolicy.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentQuestions.cs" Link="Core\Agents\AgentQuestions.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Companion\ChatService.cs" Link="Core\Companion\ChatService.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Companion\PetPersonality.cs" Link="Core\Companion\PetPersonality.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Companion\Bond.cs" Link="Core\Companion\Bond.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Companion\Voice.cs" Link="Core\Companion\Voice.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Companion\Weekly.cs" Link="Core\Companion\Weekly.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanSpec.cs" Link="Core\CleanSpec.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\CleanRules.cs" Link="Core\CleanRules.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryContracts.cs" Link="Core\MemoryContracts.cs" />
@@ -68,11 +101,18 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetParticles.cs" Link="Core\PetParticles.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\PetDirector.cs" Link="Core\PetDirector.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\TaskbarPetLayout.cs" Link="Core\TaskbarPetLayout.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Team\*.cs" Link="Core\Team\%(Filename)%(Extension)" />
     <None Update="Fixtures\*.jsonl" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\codex-models\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="PublishUpdateProbe" AfterTargets="Build">
     <MSBuild Projects="..\UpdateProbe\UpdateProbe.csproj" Targets="Restore;Publish"
              Properties="Configuration=$(Configuration);PublishDir=$(TargetDir)probe\" />
   </Target>
+  <ItemGroup>
+    <PackageReference Include="System.Speech" Version="10.0.0" />
+  </ItemGroup>
+
 </Project>

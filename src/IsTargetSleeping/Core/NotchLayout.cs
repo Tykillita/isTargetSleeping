@@ -7,30 +7,34 @@ public readonly record struct NotchRects(Win32.RECT Pill, Win32.RECT Expanded, W
 /// debajo de una barra de tareas superior). Lógica pura, sin WPF, para poder probarla.
 public static class NotchLayout
 {
-    public const double PillWidth = 230, PillHeight = 37;   // 37: la fila compacta de las live activities de Droppy
+    public const double PillWidth = 150, PillHeight = 30;   // la pastilla cerrada mínima; crece solo lo que pidan sus datos y actividades
+    /// «Notch mínimo»: sin nada que enseñar, la pastilla se queda en una franja negra fina (DIP). La zona de ratón sigue siendo la de la pastilla entera.
+    public const double StripWidth = 96, StripHeight = 5;
     /// Los botones flotantes que cuelgan debajo del notch abierto: su tamaño y el hueco que los separa.
     public const double DockWidth = 276, DockHeight = 34, DockGap = 8;
     /// La lente de cristal del dock sobresale de la barra por arriba y por abajo: la ventana deja ese margen (DIP) a cada lado.
     public const double DockPad = 6;
     /// La zona que lo despierta: un poco más ancha que la pastilla y hasta el borde de la pantalla.
-    private const double HotSide = 24, HotBelow = 4;
+    private const double HotSide = 28, HotBelow = 8;
 
     /// `monitor` y `work` son los rectángulos del monitor y de su área de trabajo; `scale`, dpi/96;
     /// el tamaño expandido viene en DIP (lo que mide el contenido).
-    /// `pillWidth` (DIP) crece cuando la pastilla enseña actividades en vivo junto a sus datos.
-    public static NotchRects Place(Win32.RECT monitor, Win32.RECT work, double scale, double expandedWidth, double expandedHeight, double pillWidth = PillWidth)
+    /// `pillWidth` (DIP) crece cuando la pastilla enseña actividades en vivo junto a sus datos. Con `strip`, la pastilla es la franja fina.
+    public static NotchRects Place(Win32.RECT monitor, Win32.RECT work, double scale, double expandedWidth, double expandedHeight, double pillWidth = PillWidth, bool strip = false, double pillHeight = PillHeight)
     {
         int top = Math.Max(monitor.Top, work.Top);
         int centerX = monitor.Left + monitor.Width / 2;
-        int pillW = Px(Math.Max(PillWidth, pillWidth), scale), pillH = Px(PillHeight, scale);
+        int fullW = Px(Math.Max(PillWidth, pillWidth), scale), fullH = Px(Math.Max(PillHeight, pillHeight), scale);
+        int pillW = strip ? Px(StripWidth, scale) : fullW, pillH = strip ? Px(StripHeight, scale) : fullH;
         int width = Math.Clamp(Px(expandedWidth, scale), pillW, Math.Max(pillW, monitor.Width));
         int height = Math.Clamp(Px(expandedHeight, scale), pillH, Math.Max(pillH, work.Bottom - top));
         var pill = At(centerX, top, pillW, pillH);
+        var cover = strip ? At(centerX, top, fullW, fullH) : pill;
         int side = Px(HotSide, scale);
         var hot = new Win32.RECT
         {
-            Left = pill.Left - side, Right = pill.Right + side,
-            Top = monitor.Top, Bottom = pill.Bottom + Px(HotBelow, scale),
+            Left = cover.Left - side, Right = cover.Right + side,
+            Top = monitor.Top, Bottom = cover.Bottom + Px(HotBelow, scale),
         };
         return new NotchRects(pill, At(centerX, top, width, height), hot);
     }

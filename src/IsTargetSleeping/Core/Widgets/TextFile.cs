@@ -1,4 +1,5 @@
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace IsTargetSleeping;
@@ -8,7 +9,7 @@ public enum TextSaveResult { Saved, Conflict, Failed }
 
 /// Un archivo de texto abierto para la edición rápida. `Text` va siempre con «\n»; al guardar se devuelve
 /// la codificación y los saltos de línea que tenía el archivo, para no ensuciar un diff.
-public sealed record TextDoc(string Path, string Text, Encoding Encoding, string Eol, DateTime Stamp, long Length);
+public sealed record TextDoc(string Path, string Text, Encoding Encoding, string Eol, DateTime Stamp, long Length, string Hash);
 
 /// Leer y guardar archivos de texto pequeños sin estropearlos: solo UTF-8 y UTF-16 válidos (lo demás se rechaza en vez
 /// de reinterpretarlo), con tope de tamaño, y el guardado es atómico (archivo temporal + reemplazo).
@@ -22,8 +23,8 @@ public static class TextFile
         {
             var info = new FileInfo(path);
             if (!info.Exists) return (null, TextFileError.Unreadable, null);
-            if (info.Length > MaxBytes) return (null, TextFileError.TooBig, null);
             var bytes = File.ReadAllBytes(path);
+            if (bytes.Length > MaxBytes) return (null, TextFileError.TooBig, null);
             Encoding enc;
             int skip;
             if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) { enc = new UTF8Encoding(true, true); skip = 3; }
@@ -40,7 +41,7 @@ public static class TextFile
             catch (DecoderFallbackException) { return (null, TextFileError.NotText, null); }
             int crlf = Count(raw, "\r\n"), lf = Count(raw, "\n") - crlf;
             var eol = crlf == 0 && lf == 0 ? Environment.NewLine : crlf >= lf ? "\r\n" : "\n";
-            return (new TextDoc(path, raw.Replace("\r\n", "\n"), enc, eol, info.LastWriteTimeUtc, info.Length), TextFileError.None, null);
+            return (new TextDoc(path, raw.Replace("\r\n", "\n"), enc, eol, File.GetLastWriteTimeUtc(path), bytes.Length, Convert.ToHexString(SHA256.HashData(bytes))), TextFileError.None, null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -56,20 +57,21 @@ public static class TextFile
         try
         {
             var current = new FileInfo(doc.Path);
-            if (!overwrite && current.Exists && (current.LastWriteTimeUtc != doc.Stamp || current.Length != doc.Length))
+            if (!overwrite && current.Exists && (current.LastWriteTimeUtc != doc.Stamp || current.Length != doc.Length
+                || Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(doc.Path))) != doc.Hash))
                 return (doc, TextSaveResult.Conflict, null);
             var normalized = text.Replace("\r\n", "\n");
             var body = doc.Encoding.GetBytes(doc.Eol == "\n" ? normalized : normalized.Replace("\n", doc.Eol));
             var preamble = doc.Encoding.GetPreamble();
+            var output = preamble.Concat(body).ToArray();
             using (var stream = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write))
             {
-                stream.Write(preamble);
-                stream.Write(body);
+                stream.Write(output);
             }
             if (current.Exists) File.Replace(tmp, doc.Path, null);
             else File.Move(tmp, doc.Path);
             var saved = new FileInfo(doc.Path);
-            return (doc with { Text = normalized, Stamp = saved.LastWriteTimeUtc, Length = saved.Length }, TextSaveResult.Saved, null);
+            return (doc with { Text = normalized, Stamp = saved.LastWriteTimeUtc, Length = saved.Length, Hash = Convert.ToHexString(SHA256.HashData(output)) }, TextSaveResult.Saved, null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

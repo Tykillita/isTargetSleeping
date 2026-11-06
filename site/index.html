@@ -3,742 +3,540 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>isTargetSleeping · Un notch para Windows con Ollama y tus widgets</title>
-<meta name="description" content="Un notch para Windows: widgets de sistema, reloj, Pomodoro y notas, y el control de Ollama, que duerme tus modelos cuando no trabajan y te devuelve la RAM y la VRAM. Gratis, sin cuentas y de código abierto.">
+<title>isTargetSleeping · Ollama y tus herramientas, a un vistazo</title>
+<meta name="description" content="Controla Ollama desde el notch de Windows, duerme los modelos inactivos y recupera RAM. Gratis, local y de código abierto.">
 <meta name="theme-color" content="#0C0C0E">
 <meta property="og:title" content="isTargetSleeping">
 <meta property="og:description" content="Un notch para Windows: Ollama, tu PC y tus herramientas, a un vistazo.">
-<meta property="og:image" content="media/social-preview.png">
+<meta property="og:image" content="media/social-preview.png?v=8535a8f99e23580c">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="isTargetSleeping — Let idle models sleep. Get your RAM back.">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
-<script>try{var t=localStorage.getItem('its-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
-<link rel="stylesheet" href="site.css">
-</head>
-<body>
 
+<link rel="icon" href="media/istargetsleeping-icon.svg?v=8d514906c239d8f6" type="image/svg+xml">
+<link rel="icon" href="media/istargetsleeping-icon-256.png?v=aa181b9c468b9712" type="image/png" sizes="256x256">
+<link rel="apple-touch-icon" href="media/istargetsleeping-icon-256.png?v=aa181b9c468b9712">
+<script>document.documentElement.classList.add('js');document.documentElement.dataset.theme='dark'</script>
+<script>(function(d){d.style.scrollBehavior='auto';addEventListener('load',function(){setTimeout(function(){d.style.scrollBehavior=''},600)});var h=location.hash;if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&(h===''||h==='#inicio')&&(window.scrollY||0)<40&&!document.hidden){d.classList.add('intro');window.__introEscucha=function(){if((window.scrollY||0)>=40)d.classList.remove('intro')};addEventListener('scroll',window.__introEscucha);setTimeout(function(){d.classList.remove('intro')},(+new URLSearchParams(location.search).get('introLento')||1.2)*15000)}})(document.documentElement)</script>
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="castillo.css?v=131">
+<link rel="stylesheet" href="mundo.css?v=3">
+</head>
+<body data-pagina="castillo" data-letra-real class="pagina-castillo">
 <header class="nav">
   <div class="contenedor">
-    <a class="marca" href="#" aria-label="isTargetSleeping">
-      <img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28">
-      <span>isTargetSleeping</span>
-    </a>
-    <nav class="nav-links" aria-label="Secciones">
+    <a class="marca" href="#inicio" aria-label="isTargetSleeping"><img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28"><span>isTargetSleeping</span></a>
+    <nav class="nav-links" id="castillo-links" aria-label="Secciones" data-i18n-aria="nav.secciones">
+      <a href="#probar" data-i18n="nav.como">Cómo funciona</a>
       <a href="#funciones" data-i18n="nav.funciones">Funciones</a>
-      <a href="#como-funciona" data-i18n="nav.como">Cómo funciona</a>
+      <a href="teleprompter.html" class="nav-link-tp" data-i18n="mundo.w.teleprompter">Teleprompter</a>
       <a href="#privacidad" data-i18n="nav.privacidad">Privacidad</a>
       <a href="#instalar" data-i18n="nav.instalar">Instalar</a>
       <a href="#preguntas" data-i18n="nav.preguntas">Preguntas</a>
-      <a href="novedades.html" data-i18n="nav.novedades">Novedades</a>
-    </nav>
-    <div class="nav-acciones">
-      <div class="tema-switch" role="group" aria-label="Tema de color" data-i18n-aria="tema.grupo">
-        <button class="tema-opcion" type="button" data-theme-choice="light" aria-label="Tema claro" data-i18n-aria="tema.claro" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
-        </button>
-        <button class="tema-opcion" type="button" data-theme-choice="dark" aria-label="Tema oscuro" data-i18n-aria="tema.oscuro" aria-pressed="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
-        </button>
-        <button class="tema-opcion" type="button" data-theme-choice="system" aria-label="Tema del sistema" data-i18n-aria="tema.sistema" aria-pressed="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M2 21h20M8 21l1-4m7 4-1-4"/></svg>
-        </button>
+      <div class="castillo-nav-preferencias">
+        <a class="castillo-github" href="https://github.com/Tykillita/isTargetSleeping" aria-label="GitHub" title="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+        <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
       </div>
-      <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
-      <a class="icono-btn nav-github" href="https://github.com/Tykillita/isTargetSleeping" aria-label="GitHub">
-        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      </a>
-      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
-        <span data-i18n="nav.descargar">Descargar</span>
-      </a>
+    </nav>
+    <button class="castillo-menu" id="castillo-menu" type="button" aria-label="Menú de navegación" aria-controls="castillo-links" aria-expanded="false" data-i18n-aria="castillo.nav.menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-open" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-close" d="m6 6 12 12M18 6 6 18"/></svg></button>
+    <div class="nav-acciones">
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
     </div>
+    <span class="nav-pintura" aria-hidden="true"></span>
+    <span class="nav-mascota" aria-hidden="true"><svg viewBox="0 0 56 30" focusable="false">
+      <g class="nav-ojos-cerrados" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 12.5q5 1.2 10 0M33 12.5q5 1.2 10 0"/></g>
+      <g class="nav-ojos-abiertos" fill="currentColor"><ellipse cx="18" cy="11" rx="2.5" ry="4.7"/><ellipse cx="38" cy="11" rx="2.5" ry="4.7"/></g>
+      <g class="nav-ojos-felices" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 13q5-8 10 0M33 13q5-8 10 0"/></g>
+      <g class="nav-rubor" fill="#ff8fa8"><ellipse cx="14" cy="19" rx="4" ry="1.8"/><ellipse cx="42" cy="19" rx="4" ry="1.8"/></g>
+    </svg></span>
   </div>
 </header>
 
 <main>
-
-<!-- ============ Hero ============ -->
-<section class="hero">
-  <div class="contenedor">
-    <img class="hero-icono" src="media/istargetsleeping-icon.svg" alt="Ícono de isTargetSleeping" width="104" height="104">
-    <p class="eyebrow" data-i18n="hero.eyebrow">1.25.2 disponible · Windows nativo</p>
-    <h1 data-i18n="hero.titulo">Un notch para Windows: Ollama, tu PC y tus herramientas, a un vistazo.</h1>
-    <p class="hero-sub" data-i18n="hero.sub">isTargetSleeping vive junto al reloj de Windows o, si quieres, en el borde de la pantalla como un notch. Enciende y apaga Ollama, duerme a sus modelos cuando no trabajan y te devuelve la RAM, y suma widgets: sistema, reloj, Pomodoro, notas…</p>
-    <div class="hero-cta">
-      <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
-        <span data-i18n="cta.windows">Descargar para Windows</span>
-      </a>
-      <a class="enlace" href="#como-funciona" data-i18n="cta.como">Así funciona</a>
+  <section class="mundo" id="inicio" aria-label="Recorrido por el Castillo Blanco" data-i18n-aria="mundo.aria">
+    <div class="mundo-escena">
+      <div class="mundo-fondos" aria-hidden="true"></div>
+      <div class="mundo-luces" aria-hidden="true"></div>
+      <div class="mundo-sombra" aria-hidden="true"></div>
+      <div class="mundo-mascota" role="img" aria-label="La mascota de isTargetSleeping" data-i18n-aria="mundo.mascota"><svg viewBox="-100 -200 1224 1324" aria-hidden="true"><use href="castillo/mascota.svg?v=6#idle" x="-100" y="-200" width="1224" height="1324"/></svg></div>
+      <div class="mundo-niebla" aria-hidden="true"></div>
+      <div class="mundo-frentes" aria-hidden="true"></div>
+      <canvas class="mundo-motas" aria-hidden="true"></canvas>
+      <div class="mundo-vineta" aria-hidden="true"></div>
+      <div class="mundo-alba" aria-hidden="true"></div>
+      <ul class="mundo-reliquias" aria-hidden="true"><li>Ollama</li><li data-i18n="sim.sistema">Sistema</li><li data-i18n="sim.b.music">Música</li><li>Pomodoro</li><li data-i18n="mundo.n.notas">Notas</li></ul>
+      <div class="mundo-textos">
+        <article class="mundo-copy" data-i="0">
+          <p class="eyebrow" data-i18n="castillo.hero.eyebrow">Una forma más tranquila de usar Ollama</p>
+          <h1 data-i18n="castillo.hero.title">Tu PC, tus modelos y tus herramientas. A un vistazo.</h1>
+          <p data-i18n="castillo.hero.text">Controla Ollama y lleva widgets útiles al borde de tu escritorio de Windows.</p>
+          <div class="castillo-acciones"><a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><span data-i18n="cta.windows">Descargar para Windows</span></a><a class="castillo-text-link" href="#widgets" data-i18n="castillo.hero.secondary">Explora la escena</a></div>
+        </article>
+        <article class="mundo-copy" data-i="1">
+          <p class="eyebrow">Ollama</p>
+          <h2 data-i18n="castillo.story.step1.title">Cuando el modelo queda inactivo, puede dormir.</h2>
+          <p data-i18n="castillo.story.step1.text">Si Ollama deja de generar, el modelo sale de la memoria; Ollama sigue encendido y lo recarga con el siguiente mensaje.</p>
+          <div class="mundo-sw-fila"><button class="mundo-sw" id="mundo-sw" type="button" role="switch" aria-checked="false" aria-labelledby="mundo-sw-t"><i></i></button><span id="mundo-sw-t" data-i18n="mundo.sw.label">Modelo en memoria</span><output class="mundo-sw-ram" id="mundo-sw-ram" aria-live="polite">0 GB</output></div>
+          <small class="mundo-sw-nota" data-i18n="mundo.sw.nota">Demostración con datos de ejemplo.</small>
+        </article>
+        <article class="mundo-copy" data-i="2">
+          <p class="eyebrow" data-i18n="fun.eyebrow">Funciones</p>
+          <h2 data-i18n="castillo.story.step2.title">Lo que usas, cerca de la mano.</h2>
+          <p data-i18n="castillo.story.step2.text">Ollama, sistema, música, Pomodoro y más viven en un notch que puedes abrir desde cualquier ventana.</p>
+        </article>
+        <article class="mundo-copy" data-i="3">
+          <p class="eyebrow" data-i18n="castillo.privacy.eyebrow">Tu PC sigue siendo tuya</p>
+          <h2 data-i18n="castillo.privacy.title">Todo ocurre en tu PC.</h2>
+          <p data-i18n="castillo.privacy.text">La app lee servicios locales y datos del dispositivo. Las actualizaciones consultan GitHub solo si las activas; el tiempo, también opcional, envía solo la ciudad que eliges a Open-Meteo.</p>
+          <a class="enlace" href="#privacidad" data-i18n="castillo.privacy.link">Lee los detalles de privacidad</a>
+        </article>
+        <article class="mundo-copy" data-i="4">
+          <p class="eyebrow" data-i18n="castillo.close.eyebrow">Gratis y de código abierto</p>
+          <h2 data-i18n="castillo.close.title">Deja que tu modelo descanse.</h2>
+          <p data-i18n="castillo.close.text">Lleva Ollama y las herramientas que usas a un solo lugar pequeño en tu escritorio de Windows.</p>
+          <div class="castillo-acciones"><a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.close.download">Descargar para Windows</span></a><a class="castillo-text-link" href="#probar" data-i18n="mundo.probar">Pruébalo aquí</a></div>
+        </article>
+      </div>
+      <ul class="mundo-dots" aria-label="Escenas" data-i18n-aria="mundo.nav"><li><button type="button" aria-label="Umbral" data-i18n-aria="mundo.d1"><span data-i18n="mundo.d1">Umbral</span></button></li><li><button type="button" aria-label="La sala" data-i18n-aria="mundo.d2"><span data-i18n="mundo.d2">La sala</span></button></li><li><button type="button" aria-label="El notch" data-i18n-aria="mundo.d3"><span data-i18n="mundo.d3">El notch</span></button></li><li><button type="button" aria-label="El jardín" data-i18n-aria="mundo.d4"><span data-i18n="mundo.d4">El jardín</span></button></li><li><button type="button" aria-label="El trono" data-i18n-aria="mundo.d5"><span data-i18n="mundo.d5">El trono</span></button></li></ul>
+      <p class="mundo-scroll" aria-hidden="true" data-i18n="castillo.scroll">Desplázate para continuar</p>
     </div>
-    <p class="hero-meta" data-i18n="hero.meta">Gratis y de código abierto · Última versión: 1.25.2 · Windows 10 y 11 · x64 y ARM64</p>
+  </section>
 
-    <div class="escritorio" aria-label="El panel de isTargetSleeping abierto en el escritorio de Windows" data-i18n-aria="hero.escritorio">
-      <img class="ventana ventana--ajustes" data-src-lang="media/settings-preview-{lang}.png" src="media/settings-preview-es.png" alt="" loading="lazy">
-      <img class="ventana ventana--actividad" data-src-lang="media/activity-{lang}.png" src="media/activity-es.png" alt="" loading="lazy">
-      <img class="ventana ventana--panel" data-src-lang="media/panel-{lang}.png" src="media/panel-es.png" alt="Panel: Ollama encendido, memoria del PC y de la GPU, llama.cpp y los modelos instalados" data-i18n-alt="hero.panelAlt">
+  <section class="widgets" id="widgets" aria-labelledby="widgets-titulo">
+    <div class="widgets-fijo">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="mundo.w.eyebrow">Widgets</p><h2 id="widgets-titulo" data-i18n="mundo.w.title">Elige lo que vive en tu notch.</h2><p data-i18n="mundo.w.text">Herramientas locales que ordenas a tu manera. Desplázate para ver más.</p></div>
+      <div class="widgets-ventana"><ul class="widgets-pista" data-fila="a" aria-label="Widgets disponibles" data-i18n-aria="mundo.w.lista">
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/ollama.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3>Ollama</h3><p data-i18n="mundo.w.ollama">Enciéndelo, mira la RAM y duerme modelos.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/lmstudio.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3>LM Studio</h3><p data-i18n="mundo.w.lmstudio">Otro motor, en modo experimental.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/system.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="sim.sistema">Sistema</h3><p data-i18n="mundo.w.sistema">CPU, RAM, VRAM, disco y red.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/clock.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.reloj">Reloj y calendario</h3><p data-i18n="mundo.w.reloj">Un mes, agenda y eventos .ics.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/pomodoro.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3>Pomodoro</h3><p data-i18n="mundo.w.pomodoro">Con aviso al terminar.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/awake.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.despierto">Mantener despierto</h3><p data-i18n="mundo.w.despierto">Pide a Windows que no se duerma.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/notes.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.notas">Notas</h3><p data-i18n="mundo.w.notas">Se guardan solas, en local.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/media.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="sim.b.music">Música</h3><p data-i18n="mundo.w.musica">Lo que suena, con controles.</p></li>
+      </ul>
+      <ul class="widgets-pista" data-fila="b" aria-hidden="true">
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/battery.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.bateria">Batería</h3><p data-i18n="mundo.w.bateria">La carga, de un vistazo.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/code.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.codigo">Código</h3><p data-i18n="mundo.w.codigo">Árbol, pestañas y un editor pequeño.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/audio.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3>Audio</h3><p data-i18n="mundo.w.audio">El volumen de cada app.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/agents.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.agentes">Agentes de IA</h3><p data-i18n="mundo.w.agentes">Sesiones activas y recientes de Claude Code y Codex.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/usage.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.uso">Uso de IA</h3><p data-i18n="mundo.w.uso">Cuotas de Claude, Codex, Gemini y Muse. Opcional.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/team.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.equipo">Equipo</h3><p data-i18n="mundo.w.equipo">Reparte una tarea entre Claude y Codex.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/weather.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.clima">Clima</h3><p data-i18n="mundo.w.clima">El tiempo ahora y las próximas horas.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/teleprompter.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3>Teleprompter</h3><p data-i18n="mundo.w.teleprompter">Guarda tu texto en local; edítalo y reprodúcelo.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/shelf.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.estante">Estante</h3><p data-i18n="mundo.w.estante">Una bandeja temporal para tus archivos.</p></li>
+        <li class="w-tarjeta"><span class="ico"><img src="castillo/widgets/todo.webp" alt="" width="104" height="104" loading="lazy" decoding="async"></span><h3 data-i18n="mundo.n.tareas">Tareas</h3><p data-i18n="mundo.w.tareas">Una lista con calendario y repetición diaria.</p></li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="vistas equipos" id="vistas" aria-labelledby="vistas-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="mundo.t.eyebrow">Mira lo que hace</p><h2 id="vistas-titulo" data-i18n="mundo.t.title">Tu notch, en cualquier pantalla de Windows.</h2></div>
+      <!-- Las dos pantallas muestran el fondo de pantalla (.wall). Cuando haya vídeo, se sustituye cada .wall por un <video> con el mismo tamaño. -->
+      <div class="equipos-escena revela" role="img" aria-label="Un monitor y una laptop de Windows con el fondo de pantalla" data-i18n-aria="mundo.t.alt">
+        <div class="monitor" aria-hidden="true">
+          <div class="monitor-marco"><div class="pantalla"><div class="wall"><video data-fondo autoplay src="castillo/img/monitor-fondo.mp4?v=2" poster="castillo/img/monitor-fondo.jpg" muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"></video></div><div class="notch-real"><svg class="nr-cuerpo" viewBox="0 0 178 30"><path d="M0 0H178A14 14 0 0 0 164 14V16A14 14 0 0 1 150 30H28A14 14 0 0 1 14 16V14A14 14 0 0 0 0 0Z"/></svg><div class="nr-datos"><svg class="nr-icono nr-bateria" viewBox="0 0 18 18"><circle class="pista" cx="9" cy="9" r="7.875" pathLength="100"/><circle class="carga" cx="9" cy="9" r="7.875" pathLength="100"/><path class="rayo" d="M10.2 3.6 5.6 9.8H8.6L7.6 14.6 12.4 8.2H9.4Z"/></svg><b class="nr-hora"><span data-hora>9:32</span><small data-ampm>AM</small></b><svg class="nr-icono nr-agentes" viewBox="0 0 18 18"><g class="orbita"><path d="M9 2A7 7 0 0 1 16 9"/><path class="cola" d="M9 16A7 7 0 0 1 2 9"/></g><path class="chispa" d="M9 4.6C9.5 7.4 10.6 8.5 13.4 9 10.6 9.5 9.5 10.6 9 13.4 8.5 10.6 7.4 9.5 4.6 9 7.4 8.5 8.5 7.4 9 4.6Z"/></svg></div><svg class="nr-mascota" viewBox="0 0 178 45"><defs><linearGradient id="nrLuz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f1f1"/><stop offset=".3" stop-color="#fff"/><stop offset=".85" stop-color="#fff"/><stop offset="1" stop-color="#f6f6f6"/></linearGradient><linearGradient id="nrSombra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8a8a" stop-opacity=".3"/><stop offset=".3" stop-color="#8a8a8a" stop-opacity="0"/></linearGradient></defs><path class="nr-blanco" d="M0 0H178A14 14 0 0 0 164 14V31A14 14 0 0 1 150 45H28A14 14 0 0 1 14 31V14A14 14 0 0 0 0 0Z"/><path class="nr-sombra" d="M0 0H178A14 14 0 0 0 164 14V31A14 14 0 0 1 150 45H28A14 14 0 0 1 14 31V14A14 14 0 0 0 0 0Z"/><g transform="translate(68.75 10.71) scale(1.3485 1.0714)"><g class="nr-mira"><g class="nr-par"><ellipse class="e-abierta" cx="5" cy="7" rx="2.5" ry="4.7"/><ellipse class="e-entorna" cx="5" cy="7" rx="2.5" ry="2.8"/><path class="e-sonrisa" d="M0 5Q5 10 10 5"/><path class="e-dormida" d="M0 7Q5 7.8 10 7"/><path class="e-feliz" d="M0 9.5Q5 2 10 9.5"/></g></g></g><g transform="translate(95.75 10.71) scale(1.3485 1.0714)"><g class="nr-mira"><g class="nr-par"><ellipse class="e-abierta" cx="5" cy="7" rx="2.5" ry="4.7"/><ellipse class="e-entorna" cx="5" cy="7" rx="2.5" ry="2.8"/><path class="e-sonrisa" d="M0 5Q5 10 10 5"/><path class="e-dormida" d="M0 7Q5 7.8 10 7"/><path class="e-feliz" d="M0 9.5Q5 2 10 9.5"/></g></g></g><ellipse class="nr-rubor" cx="70.1" cy="26.79" rx="5.4" ry="1.93"/><ellipse class="nr-rubor" cx="107.9" cy="26.79" rx="5.4" ry="1.93"/><text class="nr-zz" x="146" y="14">z z</text></svg></div></div><i class="led"></i></div>
+          <div class="monitor-cuello"></div><div class="monitor-base"></div>
+        </div>
+        <div class="laptop" aria-hidden="true">
+          <div class="laptop-tapa"><i class="camara"></i><div class="pantalla"><div class="wall"><video data-fondo autoplay src="castillo/img/laptop-fondo.mp4?v=4" poster="castillo/img/laptop-fondo.jpg?v=3" muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1"></video></div><div class="notch-real"><svg class="nr-cuerpo" viewBox="0 0 178 30"><path d="M0 0H178A14 14 0 0 0 164 14V16A14 14 0 0 1 150 30H28A14 14 0 0 1 14 16V14A14 14 0 0 0 0 0Z"/></svg><div class="nr-datos"><svg class="nr-icono nr-bateria" viewBox="0 0 18 18"><circle class="pista" cx="9" cy="9" r="7.875" pathLength="100"/><circle class="carga" cx="9" cy="9" r="7.875" pathLength="100"/><path class="rayo" d="M10.2 3.6 5.6 9.8H8.6L7.6 14.6 12.4 8.2H9.4Z"/></svg><b class="nr-hora"><span data-hora>9:32</span><small data-ampm>AM</small></b><svg class="nr-icono nr-agentes" viewBox="0 0 18 18"><g class="orbita"><path d="M9 2A7 7 0 0 1 16 9"/><path class="cola" d="M9 16A7 7 0 0 1 2 9"/></g><path class="chispa" d="M9 4.6C9.5 7.4 10.6 8.5 13.4 9 10.6 9.5 9.5 10.6 9 13.4 8.5 10.6 7.4 9.5 4.6 9 7.4 8.5 8.5 7.4 9 4.6Z"/></svg></div><svg class="nr-mascota" viewBox="0 0 178 45"><defs><linearGradient id="nrLuz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f1f1"/><stop offset=".3" stop-color="#fff"/><stop offset=".85" stop-color="#fff"/><stop offset="1" stop-color="#f6f6f6"/></linearGradient><linearGradient id="nrSombra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8a8a" stop-opacity=".3"/><stop offset=".3" stop-color="#8a8a8a" stop-opacity="0"/></linearGradient></defs><path class="nr-blanco" d="M0 0H178A14 14 0 0 0 164 14V31A14 14 0 0 1 150 45H28A14 14 0 0 1 14 31V14A14 14 0 0 0 0 0Z"/><path class="nr-sombra" d="M0 0H178A14 14 0 0 0 164 14V31A14 14 0 0 1 150 45H28A14 14 0 0 1 14 31V14A14 14 0 0 0 0 0Z"/><g transform="translate(68.75 10.71) scale(1.3485 1.0714)"><g class="nr-mira"><g class="nr-par"><ellipse class="e-abierta" cx="5" cy="7" rx="2.5" ry="4.7"/><ellipse class="e-entorna" cx="5" cy="7" rx="2.5" ry="2.8"/><path class="e-sonrisa" d="M0 5Q5 10 10 5"/><path class="e-dormida" d="M0 7Q5 7.8 10 7"/><path class="e-feliz" d="M0 9.5Q5 2 10 9.5"/></g></g></g><g transform="translate(95.75 10.71) scale(1.3485 1.0714)"><g class="nr-mira"><g class="nr-par"><ellipse class="e-abierta" cx="5" cy="7" rx="2.5" ry="4.7"/><ellipse class="e-entorna" cx="5" cy="7" rx="2.5" ry="2.8"/><path class="e-sonrisa" d="M0 5Q5 10 10 5"/><path class="e-dormida" d="M0 7Q5 7.8 10 7"/><path class="e-feliz" d="M0 9.5Q5 2 10 9.5"/></g></g></g><ellipse class="nr-rubor" cx="70.1" cy="26.79" rx="5.4" ry="1.93"/><ellipse class="nr-rubor" cx="107.9" cy="26.79" rx="5.4" ry="1.93"/><text class="nr-zz" x="146" y="14">z z</text></svg></div></div></div>
+          <div class="laptop-base"><i class="muesca"></i></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion castillo-demo sim" id="probar" aria-labelledby="sim-titulo" data-escena>
+    <div class="contenedor">
+      <div class="cabecera revela">
+        <p class="eyebrow" data-i18n="castillo.demo.eyebrow">Una ventana pequeña a tu día</p>
+        <h2 id="sim-titulo" data-i18n="castillo.demo.title">Míralo en el notch.</h2>
+        <p data-i18n="castillo.demo.text">Elige un estado para explorar el notch, los widgets y los controles de la app.</p>
+      </div>
+    </div>
+      <div class="sim-pin">
+        <div class="laptop" id="laptop">
+          <div class="lid"><div class="bezel"><span class="cam"></span><div class="screen">
+            <div class="wall" aria-hidden="true"><video data-fondo autoplay muted loop playsinline preload="metadata" fetchpriority="high" src="castillo/img/laptop-fondo.mp4?v=4" poster="castillo/img/laptop-fondo.jpg?v=3" tabindex="-1"></video><i class="petal back" style="--r:-76deg"></i><i class="petal back" style="--r:76deg"></i><i class="petal" style="--r:-46deg"></i><i class="petal" style="--r:46deg"></i><i class="petal" style="--r:0deg"></i><span class="shine"></span></div>
+            <div class="mn-holder"><div class="mn" id="mn" data-s="pet" role="img" aria-label="Simulación del notch de isTargetSleeping" data-i18n-aria="sim.aria">
+              <div class="ly l-pet" id="sim-pet"><span class="a eye" style="left:58px"><svg viewBox="0 0 10 14" preserveAspectRatio="none"><path class="z" vector-effect="non-scaling-stroke" d="M0 8.5Q5 9.7 10 8.5"/><ellipse class="o" cx="5" cy="7" rx="2.5" ry="4.7"/></svg></span><span class="a eye" style="left:80.7px"><svg viewBox="0 0 10 14" preserveAspectRatio="none"><path class="z" vector-effect="non-scaling-stroke" d="M0 8.5Q5 9.7 10 8.5"/><ellipse class="o" cx="5" cy="7" rx="2.5" ry="4.7"/></svg></span><span class="zz">z z</span></div>
+              <div class="ly l-idle"><div class="nx-pill"><svg class="nx-ico nr-bateria " viewBox="0 0 18 18"><circle class="pista" cx="9" cy="9" r="7.875" pathLength="100"/><circle class="carga" cx="9" cy="9" r="7.875" pathLength="100"/><path class="rayo" d="M10.2 3.6 5.6 9.8H8.6L7.6 14.6 12.4 8.2H9.4Z"/></svg><b class="nx-hora"><span data-hora>11:26</span><small data-ampm>AM</small></b><svg class="nx-ico nr-agentes" viewBox="0 0 18 18"><g class="orbita"><path d="M9 2A7 7 0 0 1 16 9"/><path class="cola" d="M9 16A7 7 0 0 1 2 9"/></g><path class="chispa" d="M9 4.6C9.5 7.4 10.6 8.5 13.4 9 10.6 9.5 9.5 10.6 9 13.4 8.5 10.6 7.4 9.5 4.6 9 7.4 8.5 8.5 7.4 9 4.6Z"/></svg></div></div>
+              <div class="ly l-hdr"><div class="nx-hdr"><svg class="nx-ico nr-bateria nx-verde" viewBox="0 0 18 18"><circle class="pista" cx="9" cy="9" r="7.875" pathLength="100"/><circle class="carga" cx="9" cy="9" r="7.875" pathLength="100"/><path class="rayo" d="M10.2 3.6 5.6 9.8H8.6L7.6 14.6 12.4 8.2H9.4Z"/></svg><span class="nx-fecha" data-fecha>jue 29 oct 2026</span><b class="nx-hora"><span data-hora>11:26</span><small data-ampm>AM</small></b></div></div>
+              <div class="ly l-nav"><span class="nx-flecha izq"><svg viewBox="0 0 10 10"><path d="M6.2 2 3.4 5l2.8 3"/></svg></span><span class="nx-flecha der"><svg viewBox="0 0 10 10"><path d="M3.8 2 6.6 5 3.8 8"/></svg></span><span class="nx-puntos"><i></i><i></i><i></i><i></i></span></div>
+              <div class="ly l-music"><span class="a art" style="left:46px;top:12px;width:62px;height:62px"></span><span class="a vc sb" style="left:125px;top:47px;font-size:15px">Zombie Lady</span><span class="a vc dim" style="left:125px;top:63px;font-size:11.5px">Damiano David - FUNNY little FEARS</span><span class="a vc nx-t" style="left:45px;top:91px">00:17</span><span class="a prog vc" style="left:100px;top:91px;width:218px"><i></i></span><span class="a vc nx-t nx-r" style="left:336px;top:91px">-02:51</span><div class="nx-ctls"><span class="nx-ctl-sm"><svg class="nx-ctl" viewBox="0 0 24 24"><path d="M5 4.2h14a1.9 1.9 0 0 1 1.9 1.9v8.7a1.9 1.9 0 0 1-1.9 1.9h-6l-4.4 3.7v-3.7H5a1.9 1.9 0 0 1-1.9-1.9V6.1A1.9 1.9 0 0 1 5 4.2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.2 8.4h2.3v2.3c0 1.3-.6 2-1.8 2.3l-.3-.9c.6-.2.8-.6.8-1H8.2zM13.1 8.4h2.3v2.3c0 1.3-.6 2-1.8 2.3l-.3-.9c.6-.2.8-.6.8-1h-1z" fill="currentColor"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><path d="M10.6 7.4v9.2L4 12zM20 7.4v9.2L13.4 12z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><rect x="6.2" y="4.6" width="4.2" height="14.8" rx="1.5"/><rect x="13.6" y="4.6" width="4.2" height="14.8" rx="1.5"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><path d="M13.4 7.4v9.2L20 12zM4 7.4v9.2L10.6 12z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span><span class="nx-ctl-sm"><svg class="nx-ctl" viewBox="0 0 24 24"><path d="M3.4 9.5h3.6l5-4.1v13.2l-5-4.1H3.4z" fill="currentColor"/><path d="M15.2 9a4.2 4.2 0 0 1 0 6M17.8 6.3a8 8 0 0 1 0 11.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span></div><span class="a nx-eq4" style="left:385px;top:9px"><i></i><i></i><i></i><i></i></span></div>
+              <div class="ly l-lyrics"><span class="a art" style="left:28px;top:16px;width:56px;height:56px"></span><span class="a vc sb" style="left:103px;top:37px;font-size:15px">Zombie Lady</span><span class="a vc dim nx-cort" style="left:103px;top:53px;font-size:11.5px">Damiano David - FUNNY little FEARS</span><span class="a vc nx-t" style="left:27px;top:92px">00:27</span><span class="a prog vc" style="left:88px;top:92px;width:82px"><i></i></span><span class="a vc nx-t nx-r" style="left:186px;top:92px">-02:41</span><div class="nx-ctls nx-ctls2"><span class="nx-ctl-sm"><svg class="nx-ctl" viewBox="0 0 24 24"><path d="M5 4.2h14a1.9 1.9 0 0 1 1.9 1.9v8.7a1.9 1.9 0 0 1-1.9 1.9h-6l-4.4 3.7v-3.7H5a1.9 1.9 0 0 1-1.9-1.9V6.1A1.9 1.9 0 0 1 5 4.2z" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.2 8.4h2.3v2.3c0 1.3-.6 2-1.8 2.3l-.3-.9c.6-.2.8-.6.8-1H8.2zM13.1 8.4h2.3v2.3c0 1.3-.6 2-1.8 2.3l-.3-.9c.6-.2.8-.6.8-1h-1z" fill="#0b0b0f"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><path d="M10.6 7.4v9.2L4 12zM20 7.4v9.2L13.4 12z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><rect x="6.2" y="4.6" width="4.2" height="14.8" rx="1.5"/><rect x="13.6" y="4.6" width="4.2" height="14.8" rx="1.5"/></svg></span><span><svg class="nx-ctl" viewBox="0 0 24 24" fill="currentColor"><path d="M13.4 7.4v9.2L20 12zM4 7.4v9.2L10.6 12z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></span></div><span class="a" style="left:256px;top:22px;width:1px;height:98px;background:rgba(255,255,255,.14)"></span><div class="a lyr"><ol id="lyr"><li data-t="6">we fold the summer light</li><li data-t="17">into paper birds tonight</li><li data-t="29">and send them through the sky</li><li data-t="38">to find you by the sea</li><li data-t="52">every wing a little song</li><li data-t="63">that carries us along</li><li data-t="79">the harbor lights go slow</li><li data-t="88">the tide is tuning low</li><li data-t="102">we count the stars in twos</li><li data-t="113">and keep the quiet news</li><li data-t="128">until the morning's near</li><li data-t="141">and all of it is clear</li></ol></div></div>
+              <div class="ly l-ollama"><span class="a nx-off"><svg viewBox="0 0 24 24"><path d="M12 4.5v7M7.1 7.6a7 7 0 1 0 9.8 0"/></svg></span><span class="a vc sb" style="left:102px;top:55px;font-size:15px" data-i18n="sim.sinModelo">Sin modelo</span><span class="a nx-txt dim" style="left:102px;top:68px;width:228px" data-i18n="sim.ollamaApagado">Las apps que usan Ollama no responden mientras esté apagado.</span><span class="a nx-gauge"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" class="p"/><circle cx="18" cy="18" r="15" class="v" pathLength="100"/></svg><b>86%</b></span><span class="a wbtn" style="left:45px;top:100px" data-i18n="sim.liberar">Liberar RAM</span><span class="a wbtn" style="left:213px;top:100px" data-i18n="sim.liberarModelo">Liberar modelo</span></div>
+              <div class="ly l-system"><div class="nx-sys"><div class="nx-m"><p><span>CPU</span><b>33 %</b></p><i class="nx-b b1"><u></u></i></div><div class="nx-m"><p><span>RAM</span><b>13.6 GB / 16 GB</b></p><i class="nx-b b2"><u></u></i></div><div class="nx-m"><p><span>GPU</span><b>2.3 GB / 8 GB</b></p><i class="nx-b b3"><u></u></i></div><div class="nx-m"><p><span data-i18n="sim.disco">Disco</span><b>456 / 476 GB</b></p><i class="nx-b b4"><u></u></i></div></div></div>
+            </div></div>
+          </div></div>
+        </div></div>
+        <div class="contenedor">
+          <div class="try" role="group" aria-label="Elige qué ver en el notch" data-i18n-aria="sim.grupo">
+            <button type="button" data-s="pet" aria-pressed="true" data-i18n="sim.b.pet">Reposo</button>
+            <button type="button" data-s="idle" aria-pressed="false" data-i18n="sim.b.idle">Cerrado</button>
+            <button type="button" data-s="music" aria-pressed="false" data-i18n="sim.b.music">Música</button>
+            <button type="button" data-s="lyrics" aria-pressed="false" data-i18n="sim.b.lyrics">Letra</button>
+            <button type="button" data-s="system" aria-pressed="false" data-i18n="sim.b.system">Sistema</button>
+            <button type="button" data-s="ollama" aria-pressed="false">Ollama</button>
+          </div>
+          <p class="cap" id="sim-cap" aria-live="polite"><span data-c="pet" data-i18n="sim.c.pet">Reposo: la mascota duerme en el notch cerrado y abre los ojos si la tocas.</span><span data-c="idle" data-i18n="sim.c.idle" hidden>Cerrado, se queda en una pastilla con la batería, la hora y la música.</span><span data-c="music" data-i18n="sim.c.music" hidden>Música: portada, progreso y controles de lo que suena.</span><span data-c="lyrics" data-i18n="sim.c.lyrics" hidden>La letra sincronizada a un lado, con la línea actual resaltada.</span><span data-c="ollama" data-i18n="sim.c.ollama" hidden>Ollama: enciéndelo, mira la RAM que usa y libérala.</span><span data-c="system" data-i18n="sim.c.system" hidden>Sistema: CPU, memoria y GPU de un vistazo.</span></p>
+        </div>
+      </div>
+  </section>
+
+
+
+  <section class="seccion castillo-video" id="video">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="castillo.video.eyebrow">Recorrido · 77 segundos</p><h2 data-i18n="castillo.video.title">Mírala de cerca.</h2></div>
+      <div class="video-marco revela"><video id="tour" controls preload="metadata" playsinline data-src-lang="media/isTargetSleeping-tour-{lang}.mp4" src="media/isTargetSleeping-tour-es.mp4" data-poster-lang="media/tour-{lang}.jpg" poster="media/tour-es.jpg"></video></div>
+      <p class="video-pie"><span data-i18n="castillo.video.caption">Recorrido en 1080p, con sonido y capturas actuales de la app. Datos de ejemplo.</span> <a id="video-otro" href="#" data-i18n="castillo.video.other">Ver en inglés</a></p>
+    </div>
+  </section>
+
+  <section class="seccion seccion--gris" id="funciones">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="castillo.features.eyebrow">A mano cuando los necesitas</p><h2 data-i18n="castillo.features.title">Un lugar tranquilo para lo que usas.</h2><p data-i18n="castillo.features.text">Un notch de Windows que mantiene Ollama y tus herramientas cerca, sin abrir otra ventana.</p></div>
+      <ul class="cx-pills revela"><li data-i18n="pill.nativa">Nativa: .NET 10 y Win32</li><li data-i18n="pill.cuentas">Sin cuenta en el escritorio</li><li data-i18n="pill.idiomas">Español e inglés</li><li data-i18n="pill.mit">Código abierto, MIT</li></ul>
+      <div class="castillo-tarjetas">
+        <article class="tarjeta revela"><span class="castillo-numero">01</span><h3 data-i18n="castillo.features.ollama.title">Ollama, sin rodeos</h3><p data-i18n="castillo.features.ollama.text">Enciéndelo o apágalo, mira la memoria de los modelos y duerme los que no estén trabajando para recuperar RAM.</p></article>
+        <article class="tarjeta revela"><span class="castillo-numero">02</span><h3 data-i18n="castillo.features.widgets.title">Tus herramientas, a tu manera</h3><p data-i18n="castillo.features.widgets.text">Elige widgets de sistema, reloj, Pomodoro, notas, música, portapapeles y más.</p></article>
+        <article class="tarjeta revela"><span class="castillo-numero">03</span><h3 data-i18n="castillo.features.private.title">Local por diseño</h3><p data-i18n="castillo.features.private.text">Sin cuenta ni telemetría. Modelos, notas y ajustes se quedan en tu PC.</p></article>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="seccion cx-control" id="control" aria-labelledby="control-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="como.eyebrow">Cómo funciona</p><h2 id="control-titulo" data-i18n="como.titulo">Lo apaga como se encendió.</h2><p data-i18n="como.sub">Cerrar el proceso equivocado no sirve: la app de Ollama, un servicio o una tarea programada lo vuelven a lanzar. isTargetSleeping detecta cuál es el tuyo y usa ese mismo camino.</p></div>
+      <div class="cx-bento">
+        <article class="mas-tarjeta cx-card cx-c4 revela">
+          <p class="eyebrow" data-i18n="cx.ctl.orden">Busca en este orden</p>
+          <ol class="cx-mecs">
+            <li class="cx-mec"><span class="cx-num">1</span><div class="cx-mec-cuerpo"><div class="cx-mec-cab"><h3 data-i18n="como.app">App de Ollama</h3><span class="cx-sello" data-i18n="como.probado">Probado</span></div><dl><div><dt data-i18n="como.apagar">Apagar</dt><dd data-i18n="como.appOff">Cierra sus ventanas y los procesos que cuelgan de la app</dd></div><div><dt data-i18n="como.encender">Encender</dt><dd><code>ollama app.exe hidden</code></dd></div></dl></div></li>
+            <li class="cx-mec"><span class="cx-num">2</span><div class="cx-mec-cuerpo"><div class="cx-mec-cab"><h3 data-i18n="como.servicio">Servicio de Windows</h3><span class="cx-sello" data-i18n="como.probadoVM">Probado en VM Windows</span></div><dl><div><dt data-i18n="como.apagar">Apagar</dt><dd data-i18n="como.scmStop">Detener desde el SCM</dd></div><div><dt data-i18n="como.encender">Encender</dt><dd data-i18n="como.scmStart">Iniciar desde el SCM (UAC si hace falta)</dd></div></dl></div></li>
+            <li class="cx-mec"><span class="cx-num">3</span><div class="cx-mec-cuerpo"><div class="cx-mec-cab"><h3 data-i18n="como.tarea">Tarea programada</h3><span class="cx-sello" data-i18n="como.probadoVM">Probado en VM Windows</span></div><dl><div><dt data-i18n="como.apagar">Apagar</dt><dd data-i18n="como.tareaStop">Stop en el Programador de tareas; solo cierra lo de esa tarea</dd></div><div><dt data-i18n="como.encender">Encender</dt><dd data-i18n="como.tareaRun">Run en el Programador de tareas</dd></div></dl></div></li>
+            <li class="cx-mec"><span class="cx-num">4</span><div class="cx-mec-cuerpo"><div class="cx-mec-cab"><h3 data-i18n="como.manual"><code>ollama serve</code> a mano</h3><span class="cx-sello" data-i18n="como.probado">Probado</span></div><dl><div><dt data-i18n="como.apagar">Apagar</dt><dd data-i18n="como.manualOff">Termina solo el servidor que arrancó la app</dd></div><div><dt data-i18n="como.encender">Encender</dt><dd data-i18n="como.manualOn">Lo lanza desacoplado, con log</dd></div></dl></div></li>
+            <li class="cx-mec"><span class="cx-num">5</span><div class="cx-mec-cuerpo"><div class="cx-mec-cab"><h3 data-i18n="como.noInst">No instalado</h3><span class="cx-sello" data-i18n="como.probado">Probado</span></div><dl><div><dt data-i18n="como.apagar">Apagar</dt><dd data-i18n="como.nada">Nada que apagar</dd></div><div><dt data-i18n="como.encender">Encender</dt><dd data-i18n="como.descarga">Abre ollama.com/download</dd></div></dl></div></li>
+          </ol>
+          <p class="cx-nota" data-i18n="como.validacion">Servicio y tarea: dos ciclos con Ollama 0.35.1 real en Windows Server 2025 x64, verificando API y salida de procesos. No se cargaron modelos ni se probó UAC interactivo. <a href="https://github.com/Tykillita/isTargetSleeping/blob/main/docs/backend-validation-1.5.2.md">Ver el informe y sus límites</a>.</p>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c2 revela">
+          <p class="eyebrow" data-i18n="siesta.eyebrow">Automático</p>
+          <h3 data-i18n="siesta.titulo">Si deja de generar, se duerme.</h3>
+          <p data-i18n="siesta.texto">Pasado el tiempo que elijas sin trabajar, el modelo sale de la memoria. Ollama sigue encendido y lo recarga solo con el siguiente mensaje. ¿Lo quieres ya? Ctrl+Alt+S.</p>
+          <div class="cx-cifra"><b data-i18n="cx.idle.num">2,5</b><span>s</span></div>
+          <p class="cx-cifra-pie" data-i18n="como.idleTitulo">¿Cómo sabe que el modelo no trabaja?</p>
+          <p class="cx-nota" data-i18n="como.idleTexto">Ollama no dice cuándo fue la última petición. Así que cada 2.5 s suma el tiempo de CPU de sus runners: si crece más de 0.08 s, hay actividad. Funciona aunque el modelo corra entero en la GPU.</p>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="juego.eyebrow">Modo juego</p>
+          <h3 data-i18n="juego.titulo">Tú juegas. Ollama se aparta.</h3>
+          <p data-i18n="juego.texto">Abres un juego y Ollama se apaga para dejarle la RAM y la VRAM. Cuando sales, vuelve por el mismo camino.</p>
+          <ol class="cx-linea">
+            <li><b>0 s</b><span data-i18n="juego.p1">Abres el juego</span></li>
+            <li><b>+5 s</b><span data-i18n="juego.p2">Ollama se apaga</span></li>
+            <li><b data-i18n="juego.salir">salir +30 s</b><span data-i18n="juego.p3">Vuelve lo que estaba</span></li>
+          </ol>
+          <p class="cx-nota">Steam · Epic · Riot · EA · GOG · Rockstar · Xbox <span data-i18n="juego.propios">· y los que añadas</span></p>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="motores.eyebrow">Otros motores</p>
+          <h3 data-i18n="motores.titulo">No solo Ollama.</h3>
+          <p data-i18n="motores.texto">Cada motor con su tarjeta y su propio tiempo sin uso.</p>
+          <ul class="cx-lista">
+            <li><span>Ollama</span><span class="cx-sello" data-i18n="motores.probado">probado</span></li>
+            <li><span>llama.cpp · llama-server</span><span class="cx-sello" data-i18n="motores.probado2">probado</span></li>
+            <li><span>LM Studio</span><span class="cx-sello cx-sello--exp" data-i18n="motores.exp">experimental</span></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion seccion--gris cx-memoria" id="memoria" aria-labelledby="memoria-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="cx.mem.eyebrow">Memoria y modelos</p><h2 id="memoria-titulo" data-i18n="cx.mem.titulo">Mira cuánto ocupa cada cosa.</h2><p data-i18n="cx.mem.texto">La memoria del PC y de cada GPU, los modelos que tienes y las apps que más RAM usan, todo en el mismo sitio.</p></div>
+      <div class="cx-bento">
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="mem.eyebrow">Memoria</p>
+          <h3 data-i18n="mem.titulo">RAM y VRAM, sin adivinar.</h3>
+          <p data-i18n="mem.texto">Cuánto es del modelo y cuánto del resto, en cada GPU dedicada. La misma cifra que el Administrador de tareas.</p>
+          <div class="cx-medidores">
+            <div><div class="cx-medidor-cab"><span data-i18n="mem.pc">Memoria del PC</span><em data-i18n="mem.presion">presión normal</em></div><div class="cx-barra"><i class="m" style="width:34%"></i><i class="r" style="width:29%"></i></div><div class="cx-leyenda"><span><i class="m"></i><b data-i18n="mem.modelo">Modelo 5.5</b></span><span><i class="r"></i><b data-i18n="mem.resto">Resto 4.7</b></span><span class="cx-total">10.2 / 16 GB</span></div></div>
+            <div><div class="cx-medidor-cab"><span data-i18n="cx.mem.gpu">GPU</span><em>RTX 4060</em></div><div class="cx-barra"><i class="m" style="width:54%"></i><i class="r" style="width:10%"></i></div><div class="cx-leyenda"><span><i class="m"></i><b data-i18n="mem.modeloGpu">Modelo 4.3</b></span><span><i class="r"></i><b data-i18n="mem.restoGpu">Resto 0.8</b></span><span class="cx-total">5.1 / 8 GB</span></div></div>
+          </div>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="ram.eyebrow">Liberar RAM</p>
+          <h3 data-i18n="ram.titulo">Limpia cuando tú decides.</h3>
+          <p data-i18n="ram.texto">Al pasar del porcentaje que elijas, cada cierto tiempo o con presión crítica, con las zonas que configures en Ajustes. Si la RAM sigue alta, una pausa mínima de 1 a 30 minutos evita repetir en bucle. Protege los modelos, el juego y la app que estás usando.</p>
+          <div class="cx-antes">
+            <div><small data-i18n="ram.antes">Antes</small><div class="cx-barra"><i class="m" style="width:18%"></i><i class="r" style="width:62%"></i></div></div>
+            <div><small data-i18n="ram.despues">Después</small><div class="cx-barra"><i class="m" style="width:18%"></i><i class="r" style="width:30%"></i></div></div>
+          </div>
+          <p class="cx-nota" data-i18n="ram.nota">ejemplo ilustrativo · observa el cambio al terminar y a los 5 y 30 segundos</p>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="proc.eyebrow">Reconocimiento de procesos</p>
+          <h3 data-i18n="proc.titulo">La RAM, aplicación por aplicación.</h3>
+          <p data-i18n="proc.texto">La pestaña Procesos de Actividad, dentro del notch: RAM y CPU por aplicación, ordena, filtra y despliega cada PID con sus detalles. El cierre forzado pide confirmación ahí mismo.</p>
+          <ul class="cx-acciones">
+            <li><b data-i18n="proc.app">Finalizar aplicación</b><span data-i18n="proc.grupo">grupo y descendientes</span></li>
+            <li><b data-i18n="proc.pid">Finalizar proceso</b><span data-i18n="proc.uno">solo el PID elegido</span></li>
+            <li><b data-i18n="proc.arbol">Finalizar árbol</b><span data-i18n="proc.hijos">PID y descendientes</span></li>
+          </ul>
+          <p class="cx-nota" data-i18n="proc.nota">cierre forzado con confirmación · UAC si Windows deniega el acceso</p>
+        </article>
+        <article class="mas-tarjeta cx-card cx-c3 revela">
+          <p class="eyebrow" data-i18n="mod.eyebrow">Modelos</p>
+          <h3 data-i18n="mod.titulo">Tu biblioteca, en el panel.</h3>
+          <p data-i18n="mod.texto">Tamaño, cuantización y etiquetas. Carga, descarga o borra modelos sin escribir comandos.</p>
+          <ul class="cx-modelos">
+            <li><span class="pt"></span><span><b>gemma4:4b</b><small>3.3 GB · Q4_K_M <em data-i18n="mod.tools">herramientas</em></small></span></li>
+            <li><span class="pt"></span><span><b>llava:7b</b><small>4.7 GB · Q4_0 <em data-i18n="mod.vision">visión</em></small></span></li>
+            <li class="en-uso"><span class="pt"></span><span><b>qwen3.8:8b</b><small>5.2 GB · Q4_K_M</small></span><em class="cx-sello" data-i18n="mod.enUso">en uso</em></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion cx-agentes" id="agentes" aria-labelledby="agentes-titulo">
+    <div class="cx-hscroll"><div class="cx-hsticky"><div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="cx.ag.eyebrow">Agentes de IA</p><h2 id="agentes-titulo" data-i18n="cx.ag.titulo">Tus agentes de código, a la vista.</h2><p data-i18n="cx.ag.texto">Reparte el trabajo entre tus agentes desde el notch y revisa el resultado antes de aceptarlo.</p></div>
+      <ol class="cx-flujo revela" aria-label="Planifica, implementa, revisa">
+        <li><b data-i18n="cx.ag.p1">Planifica</b></li><li class="cx-flecha" aria-hidden="true">→</li>
+        <li><b data-i18n="cx.ag.p2">Implementa</b></li><li class="cx-flecha" aria-hidden="true">→</li>
+        <li><b data-i18n="cx.ag.p3">Revisa</b><small data-i18n="cx.ag.p3d">Tú apruebas</small></li>
+      </ol>
+      </div><div class="cx-bento cx-pista">
+        <article class="mas-tarjeta cx-card cx-c3 revela"><p class="eyebrow" data-i18n="cx.ag.f1">Próxima versión · Equipo</p><h3 data-i18n="dev127.f1t">Cada paso, al agente adecuado</h3><p data-i18n="dev127.f1d">Un enrutador decide quién planifica, implementa y revisa, y con qué modelo de tu Codex. Adjunta imágenes, elige el reparto y el esfuerzo (Auto a Máximo, con tacómetro) y aprueba o edita el plan antes.</p></article>
+        <article class="mas-tarjeta cx-card cx-c3 revela"><p class="eyebrow" data-i18n="cx.ag.f2">Próxima versión · Rama propia</p><h3 data-i18n="dev127.f2t">Nunca toca tu código sin permiso</h3><p data-i18n="dev127.f2d">Cada tarea trabaja en su propio worktree y rama de git; el otro modelo revisa el diff y, cuando tú quieras, lo lees en el notch, pides cambios o fusionas.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="cx.ag.f3">Próxima versión · Historial y programadas</p><h3 data-i18n="dev127.f3t">Agentes que trabajan mientras no estás</h3><p data-i18n="dev127.f3d">Repite una tarea cada día, cada semana o cada N horas, con tope de tokens, también desde el Programador de tareas de Windows. Cada ejecución queda en el historial con su rama.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="cx.ag.f4">Próxima versión · Tres aspectos</p><h3 data-i18n="dev127.f4t">Tubería, Línea de tiempo o Mesa de equipo</h3><p data-i18n="dev127.f4d">Elige cómo ver el trabajo en Ajustes. El notch cerrado puede enseñar el avance como dato de la pastilla, actividad en vivo o favorito para cancelar.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="cx.ag.f8">Próxima versión · Tareas de agentes</p><h3 data-i18n="dev127.f8t">El notch avisa cuando termina una tarea</h3><p data-i18n="dev127.f8d">Con actividad en vivo activada, las ejecuciones programadas locales de Codex o Claude Code que incluyen el nombre de su tarea en el registro lo muestran al terminar. Las tareas en la nube no se detectan.</p></article>
+      </div></div></div>
+  </section>
+
+  <section class="seccion seccion--gris mas" id="mas" aria-labelledby="mas-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="mundo.m.eyebrow">Y hay más</p><h2 id="mas-titulo" data-i18n="mundo.m.title">Los detalles que se agradecen.</h2><p data-i18n="mundo.m.text">Pequeñas cosas que trabajan en segundo plano para que no tengas que pensar en ellas.</p></div>
+      <div class="mas-grid">
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(2.00 22.62) scale(0.00977 -0.00977)" d="M1344 1792Q1441 1792 1531.0 1767.0Q1621 1742 1699.0 1696.0Q1777 1650 1841.5 1585.5Q1906 1521 1952.0 1443.0Q1998 1365 2023.0 1275.0Q2048 1185 2048 1088Q2048 991 2023.0 901.0Q1998 811 1952.0 733.0Q1906 655 1841.5 590.5Q1777 526 1699.0 480.0Q1621 434 1531.0 409.0Q1441 384 1344 384H704Q607 384 517.0 409.0Q427 434 349.0 480.0Q271 526 206.5 590.5Q142 655 96.0 733.0Q50 811 25.0 901.0Q0 991 0 1088Q0 1185 25.0 1275.0Q50 1365 96.0 1443.0Q142 1521 206.5 1585.5Q271 1650 349.0 1696.0Q427 1742 517.0 1767.0Q607 1792 704 1792ZM1344 512Q1463 512 1568.0 557.5Q1673 603 1751.0 681.0Q1829 759 1874.5 864.0Q1920 969 1920 1088Q1920 1167 1899.5 1240.5Q1879 1314 1841.5 1378.0Q1804 1442 1751.0 1495.0Q1698 1548 1634.0 1585.5Q1570 1623 1496.5 1643.5Q1423 1664 1344 1664H704Q585 1664 480.0 1618.5Q375 1573 297.0 1495.0Q219 1417 173.5 1312.0Q128 1207 128 1088Q128 968 173.0 863.0Q218 758 296.0 680.0Q374 602 479.0 557.0Q584 512 704 512ZM896 1088Q896 1062 877.0 1043.0Q858 1024 832 1024H640V832Q640 806 621.0 787.0Q602 768 576 768Q550 768 531.0 787.0Q512 806 512 832V1024H320Q294 1024 275.0 1043.0Q256 1062 256 1088Q256 1114 275.0 1133.0Q294 1152 320 1152H512V1344Q512 1370 531.0 1389.0Q550 1408 576 1408Q602 1408 621.0 1389.0Q640 1370 640 1344V1152H832Q858 1152 877.0 1133.0Q896 1114 896 1088ZM1664 1280Q1664 1253 1654.0 1230.0Q1644 1207 1626.5 1189.5Q1609 1172 1586.0 1162.0Q1563 1152 1536 1152Q1509 1152 1485.5 1162.0Q1462 1172 1445.0 1189.0Q1428 1206 1418.0 1229.5Q1408 1253 1408 1280Q1408 1307 1418.0 1330.0Q1428 1353 1445.5 1370.5Q1463 1388 1486.0 1398.0Q1509 1408 1536 1408Q1562 1408 1585.5 1398.0Q1609 1388 1626.5 1370.5Q1644 1353 1654.0 1329.5Q1664 1306 1664 1280ZM1408 896Q1408 869 1398.0 846.0Q1388 823 1370.5 805.5Q1353 788 1330.0 778.0Q1307 768 1280 768Q1253 768 1229.5 778.0Q1206 788 1189.0 805.0Q1172 822 1162.0 845.5Q1152 869 1152 896Q1152 923 1162.0 946.0Q1172 969 1189.5 986.5Q1207 1004 1230.0 1014.0Q1253 1024 1280 1024Q1306 1024 1329.5 1014.0Q1353 1004 1370.5 986.5Q1388 969 1398.0 945.5Q1408 922 1408 896Z"/></svg></span><h3 data-i18n="mundo.m.juego">Modo juego</h3><p data-i18n="mundo.m.juego.d">Abres un juego y Ollama se apaga para dejarle la RAM y la VRAM; al salir vuelve a encenderse.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(2.00 22.00) scale(0.00977 -0.00977)" d="M1920 960Q1920 876 1892.0 791.5Q1864 707 1818 626Q1771 545 1710.5 468.5Q1650 392 1581 323Q1512 254 1439.5 196.0Q1367 138 1295 95Q1225 53 1155.5 26.5Q1086 0 1024 0Q1019 0 1015.5 0.5Q1012 1 1007 1Q977 4 951.0 17.5Q925 31 905.5 52.5Q886 74 875.0 101.5Q864 129 864 160Q864 221 903.5 278.0Q943 335 1025 399Q1064 430 1110.5 461.0Q1157 492 1209 526Q1261 559 1316.0 594.0Q1371 629 1428 667Q1496 713 1564.5 765.0Q1633 817 1697.0 877.5Q1761 938 1818.0 1007.0Q1875 1076 1920 1157ZM1386 1992Q1486 1969 1579.0 1942.5Q1672 1916 1743 1895L1763 1888Q1834 1859 1876.0 1796.5Q1918 1734 1920 1657Q1919 1491 1871.5 1360.0Q1824 1229 1745.5 1123.0Q1667 1017 1566.0 932.0Q1465 847 1356 773Q1301 736 1247.0 701.5Q1193 667 1140 634Q1088 600 1039.0 567.0Q990 534 946 499Q903 466 865.0 429.0Q827 392 798.5 350.0Q770 308 753.0 261.0Q736 214 736 160Q736 131 742 102Q679 141 615.0 191.0Q551 241 489 301L473 319Q442 357 424.5 403.0Q407 449 407 501Q407 577 444.5 641.5Q482 706 552 769Q624 833 715.5 891.0Q807 949 909 1012Q959 1043 1009.5 1075.5Q1060 1108 1108.5 1143.0Q1157 1178 1202.5 1216.0Q1248 1254 1288 1296Q1329 1339 1362.5 1386.5Q1396 1434 1420.5 1487.5Q1445 1541 1458.5 1601.0Q1472 1661 1472 1728Q1472 1803 1449.5 1869.5Q1427 1936 1386 1993ZM1024 2048Q1090 2048 1148.5 2023.0Q1207 1998 1250.5 1954.5Q1294 1911 1319.0 1852.5Q1344 1794 1344 1728Q1344 1624 1304.0 1540.5Q1264 1457 1195 1384Q1125 1309 1034.0 1246.0Q943 1183 842 1121Q793 1091 743.0 1060.0Q693 1029 645.0 997.5Q597 966 551.5 933.0Q506 900 467 865Q395 801 344.0 721.5Q293 642 282 544Q268 564 255.0 585.0Q242 606 230 626Q184 707 156.0 791.5Q128 876 128 960V1654Q128 1695 140.5 1733.5Q153 1772 176.5 1803.5Q200 1835 232.5 1859.0Q265 1883 305 1895Q376 1916 469.0 1942.5Q562 1969 662 1992Q710 2004 759.0 2014.0Q808 2024 854.5 2031.5Q901 2039 944.0 2043.5Q987 2048 1024 2048Z"/></svg></span><h3 data-i18n="mundo.m.vigilante">Vigilante</h3><p data-i18n="mundo.m.vigilante.d">Si Ollama se cae o se cuelga, lo reinicia por el mismo camino, hasta 3 veces en 10 minutos.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(2.00 22.62) scale(0.00977 -0.00977)" d="M251 384Q201 384 155.5 404.5Q110 425 75.5 459.5Q41 494 20.5 539.5Q0 585 0 635V1541Q0 1591 20.5 1636.5Q41 1682 75.5 1716.5Q110 1751 155.5 1771.5Q201 1792 251 1792H1797Q1847 1792 1892.5 1771.5Q1938 1751 1972.5 1716.5Q2007 1682 2027.5 1636.5Q2048 1591 2048 1541V635Q2048 585 2027.5 539.5Q2007 494 1972.5 459.5Q1938 425 1892.5 404.5Q1847 384 1797 384ZM1792 512Q1819 512 1842.0 522.0Q1865 532 1882.5 549.5Q1900 567 1910.0 590.0Q1920 613 1920 640V1536Q1920 1562 1910.0 1585.5Q1900 1609 1882.5 1626.5Q1865 1644 1841.5 1654.0Q1818 1664 1792 1664H256Q229 1664 206.0 1654.0Q183 1644 165.5 1626.5Q148 1609 138.0 1586.0Q128 1563 128 1536V640Q128 613 138.0 589.5Q148 566 165.0 549.0Q182 532 205.5 522.0Q229 512 256 512ZM320 1376Q320 1416 348.0 1444.0Q376 1472 416 1472Q456 1472 484.0 1444.0Q512 1416 512 1376Q512 1336 484.0 1308.0Q456 1280 416 1280Q376 1280 348.0 1308.0Q320 1336 320 1376ZM704 1376Q704 1416 732.0 1444.0Q760 1472 800 1472Q840 1472 868.0 1444.0Q896 1416 896 1376Q896 1336 868.0 1308.0Q840 1280 800 1280Q760 1280 732.0 1308.0Q704 1336 704 1376ZM1088 1376Q1088 1416 1116.0 1444.0Q1144 1472 1184 1472Q1224 1472 1252.0 1444.0Q1280 1416 1280 1376Q1280 1336 1252.0 1308.0Q1224 1280 1184 1280Q1144 1280 1116.0 1308.0Q1088 1336 1088 1376ZM1472 1376Q1472 1416 1500.0 1444.0Q1528 1472 1568 1472Q1608 1472 1636.0 1444.0Q1664 1416 1664 1376Q1664 1336 1636.0 1308.0Q1608 1280 1568 1280Q1528 1280 1500.0 1308.0Q1472 1336 1472 1376ZM576 992Q576 1032 604.0 1060.0Q632 1088 672 1088Q712 1088 740.0 1060.0Q768 1032 768 992Q768 952 740.0 924.0Q712 896 672 896Q632 896 604.0 924.0Q576 952 576 992ZM960 992Q960 1032 988.0 1060.0Q1016 1088 1056 1088Q1096 1088 1124.0 1060.0Q1152 1032 1152 992Q1152 952 1124.0 924.0Q1096 896 1056 896Q1016 896 988.0 924.0Q960 952 960 992ZM1344 992Q1344 1032 1372.0 1060.0Q1400 1088 1440 1088Q1480 1088 1508.0 1060.0Q1536 1032 1536 992Q1536 952 1508.0 924.0Q1480 896 1440 896Q1400 896 1372.0 924.0Q1344 952 1344 992ZM448 640Q422 640 403.0 659.0Q384 678 384 704Q384 730 403.0 749.0Q422 768 448 768H1600Q1626 768 1645.0 749.0Q1664 730 1664 704Q1664 678 1645.0 659.0Q1626 640 1600 640Z"/></svg></span><h3 data-i18n="mundo.m.atajos">Atajos de teclado</h3><p data-i18n="mundo.m.atajos.d">Ctrl+Alt+O enciende o apaga, Ctrl+Alt+S duerme el modelo y Ctrl+Alt+L libera RAM.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(2.00 22.62) scale(0.00977 -0.00977)" d="M576 512Q457 512 352.0 557.5Q247 603 169.0 681.0Q91 759 45.5 864.0Q0 969 0 1088Q0 1207 45.5 1312.0Q91 1417 169.0 1495.0Q247 1573 352.0 1618.5Q457 1664 576 1664H832Q858 1664 877.0 1645.0Q896 1626 896 1600Q896 1574 877.0 1555.0Q858 1536 832 1536H576Q483 1536 401.5 1501.0Q320 1466 259.0 1405.0Q198 1344 163.0 1262.5Q128 1181 128 1088Q128 995 163.0 913.5Q198 832 259.0 771.0Q320 710 401.5 675.0Q483 640 576 640H832Q858 640 877.0 621.0Q896 602 896 576Q896 550 877.0 531.0Q858 512 832 512ZM1216 512Q1190 512 1171.0 531.0Q1152 550 1152 576Q1152 602 1171.0 621.0Q1190 640 1216 640H1472Q1565 640 1646.5 675.0Q1728 710 1789.0 771.0Q1850 832 1885.0 913.5Q1920 995 1920 1088Q1920 1181 1885.0 1262.5Q1850 1344 1789.0 1405.0Q1728 1466 1646.5 1501.0Q1565 1536 1472 1536H1216Q1190 1536 1171.0 1555.0Q1152 1574 1152 1600Q1152 1626 1171.0 1645.0Q1190 1664 1216 1664H1472Q1591 1664 1696.0 1618.5Q1801 1573 1879.0 1495.0Q1957 1417 2002.5 1312.0Q2048 1207 2048 1088Q2048 969 2002.5 864.0Q1957 759 1879.0 681.0Q1801 603 1696.0 557.5Q1591 512 1472 512ZM569 1024Q543 1024 527.5 1044.0Q512 1064 512 1088Q512 1112 527.5 1132.0Q543 1152 569 1152H1479Q1505 1152 1520.5 1132.0Q1536 1112 1536 1088Q1536 1064 1520.5 1044.0Q1505 1024 1479 1024Z"/></svg></span><h3 data-i18n="mundo.m.enlaces">Enlaces para tus scripts</h3><p data-i18n="mundo.m.enlaces.d">istargetsleeping://on, off, toggle, sleep o load/modelo, para Stream Deck, PowerToys o tus scripts.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(2.00 22.00) scale(0.00977 -0.00977)" d="M0 1024Q0 1165 36.5 1296.0Q73 1427 140.0 1540.5Q207 1654 300.5 1747.5Q394 1841 507.5 1908.0Q621 1975 752.0 2011.5Q883 2048 1024 2048Q1165 2048 1296.0 2011.5Q1427 1975 1540.5 1908.0Q1654 1841 1747.5 1747.5Q1841 1654 1908.0 1540.5Q1975 1427 2011.5 1296.0Q2048 1165 2048 1024Q2048 883 2011.5 752.0Q1975 621 1908.0 507.5Q1841 394 1747.5 300.5Q1654 207 1540.5 140.0Q1427 73 1296.0 36.5Q1165 0 1024 0Q883 0 752.0 36.5Q621 73 507.5 140.0Q394 207 300.5 300.5Q207 394 140.0 507.5Q73 621 36.5 752.0Q0 883 0 1024ZM1920 1024Q1920 1147 1888.0 1261.5Q1856 1376 1797.5 1475.5Q1739 1575 1657.0 1657.0Q1575 1739 1475.5 1797.5Q1376 1856 1261.5 1888.0Q1147 1920 1024 1920Q900 1920 785.5 1888.0Q671 1856 571.5 1797.5Q472 1739 390.5 1657.5Q309 1576 250.5 1476.5Q192 1377 160.0 1262.5Q128 1148 128 1024Q128 900 160.0 785.5Q192 671 250.5 571.5Q309 472 390.5 390.5Q472 309 571.5 250.5Q671 192 785.5 160.0Q900 128 1024 128Q1148 128 1262.5 160.0Q1377 192 1476.5 250.5Q1576 309 1657.5 390.5Q1739 472 1797.5 571.5Q1856 671 1888.0 785.5Q1920 900 1920 1024ZM576 1216Q576 1243 586.0 1266.0Q596 1289 613.5 1306.5Q631 1324 654.0 1334.0Q677 1344 704 1344Q730 1344 753.5 1334.0Q777 1324 794.5 1306.5Q812 1289 822.0 1265.5Q832 1242 832 1216Q832 1189 822.0 1166.0Q812 1143 794.5 1125.5Q777 1108 754.0 1098.0Q731 1088 704 1088Q677 1088 653.5 1098.0Q630 1108 613.0 1125.0Q596 1142 586.0 1165.5Q576 1189 576 1216ZM1216 1216Q1216 1243 1226.0 1266.0Q1236 1289 1253.5 1306.5Q1271 1324 1294.0 1334.0Q1317 1344 1344 1344Q1370 1344 1393.5 1334.0Q1417 1324 1434.5 1306.5Q1452 1289 1462.0 1265.5Q1472 1242 1472 1216Q1472 1189 1462.0 1166.0Q1452 1143 1434.5 1125.5Q1417 1108 1394.0 1098.0Q1371 1088 1344 1088Q1317 1088 1293.5 1098.0Q1270 1108 1253.0 1125.0Q1236 1142 1226.0 1165.5Q1216 1189 1216 1216ZM544 672Q544 698 563.0 717.0Q582 736 608 736Q624 736 633.0 731.5Q642 727 653 717Q698 679 738.5 650.0Q779 621 822.0 601.0Q865 581 914.0 570.5Q963 560 1024 560Q1112 560 1186.5 585.5Q1261 611 1331 664Q1348 677 1363.0 690.0Q1378 703 1395 717Q1406 726 1415.0 731.0Q1424 736 1440 736Q1466 736 1485.0 717.0Q1504 698 1504 672Q1504 658 1499.0 648.0Q1494 638 1485 627Q1469 608 1445.5 588.5Q1422 569 1395.5 551.0Q1369 533 1342.5 517.5Q1316 502 1294 491Q1231 459 1162.5 445.5Q1094 432 1024 432Q952 432 882.5 446.5Q813 461 749 494Q736 500 716.0 511.5Q696 523 673.5 538.0Q651 553 628.0 570.0Q605 587 586.0 604.5Q567 622 555.5 639.5Q544 657 544 672Z"/></svg></span><h3 data-i18n="mundo.m.mascotas">Mascotas con personalidad</h3><p data-i18n="mundo.m.mascotas.d">Mira, una llama, una capibara o un gatito naranja viven en tu barra de tareas y reaccionan a lo que hace Ollama.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg class="glifo" viewBox="0 0 24 24" aria-hidden="true"><path transform="translate(0.57 23.43) scale(0.01116 -0.01116)" d="M1920 192Q1920 166 1901.0 147.0Q1882 128 1856 128Q1830 128 1811 147L1282 676Q1188 597 1071.5 554.5Q955 512 832 512Q735 512 645.0 537.0Q555 562 477.0 608.0Q399 654 334.5 718.5Q270 783 224.0 861.0Q178 939 153.0 1029.0Q128 1119 128 1216Q128 1313 153.0 1403.0Q178 1493 224.0 1571.0Q270 1649 334.5 1713.5Q399 1778 477.0 1824.0Q555 1870 645.0 1895.0Q735 1920 832 1920Q929 1920 1019.0 1895.0Q1109 1870 1187.0 1824.0Q1265 1778 1329.5 1713.5Q1394 1649 1440.0 1571.0Q1486 1493 1511.0 1403.0Q1536 1313 1536 1216Q1536 1093 1493.5 976.5Q1451 860 1372 766L1901 237Q1920 218 1920 192ZM1408 1216Q1408 1295 1387.5 1368.5Q1367 1442 1329.5 1506.0Q1292 1570 1239.0 1623.0Q1186 1676 1122.0 1713.5Q1058 1751 984.5 1771.5Q911 1792 832 1792Q713 1792 608.0 1746.5Q503 1701 425.0 1623.0Q347 1545 301.5 1440.0Q256 1335 256 1216Q256 1096 301.0 991.0Q346 886 424.0 808.0Q502 730 607.0 685.0Q712 640 832 640Q951 640 1056.0 685.5Q1161 731 1239.0 809.0Q1317 887 1362.5 992.0Q1408 1097 1408 1216Z"/></svg></span><h3 data-i18n="mundo.m.despierta">Quién lo despierta</h3><p data-i18n="mundo.m.despierta.d">Mira qué app cargó el modelo (Obsidian, Cursor, un script…) por su conexión al puerto de Ollama.</p></article>
+        <article class="mas-tarjeta revela"><span class="mas-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1H3zM3 9h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><h3 data-i18n="notch.titulo">Tu panel, en el borde de la pantalla.</h3><p data-i18n="notch.texto">Un dock opcional, pegado arriba: negro puro que se funde en cristal líquido, con cápsulas de cristal y una lente que arrastras. Se abre al pasar el ratón. Se activa en Ajustes &gt; General.</p></article><article class="mas-tarjeta revela"><span class="mas-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18M3 12h18"/></svg></span><h3 data-i18n="idioma.titulo">Habla tu idioma.</h3><p data-i18n="idioma.texto">Sigue el idioma de Windows, o lo eliges en Ajustes.</p><div class="cx-idioma" aria-hidden="true"><b>Encendido</b><span>⇄</span><b>On</b></div></article><article class="mas-tarjeta revela"><span class="mas-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19 19 5M7 7l10 10"/><circle cx="12" cy="12" r="8.5"/></svg></span><h3 data-i18n="vidrio.titulo">Vidrio negro sobre Windows 11.</h3><p data-i18n="vidrio.texto">Acrílico real en la bandeja y, en el notch, negro puro que se funde en cristal líquido. Interfaz monocroma donde el color solo significa estado (y el de la portada, en la música). El ícono de la bandeja sigue el modo de tu barra de tareas.</p></article>
+        </div>
+    </div>
+  </section>
+
+  <section class="seccion castillo-barra" id="barra" aria-labelledby="barra-titulo" data-nav="claro">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="tb.eyebrow">Tu mascota, en la barra de tareas</p><h2 id="barra-titulo" data-i18n="tb.title">Mira lo que hace Ollama.</h2><p data-i18n="tb.text">Cambia la mascota y el estado de Ollama, y mira cómo reacciona justo encima de tu barra de tareas. Pasa el cursor por encima o tócala para acariciarla.</p></div>
+    </div>
+    <div class="barra-sim">
+      <div class="laptop-b" aria-hidden="false"><div class="marco-b">
+    <div class="escritorio" aria-label="La barra de tareas de Windows con la mascota de isTargetSleeping" data-i18n-aria="tb.alt"><video class="fondo-taskbar" data-fondo autoplay muted loop playsinline preload="metadata" src="castillo/img/monitor-fondo.mp4?v=2" poster="castillo/img/monitor-fondo.jpg" aria-hidden="true" tabindex="-1"></video>
+      <div class="pet-escena" id="pet-escena" aria-hidden="true">
+        <div class="pet-burbuja" id="pet-burbuja"></div>
+        <div class="pet" id="pet"></div>
+      </div>
+      <svg class="logo-w" viewBox="0 0 24 24" width="46" height="46"><defs><linearGradient id="wlogo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4cc2ff"/><stop offset="1" stop-color="#0078d4"/></linearGradient></defs><g fill="url(#wlogo)"><rect x="0" y="0" width="11.377" height="11.372" rx="1.7"/><rect x="12.623" y="0" width="11.377" height="11.372" rx="1.7"/><rect x="0" y="12.623" width="11.377" height="11.377" rx="1.7"/><rect x="12.623" y="12.623" width="11.377" height="11.377" rx="1.7"/></g></svg>
       <div class="barra-tareas" aria-hidden="true">
-        <span class="bt-app bt-inicio"><i><b></b><b></b><b></b><b></b></i></span>
-        <span class="bt-app"><i></i></span>
-        <span class="bt-app"><i></i></span>
-        <span class="bt-app bt-extra"><i></i></span>
-        <span class="bt-app bt-extra"><i></i></span>
+        <span class="tb-b tb-inicio"></span>
+        <span class="tb-busca"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8.4" cy="8.4" r="5.4"/><path d="m12.6 12.6 4 4"/></svg><span data-i18n="tb.buscar">Buscar</span></span>
+        <span class="tb-b tb-tareas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="8.2" y="6.6" width="11.6" height="9.4" rx="2.3" fill="currentColor" fill-opacity=".34" stroke-opacity=".5"/><rect x="4.4" y="9.6" width="11.6" height="9.4" rx="2.3" fill="currentColor"/></svg></span>
         <div class="bandeja">
-          <span class="bandeja-mira"><img src="media/istargetsleeping-mark-white.svg" alt=""><span class="punto"></span></span>
+          <svg class="tb-chev" viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round"><path d="m3 7.5 3-3 3 3"/></svg>
+          <span class="bandeja-mira"><img src="media/istargetsleeping-icon-256.png?v=aa181b9c468b9712" alt=""><span class="punto"></span></span>
+          <span class="tb-sys"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round"><path d="M1.5 6a9 9 0 0 1 13 0M3.5 8.4a6 6 0 0 1 9 0M5.6 10.8a3 3 0 0 1 4.8 0"/><circle cx="8" cy="12.7" r=".8" fill="#fff"/></svg><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h3l4-3v10l-4-3H2zM11.5 5.5a3.6 3.6 0 0 1 0 5M13 3.8a6 6 0 0 1 0 8.4"/></svg><svg viewBox="0 0 18 16" width="18" height="16" fill="none" stroke="#fff" stroke-width="1.2"><rect x="1.5" y="4" width="13" height="8" rx="1.8"/><path d="M16.5 7v2" stroke-linecap="round"/><rect x="3" y="5.5" width="8.5" height="5" rx=".8" fill="#fff" stroke="none"/></svg></span>
           <span class="reloj" id="reloj">12:05<br>01/10/2026</span>
         </div>
       </div>
     </div>
-
-    <div class="pildoras">
-      <div class="pildora">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
-        <span data-i18n="pill.nativa">Nativa: .NET 10 y Win32</span>
+      </div><div class="base-b"></div></div>
+      <div class="contenedor">
+<div class="try pet-try pet-mascotas-b" role="group" aria-label="Elige una mascota" data-i18n-aria="pet.grupoMascota" id="pet-mascotas">
+      <button class="pc" type="button" data-p="0" aria-pressed="true"><i class="mb" style="width:56px;background-image:url(media/p0s0.png)"></i><span>Mira</span></button>
+      <button class="pc" type="button" data-p="1" aria-pressed="false"><i class="mb" style="width:59px;background-image:url(media/p1s0.png)"></i><span>Llama</span></button>
+      <button class="pc" type="button" data-p="2" aria-pressed="false"><i class="mb" style="width:55px;background-image:url(media/p2s0.png)"></i><span data-i18n="pet.capibara">Capibara</span></button>
+      <button class="pc" type="button" data-p="3" aria-pressed="false"><i class="mb" style="width:56px;background-image:url(media/p3s0.png)"></i><span data-i18n="pet.gatito">Gatito</span></button>
+    </div>
+    <div class="pet-estados-intro"><p id="pet-estados-titulo" class="pet-estados-titulo" data-i18n="pet.estadosTitulo">Estado de Ollama</p><p class="pet-estados-ayuda" data-i18n="pet.estadosAyuda">Elige un estado de Ollama; las caricias se prueban aparte.</p></div>
+    <div class="try pet-try pet-estados-b" role="group" aria-label="Elige un estado de Ollama o prueba las caricias" data-i18n-aria="pet.grupoDemo" id="pet-estados">
+      <div class="pet-estados-lista" role="group" aria-labelledby="pet-estados-titulo">
+        <button class="pe" style="--c:#6b6b72" type="button" data-e="0" aria-pressed="true"><i class="pd"></i><span data-i18n="pet.e0">Ollama apagado</span></button>
+        <button class="pe" style="--c:#f2a33a" type="button" data-e="1" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e1">Cargando</span></button>
+        <button class="pe" style="--c:#33e07a" type="button" data-e="2" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e2">Generando</span></button>
+        <button class="pe" style="--c:#f2f2f4" type="button" data-e="3" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e3">Descargando</span></button>
+        <button class="pe" style="--c:#f2f2f4" type="button" data-e="4" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e4">Liberando RAM</span></button>
+        <button class="pe" style="--c:#8ea0ff" type="button" data-e="6" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e6">Esperando un modelo</span></button>
       </div>
-      <div class="pildora">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6M3 3l18 18"/></svg>
-        <span data-i18n="pill.cuentas">Sin cuentas</span>
-      </div>
-      <div class="pildora">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>
-        <span data-i18n="pill.idiomas">Español e inglés</span>
-      </div>
-      <div class="pildora">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>
-        <span data-i18n="pill.mit">Código abierto, MIT</span>
+      <div class="pet-interaccion" role="group" aria-labelledby="pet-interaccion-titulo">
+        <p id="pet-interaccion-titulo" class="pet-interaccion-titulo" data-i18n="pet.interaccion">Interacción con la mascota</p>
+        <button class="pe" style="--c:#ff6b5e" type="button" data-e="5" aria-pressed="false"><i class="pd"></i><span data-i18n="pet.e5">Caricias</span></button>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- ============ Video ============ -->
-<section class="seccion" id="video" style="padding-top:0">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="video.eyebrow">La versión 1.5.2, en 77 segundos</p>
-      <h2 data-i18n="video.titulo">Mírala de cerca.</h2>
+    <p class="cap" id="pet-cap" aria-live="polite"><strong class="pet-reaccion-label" data-i18n="pet.reaccion">Reacción de la mascota</strong><span data-c="0" data-i18n="pet.c0">Duerme en su cama mientras Ollama está apagado.</span><span data-c="1" data-i18n="pet.c1" hidden>Come mientras Ollama carga un modelo.</span><span data-c="2" data-i18n="pet.c2" hidden>Teclea en un portátil mientras el modelo genera.</span><span data-c="3" data-i18n="pet.c3" hidden>Carga una caja mientras se descarga un modelo.</span><span data-c="4" data-i18n="pet.c4" hidden>Se asea a su manera mientras libera la RAM.</span><span data-c="6" data-i18n="pet.c6" hidden>Se asoma por detrás del logo de Windows mientras Ollama espera un modelo.</span><span data-c="5" data-i18n="pet.c5" hidden>Suelta corazones cuando la acaricias; toca a la mascota.</span></p>
+      </div>
     </div>
-    <div class="video-marco revela">
-      <video id="tour" controls preload="metadata" playsinline data-src-lang="media/isTargetSleeping-tour-{lang}.mp4" src="media/isTargetSleeping-tour-es.mp4" data-poster-lang="media/tour-{lang}.jpg" poster="media/tour-es.jpg"></video>
-    </div>
-    <p class="video-pie"><span data-i18n="video.pie">En 1080p, con sonido, las mascotas actuales y capturas de la app. Datos de ejemplo.</span> <a id="video-otro" href="#" data-i18n="video.otro">Ver en inglés</a></p>
-    <p class="video-pie video-reels"><span data-i18n="video.reels">También para Reels: 9:16, 77 segundos, textos ampliados y clics de mouse visibles y audibles.</span> <a href="media/isTargetSleeping-reel-es.mp4" download data-i18n="video.reelEs">Descargar en español</a> <a href="media/isTargetSleeping-reel-en.mp4" download data-i18n="video.reelEn">Descargar en inglés</a></p>
-  </div>
-</section>
+  </section>
 
-<!-- ============ Funciones ============ -->
-<section class="seccion seccion--gris" id="funciones">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="fun.eyebrow">Funciones</p>
-      <h2 data-i18n="fun.titulo">Para Ollama y para todo lo demás.</h2>
-      <p data-i18n="fun.sub">Enciende, apaga y vigila Ollama, y deja el notch listo con tus widgets. Sin abrir una terminal.</p>
-    </div>
-
-    <div class="bento">
-
-      <article class="tarjeta s4 revela">
-        <p class="eyebrow" data-i18n="siesta.eyebrow">Automático</p>
-        <h3 data-i18n="siesta.titulo">Si deja de generar, se duerme.</h3>
-        <p data-i18n="siesta.texto">Pasado el tiempo que elijas sin trabajar, el modelo sale de la memoria. Ollama sigue encendido y lo recarga solo con el siguiente mensaje. ¿Lo quieres ya? Ctrl+Alt+S.</p>
-        <div class="segmentos" role="group" aria-label="Tiempo sin uso" data-i18n-aria="siesta.grupo" id="siesta">
-          <button type="button" data-min="0" data-i18n="siesta.nunca">Nunca</button>
-          <button type="button" data-min="5">5 min</button>
-          <button type="button" data-min="15">15 min</button>
-          <button type="button" data-min="30" aria-pressed="true">30 min</button>
-          <button type="button" data-min="60">60 min</button>
+  <section class="seccion pets" id="mascotas" data-nav="claro" aria-labelledby="pets-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="mundo.p.eyebrow">Mascotas con personalidad</p><h2 id="pets-titulo" data-i18n="mundo.p.title">Elige a quien te acompaña.</h2><p data-i18n="mundo.p.text">Viven en tu barra de tareas y cuentan lo que hace Ollama. Vienen apagadas; las enciendes tú.</p></div>
+      <div class="pet-caja revela">
+        <div class="pet-escena" aria-hidden="true"><div class="pet-sombra"></div><div class="pet-sprite" id="pet-sprite"></div></div>
+        <div class="pet-controles">
+          <div class="pet-lista" role="radiogroup" aria-label="Mascota" data-i18n-aria="mundo.p.lista"><button class="pet-opcion" type="button" role="radio" aria-checked="true" data-pet="0" tabindex="0"><span class="pet-mini" data-pet="0" aria-hidden="true"></span><b data-i18n="mundo.p.n.mira">Mira</b></button><button class="pet-opcion" type="button" role="radio" aria-checked="false" data-pet="1" tabindex="-1"><span class="pet-mini" data-pet="1" aria-hidden="true"></span><b data-i18n="mundo.p.n.llama">Llama</b></button><button class="pet-opcion" type="button" role="radio" aria-checked="false" data-pet="2" tabindex="-1"><span class="pet-mini" data-pet="2" aria-hidden="true"></span><b data-i18n="mundo.p.n.capibara">Capibara</b></button><button class="pet-opcion" type="button" role="radio" aria-checked="false" data-pet="3" tabindex="-1"><span class="pet-mini" data-pet="3" aria-hidden="true"></span><b data-i18n="mundo.p.n.gatito">Gatito</b></button></div>
+          <div class="pet-estados" role="group" aria-label="Qué está haciendo Ollama" data-i18n-aria="mundo.p.estados"><button class="pet-estado" type="button" aria-pressed="true" data-s="0" data-i18n="mundo.p.s.duerme">Duerme</button><button class="pet-estado" type="button" aria-pressed="false" data-s="1" data-i18n="mundo.p.s.come">Come</button><button class="pet-estado" type="button" aria-pressed="false" data-s="2" data-i18n="mundo.p.s.teclea">Teclea</button><button class="pet-estado" type="button" aria-pressed="false" data-s="4" data-i18n="mundo.p.s.asea">Se asea</button><button class="pet-estado" type="button" aria-pressed="false" data-s="5" data-i18n="mundo.p.s.despierta">Despierta</button></div>
+          <p class="pet-cap" id="pet-cap-lista" aria-live="polite"><span data-cap="0" data-i18n="mundo.p.c.duerme">Duerme en su cama mientras Ollama descansa.</span><span data-cap="1" data-i18n="mundo.p.c.come" hidden>Come mientras carga un modelo.</span><span data-cap="2" data-i18n="mundo.p.c.teclea" hidden>Teclea mientras el modelo genera.</span><span data-cap="4" data-i18n="mundo.p.c.asea" hidden>Se asea mientras se libera RAM.</span><span data-cap="5" data-i18n="mundo.p.c.despierta" hidden>Despierta, reacciona a tus clics y a tu cursor a su manera.</span></p>
         </div>
-        <div class="siesta-linea" id="siesta-linea" aria-live="polite">
-          <span class="barra"><i style="width:23%"></i></span>
-          <span id="siesta-texto">sin uso 7 min · se libera en 23 min</span>
-        </div>
-      </article>
-
-      <article class="tarjeta tarjeta--oscura s2 atajo revela">
-        <p class="eyebrow" data-i18n="atajo.eyebrow">Atajo global</p>
-        <h3 data-i18n="atajo.titulo">Desde cualquier ventana.</h3>
-        <p data-i18n="atajo.texto">Enciende o apaga Ollama sin abrir el panel, aunque estés en pantalla completa.</p>
-        <div class="teclas" id="teclas" aria-label="Ctrl + Alt + O">
-          <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>O</kbd>
-        </div>
-        <p class="atajos-extra"><b>Ctrl+Alt+S</b> <span data-i18n="atajo.s">duerme el modelo</span> · <b>Ctrl+Alt+L</b> <span data-i18n="atajo.l">libera RAM</span></p>
-      </article>
-
-      <article class="tarjeta s6 revela">
-        <div class="mascotas">
-          <div>
-            <p class="eyebrow" data-i18n="pets.eyebrow">Mascotas con personalidad</p>
-            <h3 data-i18n="pets.titulo">Alguien te cuenta lo que hace Ollama.</h3>
-            <p data-i18n="pets.texto">Mira, una llama, una capibara o un gatito naranja se mudan a tu barra de tareas, junto al botón Inicio. Dibujadas píxel a píxel, nítidas a cualquier escala.</p>
-            <ul>
-              <li data-i18n="pets.l1">Duermen en su cama con Ollama apagado y comen mientras carga un modelo.</li>
-              <li data-i18n="pets.l2">Teclean en un portátil diminuto mientras genera y, al liberar RAM, cada una se asea a su manera: Mira escanea la barra con el ojo y compacta los datos sueltos, la capibara se frota el trasero por el suelo (o, si dormía, sale de su tina y se escurre el pelo), el gatito se lava y la llama se sacude la lana.</li>
-              <li data-i18n="pets.l3">Cada una reacciona a tus clics y a tu cursor a su manera; dormida, sin salir de la cama. Al arrancar Ollama, la capibara llega montada en su cocodrilo. Apagadas por defecto.</li>
-            </ul>
-            <p><a class="enlace" href="novedades.html#v1-5-0" data-i18n="pets.novedades">Todo lo nuevo de la 1.5</a></p>
-          </div>
-          <div class="mascotas-arte">
-            <img data-src-lang="media/pets-states-{lang}.svg" src="media/pets-states-es.svg" alt="Las cuatro mascotas en seis estados: duermen, comen, teclean, cargan una caja, se asean a su manera y sueltan corazones" data-i18n-alt="pets.alt" loading="lazy">
-          </div>
-          <p class="desliza" data-i18n="pets.desliza">Desliza para ver todas →</p>
-        </div>
-      </article>
-
-      <article class="tarjeta s2 revela">
-        <p class="eyebrow" data-i18n="estado.eyebrow">En la bandeja</p>
-        <h3 data-i18n="estado.titulo">El estado, de un vistazo.</h3>
-        <p data-i18n="estado.texto">La mira junto al reloj te dice cómo está Ollama. En Ajustes › General puedes mostrarla siempre; si el interruptor no está disponible, Fijar el ícono desde Windows permite abrir los ajustes de la barra de tareas.</p>
-        <div class="estados">
-          <div class="estado">
-            <span class="bandeja-mira"><img src="media/istargetsleeping-mark-white.svg" alt=""><span class="punto"></span></span>
-            <span><span data-i18n="estado.on">Encendido</span><small data-i18n="estado.onDet">punto azul</small></span>
-          </div>
-          <div class="estado">
-            <span class="bandeja-mira"><img class="radar" src="media/istargetsleeping-mark-white.svg" alt=""><span class="punto punto--ambar"></span></span>
-            <span><span data-i18n="estado.cambio">Arrancando o apagando</span><small data-i18n="estado.cambioDet">punto ámbar y radar</small></span>
-          </div>
-          <div class="estado">
-            <span class="bandeja-mira"><img src="media/istargetsleeping-mark-white.svg" alt="" style="opacity:.55"></span>
-            <span><span data-i18n="estado.off">Apagado</span><small data-i18n="estado.offDet">sin punto</small></span>
-          </div>
-        </div>
-      </article>
-
-      <article class="tarjeta tarjeta--hielo s2 revela">
-        <p class="eyebrow" data-i18n="mem.eyebrow">Memoria</p>
-        <h3 data-i18n="mem.titulo">RAM y VRAM, sin adivinar.</h3>
-        <p data-i18n="mem.texto">Cuánto es del modelo y cuánto del resto, en cada GPU dedicada. La misma cifra que el Administrador de tareas.</p>
-        <div class="medidor">
-          <div class="medidor-fila">
-            <div class="medidor-titulo"><span data-i18n="mem.pc">Memoria del PC</span><span class="presion" data-i18n="mem.presion">presión normal</span></div>
-            <div class="medidor-barra"><i class="modelo" style="width:34%"></i><i class="resto" style="width:30%"></i></div>
-            <div class="leyenda"><span data-i18n="mem.modelo">Modelo 5.5</span><span data-i18n="mem.resto">Resto 4.7</span><b style="margin-left:auto">10.2 / 16 GB</b></div>
-          </div>
-          <div class="medidor-fila">
-            <div class="medidor-titulo"><span>GPU · RTX 4060 Laptop</span></div>
-            <div class="medidor-barra"><i class="modelo" style="width:54%"></i><i class="resto" style="width:10%"></i></div>
-            <div class="leyenda"><span data-i18n="mem.modeloGpu">Modelo 4.3</span><span data-i18n="mem.restoGpu">Resto 0.8</span><b style="margin-left:auto">5.1 / 8 GB</b></div>
-          </div>
-        </div>
-      </article>
-
-      <article class="tarjeta tarjeta--hielo s2 revela">
-        <p class="eyebrow" data-i18n="mod.eyebrow">Modelos</p>
-        <h3 data-i18n="mod.titulo">Tu biblioteca, en el panel.</h3>
-        <p data-i18n="mod.texto">Tamaño, cuantización y etiquetas. Carga, descarga o borra modelos sin escribir comandos.</p>
-        <ul class="modelos">
-          <li><span class="pt"></span><span><span class="nombre">gemma4:4b</span><small>3.3 GB · Q4_K_M <span class="etiqueta" data-i18n="mod.tools">herramientas</span></small></span></li>
-          <li><span class="pt"></span><span><span class="nombre">llava:7b</span><small>4.7 GB · Q4_0 <span class="etiqueta" data-i18n="mod.vision">visión</span></small></span></li>
-          <li class="en-uso"><span class="pt"></span><span><span class="nombre">qwen3.8:8b</span><small>5.2 GB · Q4_K_M</small></span><span class="en-uso-tag" data-i18n="mod.enUso">en uso</span></li>
-        </ul>
-      </article>
-
-      <article class="tarjeta tarjeta--oscura s3 revela">
-        <p class="eyebrow" data-i18n="juego.eyebrow">Modo juego</p>
-        <h3 data-i18n="juego.titulo">Tú juegas. Ollama se aparta.</h3>
-        <p data-i18n="juego.texto">Abres un juego y Ollama se apaga para dejarle la RAM y la VRAM. Cuando sales, vuelve por el mismo camino.</p>
-        <div class="juego-linea">
-          <div class="juego-paso"><b>0 s</b><span data-i18n="juego.p1">Abres el juego</span></div>
-          <div class="juego-paso"><b>+5 s</b><span data-i18n="juego.p2">Ollama se apaga</span></div>
-          <div class="juego-paso"><b data-i18n="juego.salir">salir +30 s</b><span data-i18n="juego.p3">Vuelve lo que estaba</span></div>
-        </div>
-        <p class="lanzadores">Steam · Epic · Riot · EA · GOG · Rockstar · Xbox <span data-i18n="juego.propios">· y los que añadas</span></p>
-      </article>
-
-      <article class="tarjeta s3 revela">
-        <p class="eyebrow" data-i18n="ram.eyebrow">Liberar RAM</p>
-        <h3 data-i18n="ram.titulo">Limpia cuando tú decides.</h3>
-        <p data-i18n="ram.texto">Al pasar del porcentaje que elijas, cada cierto tiempo o con presión crítica, con las zonas que configures en Ajustes. Si la RAM sigue alta, una pausa mínima de 1 a 30 minutos evita repetir en bucle. Protege los modelos, el juego y la app que estás usando.</p>
-        <div class="ram-antes">
-          <div class="ram-col"><small data-i18n="ram.antes">Antes</small><div class="medidor-barra"><i class="modelo" style="width:18%"></i><i class="resto" style="width:62%"></i></div></div>
-          <div class="ram-col"><small data-i18n="ram.despues">Después</small><div class="medidor-barra"><i class="modelo" style="width:18%"></i><i class="resto" style="width:31%"></i></div></div>
-        </div>
-        <p class="ram-nota" data-i18n="ram.nota">ejemplo ilustrativo · observa el cambio al terminar y a los 5 y 30 segundos</p>
-      </article>
-
-      <article class="tarjeta tarjeta--hielo s3 revela">
-        <p class="eyebrow" data-i18n="proc.eyebrow">Reconocimiento de procesos</p>
-        <h3 data-i18n="proc.titulo">La RAM, aplicación por aplicación.</h3>
-        <p data-i18n="proc.texto">La pestaña Procesos de Actividad, dentro del notch: RAM y CPU por aplicación, ordena, filtra y despliega cada PID con sus detalles. El cierre forzado pide confirmación ahí mismo.</p>
-        <ul class="minilista">
-          <li><span data-i18n="proc.app">Finalizar aplicación</span><span data-i18n="proc.grupo">grupo y descendientes</span></li>
-          <li><span data-i18n="proc.pid">Finalizar proceso</span><span data-i18n="proc.uno">solo el PID elegido</span></li>
-          <li><span data-i18n="proc.arbol">Finalizar árbol</span><span data-i18n="proc.hijos">PID y descendientes</span></li>
-        </ul>
-        <p class="ram-nota" data-i18n="proc.nota">cierre forzado con confirmación · UAC si Windows deniega el acceso</p>
-      </article>
-
-      <article class="tarjeta s2 revela">
-        <p class="eyebrow" data-i18n="vig.eyebrow">Vigilante</p>
-        <h3 data-i18n="vig.titulo">Si se cae, se levanta.</h3>
-        <p data-i18n="vig.texto">Si Ollama se cuelga o se cierra solo, lo reinicia con el mismo mecanismo. Si lo apagaste tú, no hace nada.</p>
-        <ul class="minilista">
-          <li><span data-i18n="vig.caida">Caída</span><span>~5 s</span></li>
-          <li><span data-i18n="vig.cuelgue">Cuelgue</span><span>~7.5 s</span></li>
-          <li><span data-i18n="vig.limite">Límite</span><span data-i18n="vig.limiteDet">3 en 10 min</span></li>
-        </ul>
-      </article>
-
-      <article class="tarjeta s2 revela">
-        <p class="eyebrow" data-i18n="quien.eyebrow">Actividad</p>
-        <h3 data-i18n="quien.titulo">Sabes quién lo despertó.</h3>
-        <p data-i18n="quien.texto">Qué app cargó el modelo, por su conexión al puerto de Ollama. Y tu semana: GB recuperados, siestas y horas con modelo, junto a la memoria de ahora: RAM física, comprometida, paginación y caché del sistema.</p>
-        <ul class="minilista">
-          <li><span>Obsidian</span><span data-i18n="quien.o">3 veces · hace 12 min</span></li>
-          <li><span>OpenCode</span><span data-i18n="quien.oc">1 vez · hace 3 h</span></li>
-          <li><span>Cursor</span><span data-i18n="quien.c">1 vez · 29 sep</span></li>
-        </ul>
-      </article>
-
-      <article class="tarjeta tarjeta--oscura s2 revela">
-        <p class="eyebrow" data-i18n="motores.eyebrow">Otros motores</p>
-        <h3 data-i18n="motores.titulo">No solo Ollama.</h3>
-        <p data-i18n="motores.texto">Cada motor con su tarjeta y su propio tiempo sin uso.</p>
-        <ul class="minilista">
-          <li><span>Ollama</span><span data-i18n="motores.probado">probado</span></li>
-          <li><span>llama.cpp · llama-server</span><span data-i18n="motores.probado2">probado</span></li>
-          <li><span>LM Studio</span><span data-i18n="motores.exp">experimental</span></li>
-        </ul>
-      </article>
-
-      <article class="tarjeta tarjeta--oscura s3 revela">
-        <p class="eyebrow" data-i18n="vidrio.eyebrow">Apariencia</p>
-        <h3 data-i18n="vidrio.titulo">Vidrio negro sobre Windows 11.</h3>
-        <p data-i18n="vidrio.texto">Acrílico real en la bandeja y, en el notch, negro puro que se funde en cristal líquido. Interfaz monocroma donde el color solo significa estado (y el de la portada, en la música). El ícono de la bandeja sigue el modo de tu barra de tareas.</p>
-      </article>
-
-      <article class="tarjeta s3 revela">
-        <p class="eyebrow" data-i18n="idioma.eyebrow">Idioma</p>
-        <h3 data-i18n="idioma.titulo">Habla tu idioma.</h3>
-        <p data-i18n="idioma.texto">Sigue el idioma de Windows, o lo eliges en Ajustes.</p>
-        <div class="idioma-demo" aria-hidden="true"><b>Encendido</b><span>⇄</span><b>On</b></div>
-      </article>
-
-      <article class="tarjeta s6 revela" id="notch">
-        <div class="mascotas">
-          <div>
-            <p class="eyebrow" data-i18n="notch.eyebrow">Notch</p>
-            <h3 data-i18n="notch.titulo">Tu panel, en el borde de la pantalla.</h3>
-            <p data-i18n="notch.texto">Un dock opcional, pegado arriba: negro puro que se funde en cristal líquido, con cápsulas de cristal y una lente que arrastras. Se abre al pasar el ratón. Se activa en Ajustes &gt; General.</p>
-            <ul>
-              <li data-i18n="notch.l1">Pasa el ratón: una vista corta con el estado, la RAM y la GPU, y los botones Liberar RAM, Liberar modelo y Procesos.</li>
-              <li data-i18n="notch.l2">Haz clic: el Home con tus widgets, en dos columnas. Esc o un clic fuera lo cierran.</li>
-              <li data-i18n="notch.l3">Debajo, dos cápsulas de cristal: las páginas (Inicio, Widgets y Ajustes; Ollama y Actividad si los activas) y hasta cuatro favoritos de un toque que eliges tú. Pulsa y arrastra por los botones: una lente de cristal te sigue y abre la página donde cae. Un botón de fijar mantiene el notch abierto. Aparece en el monitor donde está el cursor y se oculta con un juego o un vídeo a pantalla completa.</li>
-            </ul>
-          </div>
-          <div class="mascotas-arte">
-            <img data-src-lang="media/notch-{lang}.png" src="media/notch-es.png" alt="El notch abierto: estado de Ollama, memoria del PC y de la GPU y botones de acción, con dos tiras de iconos debajo" data-i18n-alt="notch.alt" loading="lazy">
-          </div>
-          <p class="desliza" data-i18n="pets.desliza">Desliza para ver todas →</p>
-        </div>
-      </article>
-
-      <article class="tarjeta s6 revela" id="widgets">
-        <div class="mascotas">
-          <div>
-            <p class="eyebrow" data-i18n="widg.eyebrow">Widgets</p>
-            <h3 data-i18n="widg.titulo">Tu Home, con lo que tú elijas.</h3>
-            <p data-i18n="widg.texto">Cuatro celdas que ordenas a tu gusto en la página Widgets. Cada widget se activa solo si lo quieres.</p>
-            <ul>
-              <li data-i18n="widg.l1">Ollama: encender, apagar, memoria y GPU, siempre a la vista.</li>
-              <li data-i18n="widg.l2">Sistema (CPU, RAM, VRAM, disco y red), Reloj y calendario con agenda de recordatorios y archivo .ics opcional, Batería y Música con portada, controles, aleatorio y repetir.</li>
-              <li data-i18n="widg.l3">Pomodoro con aviso, Mantener despierto y Notas que se guardan solas, en tu PC.</li>
-              <li data-i18n="widg.l5">A los lados de la pastilla cerrada aparecen las actividades en vivo: a la izquierda las de Ollama (liberando RAM, encendiéndose, memoria crítica); a la derecha el volumen, el Pomodoro y, si lo activas, la música que suena.</li>
-              <li data-i18n="widg.l6">Arrastra archivos al notch y esperan en la Bandeja hasta que los sueltas donde quieras; los de texto se editan ahí mismo. El historial del portapapeles es opcional, solo texto y solo en memoria, y los favoritos también abren tus apps. El widget Código es un IDE pequeño: árbol de archivos con los iconos de Material Icon Theme, pestañas, visor de imágenes y editor. La pastilla cerrada también puede enseñar la música que suena, con su título desplazándose.</li>
-              <li data-i18n="widg.l4">Los widgets van sobre el cristal, sin tarjetas, en dos columnas que se rellenan sin huecos. Cada widget cambia de vista según su sitio y su compañía. La pastilla cerrada, la vista al pasar el ratón y los favoritos también los eliges tú.</li>
-            </ul>
-          </div>
-          <div class="mascotas-arte">
-            <img data-src-lang="media/home-{lang}.png" src="media/home-es.png" alt="El Home del notch con los widgets de Ollama, Sistema y Reloj y calendario, y las dos tiras de iconos debajo" data-i18n-alt="widg.alt" loading="lazy">
-          </div>
-          <p class="desliza" data-i18n="pets.desliza">Desliza para ver todas →</p>
-        </div>
-      </article>
-
-    </div>
-  </div>
-</section>
-
-<!-- Versión publicada: las descargas apuntan a los paquetes comprobados de GitHub Releases. -->
-<section class="seccion seccion--gris" id="version-1-25-2">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="dev.eyebrow">Versión 1.25.2 · Disponible</p>
-      <h2 data-i18n="dev.titulo">Filtros de AI Agents a tono con el cristal.</h2>
-      <p data-i18n="dev.sub">La 1.25.2 corrige el aspecto y el despliegue de los filtros de sesiones recientes de AI Agents.</p>
-    </div>
-    <div class="bento">
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f1">1.21.0 · Audio y HUDs</p><h3 data-i18n="dev.f1t">Control por app</h3><p data-i18n="dev.f1d">Deslizadores del mezclador de Windows, indicadores del notch y controles para ocultarlo en apps elegidas.</p></article>
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f2">1.22.0 · Widgets y sistema</p><h3 data-i18n="dev.f2t">Personaliza el Home</h3><p data-i18n="dev.f2d">Arrastra, ordena y ensancha widgets; consulta gráficas en vivo de las métricas del PC.</p></article>
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f3">1.23.0 · Agentes locales</p><h3 data-i18n="dev.f3t">Claude Code y Codex</h3><p data-i18n="dev.f3d">Lista las sesiones activas con nombre, herramienta, resumen del trabajo terminado y fragmentos breves de mensajes del agente. Agrupa llamadas repetidas y presenta los resultados de automatizaciones de forma legible. Los prompts del usuario no se muestran; todo se procesa en el PC.</p></article>
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f4">1.24.0 · Calendario y herramientas</p><h3 data-i18n="dev.f4t">Más en local</h3><p data-i18n="dev.f4d">Progreso de eventos y enlaces de reunión, tiempo opcional por ciudad, OCR local y teleprompter.</p></article>
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f5">1.25.0 · Agentes interactivos</p><h3 data-i18n="dev.f5t">Explora cada sesión</h3><p data-i18n="dev.f5d">Alterna entre sesiones activas y recientes, busca y filtra hasta 12 horas de historial, consulta resúmenes basados en actividad confirmada y expande los detalles cuando los necesites. Sin prompts ni comandos completos.</p></article>
-      <article class="tarjeta s3 revela"><p class="eyebrow" data-i18n="dev.f6">1.25.2 · Filtros de AI Agents</p><h3 data-i18n="dev.f6t">Cristal en cada control</h3><p data-i18n="dev.f6d">Los selectores de agente, proyecto y estado siguen el tema, conservan el foco visible y abren menús legibles dentro de la tarjeta.</p></article>
-    </div>
-    <p class="hero-meta" data-i18n="dev.estado">La 1.25.2 ya está disponible en GitHub Releases para Windows x64 y ARM64.</p>
-  </div>
-</section>
-
-<section class="seccion seccion--gris" id="version-1-25-1">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="patch.eyebrow">Parche 1.25.1 · Disponible</p>
-      <h2 data-i18n="patch.titulo">El actualizador acepta el paquete oficial.</h2>
-      <p data-i18n="patch.descripcion">La actualización reconoce el archivo de avisos de terceros que viene en el ZIP oficial y sigue validando el hash, la arquitectura y el ejecutable antes de instalar.</p>
-      <p class="hero-meta" data-i18n="patch.estado">La 1.25.1 corrigió el formato del actualizador. Si actualizas desde 1.25.0 o anterior, instala manualmente la 1.25.1 una vez y luego actualiza a la versión actual.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ============ Cómo funciona ============ -->
-<section class="seccion" id="como-funciona">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="como.eyebrow">Cómo funciona</p>
-      <h2 data-i18n="como.titulo">Lo apaga como se encendió.</h2>
-      <p data-i18n="como.sub">Cerrar el proceso equivocado no sirve: la app de Ollama, un servicio o una tarea programada lo vuelven a lanzar. isTargetSleeping detecta cuál es el tuyo y usa ese mismo camino.</p>
-    </div>
-
-    <div class="mecanismos">
-      <div class="mecanismo revela">
-        <span class="sello" data-i18n="como.probado">Probado</span>
-        <h3 data-i18n="como.app">App de Ollama</h3>
-        <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.appOff">Cierra sus ventanas y los procesos que cuelgan de la app</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><code>ollama app.exe hidden</code></div>
-      </div>
-      <div class="mecanismo revela">
-        <span class="sello" data-i18n="como.probadoVM">Probado en VM Windows</span>
-        <h3 data-i18n="como.servicio">Servicio de Windows</h3>
-        <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.scmStop">Detener desde el SCM</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.scmStart">Iniciar desde el SCM (UAC si hace falta)</span></div>
-      </div>
-      <div class="mecanismo revela">
-        <span class="sello" data-i18n="como.probadoVM">Probado en VM Windows</span>
-        <h3 data-i18n="como.tarea">Tarea programada</h3>
-        <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.tareaStop">Stop en el Programador de tareas; solo cierra lo de esa tarea</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.tareaRun">Run en el Programador de tareas</span></div>
-      </div>
-      <div class="mecanismo revela">
-        <span class="sello" data-i18n="como.probado">Probado</span>
-        <h3 data-i18n="como.manual"><code>ollama serve</code> a mano</h3>
-        <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.manualOff">Termina solo el servidor que arrancó la app</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.manualOn">Lo lanza desacoplado, con log</span></div>
-      </div>
-      <div class="mecanismo revela">
-        <span class="sello" data-i18n="como.probado">Probado</span>
-        <h3 data-i18n="como.noInst">No instalado</h3>
-        <div class="accion"><small data-i18n="como.apagar">Apagar</small><span data-i18n="como.nada">Nada que apagar</span></div>
-        <div class="accion"><small data-i18n="como.encender">Encender</small><span data-i18n="como.descarga">Abre ollama.com/download</span></div>
       </div>
     </div>
+  </section>
 
-    <div class="nota-tecnica revela">
-      <p data-i18n="como.validacion">Servicio y tarea: dos ciclos con Ollama 0.35.1 real en Windows Server 2025 x64, verificando API y salida de procesos. No se cargaron modelos ni se probó UAC interactivo. <a href="https://github.com/Tykillita/isTargetSleeping/blob/main/docs/backend-validation-1.5.2.md">Ver el informe y sus límites</a>.</p>
-      <p data-i18n="como.orden">Busca en este orden: la app de Ollama en marcha, un servicio, una tarea programada, un <code>ollama serve</code> suelto y lo que haya instalado. Con Ollama apagado, usa el que elegiste en Ajustes o el último con el que estuvo encendido.</p>
-    </div>
 
-    <div class="figura revela">
-      <h3 data-i18n="como.idleTitulo">¿Cómo sabe que el modelo no trabaja?</h3>
-      <p data-i18n="como.idleTexto">Ollama no dice cuándo fue la última petición. Así que cada 2.5 s suma el tiempo de CPU de sus runners: si crece más de 0.08 s, hay actividad. Funciona aunque el modelo corra entero en la GPU.</p>
-      <div class="figura-lienzo">
-        <img data-src-lang="media/idle-flow-{lang}.svg" src="media/idle-flow-es.svg" alt="Cada 2.5 s suma el tiempo de CPU de los runners; si crece más de 0.08 s cuenta como actividad; tras el tiempo sin uso el modelo sale de la memoria y Ollama sigue encendido" data-i18n-alt="como.idleAlt" loading="lazy">
+    <section class="seccion seccion--gris cx-novedades" id="novedades" aria-labelledby="novedades-titulo">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="dev129.eyebrow">Versión 1.29.0</p><h2 id="novedades-titulo" data-i18n="dev129.titulo">Una mascota privada y más control sobre tus agentes.</h2><p data-i18n="dev129.sub">La web móvil llega por Tailscale y funciona sin ESP32; la placa queda como conexión opcional.</p></div>
+      <div class="cx-bento cx-mazo">
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f1">1.29.0 · Agentes</p><h3 data-i18n="dev129.f1t">Todo lo que espera tu respuesta, junto</h3><p data-i18n="dev129.f1d">Permisos, preguntas, planes, avisos y sesiones recientes viven en una bandeja única. También revisas el historial y tus reglas Siempre.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f2">1.29.0 · Seguridad</p><h3 data-i18n="dev129.f2t">Comandos delicados piden atención</h3><p data-i18n="dev129.f2d">Borrados recursivos, fuerza en Git y otros comandos de riesgo se marcan en rojo: no pasan con Y ni se guardan como Siempre.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f3">1.29.0 · Mascota móvil</p><h3 data-i18n="dev129.f3t">Web privada; ESP32 opcional</h3><p data-i18n="dev129.f3d">En Ajustes › Notch, descarga el complemento y abre la web móvil por Tailscale. Puedes chatear con la mascota sin tener una placa ESP32.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f4">1.29.0 · Agentes</p><h3 data-i18n="dev129.f4t">Retoma una sesión en su terminal</h3><p data-i18n="dev129.f4d">Continúa sesiones inactivas de Claude Code o Codex en Windows Terminal, desde la carpeta original y sin abrir dos sesiones que escriban a la vez.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f5">1.29.0 · Equipo</p><h3 data-i18n="dev129.f5t">Las tareas programadas se pausan si fallan</h3><p data-i18n="dev129.f5d">Después de diez fallos seguidos, la rutina se detiene y te avisa. Puedes volver a activarla cuando quieras.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f6">1.29.0 · Mascota</p><h3 data-i18n="dev129.f6t">Voz, resumen semanal y vínculo</h3><p data-i18n="dev129.f6d">Habla una frase cada vez que pulsas el micrófono, revisa tu semana y deja que el humor de la mascota cambie con lo que ocurre en la app.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f7">1.29.0 · Notch</p><h3 data-i18n="dev129.f7t">La actividad de los agentes se ve</h3><p data-i18n="dev129.f7d">Una luz recorre el borde del notch según el estado del agente; también puedes activar avisos sonoros suaves y elegir cuánto te interrumpen.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f8">1.29.0 · Sistema</p><h3 data-i18n="dev129.f8t">Más contexto en el notch</h3><p data-i18n="dev129.f8d">Consulta la rama de Git y el contexto de sesiones, ve las conexiones Bluetooth y abre Procesos en una pestaña propia.</p></article>
+        <article class="mas-tarjeta cx-card cx-c2 revela"><p class="eyebrow" data-i18n="dev129.f9">1.29.0 · Widgets</p><h3 data-i18n="dev129.f9t">Estante y tareas con calendario</h3><p data-i18n="dev129.f9d">Guarda rutas de archivos en el Estante y organiza tareas con horas, repetición y un calendario mensual.</p></article>
       </div>
+      <p class="cx-pie revela"><a class="enlace" href="novedades.html" data-i18n="cx.nov.todas">Ver todas las novedades</a> · <span data-i18n="dev129.estado">Descarga la versión 1.29.0 para Windows x64 y ARM64.</span></p>
     </div>
+  </section>
 
-    <div class="figura revela">
-      <h3 data-i18n="como.juegoTitulo">Y cuando abres un juego</h3>
-      <p data-i18n="como.juegoTexto">Detecta juegos de tus bibliotecas que tengan ventana visible. Lanzadores, anticheats y Wallpaper Engine no cuentan. Si enciendes Ollama a mano mientras juegas, lo respeta.</p>
-      <div class="figura-lienzo">
-        <figure class="game-diagram" aria-labelledby="game-diagram-title">
-          <figcaption class="game-diagram__caption">
-            <span data-i18n="como.juegoDiagramaKicker">Modo juego</span>
-            <strong id="game-diagram-title" data-i18n="como.juegoDiagramaTitulo">Tu juego se queda la RAM y la VRAM; Ollama vuelve solo</strong>
-          </figcaption>
-          <p class="game-diagram__band" data-i18n="como.juegoDiagramaBanda">RAM y VRAM libres para el juego</p>
-          <ol class="game-diagram__steps">
-            <li class="game-diagram__step">
-              <strong data-i18n="como.juegoPaso1">Abres un juego</strong>
-              <p data-i18n="como.juegoPaso1Texto">Ventana visible de Steam, Epic, Riot, EA, GOG, Xbox…</p>
-              <span class="game-diagram__state">Ollama ON</span>
-            </li>
-            <li class="game-diagram__step game-diagram__step--off">
-              <strong>+5 s</strong>
-              <p data-i18n="como.juegoPaso2Texto">Se apagan Ollama y los otros motores.</p>
-              <span class="game-diagram__state">Ollama OFF</span>
-            </li>
-            <li class="game-diagram__step">
-              <strong data-i18n="como.juegoPaso3">Sales</strong>
-              <p data-i18n="como.juegoPaso3Texto">Encender igual y No es un juego siguen en el panel.</p>
-            </li>
-            <li class="game-diagram__step game-diagram__step--back">
-              <strong>+30 s</strong>
-              <p data-i18n="como.juegoPaso4Texto">Vuelve solo lo que estaba encendido, por el mismo camino.</p>
-              <span class="game-diagram__state">Ollama ON</span>
-            </li>
-          </ol>
-        </figure>
-      </div>
+  <section class="seccion castillo-privacidad" id="privacidad">
+    <div class="contenedor"><div class="castillo-privacidad-layout">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="castillo.privacy.eyebrow">Tu PC sigue siendo tuya</p><h2 data-i18n="castillo.privacy.title">Todo ocurre en tu PC.</h2></div>
+      <div class="revela"><p data-i18n="castillo.privacy.text">La app lee servicios locales y datos del dispositivo. La web móvil opcional se sirve desde esta PC dentro de tu tailnet de Tailscale, no en una web pública, y funciona sin ESP32. Las actualizaciones consultan GitHub solo si las activas; el tiempo envía solo la ciudad que eliges a Open-Meteo.</p><a class="enlace" href="#privacidad" data-i18n="castillo.privacy.link">Lee los detalles de privacidad</a></div></div>
+      <p class="cx-red revela"><span data-i18n="cx.priv.red">Habla con la API local de Ollama en</span> <code>127.0.0.1:11434</code></p>
+      <div class="cx-bento"><article class="mas-tarjeta cx-card cx-c2 revela"><h3 data-i18n="priv.c1">Sin cuentas</h3><p data-i18n="priv.c1t">La app de escritorio no requiere cuenta. Para la web móvil privada se usa tu cuenta de Tailscale.</p></article><article class="mas-tarjeta cx-card cx-c2 revela"><h3 data-i18n="priv.c2">Sin telemetría</h3><p data-i18n="priv.c2t">Ni analítica. Tu historial de 90 días y tus notas se quedan en <code>%LOCALAPPDATA%</code>.</p></article><article class="mas-tarjeta cx-card cx-c2 revela"><h3 data-i18n="priv.c3">Conexiones opcionales</h3><p data-i18n="priv.c3t">Si activas las actualizaciones, consultan GitHub. El tiempo, apagado por defecto, envía solo la ciudad elegida a Open-Meteo. La web móvil opcional se conecta a esta PC dentro de tu tailnet de Tailscale, sin endpoint público y sin requerir ESP32.</p></article></div>
+      <p class="cx-pie revela" data-i18n="priv.admin">UAC se solicita al activar o actualizar el agente de RAM, al controlar Ollama como servicio si hace falta, o cuando eliges reintentar una finalización de procesos como administrador.</p>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============ Privacidad ============ -->
-<section class="privada" id="privacidad">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="priv.eyebrow">Privacidad</p>
-      <h2 data-i18n="priv.titulo">Todo ocurre en tu PC.<br>Y ya.</h2>
-      <p data-i18n="priv.sub">Habla con la API local de Ollama en <code>127.0.0.1:11434</code> (u <code>OLLAMA_HOST</code>, si lo defines) y con los puertos locales de los otros motores. Los widgets leen tu PC en local; los logs de agentes solo se leen si activas esa función y nunca salen del equipo. En la app puedes ver fragmentos breves de mensajes del agente, nunca prompts del usuario. El tiempo, apagado por defecto, envía únicamente la ciudad que eliges a Open-Meteo. El cristal del notch usa una copia de pantalla solo en memoria; las páginas se abren cuando haces clic.</p>
-    </div>
-    <div class="garantias">
-      <div class="garantia revela">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
-        <h3 data-i18n="priv.c1">Sin cuentas</h3>
-        <p data-i18n="priv.c1t">Ni registro, ni correo, ni contraseña. La descargas y la usas.</p>
-      </div>
-      <div class="garantia revela">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/><path d="M3 3l18 18"/></svg>
-        <h3 data-i18n="priv.c2">Sin telemetría</h3>
-        <p data-i18n="priv.c2t">Ni analítica. Tu historial de 90 días y tus notas se quedan en <code>%LOCALAPPDATA%</code>.</p>
-      </div>
-      <div class="garantia revela">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-        <h3 data-i18n="priv.c3">Dos conexiones opcionales</h3>
-        <p data-i18n="priv.c3t">Si activas las actualizaciones, consultan GitHub. El tiempo, apagado por defecto, envía solo la ciudad elegida a Open-Meteo. Ambos servicios son opcionales; no se suben modelos, prompts ni ajustes.</p>
-      </div>
-    </div>
-    <p class="privada-pie" data-i18n="priv.admin">UAC se solicita al activar o actualizar el agente de RAM, al controlar Ollama como servicio si hace falta, o cuando eliges reintentar una finalización de procesos como administrador.</p>
-  </div>
-</section>
-
-<!-- ============ Instalar ============ -->
-<section class="seccion" id="instalar">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <p class="eyebrow" data-i18n="inst.eyebrow">Instalar</p>
-      <h2 data-i18n="inst.titulo">Un minuto. Sin administrador.</h2>
-      <p data-i18n="inst.sub">Un único .exe autocontenido: no hace falta instalar .NET.</p>
-    </div>
-
-    <div class="pasos">
-      <div class="paso revela">
-        <div class="paso-num">1</div>
-        <h3 data-i18n="inst.p1">Descárgala</h3>
-        <p><code>isTargetSleeping-1.25.2-setup-x64.exe</code></p>
-      </div>
-      <div class="paso revela">
-        <div class="paso-num">2</div>
-        <h3 data-i18n="inst.p2">Ábrela</h3>
-        <p data-i18n="inst.p2t">Se instala para tu usuario en <code>%LOCALAPPDATA%\Programs</code>. Sin UAC.</p>
-      </div>
-      <div class="paso revela">
-        <div class="paso-num">3</div>
-        <h3 data-i18n="inst.p3">Mira junto al reloj</h3>
-        <p data-i18n="inst.p3t">Busca la mira en los íconos ocultos (^). En Ajustes › General, activa Mostrar siempre en la barra de tareas o pulsa Abrir ajustes de la barra de tareas para fijarla desde Windows.</p>
-      </div>
-    </div>
-
-    <div class="descargas revela">
-      <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
-        <span data-i18n="cta.windows">Descargar para Windows</span>
-      </a>
-      <div class="descargas-alt">
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup-x64" data-i18n="inst.x64" hidden>Instalador x64</a>
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-win-x64.zip" data-descarga="zip" data-i18n="inst.zip">Portable x64 (.zip)</a>
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-arm64.exe" data-descarga="setup-arm64" data-i18n="inst.arm">Instalador ARM64</a>
-        <a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-win-arm64.zip" data-descarga="zip-arm64" data-i18n="inst.armZip">Portable ARM64 (.zip)</a>
-      </div>
-      <p class="descargas-meta" data-i18n="inst.meta">~75 MB · Windows 10 (2004+) u 11 · necesita Ollama · última publicada: 1.25.2 · GitHub Releases</p>
-    </div>
-
-    <details class="verificar revela">
-      <summary data-i18n="inst.verificar">Verifica la descarga (opcional)</summary>
-      <div class="verificar-cuerpo">
-        <div class="terminal">
-          <pre><span class="t-prompt">PS&gt;</span> Get-FileHash .\isTargetSleeping-1.25.2-setup-x64.exe -Algorithm SHA256</pre>
-        </div>
-        <div class="hash">
-          <span class="hash-nombre">setup-x64.exe</span>
-          <div class="hash-fila"><code>0f7af4c5f43ea1c7f6fc808b98dee3d183b5d0536647f6726df9e301bb18ba07</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
-        </div>
-        <div class="hash">
-          <span class="hash-nombre">win-x64.zip</span>
-          <div class="hash-fila"><code>7103ec66cb38c59c6cffc8ac921950a462b06ffb386862ffaa3e6816830b6267</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
-        </div>
-        <div class="hash">
-          <span class="hash-nombre">setup-arm64.exe</span>
-          <div class="hash-fila"><code>624d7ffaed48b248a774edd03831bc858cb937d29336298cc8db44c986ae324c</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
-        </div>
-        <div class="hash">
-          <span class="hash-nombre">win-arm64.zip</span>
-          <div class="hash-fila"><code>f4426ffd0a7b2d0cb97455b51c8955f74316eade940790f65acf20ec2535b5dc</code><button class="copiar" type="button" data-i18n="inst.copiar">Copiar</button></div>
-        </div>
-        <p class="smartscreen" data-i18n="inst.smart">Cada archivo de la release trae su <code>.sha256</code> al lado. Si la build no está firmada, Windows SmartScreen puede pedirte confirmación: <b>Más información › Ejecutar de todos modos</b>.</p>
-      </div>
-    </details>
-  </div>
-</section>
-
-<!-- ============ Automatizar ============ -->
-<section class="seccion seccion--gris" id="automatizar">
-  <div class="contenedor dos-col">
-    <div class="revela">
-      <p class="eyebrow" data-i18n="auto.eyebrow">Para quien automatiza</p>
-      <h2 data-i18n="auto.titulo">Enlaces y banderas para tus scripts.</h2>
-      <p data-i18n="auto.texto">Los enlaces <code>istargetsleeping://</code> funcionan desde Stream Deck, PowerToys o un acceso directo. El mismo .exe responde a banderas por el mismo camino que el panel.</p>
-      <div class="hoja hoja--hecho">
-        <small data-i18n="auto.enlaces">Enlaces</small>
-        <ul>
-          <li><code>on</code> · <code>off</code> · <code>toggle</code></li>
-          <li><code>sleep</code> · <code>clean</code></li>
-          <li><code>load/llama3.2</code> · <code>show</code> · <code>activity</code></li>
-        </ul>
-      </div>
-    </div>
-    <div class="terminal revela">
-      <div class="terminal-barra">PowerShell<span class="ventanas"><span>─</span><span>□</span><span>✕</span></span></div>
-<pre><span class="t-var">$B</span> = <span class="t-str">"$env:LOCALAPPDATA\Programs\isTargetSleeping\isTargetSleeping.exe"</span>
-
-<span class="t-prompt">PS&gt;</span> &amp; <span class="t-var">$B</span> --status
-<span class="t-com" data-i18n="auto.c1"># mecanismo detectado y si la API responde</span>
-<span class="t-prompt">PS&gt;</span> &amp; <span class="t-var">$B</span> --on   <span class="t-com"># --off</span>
-<span class="t-com" data-i18n="auto.c2"># el mismo camino que el botón del panel</span>
-<span class="t-prompt">PS&gt;</span> &amp; <span class="t-var">$B</span> --sleep
-<span class="t-com" data-i18n="auto.c3"># duerme los modelos sin apagar nada</span>
-<span class="t-prompt">PS&gt;</span> &amp; <span class="t-var">$B</span> --memory
-<span class="t-com" data-i18n="auto.c4"># RAM, CPU de los runners y memoria de la GPU</span>
-<span class="t-prompt">PS&gt;</span> start istargetsleeping://load/llama3.2</pre>
-    </div>
-  </div>
-</section>
-
-<!-- ============ Código abierto ============ -->
-<section class="seccion" id="codigo-abierto">
-  <div class="contenedor dos-col">
-    <div class="revela">
-      <p class="eyebrow" data-i18n="oss.eyebrow">Código abierto</p>
-      <h2 data-i18n="oss.titulo">Nada escondido en tu bandeja.</h2>
-      <p data-i18n="oss.texto">isTargetSleeping es software libre con licencia MIT. Lee qué hace en tu PC, compílalo tú y propón mejoras.</p>
-      <div class="abierto-btns">
-        <a class="btn" href="https://github.com/Tykillita/isTargetSleeping">
-          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          <span data-i18n="oss.github">Ver en GitHub</span>
-        </a>
-        <a class="btn btn--claro" href="novedades.html" data-i18n="oss.cambios">Novedades</a>
-      </div>
-      <ul class="checks">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span data-i18n="oss.k1">C# en .NET 10: WPF para la interfaz y Win32 directo para todo lo demás.</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span data-i18n="oss.k2">Sin paquetes NuGet, sin WinForms, sin web view.</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><span data-i18n="oss.k3">Cada cambio pasa las pruebas y se compila para x64 y ARM64 en GitHub Actions.</span></li>
-      </ul>
-      <p class="legal" data-i18n="oss.legal">By CodeSentry - Tykillita. No afiliado a Ollama.</p>
-    </div>
-    <div class="terminal revela">
-      <div class="terminal-barra">PowerShell<span class="ventanas"><span>─</span><span>□</span><span>✕</span></span></div>
-<pre><span class="t-prompt">PS&gt;</span> git clone https://github.com/Tykillita/isTargetSleeping
-<span class="t-prompt">PS&gt;</span> cd isTargetSleeping
-<span class="t-prompt">PS&gt;</span> winget install Microsoft.DotNet.SDK.10
-<span class="t-prompt">PS&gt;</span> .\build.ps1 -Test
-<span class="t-com" data-i18n="oss.c1"># pruebas de lógica, integración e interfaz</span>
-<span class="t-prompt">PS&gt;</span> .\build.ps1
-<span class="t-com" data-i18n="oss.c2"># build\isTargetSleeping.exe, un solo archivo</span>
-<span class="t-prompt">PS&gt;</span> .\package.ps1
-<span class="t-com" data-i18n="oss.c3"># zip + instalador x64 y ARM64, con .sha256</span></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ============ Preguntas ============ -->
-<section class="seccion seccion--gris" id="preguntas">
-  <div class="contenedor">
-    <div class="cabecera revela">
-      <h2 data-i18n="faq.titulo">Preguntas frecuentes.</h2>
-    </div>
-    <div class="faq revela">
-      <details open>
-        <summary data-i18n="faq.q1">¿Cuesta algo?</summary>
-        <div class="respuesta"><p data-i18n="faq.a1">No. Es gratis, no tiene versión de pago y no necesitas crear ninguna cuenta.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q2">¿Cómo apago Ollama en Windows?</summary>
-        <div class="respuesta"><p data-i18n="faq.a2">Con el botón grande del panel o con Ctrl+Alt+O. isTargetSleeping detecta si Ollama vino de su app, de un servicio, de una tarea programada o de un <code>ollama serve</code> a mano, y lo detiene por ese mismo camino para que no vuelva a arrancar solo.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q3">¿Cómo saco un modelo de la memoria sin apagar Ollama?</summary>
-        <div class="respuesta"><p data-i18n="faq.a3">Elige un tiempo sin uso (5, 15, 30 o 60 min) y se dormirá solo. Para hacerlo ya: Ctrl+Alt+S, el botón Liberar del panel o <code>istargetsleeping://sleep</code>. Ollama sigue encendido y lo recarga con el siguiente mensaje.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q4">¿Es una app oficial de Ollama?</summary>
-        <div class="respuesta"><p data-i18n="faq.a4">No. Es un proyecto independiente de CodeSentry - Tykillita, sin afiliación con Ollama. Solo usa su API local.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q5">¿Necesita permisos de administrador?</summary>
-        <div class="respuesta"><p data-i18n="faq.a5">Se instala y corre como tu usuario. Pide UAC al activar o actualizar el agente de RAM, si Ollama corre como servicio, o si eliges reintentar una finalización de procesos como administrador. La consulta de procesos funciona sin el agente.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q6">¿Qué les pasa a mis apps cuando el modelo duerme?</summary>
-        <div class="respuesta"><p data-i18n="faq.a6">Nada raro. Ollama sigue escuchando, así que Obsidian, Cursor o tu script mandan su mensaje como siempre. La primera respuesta tarda un poco más mientras el modelo vuelve a cargarse.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q7">¿Hace más rápidos los modelos?</summary>
-        <div class="respuesta"><p data-i18n="faq.a7">No directamente. Lo que hace es devolverle la RAM y la VRAM al resto del PC cuando el modelo no trabaja, y apartar a Ollama mientras juegas.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q8">¿Las mascotas consumen recursos?</summary>
-        <div class="respuesta"><p data-i18n="faq.a8">Muy pocos, y vienen apagadas. Se esconden al abrir Inicio, un juego o una app en pantalla completa; con movimiento reducido usan una pose fija sin temporizadores. Al apagarlas se cierra su ventana.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q9">¿Cómo se actualiza?</summary>
-        <div class="respuesta"><p data-i18n="faq.a9">Las búsquedas son opcionales y están apagadas por defecto. Si las activas, consultan GitHub al arrancar y cada 24 h. Tú decides cuándo instalar; verifica SHA-256 y vuelve a la versión anterior si algo falla.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q10">¿Funciona en Mac o Linux?</summary>
-        <div class="respuesta"><p data-i18n="faq.a10">No: está hecha con Win32 y WPF y solo funciona en Windows 10 (2004 o posterior) y 11, en x64 y ARM64.</p></div>
-      </details>
-      <details>
-        <summary data-i18n="faq.q11">¿Dónde reporto un fallo?</summary>
-        <div class="respuesta"><p data-i18n="faq.a11">En los <a href="https://github.com/Tykillita/isTargetSleeping/issues">issues de GitHub</a>. Adjunta el log de <code>%LOCALAPPDATA%\isTargetSleeping\Logs\app.log</code> si puedes. Para una vulnerabilidad, usa el <a href="https://github.com/Tykillita/isTargetSleeping/security/advisories/new">reporte privado</a> de la política de seguridad.</p></div>
+  <section class="seccion seccion--gris" id="instalar">
+    <div class="contenedor">
+      <div class="cabecera revela"><p class="eyebrow" data-i18n="castillo.install.eyebrow">Windows 10 y 11</p><h2 data-i18n="castillo.install.title">Empieza en un minuto.</h2><p data-i18n="castillo.install.text">Descarga el instalador autocontenido, ábrelo y busca la mascota junto al reloj de Windows.</p></div>
+      <ol class="cx-pasos revela" aria-label="Tres pasos" data-i18n-aria="cx.inst.titulo">
+        <li><span class="cx-num">1</span><h3 data-i18n="inst.p1">Descárgala</h3></li>
+        <li><span class="cx-num">2</span><h3 data-i18n="inst.p2">Ábrela</h3><p data-i18n="inst.p2t">Se instala para tu usuario en <code>%LOCALAPPDATA%\Programs</code>. Sin UAC.</p></li>
+        <li><span class="cx-num">3</span><h3 data-i18n="inst.p3">Mira junto al reloj</h3><p data-i18n="inst.p3t">Busca la mascota en los íconos ocultos (^). En Ajustes › General, activa Mostrar siempre en la barra de tareas o pulsa Abrir ajustes de la barra de tareas para fijarla desde Windows.</p></li>
+      </ol>
+      <div class="castillo-descarga revela"><a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><span data-i18n="cta.windows">Descargar para Windows</span></a><p data-i18n="castillo.install.version">Última versión: 1.29.0 · x64 y ARM64 · No necesitas instalar .NET</p><div class="descargas-alt"><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-x64.zip" data-descarga="zip" data-i18n="castillo.install.portable">Portable x64 (.zip)</a><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-arm64.exe" data-descarga="setup-arm64" data-i18n="castillo.install.arm">Instalador ARM64</a><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-win-arm64.zip" data-descarga="zip-arm64" data-i18n="castillo.install.armzip">Portable ARM64 (.zip)</a></div></div>
+      <p class="cx-req revela" data-i18n="cx.inst.req">~75 MB · Windows 10 (2004+) u 11 · necesita Ollama</p>
+      <details class="verificar revela">
+        <summary data-i18n="inst.verificar">Verifica la descarga (opcional)</summary>
+        <div class="verificar-cuerpo"><div class="terminal"><pre><span class="t-prompt">PS&gt;</span> Get-FileHash .\isTargetSleeping-1.29.0-setup-x64.exe -Algorithm SHA256</pre></div><p class="smartscreen" data-i18n="inst.smart">Cada archivo de la release trae su <code>.sha256</code> al lado. Si la build no está firmada, Windows SmartScreen puede pedirte confirmación: <b>Más información › Ejecutar de todos modos</b>.</p></div>
       </details>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ============ Cierre ============ -->
-<section class="cierre">
-  <div class="contenedor revela">
-    <img src="media/istargetsleeping-icon.svg" alt="" width="88" height="88">
-    <h2 data-i18n="cierre.titulo">Que tu modelo descanse.</h2>
-    <p data-i18n="cierre.texto">Gratis para Windows. Sin cuentas. Despierto cuando le hablas, dormido cuando no.</p>
-    <a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
-      <span data-i18n="cta.windows">Descargar para Windows</span>
-    </a>
-    <p class="hero-meta" data-i18n="cierre.meta">Versión 1.25.2 · Windows 10 y 11 · x64 y ARM64</p>
-  </div>
-</section>
 
+  <section class="seccion cx-automatizar" id="automatizar">
+    <div class="contenedor dos-col">
+      <div class="revela">
+        <p class="eyebrow" data-i18n="auto.eyebrow">Para quien automatiza</p>
+        <h2 data-i18n="auto.titulo">Enlaces y banderas para tus scripts.</h2>
+        <p data-i18n="auto.texto">Los enlaces <code>istargetsleeping://</code> funcionan desde Stream Deck, PowerToys o un acceso directo. El mismo .exe responde a banderas por el mismo camino que el panel.</p>
+        <div class="hoja hoja--hecho"><small data-i18n="auto.enlaces">Enlaces</small><ul><li><code>on</code> · <code>off</code> · <code>toggle</code></li><li><code>sleep</code> · <code>clean</code></li><li><code>load/llama3.2</code> · <code>show</code> · <code>activity</code></li></ul></div>
+      </div>
+      <div class="terminal cx-term revela"><div class="cx-term-barra"><span class="cx-term-tab"><svg class="cx-term-ps" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.2 2.5h11.1c.6 0 .9.6.7 1.1l-3 9.3c-.1.4-.5.6-.9.6H1.6c-.6 0-.9-.6-.7-1.1l3-9.3c.1-.4.5-.6.9-.6zM5.4 5.1 8.2 8l-3.6 2.4v1.1L9.8 8 5.4 4.1zM8.7 10.6h3v1h-3z"/></svg><span>PowerShell</span><i aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></i></span><span class="cx-term-mas" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></span><span class="cx-term-mas" aria-hidden="true"><svg viewBox="0 0 12 12"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></span><span class="cx-term-ctl" aria-hidden="true"><b><svg viewBox="0 0 12 12"><path d="M1.5 6h9"/></svg></b><b><svg viewBox="0 0 12 12"><rect x="1.75" y="1.75" width="8.5" height="8.5" rx="1.5"/></svg></b><b class="cerrar"><svg viewBox="0 0 12 12"><path d="M1.75 1.75l8.5 8.5M10.25 1.75l-8.5 8.5"/></svg></b></span></div><pre><span class="l" style="--i:0"><span class="t-var">$B</span> <span class="t-op">=</span> <span class="t-str">"$env:LOCALAPPDATA\Programs\isTargetSleeping\isTargetSleeping.exe"</span></span><span class="l" style="--i:1"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="t-amp">&amp;</span> <span class="t-var">$B</span> <span class="t-par">--status</span></span><span class="l" style="--i:2"><span class="t-com" data-i18n="auto.c1"># mecanismo detectado y si la API responde</span></span><span class="l" style="--i:3"><span class="t-ok">●</span> <span class="t-out">ollama</span>  <span class="t-dim">127.0.0.1:11434</span>  <span class="t-ok">✓</span></span><span class="l" style="--i:4"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="t-amp">&amp;</span> <span class="t-var">$B</span> <span class="t-par">--on</span> <span class="t-com"># --off</span></span><span class="l" style="--i:5"><span class="t-com" data-i18n="auto.c2"># el mismo camino que el botón del panel</span></span><span class="l" style="--i:6"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="t-amp">&amp;</span> <span class="t-var">$B</span> <span class="t-par">--sleep</span></span><span class="l" style="--i:7"><span class="t-com" data-i18n="auto.c3"># duerme los modelos sin apagar nada</span></span><span class="l" style="--i:8"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="t-amp">&amp;</span> <span class="t-var">$B</span> <span class="t-par">--memory</span></span><span class="l" style="--i:9"><span class="t-com" data-i18n="auto.c4"># RAM, CPU de los runners y memoria de la GPU</span></span><span class="l" style="--i:10"><span class="t-out">RAM</span> <span class="t-dim">5.5 GB</span> <span class="t-bar"><i style="--w:34%"></i><i class="r" style="--w:29%"></i></span>  <span class="t-out">GPU</span> <span class="t-dim">4.3 GB</span> <span class="t-bar"><i style="--w:54%"></i><i class="r" style="--w:10%"></i></span></span><span class="l" style="--i:11"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="t-cmd">start</span> <span class="t-str">istargetsleeping://load/llama3.2</span></span><span class="l" style="--i:12"><span class="t-prompt">PS</span> <span class="t-ruta">C:\Users\tu</span><span class="t-sep">&gt;</span> <span class="cx-cursor"></span></span></pre><div class="cx-term-pie" aria-hidden="true"><span>PowerShell 7</span><span>UTF-8</span></div></div>
+    </div>
+  </section>
+
+  <section class="seccion castillo-codigo" id="codigo-abierto" data-nav="claro">
+    <div class="contenedor castillo-codigo-contenido"><p class="eyebrow" data-i18n="castillo.source.eyebrow">Código abierto · MIT</p><h2 data-i18n="castillo.source.title">Nada escondido en la bandeja.</h2><p data-i18n="castillo.source.text">Lee el código, mira cómo funciona o ayuda a mejorarlo en GitHub.</p><a class="btn btn--claro" href="https://github.com/Tykillita/isTargetSleeping" data-i18n="castillo.source.link">Explora el repositorio</a> <ul class="cx-enlaces"><li><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/blob/main/docs/backend-validation-1.5.2.md" data-i18n="cx.src.validacion">Informe de validación</a></li><li><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="cx.src.changelog">Historial de cambios</a></li><li><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/blob/main/LICENSE" data-i18n="cx.src.licencia">Licencia MIT</a></li><li><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/blob/main/SECURITY.md" data-i18n="cx.src.seguridad">Seguridad</a></li><li><a class="enlace" href="https://github.com/Tykillita/isTargetSleeping/blob/main/CONTRIBUTING.md" data-i18n="cx.src.contribuir">Contribuir</a></li></ul></div>
+  </section>
+
+  <section class="seccion seccion--gris" id="preguntas">
+    <div class="contenedor castillo-faq">
+      <div class="cabecera revela"><h2 data-i18n="faq.titulo">Preguntas frecuentes.</h2></div>
+      <div class="faq revela">
+        <details open>
+          <summary data-i18n="faq.q1">¿Cuesta algo?</summary>
+          <div class="respuesta"><p data-i18n="faq.a1">No. Es gratis, no tiene versión de pago y no necesitas crear ninguna cuenta.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q2">¿Cómo enciendo o apago Ollama?</summary>
+          <div class="respuesta"><p data-i18n="faq.a2">Usa el botón de encendido del widget Ollama en el notch, el panel clásico si lo activaste, o Ctrl+Alt+O. La app detecta cómo se inició Ollama y lo detiene por ese mismo mecanismo.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q3">¿Cómo libero un modelo sin apagar Ollama?</summary>
+          <div class="respuesta"><p data-i18n="faq.a3">Configura el reposo por inactividad desde el widget Ollama. Para liberar un modelo ahora, usa su botón Liberar modelo o Ctrl+Alt+S. Ollama sigue encendido y vuelve a cargar el modelo cuando recibe otra solicitud.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q4">¿Es una app oficial de Ollama?</summary>
+          <div class="respuesta"><p data-i18n="faq.a4">No. Es un proyecto independiente de CodeSentry - Tykillita, sin afiliación con Ollama. Solo usa su API local.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q5">¿Necesita permisos de administrador?</summary>
+          <div class="respuesta"><p data-i18n="faq.a5">El uso normal no los necesita. Windows puede pedir UAC para instalar o actualizar el agente de RAM, administrar un servicio o reintentar como administrador el cierre de un proceso protegido.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q6">¿Qué les pasa a mis apps cuando el modelo duerme?</summary>
+          <div class="respuesta"><p data-i18n="faq.a6">Nada raro. Ollama sigue escuchando, así que Obsidian, Cursor o tu script mandan su mensaje como siempre. La primera respuesta tarda un poco más mientras el modelo vuelve a cargarse.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q7">¿Hace más rápidos los modelos?</summary>
+          <div class="respuesta"><p data-i18n="faq.a7">No. Libera la RAM y la VRAM que ocupan los modelos inactivos para que las use el resto del PC. Al volver a pedir un modelo dormido, Ollama tarda un poco en cargarlo.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q8">¿Puedo desactivar la mascota del notch?</summary>
+          <div class="respuesta"><p data-i18n="faq.a8">Sí. Es opcional y viene apagada por defecto. Al activarla en Ajustes &gt; Notch, aparece tras unos 40 segundos sin actividad y respeta el ajuste de movimiento reducido.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q9">¿Cómo se actualiza?</summary>
+          <div class="respuesta"><p data-i18n="faq.a9">La búsqueda automática es opcional y está apagada por defecto. Si la activas, consulta las versiones estables en GitHub; tú decides cuándo instalar. La app verifica SHA-256 y restaura la versión anterior si la actualización falla.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q10">¿Funciona en Mac o Linux?</summary>
+          <div class="respuesta"><p data-i18n="faq.a10">No. La app funciona en Windows 10 (versión 2004 o posterior) y Windows 11, en equipos x64 y ARM64.</p></div>
+        </details>
+        <details>
+          <summary data-i18n="faq.q11">¿Dónde reporto un fallo?</summary>
+          <div class="respuesta"><p data-i18n="faq.a11">En los <a href="https://github.com/Tykillita/isTargetSleeping/issues">issues de GitHub</a>. Adjunta el log de <code>%LOCALAPPDATA%\isTargetSleeping\Logs\app.log</code> si puedes. Para una vulnerabilidad, usa el <a href="https://github.com/Tykillita/isTargetSleeping/security/advisories/new">reporte privado</a> de la política de seguridad.</p></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="cierre castillo-cierre">
+    <div class="contenedor"><img src="media/istargetsleeping-icon.svg" alt="" width="88" height="88"><p class="eyebrow" data-i18n="castillo.close.eyebrow">Gratis y de código abierto</p><h2 data-i18n="castillo.close.title">Deja que tu modelo descanse.</h2><p data-i18n="castillo.close.text">Lleva Ollama y las herramientas que usas a un solo lugar pequeño en tu escritorio de Windows.</p><a class="btn" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.close.download">Descargar para Windows</span></a></div>
+  </section>
 </main>
 
-<footer class="pie">
+<footer class="pie" id="footer">
   <div class="contenedor">
     <div class="pie-arriba">
       <div class="pie-marca">
-        <a class="pie-logo" href="#">
-          <img src="media/istargetsleeping-icon.svg" alt="" width="32" height="32">
-          <span>isTargetSleeping</span>
-        </a>
+        <a class="pie-logo" href="#inicio" aria-label="isTargetSleeping"><img src="media/istargetsleeping-icon.svg?v=8d514906c239d8f6" alt="" width="32" height="32"><span>isTargetSleeping</span></a>
         <p class="pie-lema" data-i18n="pie.lema">Vigila tus modelos locales y los pone a dormir cuando no trabajan. Tu RAM, de vuelta.</p>
-        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
+        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
       </div>
       <nav class="pie-columnas" aria-label="Pie de página" data-i18n-aria="pie.aria">
         <div class="pie-columna">
           <h2 data-i18n="pie.producto">Producto</h2>
           <ul>
             <li><a href="#funciones" data-i18n="nav.funciones">Funciones</a></li>
-            <li><a href="#como-funciona" data-i18n="nav.como">Cómo funciona</a></li>
+            <li><a href="#probar" data-i18n="nav.como">Cómo funciona</a></li>
             <li><a href="#privacidad" data-i18n="nav.privacidad">Privacidad</a></li>
             <li><a href="#instalar" data-i18n="nav.instalar">Instalar</a></li>
             <li><a href="#preguntas" data-i18n="nav.preguntas">Preguntas</a></li>
@@ -749,7 +547,7 @@
           <h2 data-i18n="pie.oss">Código abierto</h2>
           <ul>
             <li><a href="https://github.com/Tykillita/isTargetSleeping" data-i18n="pie.repo">Repositorio en GitHub</a></li>
-            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.25.2" data-i18n="pie.notas">Notas de la versión</a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.29.0" data-i18n="pie.notas">Notas de la versión</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CHANGELOG.md" data-i18n="pie.cambios">Changelog</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/issues/new" data-i18n="pie.fallo">Reportar un fallo</a></li>
             <li><a href="https://github.com/Tykillita/isTargetSleeping/blob/main/CONTRIBUTING.md" data-i18n="pie.contribuir">Cómo contribuir</a></li>
@@ -761,8 +559,8 @@
           <h2 data-i18n="pie.quien">Quién lo hace</h2>
           <p class="pie-autor" data-i18n="pie.autor">Diseñada y programada por <b>CodeSentry - Tykillita</b>, desarrollo de software y ciberseguridad.</p>
           <ul class="pie-redes">
-            <li><a href="https://github.com/Tykillita"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Tykillita</span></a></li>
-            <li><a href="https://github.com/Tykillita/isTargetSleeping"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>isTargetSleeping</span></a></li>
+            <li><a href="https://github.com/Tykillita"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>Tykillita</span></a></li>
+            <li><a href="https://github.com/Tykillita/isTargetSleeping"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span>isTargetSleeping</span></a></li>
           </ul>
           <a class="pie-empresa" href="https://github.com/Tykillita">CodeSentry - Tykillita</a>
         </div>
@@ -771,30 +569,21 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.25.2 disponible</span></span>
-        <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
-          <button type="button" data-lang="es">Español</button>
-          <button type="button" data-lang="en">English</button>
-        </nav>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.29.0 disponible</span></span>
+        <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria"><button type="button" data-lang="es">Español</button><button type="button" data-lang="en">English</button></nav>
       </div>
     </div>
   </div>
 </footer>
 
-<!-- Aviso al empezar una descarga (site.js): el archivo baja de GitHub Releases sin salir de la web. -->
-<div class="aviso-descarga" id="aviso-descarga" role="status" aria-live="polite" hidden>
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg>
-  <div class="aviso-texto">
-    <b data-i18n="dl.titulo">Tu descarga ha empezado</b>
-    <span id="aviso-archivo"></span>
-    <span class="aviso-acciones"><a class="enlace" id="aviso-otra" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.25.2/isTargetSleeping-1.25.2-setup-x64.exe" data-i18n="dl.otra">¿No empezó? Inténtalo de nuevo</a><a class="enlace" id="aviso-pasos" href="#instalar" data-i18n="dl.pasos">Ver los pasos</a></span>
-  </div>
-  <button class="icono-btn aviso-cerrar" id="aviso-cerrar" type="button" aria-label="Cerrar aviso" data-i18n-aria="dl.cerrar">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-  </button>
-</div>
+<div class="aviso-descarga" id="aviso-descarga" role="status" aria-live="polite" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><div class="aviso-texto"><b data-i18n="dl.titulo">Tu descarga ha empezado</b><span id="aviso-archivo"></span><span class="aviso-acciones"><a class="enlace" id="aviso-otra" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.29.0/isTargetSleeping-1.29.0-setup-x64.exe" data-i18n="dl.otra">¿No empezó? Inténtalo de nuevo</a><a class="enlace" id="aviso-pasos" href="#instalar" data-i18n="dl.pasos">Ver los pasos</a></span></div><button class="icono-btn aviso-cerrar" id="aviso-cerrar" type="button" aria-label="Cerrar aviso" data-i18n-aria="dl.cerrar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button></div>
 
-<script src="site.js"></script>
-<script type="module" src="firebase.js"></script>
+<script src="site.js?v=8"></script>
+<script src="simulador.js?v=4"></script>
+<script src="escena.js"></script>
+<script src="castillo.js?v=12"></script>
+<script src="mundo.js?v=35"></script>
+<script src="castillo-intro.js?v=18"></script>
+<script src="castillo-fx.js?v=2" defer></script>
 </body>
 </html>

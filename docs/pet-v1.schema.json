@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pet-v1.schema.json",
+  "title": "Protocolo Mascota v1",
+  "description": "Cada mensaje de /v1 valida contra este esquema; maximo 4096 bytes serializado (se comprueba aparte).",
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "expression": { "enum": ["open", "left", "right", "squint", "smile", "sleep", "happy", "listen", "think", "speak"] },
+    "text": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "need": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "pet": {
+      "type": "object",
+      "required": ["name", "energy", "affection", "pose", "asleep"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 12 },
+        "energy": { "$ref": "#/$defs/need" },
+        "affection": { "$ref": "#/$defs/need" },
+        "pose": { "$ref": "#/$defs/expression" },
+        "asleep": { "type": "boolean" }
+      }
+    }
+  },
+  "type": "object",
+  "required": ["v", "type", "id"],
+  "properties": { "v": { "const": 1 }, "type": { "type": "string" }, "id": { "$ref": "#/$defs/id" } },
+  "oneOf": [
+    {
+      "properties": { "type": { "const": "hello" }, "since_rev": { "type": "integer", "minimum": 0 } },
+      "required": ["since_rev"]
+    },
+    {
+      "properties": {
+        "type": { "const": "action" },
+        "kind": { "enum": ["tap", "play", "dizzy", "rest", "wake", "rename"] },
+        "age_s": { "type": "integer", "minimum": 0, "maximum": 604800 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 12 }
+      },
+      "required": ["kind", "age_s"]
+    },
+    { "properties": { "type": { "const": "ping" } } },
+    { "properties": { "type": { "const": "pong" } } },
+    {
+      "properties": { "type": { "const": "state" }, "rev": { "type": "integer", "minimum": 0 }, "pet": { "$ref": "#/$defs/pet" } },
+      "required": ["rev", "pet"]
+    },
+    {
+      "properties": {
+        "type": { "const": "say" },
+        "chat_id": { "$ref": "#/$defs/id" },
+        "text": { "$ref": "#/$defs/text" },
+        "expression": { "$ref": "#/$defs/expression" },
+        "final": { "type": "boolean" }
+      },
+      "required": ["chat_id", "text", "expression", "final"]
+    },
+    {
+      "properties": {
+        "type": { "const": "status" },
+        "chat_id": { "$ref": "#/$defs/id" },
+        "phase": { "enum": ["idle", "listening", "thinking", "speaking"] }
+      },
+      "required": ["phase"]
+    },
+    {
+      "properties": { "type": { "const": "ack" }, "ref": { "$ref": "#/$defs/id" }, "rev": { "type": "integer", "minimum": 0 } },
+      "required": ["ref", "rev"]
+    },
+    {
+      "properties": {
+        "type": { "const": "error" },
+        "code": { "enum": ["bad_json", "bad_version", "too_large", "text_too_long", "bad_expression", "unauthorized", "busy", "not_found", "model_missing", "model_unavailable", "cancelled", "internal"] },
+        "message": { "type": "string", "maxLength": 200 }
+      },
+      "required": ["code"]
+    },
+    { "properties": { "type": { "const": "chat" }, "text": { "$ref": "#/$defs/text" } }, "required": ["text"] },
+    { "properties": { "type": { "const": "agents" }, "state": { "enum": ["idle", "working", "attention", "alert", "done"] } }, "required": ["state"] },
+    { "properties": { "type": { "const": "cancel" }, "chat_id": { "$ref": "#/$defs/id" } }, "required": ["chat_id"] },
+    { "properties": { "type": { "const": "chat_accepted" }, "chat_id": { "$ref": "#/$defs/id" } }, "required": ["chat_id"] },
+    { "properties": { "type": { "const": "chat_cancelled" } } }
+  ]
+}

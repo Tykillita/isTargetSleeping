@@ -80,6 +80,16 @@ public sealed class AudioSessions(Prefs prefs) : IDisposable
     public ObservableCollection<AudioSessionRow> Active { get; } = [];
     public string EmptyText => L10n.tr("Las apps aparecen aquí cuando reproducen audio.");
 
+    /// Tres apps de muestra para la galería de widgets (sin control real: mover su barra no toca el sistema).
+    public void LoadDemo()
+    {
+        Active.Clear();
+        Active.Add(new AudioSessionRow("demo-1", "Spotify", @"C:\Windows\explorer.exe", null!, 0.72f, false));
+        Active.Add(new AudioSessionRow("demo-2", "Edge", @"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe", null!, 0.45f, false));
+        Active.Add(new AudioSessionRow("demo-3", "Discord", @"C:\Windows\System32
+otepad.exe", null!, 0.9f, false));
+    }
+
     public void Refresh()
     {
         var found = new Dictionary<string, AudioSessionRow>(StringComparer.OrdinalIgnoreCase);

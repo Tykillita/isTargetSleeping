@@ -12,6 +12,23 @@ internal static class ProcessTests
             OwnerSid = sid, User = "user", SessionId = session, ParentPid = parent,
             WorkingSetBytes = ram, PrivateWorkingSetBytes = ram, CommitBytes = 500, CpuPercent = cpu
         };
+        // Liberar RAM no toca lo que pinta la pantalla ni la herramienta de recortes (el cuelgue del 19/10/2026).
+        check("liberar RAM: protege dwm, explorer y el shell, con o sin ruta y mayúsculas",
+            ProcessMonitor.IsWindowsShell("dwm.exe") && ProcessMonitor.IsWindowsShell(@"C:\Windows\Explorer.EXE") && ProcessMonitor.IsWindowsShell("TextInputHost")
+            && ProcessMonitor.IsWindowsShell("ScreenClippingHost.exe") && ProcessMonitor.IsWindowsShell("SnippingTool.exe"));
+        check("liberar RAM: una app normal no cuenta como shell", !ProcessMonitor.IsWindowsShell("chrome.exe") && !ProcessMonitor.IsWindowsShell("ollama.exe")
+            && !ProcessMonitor.IsWindowsShell(null) && !ProcessMonitor.IsWindowsShell(""));
+        check("liberar RAM: reconoce la herramienta de recortes delante", ProcessMonitor.IsScreenCapture("SnippingTool") && ProcessMonitor.IsScreenCapture("ScreenClippingHost.exe")
+            && !ProcessMonitor.IsScreenCapture("notepad") && !ProcessMonitor.IsScreenCapture(null));
+        var live = new ProcessMonitor().Capture(new HashSet<int>());
+        check("liberar RAM: en este PC explorer y dwm salen como protegidos (WindowsShell)",
+            live.Processes.Where(p => ProcessMonitor.IsWindowsShell(p.Executable)).All(p => p.ProtectionReason != null)
+            && !live.Processes.Any(p => ProcessMonitor.IsWindowsShell(p.Executable) && p.ProtectionReason == null));
+        var everything = CleanAreas.Default | CleanAreas.Standby | CleanAreas.ModifiedList;
+        check("liberar RAM: las automáticas nunca llevan las zonas lentas, a mano sí",
+            CleanAreasRules.ForAutomatic(everything) == CleanAreas.Default && CleanAreasRules.ForAutomatic(CleanAreas.Slow) == CleanAreas.None
+            && (everything & CleanAreas.Slow) == CleanAreas.Slow);
+
         var sample = new ProcessSample(DateTimeOffset.UtcNow, 10000, true,
             [P(10), P(11, path: @"c:\APPS\SAMPLE.exe"), P(12, path: @"C:\other\sample.exe"), P(13, sid: "S-1-5-21-2"),
                 P(14, session: 2), P(15, path: null), P(16, path: null)]);

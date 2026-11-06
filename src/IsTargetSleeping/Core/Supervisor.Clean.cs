@@ -38,9 +38,10 @@ public sealed partial class Supervisor
     /// Pausa mínima entre limpiezas por porcentaje mientras la RAM siga por encima (min).
     public int CleanCooldown
     {
+        // Nunca menos de 5 min: con 1 o 2 la limpieza se repetía todo el día en un PC con la RAM siempre alta.
         get => cleanDemo || !Defaults.Has(PrefKeys.CleanCooldown) ? CleanRuleTracker.DefaultCooldownMinutes
-            : Math.Max(1, Defaults.GetInt(PrefKeys.CleanCooldown));
-        set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanCooldown, Math.Max(1, value)); Changed?.Invoke(); }
+            : Math.Max(CleanRuleTracker.DefaultCooldownMinutes, Defaults.GetInt(PrefKeys.CleanCooldown));
+        set { if (!cleanDemo) Defaults.Set(PrefKeys.CleanCooldown, Math.Max(CleanRuleTracker.DefaultCooldownMinutes, value)); Changed?.Invoke(); }
     }
 
     public void ToggleArea(CleanAreas area) => Areas ^= area;
@@ -101,6 +102,9 @@ public sealed partial class Supervisor
                     : tr("Activa la limpieza de RAM en Ajustes (pide permiso de administrador una vez).");
             return;
         }
+        // A mano, las zonas elegidas; las automáticas, sin las lentas (ver CleanAreasRules).
+        var areas = reason == CleanReason.Manual ? Areas : CleanAreasRules.ForAutomatic(Areas);
+        if (areas == CleanAreas.None) return;
         Cleaning = true;
         rules.Attempted(DateTime.Now);
         bool completed = false;
@@ -112,8 +116,6 @@ public sealed partial class Supervisor
                 await Ollama.ReleaseAll();
                 foreach (var e in Engines.Where(e => e.Power == Power.On && e.Model is not null)) await e.Sleep();
             }
-            // Las automáticas limpian lo mismo que el botón: las zonas elegidas en Ajustes.
-            var areas = Areas;
             var before = MemoryReading(SystemMemory.Current());
             var keep = await Task.Run(ProtectedPids);
             var identitySample = await new ProcessMonitor().CaptureAsync(keep.ToHashSet());
@@ -204,6 +206,7 @@ public sealed partial class Supervisor
     private async Task CheckCleanRules()
     {
         if (Agent != AgentStatus.Ready || Cleaning || Processing || Ollama.IsDemo) return;
+        if (CleanAreasRules.ForAutomatic(Areas) == CleanAreas.None || ScreenCaptureInFront()) return;
         rules.ThresholdPercent = CleanThreshold;
         rules.ThresholdCooldownMinutes = CleanCooldown;
         rules.IntervalMinutes = CleanInterval;
@@ -212,6 +215,19 @@ public sealed partial class Supervisor
         double used = mem.Total > 0 ? 100.0 * mem.Used / mem.Total : 0;
         if (rules.Sample(used, mem.PhysicalPressure == SystemMemory.Level.Critical, DateTime.Now) is { } reason)
             await Clean(reason);
+    }
+
+    /// Con la herramienta de recortes (o la barra de juegos) en primer plano no se limpia sola: una captura en curso no debe
+    /// competir con vaciar memorias, y el overlay de recorte se quedaba congelado.
+    private static bool ScreenCaptureInFront()
+    {
+        try
+        {
+            if (ProcessMonitor.GetForegroundPid() is not { } pid) return false;
+            using var p = System.Diagnostics.Process.GetProcessById(pid);
+            return ProcessMonitor.IsScreenCapture(p.ProcessName);
+        }
+        catch { return false; }
     }
 
     /// Al empezar a jugar: se espera a que Ollama y los motores terminen de apagarse.

@@ -32,8 +32,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\..\Assets\istargetsleeping-master.png" LogicalName="IsTargetSleeping.BrandLogo.png" />
     <!-- El editor de texto del widget Código (colorea el texto por lenguaje). MIT: ver THIRD-PARTY-NOTICES.md. -->
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="System.Speech" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,11 +43,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\Flags\*.png" />
+    <Resource Include="Resources\WidgetLogos\*.png" />
+    <Resource Include="Resources\FolderLogos\*.png" />
+    <Resource Include="Resources\music-demo-cover.jpg" />
+    <EmbeddedResource Include="Resources\music-new-orleans-jazz.wav" LogicalName="IsTargetSleeping.Resources.music-new-orleans-jazz.wav" WithCulture="false" />
     <EmbeddedResource Include="Resources\Strings.en.json" LogicalName="IsTargetSleeping.Strings.en.json" WithCulture="false" />
     <EmbeddedResource Include="Resources\FileIcons.json.gz" LogicalName="IsTargetSleeping.FileIcons.json.gz" WithCulture="false" />
     <!-- El agente de memoria (src/IsTargetSleeping.Agent), publicado antes por build.ps1. -->
     <EmbeddedResource Include="$(AgentExe)" LogicalName="IsTargetSleeping.MemoryAgent.exe" WithCulture="false"
                       Condition="'$(AgentExe)' != '' and Exists('$(AgentExe)')" />
   </ItemGroup>
+  <!-- Regla: toda build publicada lleva el agente de memoria dentro; sin él «Liberar RAM» falla en silencio. Si falta, la publicación se detiene. -->
+  <Target Name="RequireMemoryAgent" BeforeTargets="CoreCompile" Condition="'$(PublishSingleFile)' == 'true'">
+    <Error Condition="'$(AgentExe)' == '' or !Exists('$(AgentExe)')" Text="Falta el agente de memoria (AgentExe): toda build publicada debe incluirlo. Usa ./build.ps1 o package.ps1." />
+  </Target>
 
 </Project>

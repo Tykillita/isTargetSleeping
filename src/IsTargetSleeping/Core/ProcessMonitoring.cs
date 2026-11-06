@@ -70,6 +70,7 @@ public sealed class ProcessMonitor
                     CommitBytes = committed, CpuSeconds = seconds, CpuPercent = percent,
                     ProtectionReason = entry.Pid is 0 or 4 || critical == true ? "Critical"
                         : entry.Pid == Environment.ProcessId || NativeProcess.OwnExecutable(entry.Executable) ? "OwnApplication"
+                        : IsWindowsShell(entry.Executable) ? "WindowsShell"
                         : !identity.IsValid ? "UnavailableIdentity" : critical == null ? "CriticalUnknown" : null
                 });
             }
@@ -125,6 +126,24 @@ public sealed class ProcessMonitor
 
     internal static bool IsShellSurface(string className) => className is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd"
         or "NotifyIconOverflowWindow" or "TopLevelWindowForOverflowXamlIsland" or "Xaml_WindowedPopupClass";
+
+    // Lo que pinta la pantalla y recibe el teclado y el ratón. Vaciar su memoria de trabajo (cada vez que la RAM pasa del umbral)
+    // los obliga a releer de disco todo lo que usan: la pantalla se queda congelada o negra hasta reiniciar, sobre todo con la
+    // herramienta de recortes o una captura en curso.
+    private static readonly HashSet<string> WindowsShell = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "dwm", "explorer", "csrss", "winlogon", "wininit", "lsass", "services", "fontdrvhost", "sihost", "ctfmon", "textinputhost",
+        "shellexperiencehost", "startmenuexperiencehost", "searchhost", "searchapp", "shellhost", "applicationframehost", "lockapp",
+        "logonui", "audiodg", "snippingtool", "screenclippinghost", "gamebar", "gamebarftserver", "gamebarpresencewriter",
+        "nvcontainer", "nvidia overlay", "nvidia web helper", "nvdisplay.container",
+    };
+
+    /// Herramientas de captura de pantalla: mientras estén delante no se limpia la RAM sola.
+    public static bool IsScreenCapture(string? name) =>
+        System.IO.Path.GetFileNameWithoutExtension(name) is { } n && n.ToLowerInvariant() is "snippingtool" or "screenclippinghost" or "gamebar";
+
+    /// Procesos de Windows y del controlador de pantalla que nunca se tocan al liberar RAM.
+    public static bool IsWindowsShell(string? executable) => WindowsShell.Contains(System.IO.Path.GetFileNameWithoutExtension(executable) ?? "");
 
     /// El shell de Windows lanza casi todo lo que abre el usuario: protegerlo (por estar en
     /// primer plano la barra, la bandeja o el escritorio) no protege a sus descendientes.

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 using System.Windows;
 using System.Windows.Threading;
@@ -15,8 +16,15 @@ public sealed class AgentsWidget : WidgetModel
     private DateTime nextRead;
     private bool reading;
     private bool historyRead;
+    private readonly AgentsWatcher watcher = new();
+    private bool updatingSessions;
     private string? selectedSession;
     private bool showingRecent;
+    private readonly HashSet<string> seenAutomationCompletions = new(StringComparer.Ordinal);
+    private readonly Queue<string> seenAutomationOrder = new();
+    private readonly Queue<string> automationNotices = new();
+    private string? currentAutomationNotice;
+    private DateTime automationNoticeUntil;
     private string recentSearch = "";
     private string? providerFilter, projectFilter, stateFilter;
     private bool detailsExpanded;
@@ -29,18 +37,34 @@ public sealed class AgentsWidget : WidgetModel
     public int VisibleSessionCount => visibleSessions.Count;
     public int ActiveSessionCount => Sessions.Count;
     public int RecentSessionCount => RecentSessions.Count;
+    // El resumen de un vistazo: cuántos agentes trabajan (o, si ninguno, cuántos esperan algo de ti) y las primeras sesiones.
+    public int WorkingCount => Sessions.Count(s => s.State == AgentState.Working);
+    public int AttentionCount => Sessions.Count(s => s.State == AgentState.NeedsAttention);
+    public bool HasAttention => AttentionCount > 0;
+    public int HeadNumber => WorkingCount > 0 ? WorkingCount : AttentionCount > 0 ? AttentionCount : Sessions.Count;
+    public string HeadCaption => WorkingCount > 0 ? tr(WorkingCount == 1 ? "agente trabajando" : "agentes trabajando")
+        : AttentionCount > 0 ? tr(AttentionCount == 1 ? "espera tu respuesta" : "esperan tu respuesta")
+        : Sessions.Count > 0 ? tr("sin actividad") : tr("en reposo");
+    public string AttentionText => AttentionCount == 1 ? tr("1 espera tu respuesta") : tr("%d esperan tu respuesta", AttentionCount);
+    public bool HeadWorking => WorkingCount > 0;
+    public IReadOnlyList<AgentSnapshot> Top2 => VisibleSessions.Take(2).ToList();
+    public IReadOnlyList<AgentSnapshot> Top3 => VisibleSessions.Take(3).ToList();
     public bool HasSessions => VisibleSessions.Any();
     public bool NoSessions => !HasSessions;
     public bool ShowingRecent => showingRecent;
     public bool ShowRecentFilters => Enabled && showingRecent;
     public bool HasRecentFilter => !string.IsNullOrWhiteSpace(recentSearch) || providerFilter is not null || projectFilter is not null || stateFilter is not null;
     public string RecentSearch { get => recentSearch; set { if (recentSearch == value) return; recentSearch = value ?? ""; FilterChanged(); } }
-    public IReadOnlyList<string> ProviderOptions => FilterOptions(RecentSessions.Select(s => s.Provider));
-    public IReadOnlyList<string> ProjectOptions => FilterOptions(RecentSessions.Select(s => s.ProjectName));
-    public IReadOnlyList<string> StateOptions => FilterOptions(RecentSessions.Select(s => s.StateFilterLabel));
-    public string SelectedProviderFilter { get => providerFilter ?? tr("Todos"); set => SetFilter(ref providerFilter, value); }
-    public string SelectedProjectFilter { get => projectFilter ?? tr("Todos"); set => SetFilter(ref projectFilter, value); }
-    public string SelectedStateFilter { get => stateFilter ?? tr("Todos"); set => SetFilter(ref stateFilter, value); }
+    // Las listas de los filtros son siempre la misma instancia mientras no cambien sus valores: si cada lectura devolviera una lista nueva, el
+    // desplegable la tomaría por otra, se quedaría sin elemento elegido y mandaría un nulo que borraba el filtro al instante.
+    private IReadOnlyList<string> providerOptions = [], projectOptions = [], stateOptions = [];
+    public IReadOnlyList<string> ProviderOptions => providerOptions;
+    public IReadOnlyList<string> ProjectOptions => projectOptions;
+    public IReadOnlyList<string> StateOptions => stateOptions;
+    // Un nulo es el desplegable vaciando su selección al cambiarle la lista, no una elección: se ignora.
+    public string SelectedProviderFilter { get => providerFilter ?? tr("Todos"); set { if (value is not null) SetFilter(ref providerFilter, value); } }
+    public string SelectedProjectFilter { get => projectFilter ?? tr("Todos"); set { if (value is not null) SetFilter(ref projectFilter, value); } }
+    public string SelectedStateFilter { get => stateFilter ?? tr("Todos"); set { if (value is not null) SetFilter(ref stateFilter, value); } }
     public string ProviderFilterName => tr("Filtrar por agente");
     public string ProjectFilterName => tr("Filtrar por proyecto");
     public string StateFilterName => tr("Filtrar por estado");
@@ -57,6 +81,8 @@ public sealed class AgentsWidget : WidgetModel
     }
     public string CurrentProject => Current?.ProjectName ?? "";
     public string CurrentName => Current?.Name ?? "";
+    /// La insignia del agente de la sesión elegida: Codex lleva la suya y Claude Code la otra.
+    public bool CurrentIsCodex => string.Equals(Current?.Provider, "Codex", StringComparison.OrdinalIgnoreCase);
     public string CurrentProvider => Current is { IsAutomation: true } automation
         ? tr("Automatización · %@", automation.Provider) : Current?.Provider ?? "";
     public string CurrentState => Current?.StateLabel ?? "";
@@ -91,8 +117,47 @@ public sealed class AgentsWidget : WidgetModel
     public bool DetailsExpanded => detailsExpanded;
     public string DetailsToggleLabel => tr(detailsExpanded ? "Ocultar detalles" : "Ver detalles");
     public string DetailsToggleHelp => tr(detailsExpanded ? "Oculta el detalle de esta sesión" : "Muestra herramientas, archivos y actividad de esta sesión");
+    public bool CanEnable => !Enabled;
+    public string EnableText => tr("Activar Agentes de IA");
+    public ICommand EnableCommand => enable ??= new Command(() => prefs.SetSwitch(PrefKeys.AgentsEnabled, true));
+    private ICommand? enable;
     public ICommand SelectSession { get; }
     public ICommand SelectActive { get; }
+    /// Las sesiones del propio equipo Claude + Codex mientras trabaja: sus pasos de Claude se lanzan sin guardar la sesión (no dejan registro que
+    /// leer) y los de Codex corren en una copia de trabajo de la app, así que el widget Equipo las aporta aquí para que se vea que se está trabajando.
+    public Func<IReadOnlyList<AgentSnapshot>>? TeamSessions { get; set; }
+
+    // Seguir una sesión real que ya no trabaja: una pregunta por el CLI, en solo lectura (ver AgentResume).
+    private string resumeText = "", resumeStatus = "";
+    private bool resuming;
+    public string ResumeText { get => resumeText; set { resumeText = value ?? ""; Raise(); } }
+    public bool CanResumeCurrent => Enabled && Current is { } c && AgentResume.CanResume(c);
+    public bool Resuming => resuming;
+    public bool CanSendResume => CanResumeCurrent && !resuming && resumeText.Trim().Length > 0;
+    public bool ShowResumeHint => resumeText.Length == 0;
+    public string ResumeHint => tr("Seguir esta sesión…");
+    public string ResumeLabel => tr(resuming ? "Preguntando…" : "Preguntar");
+    public string ResumeHelp => tr("Retoma la sesión real con todo su contexto, en solo lectura (no edita archivos ni ejecuta comandos). Gasta tokens de esa sesión.");
+    public string ResumeStatus => resumeStatus;
+    public bool HasResumeStatus => resumeStatus.Length > 0;
+    public ICommand SendResume { get; private set; } = null!;
+
+    private void ResumeNow()
+    {
+        if (!CanSendResume || Current is not { } session) return;
+        var text = resumeText.Trim();
+        resuming = true;
+        resumeStatus = "";
+        Raise();
+        _ = Task.Run(() => AgentResume.RunAsync(session, text)).ContinueWith(task => Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            resuming = false;
+            var result = task.Status == TaskStatus.RanToCompletion ? task.Result : new AgentResult(false, "", Error: task.Exception?.GetBaseException().Message);
+            if (result.Ok) { resumeText = ""; resumeStatus = tr("Hecho: el mensaje nuevo sale arriba en unos segundos."); nextRead = DateTime.MinValue; }
+            else resumeStatus = tr("No se pudo seguir la sesión: %@", result.Error ?? "");
+            Raise();
+        }));
+    }
     public ICommand SelectRecent { get; }
     public ICommand ToggleDetails { get; }
     public bool Enabled => prefs.Switch(PrefKeys.AgentsEnabled, false);
@@ -105,8 +170,9 @@ public sealed class AgentsWidget : WidgetModel
     public AgentsWidget(Prefs prefs) : base(WidgetCatalog.Find("agents")!)
     {
         this.prefs = prefs;
-        Sessions.CollectionChanged += (_, _) => { RebuildVisibleSessions(); Raise(); };
-        RecentSessions.CollectionChanged += (_, _) => { RebuildVisibleSessions(); Raise(); };
+        Sessions.CollectionChanged += (_, _) => { if (!updatingSessions) { RebuildVisibleSessions(); Raise(); } };
+        RecentSessions.CollectionChanged += (_, _) => { if (!updatingSessions) { RebuildVisibleSessions(); Raise(); } };
+        SendResume = new Command(ResumeNow);
         SelectActive = new Command(() => SelectView(false));
         SelectRecent = new Command(() => SelectView(true));
         ToggleDetails = new Command(() => { detailsExpanded = !detailsExpanded; Raise(); });
@@ -119,7 +185,23 @@ public sealed class AgentsWidget : WidgetModel
                 Raise();
             }
         });
+        RefreshOptions();
         RebuildVisibleSessions();
+    }
+
+    /// Sesiones de muestra para la galería de widgets (no se leen del disco).
+    public void LoadDemo()
+    {
+        var now = DateTime.UtcNow;
+        Sessions.Clear(); RecentSessions.Clear();
+        Sessions.Add(new AgentSnapshot("demo-1", @"C:\Proyectos\isTargetSleeping", "Claude Code", AgentState.Working, "Edit", @"C:\Proyectos\isTargetSleeping\App.xaml", 24, 6,
+            tr("Ajustando el diseño del Home"), [new AgentActivity("Read", @"C:\Proyectos\isTargetSleeping\App.xaml", null, true), new AgentActivity("Edit", @"C:\Proyectos\isTargetSleeping\App.xaml", null)], now) { Title = tr("Rediseño del Home") });
+        Sessions.Add(new AgentSnapshot("demo-2", @"C:\Proyectos\isTargetSleeping", "Codex", AgentState.NeedsAttention, null, null, null, null,
+            tr("Necesita tu visto bueno para seguir"), [], now.AddMinutes(-3)) { Title = tr("Pruebas del notch") });
+        RecentSessions.Add(new AgentSnapshot("demo-3", @"C:\Proyectos\web", "Claude Code", AgentState.Finished, null, null, 12, 2,
+            tr("Terminado"), [], now.AddHours(-2)) { Title = tr("Revisión de la web") });
+        RebuildVisibleSessions();
+        Raise();
     }
 
     private bool MatchesRecentFilter(AgentSnapshot session)
@@ -132,6 +214,15 @@ public sealed class AgentsWidget : WidgetModel
         return string.Join(" ", session.Name, session.ProjectName, session.Provider, session.AutomationId, session.Message,
                 session.Tool, session.WorkSummary, string.Join(" ", session.RecentActivity.Select(a => a.Tool ?? a.Message)))
             .Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// Rehace las listas de los filtros con lo que hay ahora, pero conserva la instancia si no cambió nada.
+    public void RefreshOptions()
+    {
+        static IReadOnlyList<string> Keep(IReadOnlyList<string> current, IReadOnlyList<string> next) => current.SequenceEqual(next) ? current : next;
+        providerOptions = Keep(providerOptions, FilterOptions(RecentSessions.Select(s => s.Provider)));
+        projectOptions = Keep(projectOptions, FilterOptions(RecentSessions.Select(s => s.ProjectName)));
+        stateOptions = Keep(stateOptions, FilterOptions(RecentSessions.Select(s => s.StateFilterLabel)));
     }
 
     private IReadOnlyList<string> FilterOptions(IEnumerable<string> values) => new[] { tr("Todos") }
@@ -175,26 +266,42 @@ public sealed class AgentsWidget : WidgetModel
         {
             if (Sessions.Count > 0) Sessions.Clear();
             if (RecentSessions.Count > 0) RecentSessions.Clear();
+            seenAutomationCompletions.Clear(); seenAutomationOrder.Clear(); automationNotices.Clear(); currentAutomationNotice = null;
             historyRead = false; showingRecent = false; selectedSession = null; Raise(); return;
         }
         if (reading || now < nextRead) return;
         reading = true;
         nextRead = now.AddSeconds(2);
         var includeRecentHistory = !historyRead;
-        _ = Task.Run(() => AgentsWatcher.ReadRecent(includeRecentHistory)).ContinueWith(task => Application.Current.Dispatcher.BeginInvoke(() =>
+        _ = Task.Run(() => watcher.ReadRecent(includeRecentHistory)).ContinueWith(task => Application.Current.Dispatcher.BeginInvoke(() =>
         {
             reading = false;
-            if (!Enabled) { Sessions.Clear(); RecentSessions.Clear(); historyRead = false; showingRecent = false; selectedSession = null; Raise(); return; }
+            if (!Enabled) { Sessions.Clear(); RecentSessions.Clear(); seenAutomationCompletions.Clear(); seenAutomationOrder.Clear(); automationNotices.Clear(); currentAutomationNotice = null; historyRead = false; showingRecent = false; selectedSession = null; Raise(); return; }
             if (task.Status == TaskStatus.RanToCompletion)
             {
+                var newCompletions = AgentLogs.NewlyFinishedAutomations(task.Result, seenAutomationCompletions);
+                foreach (var completed in newCompletions) seenAutomationOrder.Enqueue(AgentLogs.Key(completed));
+                while (seenAutomationOrder.Count > 2048) seenAutomationCompletions.Remove(seenAutomationOrder.Dequeue());
+                if (!includeRecentHistory)
+                    foreach (var completed in newCompletions) automationNotices.Enqueue(completed.Name);
+                while (automationNotices.Count > 16) automationNotices.Dequeue();
                 historyRead = true;
                 var priorSession = selectedSession;
                 var snapshots = task.Result;
+                // Los pasos del equipo no se cuentan dos veces: ya salen en la sesión del equipo.
+                snapshots = snapshots.Where(s => !TeamService.OwnsPath(s.Project)).ToList();
                 var active = snapshots.Where(s => AgentLogs.IsActive(s, DateTime.UtcNow))
-                    .OrderByDescending(s => s.State == AgentState.NeedsAttention).ThenByDescending(s => s.LastActivity).ToArray();
+                    .OrderByDescending(s => s.State == AgentState.NeedsAttention).ThenByDescending(s => s.LastActivity).ToList();
+                if (TeamSessions?.Invoke() is { Count: > 0 } team) active.InsertRange(0, team);
                 var recent = AgentLogs.RecentSessions(RecentSessions, snapshots, DateTime.UtcNow);
-                Sessions.Clear(); foreach (var session in active) Sessions.Add(session);
-                RecentSessions.Clear(); foreach (var session in recent) RecentSessions.Add(session);
+                updatingSessions = true;
+                try
+                {
+                    if (!Sessions.SequenceEqual(active)) { Sessions.Clear(); foreach (var session in active) Sessions.Add(session); }
+                    if (!RecentSessions.SequenceEqual(recent)) { RecentSessions.Clear(); foreach (var session in recent) RecentSessions.Add(session); }
+                }
+                finally { updatingSessions = false; }
+                RefreshOptions();
                 if (providerFilter is not null && !ProviderOptions.Contains(providerFilter)) providerFilter = null;
                 if (projectFilter is not null && !ProjectOptions.Contains(projectFilter)) projectFilter = null;
                 if (stateFilter is not null && !StateOptions.Contains(stateFilter)) stateFilter = null;
@@ -212,49 +319,83 @@ public sealed class AgentsWidget : WidgetModel
         AgentState.Finished => tr("Terminó"), AgentState.Inactive => tr("Sin actividad"), _ => tr("Estado desconocido"),
     };
     public string Detail(AgentSnapshot s) => string.Join(" · ", new[] { s.Tool, s.File is null ? null : Path.GetFileName(s.File) }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    public string? AutomationNotice(DateTime now)
+    {
+        if (currentAutomationNotice is not null && now < automationNoticeUntil) return currentAutomationNotice;
+        currentAutomationNotice = automationNotices.TryDequeue(out var next) ? next : null;
+        automationNoticeUntil = now.AddSeconds(6);
+        return currentAutomationNotice;
+    }
 }
 
-public static class AgentsWatcher
+public sealed class AgentsWatcher
 {
-    // shortcut: rescans recent log paths every 2 seconds and tails 512 KB per file; switch to incremental FileSystemWatcher reads if recursive scans become costly.
-    public static List<AgentSnapshot> ReadRecent(bool includeRecentHistory = false)
+    // shortcut: recorre las rutas en cada lectura; usar vigilancia incremental si recorrerlas llega a ser costoso.
+    private readonly Dictionary<string, (long Length, DateTime Modified, DateTime Created, AgentSnapshot Snapshot)> cache = new(StringComparer.OrdinalIgnoreCase);
+    private string? language;
+
+    public List<AgentSnapshot> ReadRecent(bool includeRecentHistory = false)
     {
+        if (language != L10n.Effective) { cache.Clear(); language = L10n.Effective; }
         var now = DateTime.UtcNow;
         var historyCutoff = now - AgentLogs.RecentWindow;
         var liveCutoff = now - TimeSpan.FromMinutes(5);
-        var roots = new[]
-        {
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "projects"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex", "sessions"),
-        };
-        var files = new List<FileInfo>();
-        foreach (var root in roots)
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var claudeHome = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
+        if (string.IsNullOrWhiteSpace(claudeHome)) claudeHome = Path.Combine(userProfile, ".claude");
+        var codexHome = Environment.GetEnvironmentVariable("CODEX_HOME");
+        if (string.IsNullOrWhiteSpace(codexHome)) codexHome = Path.Combine(userProfile, ".codex");
+        var roots = new[] { (Path: Path.Combine(claudeHome, "projects"), Codex: false), (Path: Path.Combine(codexHome, "sessions"), Codex: true) };
+        var files = new List<(FileInfo File, bool Codex)>();
+        foreach (var (root, codex) in roots)
         {
             try
             {
                 if (!Directory.Exists(root)) continue;
-                var pattern = root.Contains(".claude", StringComparison.OrdinalIgnoreCase) ? "*.jsonl" : "rollout-*.jsonl";
+                var pattern = codex ? "rollout-*.jsonl" : "*.jsonl";
                 files.AddRange(Directory.EnumerateFiles(root, pattern, SearchOption.AllDirectories)
-                    .Select(p => new FileInfo(p)).Where(f => f.LastWriteTimeUtc <= now && f.LastWriteTimeUtc >= (includeRecentHistory ? historyCutoff : liveCutoff)));
+                    .Select(p => new FileInfo(p)).Where(f => f.LastWriteTimeUtc <= now && f.LastWriteTimeUtc >= (includeRecentHistory ? historyCutoff : liveCutoff))
+                    .Select(f => (f, codex)));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         }
-        var liveFiles = files.Where(f => f.LastWriteTimeUtc >= liveCutoff);
-        IEnumerable<FileInfo> recentFiles = includeRecentHistory ? files.Where(f => f.LastWriteTimeUtc < liveCutoff) : Enumerable.Empty<FileInfo>();
-        files = liveFiles.Concat(recentFiles).DistinctBy(f => f.FullName, StringComparer.OrdinalIgnoreCase).ToList();
+        var liveFiles = files.Where(f => f.File.LastWriteTimeUtc >= liveCutoff);
+        IEnumerable<(FileInfo File, bool Codex)> recentFiles = includeRecentHistory ? files.Where(f => f.File.LastWriteTimeUtc < liveCutoff) : Enumerable.Empty<(FileInfo, bool)>();
+        files = liveFiles.Concat(recentFiles).GroupBy(f => f.File.FullName, StringComparer.OrdinalIgnoreCase).Select(g => g.First()).ToList();
+        var present = files.Select(f => f.File.FullName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in cache.Keys.Where(path => !present.Contains(path)).ToArray()) cache.Remove(path);
+        var claudeScheduledTasks = ReadClaudeScheduledTasks();
         var result = new List<AgentSnapshot>();
-        foreach (var file in files.OrderByDescending(f => f.LastWriteTimeUtc))
+        foreach (var entry in files.OrderByDescending(f => f.File.LastWriteTimeUtc))
         {
             try
             {
-                using var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                if (stream.Length > 524_288) stream.Seek(-524_288, SeekOrigin.End);
-                using var reader = new StreamReader(stream);
-                var lines = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                var codex = file.FullName.Contains(".codex", StringComparison.OrdinalIgnoreCase);
-                string project = Path.GetFileName(Path.GetDirectoryName(file.FullName)) ?? "";
-                if (codex) project = "Codex";
-                result.Add(AgentLogs.Parse(Path.GetFileNameWithoutExtension(file.Name), project, codex ? "Codex" : "Claude Code", lines, file.LastWriteTimeUtc));
+                var file = entry.File;
+                long length = file.Length;
+                var modified = file.LastWriteTimeUtc;
+                var created = file.CreationTimeUtc;
+                AgentSnapshot snapshot;
+                if (cache.TryGetValue(file.FullName, out var known) && known.Length == length && known.Modified == modified && known.Created == created)
+                    snapshot = known.Snapshot;
+                else
+                {
+                    using var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                    if (stream.Length > 524_288) stream.Seek(-524_288, SeekOrigin.End);
+                    using var reader = new StreamReader(stream);
+                    var lines = reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                    string project = entry.Codex ? "Codex" : Path.GetFileName(Path.GetDirectoryName(file.FullName)) ?? "";
+                    snapshot = AgentLogs.Parse(Path.GetFileNameWithoutExtension(file.Name), project, entry.Codex ? "Codex" : "Claude Code", lines, modified);
+                    file.Refresh();
+                    if (file.Exists && file.Length == length && file.LastWriteTimeUtc == modified && file.CreationTimeUtc == created)
+                        cache[file.FullName] = (length, modified, created, snapshot);
+                    else cache.Remove(file.FullName);
+                }
+                if (entry.Codex && snapshot.AutomationId is { } codexId && ReadCodexAutomationName(codexId) is { } codexName)
+                    snapshot = snapshot with { Title = codexName };
+                else if (!entry.Codex && snapshot.Title is { } title && claudeScheduledTasks.TryGetValue(title, out var claudeName))
+                    snapshot = snapshot with { Title = claudeName, AutomationId = snapshot.AutomationId ?? $"claude-local:{claudeName}" };
+                result.Add(snapshot);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { }
         }
@@ -263,34 +404,134 @@ public static class AgentsWatcher
             .ThenByDescending(s => s.State == AgentState.NeedsAttention)
             .ThenByDescending(s => s.LastActivity).ToList();
     }
+
+    private static string? ReadCodexAutomationName(string id)
+    {
+        if (id.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || id.Contains('/') || id.Contains('\\') || id is "." or "..") return null;
+        var home = Environment.GetEnvironmentVariable("CODEX_HOME");
+        if (string.IsNullOrWhiteSpace(home)) home = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".codex");
+        try
+        {
+            var file = Path.Combine(home, "automations", id, "automation.toml");
+            foreach (var line in File.ReadLines(file).Take(80))
+            {
+                var match = Regex.Match(line, "^\\s*name\\s*=\\s*(\"(?:\\\\.|[^\"])*\")");
+                if (match.Success) return JsonSerializer.Deserialize<string>(match.Groups[1].Value);
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { }
+        return null;
+    }
+
+    private static Dictionary<string, string> ReadClaudeScheduledTasks()
+    {
+        var root = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
+        if (string.IsNullOrWhiteSpace(root)) root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var directory in Directory.EnumerateDirectories(Path.Combine(root, "scheduled-tasks")))
+            {
+                try
+                {
+                    using var reader = File.OpenText(Path.Combine(directory, "SKILL.md"));
+                    if (reader.ReadLine()?.Trim() != "---") continue;
+                    for (var i = 0; i < 40 && reader.ReadLine() is { } line && line.Trim() != "---"; i++)
+                    {
+                        if (!line.TrimStart().StartsWith("name:", StringComparison.Ordinal)) continue;
+                        var name = line[(line.IndexOf(':') + 1)..].Trim().Trim('"', '\'');
+                        if (name.Length == 0) break;
+                        result[name] = name;
+                        result[Path.GetFileName(directory)] = name;
+                        break;
+                    }
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        return result;
+    }
 }
 
-public sealed class WeatherWidget(Prefs prefs) : WidgetModel(WidgetCatalog.Find("weather")!)
+public sealed class WeatherWidget : WidgetModel
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(8) };
-    private DateTime nextRead;
+    private const string CacheKey = "weatherForecastCache";
+    private sealed record CachedForecast(string City, WeatherForecast Forecast, DateTime Updated);
+
+    private readonly Prefs prefs;
+    private DateTime nextRead, updatedAt;
     private string requestedCity = "";
-    private bool reading;
+    private bool reading, cacheChecked, demo;
+
+    public WeatherWidget(Prefs prefs) : base(WidgetCatalog.Find("weather")!)
+    {
+        this.prefs = prefs;
+        requestedCity = prefs.WeatherCity;
+        if (!prefs.IsDemo && prefs.Switch(PrefKeys.WeatherEnabled, false) && requestedCity.Length > 0) RestoreCache(requestedCity);
+    }
+
     public WeatherForecast? Forecast { get; private set; }
     public bool HasForecast => Forecast is not null;
     public bool NoForecast => Forecast is null;
-    public string Status => !prefs.Switch(PrefKeys.WeatherEnabled, false) ? tr("Activa Tiempo en Ajustes › Notch.")
+    public string UpdatedText => Forecast is null || updatedAt == default ? "" : tr("actualizado %@", AiUsage.Ago(updatedAt, DateTime.Now));
+    public string Status => !prefs.Switch(PrefKeys.WeatherEnabled, false) ? tr("Activa Clima en Ajustes › Notch.")
         : prefs.WeatherCity.Length == 0 ? tr("Elige una ciudad en Ajustes › Notch.")
         : Forecast is null ? tr("No se pudo consultar el tiempo.") : "";
     public string Current => Forecast is null ? "" : $"{Forecast.Temperature:0}° · {Description(Forecast.Code)}";
+    public string TemperatureText => Forecast is null ? "" : $"{Forecast.Temperature:0}°";
+    public string ConditionText => Forecast is null ? "" : Description(Forecast.Code);
+    /// Las temperaturas de las próximas horas entre 0 y 1 (la menor abajo, la mayor arriba), para dibujar su curva.
+    public IReadOnlyList<double> HourCurve
+    {
+        get
+        {
+            if (Hours.Count < 2) return [];
+            double lo = Hours.Min(h => h.Temperature), hi = Hours.Max(h => h.Temperature), span = Math.Max(1, hi - lo);
+            return Hours.Select(h => 0.12 + 0.76 * (h.Temperature - lo) / span).ToList();
+        }
+    }
+    /// Las tres horas que siguen a la actual, para la vista corta (la completa enseña las ocho).
+    public IReadOnlyList<WeatherHour> NextHours => Forecast?.NextHours ?? [];
+    public bool IsNight => Forecast?.IsNight ?? (DateTime.Now.Hour is < 6 or >= 19);
+    public int ConditionCode => Forecast?.Code ?? 0;
+    /// Máxima y mínima de las próximas horas («↑ 27° ↓ 19°»): es lo que da la previsión por horas, no el día entero.
+    public string HighLow => Forecast is { Hours.Count: > 0 } f ? $"↑ {Math.Max(f.Temperature, f.Hours.Max(h => h.Temperature)):0}°  ↓ {Math.Min(f.Temperature, f.Hours.Min(h => h.Temperature)):0}°" : "";
+
+    /// Solo para las capturas del arnés y las pruebas: una previsión de ejemplo, sin red.
+    public void LoadDemo(bool english)
+    {
+        demo = true;
+        var start = new DateTime(2026, 10, 21, 22, 0, 0);
+        int[] codes = [45, 3, 2, 61, 61, 80, 95, 0];
+        double[] temps = [25, 24, 24, 23, 22, 22, 21, 21];
+        Forecast = new WeatherForecast(english ? "Panama City" : "Ciudad de Panamá", 25, 45, codes.Select((c, i) => new WeatherHour(start.AddHours(i + 1), temps[i], c)).ToList());
+        updatedAt = DateTime.Now;
+        PopulateHours(markFirstNow: true);
+        Raise();
+    }
     public ObservableCollection<WeatherHour> Hours { get; } = [];
 
     public override void Tick(DateTime now)
     {
+        if (demo) return;
         var city = prefs.WeatherCity;
+        bool cityChanged = city != requestedCity;
         if (city != requestedCity)
         {
-            requestedCity = city; Forecast = null; Hours.Clear(); nextRead = default;
+            requestedCity = city; Forecast = null; Hours.Clear(); nextRead = default; cacheChecked = false;
         }
         if (!prefs.Switch(PrefKeys.WeatherEnabled, false) || city.Length == 0)
         {
-            if (Forecast is not null) { Forecast = null; Hours.Clear(); Raise(); }
+            if (Forecast is not null || cityChanged) { Forecast = null; Hours.Clear(); Raise(); }
+            cacheChecked = false;
             return;
+        }
+        if (!cacheChecked)
+        {
+            RestoreCache(city);
+            if (cityChanged || Forecast is not null) Raise();
         }
         if (reading || now < nextRead) return;
         reading = true; nextRead = now.AddMinutes(30);
@@ -298,24 +539,77 @@ public sealed class WeatherWidget(Prefs prefs) : WidgetModel(WidgetCatalog.Find(
         {
             reading = false;
             if (!prefs.Switch(PrefKeys.WeatherEnabled, false) || prefs.WeatherCity != city) return;
-            if (task.Status != TaskStatus.RanToCompletion) nextRead = DateTime.Now.AddMinutes(5);
-            Forecast = task.Status == TaskStatus.RanToCompletion ? task.Result : null;
-            Hours.Clear(); if (Forecast is { } result) foreach (var hour in result.Hours.Take(8)) Hours.Add(hour);
+            if (task.Status == TaskStatus.RanToCompletion && task.Result is { } fresh)
+            {
+                Forecast = Localize(fresh, city);
+                updatedAt = DateTime.Now;
+                SaveCache(city);
+            }
+            else nextRead = DateTime.Now.AddMinutes(5);
+            PopulateHours();
             Raise();
         }));
+    }
+
+    private void RestoreCache(string city)
+    {
+        cacheChecked = true;
+        var json = Defaults.GetString(CacheKey);
+        if (json is not { Length: > 0 and <= 131072 }) return;
+        CachedForecast? cached;
+        try { cached = JsonSerializer.Deserialize<CachedForecast>(json); }
+        catch (JsonException) { Defaults.Remove(CacheKey); return; }
+        if (cached is null) { Defaults.Remove(CacheKey); return; }
+        if (!string.Equals(cached.City, city, StringComparison.OrdinalIgnoreCase)) return;
+        if (cached.Updated == default || cached.Forecast is not { Hours.Count: > 0 and <= 8 } forecast
+            || string.IsNullOrWhiteSpace(forecast.City) || !double.IsFinite(forecast.Temperature)
+            || forecast.Code is < 0 or > 99 || forecast.Hours.Any(hour => hour is null || hour.Time == default
+                || !double.IsFinite(hour.Temperature) || hour.Code is < 0 or > 99))
+        {
+            Defaults.Remove(CacheKey);
+            return;
+        }
+        Forecast = Localize(forecast, city);
+        updatedAt = cached.Updated;
+        PopulateHours();
+    }
+
+    private void SaveCache(string city) => Defaults.Set(CacheKey, JsonSerializer.Serialize(new CachedForecast(city, Forecast!, updatedAt)));
+
+    private static WeatherForecast Localize(WeatherForecast forecast, string city) =>
+        forecast with { City = WeatherPlaces.Resolve(city)?.City(L10n.Effective == "es" ? "es" : "en") ?? forecast.City };
+
+    private void PopulateHours(bool markFirstNow = false)
+    {
+        Hours.Clear();
+        if (Forecast is { } forecast)
+            foreach (var (hour, index) in forecast.Hours.Take(8).Select((hour, index) => (hour, index)))
+                Hours.Add(markFirstNow && index == 0 ? hour with { IsNow = true } : hour);
     }
 
     private static async Task<WeatherForecast?> Load(string city)
     {
         var language = L10n.Effective == "es" ? "es" : "en";
-        var geo = await Http.GetStringAsync("https://geocoding-api.open-meteo.com/v1/search?name=" + WebUtility.UrlEncode(city) + $"&count=1&language={language}&format=json");
-        using var doc = JsonDocument.Parse(geo);
-        if (!doc.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0) return null;
-        var location = results[0];
-        var lat = location.GetProperty("latitude").GetDouble().ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var lon = location.GetProperty("longitude").GetDouble().ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var name = location.GetProperty("name").GetString() ?? city;
-        var json = await Http.GetStringAsync($"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&forecast_days=1&timezone=auto");
+        string lat, lon, name;
+        if (WeatherPlaces.Resolve(city) is { } place)
+        {
+            // De la lista: ya se sabe dónde está, solo se envían las coordenadas.
+            lat = place.Lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            lon = place.Lon.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            name = place.City(language);
+        }
+        else
+        {
+            // Un nombre guardado a mano de cuando se escribía: se busca como antes.
+            var geo = await Http.GetStringAsync("https://geocoding-api.open-meteo.com/v1/search?name=" + WebUtility.UrlEncode(city) + $"&count=1&language={language}&format=json");
+            using var doc = JsonDocument.Parse(geo);
+            if (!doc.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0) return null;
+            var location = results[0];
+            lat = location.GetProperty("latitude").GetDouble().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            lon = location.GetProperty("longitude").GetDouble().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            name = location.GetProperty("name").GetString() ?? city;
+        }
+        var json = await Http.GetStringAsync($"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&forecast_days=2&timezone=auto");
         return WeatherForecast.Parse(name, json);
     }
 
@@ -334,27 +628,41 @@ public sealed class TeleprompterWidget : WidgetModel
     private readonly bool persist;
     private string text = "";
     private int speed = 25, size = 28;
+    private int resetRequest;
     private bool running = true;
+    private bool editing;
 
-    public string Text { get => text; set { if (text == value) return; text = value; save.Stop(); save.Start(); RaiseProperty(nameof(Text)); } }
+    public string Text { get => text; set { if (text == value) return; text = value; save.Stop(); save.Start(); RaiseProperty(nameof(Text)); RaiseProperty(nameof(HasText)); RaiseProperty(nameof(StateLabel)); } }
+    public bool HasText => !string.IsNullOrWhiteSpace(Text);
     public int Speed { get => speed; set { speed = Math.Clamp(value, 5, 60); if (persist) Defaults.Set(PrefKeys.TeleprompterSpeed, speed); RaiseProperty(nameof(Speed)); RaiseProperty(nameof(SpeedLabel)); RaiseProperty(nameof(SpeedFraction)); } }
     public int TextSize { get => size; set { size = Math.Clamp(value, 16, 48); if (persist) Defaults.Set(PrefKeys.TeleprompterSize, size); RaiseProperty(nameof(TextSize)); RaiseProperty(nameof(SizeLabel)); RaiseProperty(nameof(SizeFraction)); } }
     public double SpeedFraction => (Speed - 5) / 55.0;
     public double SizeFraction => (TextSize - 16) / 32.0;
     public string SpeedLabel => tr("Velocidad: %@", Speed);
     public string SizeLabel => tr("Tamaño: %@", TextSize);
-    public bool Running { get => running; set { running = value; RaiseProperty(nameof(Running)); RaiseProperty(nameof(RunGlyph)); RaiseProperty(nameof(RunHelp)); } }
-    public string RunGlyph => Running ? "" : "";
+    public bool Running { get => running; set { if (running == value) return; running = value; RaiseProperty(nameof(Running)); RaiseProperty(nameof(RunGlyph)); RaiseProperty(nameof(RunHelp)); RaiseProperty(nameof(StateLabel)); } }
+    public bool Editing { get => editing; private set { if (editing == value) return; editing = value; RaiseProperty(nameof(Editing)); RaiseProperty(nameof(EditGlyph)); RaiseProperty(nameof(EditHelp)); RaiseProperty(nameof(StateLabel)); } }
+    public int ResetRequest => resetRequest;
+    public string RunGlyph => Running ? "\uE769" : "\uE768";
     public string RunHelp => Running ? tr("Pausar teleprompter") : tr("Iniciar teleprompter");
+    public string EditGlyph => Editing ? "\uE73E" : "\uE70F";
+    public string EditHelp => Editing ? tr("Terminar edición") : tr("Editar guion");
+    public string StateLabel => Editing ? tr("Editando") : !HasText ? tr("Sin guion") : Running ? tr("Leyendo") : tr("En pausa");
+    public string RestartHelp => tr("Volver al principio");
+    public string EmptyHint => tr("Escribe o pega tu guion");
     public bool ReducedMotion => prefs.ReducedMotion;
     public ICommand SetSpeed { get; }
     public ICommand SetSize { get; }
     public ICommand Toggle { get; }
+    public ICommand ToggleEdit { get; }
+    public ICommand Restart { get; }
     public TeleprompterWidget(Prefs prefs, bool persist) : base(WidgetCatalog.Find("teleprompter")!)
     {
         this.prefs = prefs;
         this.persist = persist;
-        Toggle = new Command(() => Running = !Running);
+        Toggle = new Command(() => { Editing = false; Running = !Running; });
+        ToggleEdit = new Command(() => { if (!Editing) Running = false; Editing = !Editing; });
+        Restart = new Command(() => { resetRequest++; RaiseProperty(nameof(ResetRequest)); });
         if (persist) text = Defaults.GetString(PrefKeys.TeleprompterText) ?? "";
         speed = Math.Clamp(Defaults.GetInt(PrefKeys.TeleprompterSpeed, 25), 5, 60);
         size = Math.Clamp(Defaults.GetInt(PrefKeys.TeleprompterSize, 28), 16, 48);

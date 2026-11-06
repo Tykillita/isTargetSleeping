@@ -1,5 +1,8 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -73,6 +76,15 @@ public sealed class RulerPicker : FrameworkElement
         e.Handled = true;
     }
 
+    protected override void OnGotKeyboardFocus(KeyboardFocusChangedEventArgs e) { base.OnGotKeyboardFocus(e); InvalidateVisual(); }
+    protected override void OnLostKeyboardFocus(KeyboardFocusChangedEventArgs e) { base.OnLostKeyboardFocus(e); InvalidateVisual(); }
+    protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.Property == OffsetProperty && UIElementAutomationPeer.FromElement(this) is RulerPickerPeer peer)
+            peer.RaiseValueChanged((int)e.OldValue, (int)e.NewValue);
+    }
+
     protected override void OnRender(DrawingContext dc)
     {
         var t = Theme.Current;
@@ -108,5 +120,29 @@ public sealed class RulerPicker : FrameworkElement
         }
         arrow.Freeze();
         dc.DrawGeometry(Theme.Brush(t.Fg), null, arrow);
+        if (IsKeyboardFocused && w > 3 && h > 3)
+            dc.DrawRoundedRectangle(null, new Pen(Theme.Brush(t.Accent), 1.25), new Rect(1, 1, w - 2, h - 2), 4, 4);
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new RulerPickerPeer(this);
+
+    private sealed class RulerPickerPeer(RulerPicker owner) : FrameworkElementAutomationPeer(owner), IRangeValueProvider
+    {
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Slider;
+        protected override string GetClassNameCore() => nameof(RulerPicker);
+        public override object? GetPattern(PatternInterface pattern) => pattern == PatternInterface.RangeValue ? this : base.GetPattern(pattern);
+        public double Value => owner.Offset;
+        public double Minimum => 0;
+        public double Maximum => MaxDays;
+        public double SmallChange => 1;
+        public double LargeChange => 1;
+        public bool IsReadOnly => false;
+        public void RaiseValueChanged(double oldValue, double newValue) => RaisePropertyChangedEvent(RangeValuePatternIdentifiers.ValueProperty, oldValue, newValue);
+        public void SetValue(double value)
+        {
+            if (!double.IsFinite(value) || value is < 0 or > MaxDays) throw new ArgumentOutOfRangeException(nameof(value));
+            if (!owner.IsEnabled) throw new ElementNotEnabledException();
+            owner.Offset = (int)Math.Round(value);
+        }
     }
 }

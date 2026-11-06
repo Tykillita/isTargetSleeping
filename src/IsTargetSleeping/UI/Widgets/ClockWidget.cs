@@ -10,13 +10,20 @@ namespace IsTargetSleeping.UI;
 public sealed record CalendarDay(string Text, bool Today, bool InMonth, DateOnly Date, bool HasItems, bool Selected, ICommand Pick, string Spoken)
 {
     public double Alpha => InMonth ? 1 : 0.35;
+    /// Sábado o domingo: sus números van más tenues.
+    public bool Weekend { get; init; }
 }
+
+/// Un día de la tira de la semana de la ficha: ya pasó, es hoy o falta.
+public sealed record WeekDot(string Letter, bool Past, bool Today);
 
 /// Un recordatorio o un evento en la lista de la agenda.
 public sealed record AgendaRow(string Title, string TimeText, bool IsReminder, bool Done, ICommand Toggle, ICommand Remove, string RemoveHelp, string ToggleHelp,
-    Uri? Meeting = null, ICommand? Join = null)
+    Uri? Meeting = null, ICommand? Join = null, bool Mirrored = false)
 {
     public bool IsEvent => !IsReminder;
+    /// Los recordatorios propios se marcan y se quitan aquí; una tarea de TodoList solo se ve (se gestiona en su widget).
+    public bool Editable => IsReminder && !Mirrored;
     public double TitleAlpha => Done ? 0.5 : 1;
     public bool HasMeeting => Meeting is not null;
     public string JoinHelp => tr("Unirse a %@", Title);
@@ -39,6 +46,8 @@ public sealed class ClockWidget : WidgetModel
     private DateOnly? selected;
     private readonly List<AgendaItem> local = [];
     private List<AgendaItem> ics = [];
+    private List<AgendaItem> todo = [];
+    private DateTime todoStamp;
     private (string Path, DateTime Stamp) icsSource;
     private int newOffset;
     private string newTitle = "", newTime = "", hint = "";
@@ -55,11 +64,57 @@ public sealed class ClockWidget : WidgetModel
         PickIcs = new Command(ChooseIcs);
         ClearIcs = new Command(() => { prefs.SetList(PrefKeys.CalendarIcs, []); ics = []; icsSource = default; Rebuild(); });
         JoinCurrentMeeting = new Command(() => OpenMeeting(CurrentMeeting));
+        now = DateTime.Now;
+        Time = now.ToString("t", culture);   // sin esto la hora salía vacía hasta el primer tic
     }
 
     public string Time { get; private set; } = "";
+    // La etiqueta de fecha en forma de hoja de calendario: «MIÉ · 21 · OCT», y cuánto lleva gastado el día (para su barra fina).
+    public bool HasNextText => NextText.Length > 0;
+    public string WeekdayText => now.ToString("ddd", culture).TrimEnd('.').ToUpper(culture);
+    public string DayNumberText => now.Day.ToString(culture);
+    public string MonthText => now.ToString("MMM", culture).TrimEnd('.').ToUpper(culture);
+    public double DayProgress => now.TimeOfDay.TotalDays;
+    public double MoonFraction => MoonPhase.Fraction(now);
+    // Lo que cuenta la columna de la izquierda (vista ancha): el día de la semana en grande, la fecha entera y unas etiquetas (semana, día del año, luna).
+    public string WeekdayLong => char.ToUpper(now.ToString("dddd", culture)[0], culture) + now.ToString("dddd", culture)[1..];
+    public string LongDateText => tr("%d de %@ de %d", now.Day, culture.DateTimeFormat.GetMonthName(now.Month), now.Year);
+    public string WeekLabel => tr("Semana %d", System.Globalization.ISOWeek.GetWeekOfYear(now));
+    public string DayOfYearLabel => tr("Día %d de %d", now.DayOfYear, DateTime.IsLeapYear(now.Year) ? 366 : 365);
+    /// Lo que va del año (0…1) y su porcentaje, para el anillo; el número de la semana; y lo iluminada que está la luna.
+    public double YearProgress => (now.DayOfYear - 1 + now.TimeOfDay.TotalDays) / (DateTime.IsLeapYear(now.Year) ? 366 : 365);
+    public string YearPercentText => $"{(int)Math.Round(YearProgress * 100)} %";
+    public string YearCaption => tr("del año");
+    public string WeekNumberText => System.Globalization.ISOWeek.GetWeekOfYear(now).ToString(culture);
+    public string WeekCaption => tr("semana");
+    public string MoonPercentText => $"{(int)Math.Round((1 - Math.Cos(MoonFraction * 2 * Math.PI)) / 2 * 100)} %";
+    public string MoonName => MoonPhase.Name(MoonFraction);
+    public string YearDayText => now.DayOfYear.ToString(culture);
+    /// Cuánto falta para la próxima luna llena (el ciclo medio: ±medio día).
+    public string MoonNextText
+    {
+        get
+        {
+            double fraction = MoonFraction, days = ((fraction < 0.5 ? 0.5 : 1.5) - fraction) * 29.530588853;
+            int whole = (int)Math.Round(days);
+            return whole <= 0 ? tr("Llena hoy") : whole == 1 ? tr("Llena mañana") : tr("Llena en %d días", whole);
+        }
+    }
+    /// Los siete días de la semana de hoy, cada uno con su inicial.
+    public IReadOnlyList<WeekDot> WeekDots
+    {
+        get
+        {
+            var first = culture.DateTimeFormat.FirstDayOfWeek;
+            int todayIndex = ((int)now.DayOfWeek - (int)first + 7) % 7;
+            return Enumerable.Range(0, 7).Select(i => new WeekDot(culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)(((int)first + i) % 7))[..1].ToUpper(culture), i < todayIndex, i == todayIndex)).ToList();
+        }
+    }
+    public string MoonLabel => tr("%@ · %d %% iluminada", MoonPhase.Name(MoonFraction), (int)Math.Round((1 - Math.Cos(MoonFraction * 2 * Math.PI)) / 2 * 100));
+    public string DayTooltip => tr("Día transcurrido · %d %% · %@", (int)Math.Round(DayProgress * 100), MoonPhase.Name(MoonFraction));
     public string DateText { get; private set; } = "";
     public string MonthTitle { get; private set; } = "";
+    public string YearText { get; private set; } = "";
     public bool NotThisMonth => monthOffset != 0 || selected is not null;
     public List<string> Weekdays { get; private set; } = [];
     public List<CalendarDay> Days { get; private set; } = [];
@@ -103,12 +158,13 @@ public sealed class ClockWidget : WidgetModel
     public string DoneLabel => tr("Hecho");
     public string TitleHint => tr("Nuevo recordatorio");
     public string TimeHelp => tr("Hora (por ejemplo, 21:30)");
-    public string EmptyText => tr("Nada pendiente. Pulsa + para añadir un recordatorio.");
+    public string EmptyText => tr("Nada pendiente.");
     public string RulerHelp => tr("Arrastra para elegir el día");
 
-    // MARK: archivo .ics (Ajustes > Widgets)
-    public string IcsText => icsSource.Path.Length > 0 ? icsSource.Path : tr("Ninguno");
-    public bool HasIcs => icsSource.Path.Length > 0;
+    // MARK: archivo .ics (Ajustes > General)
+    private string IcsPath => prefs.StoredList(PrefKeys.CalendarIcs)?.FirstOrDefault() ?? "";
+    public string IcsText => IcsPath.Length > 0 ? IcsPath : tr("Ninguno");
+    public bool HasIcs => IcsPath.Length > 0;
     public string IcsTitle => tr("Calendario (archivo .ics)");
     public string IcsDetail => tr("Muestra los eventos de un archivo .ics (Google Calendar, Outlook, Apple…) junto a tus recordatorios. Se lee en este PC: no se conecta a ninguna cuenta ni sube nada.");
     public string IcsChoose => tr("Elegir archivo…");
@@ -150,7 +206,8 @@ public sealed class ClockWidget : WidgetModel
         var path = prefs.StoredList(PrefKeys.CalendarIcs)?.FirstOrDefault() ?? "";
         DateTime stamp = default;
         try { if (path.Length > 0 && File.Exists(path)) stamp = File.GetLastWriteTime(path); } catch (IOException) { }
-        if (path == icsSource.Path && stamp == icsSource.Stamp && !dirty) return;
+        var tasksChanged = LoadTasks();
+        if (path == icsSource.Path && stamp == icsSource.Stamp && !dirty && !tasksChanged) return;
         icsSource = (path, stamp);
         try
         {
@@ -162,6 +219,18 @@ public sealed class ClockWidget : WidgetModel
         dirty = true;
     }
 
+    /// Las tareas de TodoList (tasks.json) como recordatorios de solo lectura: así el calendario y la lista no se contradicen. Dice si cambiaron.
+    private bool LoadTasks()
+    {
+        if (prefs.IsDemo) return false;   // las capturas no leen tus tareas
+        DateTime stamp = default;
+        try { if (File.Exists(TodoWidget.FilePath)) stamp = File.GetLastWriteTime(TodoWidget.FilePath); } catch (IOException) { }
+        if (stamp == todoStamp) return false;
+        todoStamp = stamp;
+        todo = stamp == default ? [] : TodoStore.ToAgenda(TodoStore.Load(TodoWidget.FilePath, now).Items, Today);
+        return true;
+    }
+
     private void Rebuild()
     {
         LoadIcs();
@@ -170,17 +239,21 @@ public sealed class ClockWidget : WidgetModel
         var today = Today;
         DateText = now.ToString("dddd, d MMMM", culture);
         var shown = new DateOnly(today.Year, today.Month, 1).AddMonths(monthOffset);
-        MonthTitle = culture.DateTimeFormat.GetMonthName(shown.Month).ToUpperInvariant() + (shown.Year != today.Year ? " " + shown.Year : "");
+        MonthTitle = culture.DateTimeFormat.GetMonthName(shown.Month).ToUpperInvariant();
+        YearText = shown.Year.ToString(culture);
         var first = culture.DateTimeFormat.FirstDayOfWeek;
         Weekdays = Enumerable.Range(0, 7)
             .Select(i => culture.DateTimeFormat.GetAbbreviatedDayName((DayOfWeek)(((int)first + i) % 7))[..1].ToUpperInvariant()).ToList();
-        var all = local.Concat(ics).ToList();
+        var all = local.Concat(ics).Concat(todo).ToList();
         var busy = all.Select(i => DateOnly.FromDateTime(i.Start)).ToHashSet();
         var start = shown.AddDays(-(((int)shown.DayOfWeek - (int)first + 7) % 7));
         Days = Enumerable.Range(0, 42).Select(i =>
         {
             var day = start.AddDays(i);
-            return new CalendarDay(day.Day.ToString(culture), day == today, day.Month == shown.Month, day, busy.Contains(day), day == selected, new Command(() => Pick(day)), day.ToDateTime(TimeOnly.MinValue).ToString("D", culture));
+            return new CalendarDay(day.Day.ToString(culture), day == today, day.Month == shown.Month, day, busy.Contains(day), day == selected, new Command(() => Pick(day)), day.ToDateTime(TimeOnly.MinValue).ToString("D", culture))
+            {
+                Weekend = day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday,
+            };
         }).ToList();
         AgendaGroups = Agenda.Group(all, selected ?? today, MaxRows).Select(d => new AgendaGroupRow(Header(d.Day), d.Items.Select(Row).ToList())).ToList();
         var next = all.Where(i => !i.Done && (i.AllDay ? DateOnly.FromDateTime(i.Start) >= today : i.Start >= now)).OrderBy(i => i.Start).FirstOrDefault();
@@ -211,9 +284,9 @@ public sealed class ClockWidget : WidgetModel
     private AgendaRow Row(AgendaItem item)
     {
         var meeting = item.Kind == AgendaKind.Event ? MeetingLink.Extract(item.Url, item.Location, item.Description) : null;
-        return new AgendaRow(item.Title, item.Kind == AgendaKind.Event ? (item.AllDay ? tr("Todo el día") : item.Start.ToString("t", culture)) : item.Start.ToString("t", culture),
+        return new AgendaRow(item.Title, item.AllDay ? (item.Kind == AgendaKind.Event ? tr("Todo el día") : "") : item.Start.ToString("t", culture),
             item.Kind == AgendaKind.Reminder, item.Done, new Command(() => Complete(item)), new Command(() => Remove(item)), tr("Quitar"),
-            item.Done ? tr("Marcar como pendiente") : tr("Marcar como hecho"), meeting, meeting is null ? null : new Command(() => OpenMeeting(meeting)));
+            item.Done ? tr("Marcar como pendiente") : tr("Marcar como hecho"), meeting, meeting is null ? null : new Command(() => OpenMeeting(meeting)), item.Id.StartsWith("todo:"));
     }
 
     private static void OpenMeeting(Uri? uri)

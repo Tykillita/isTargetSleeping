@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace IsTargetSleeping.UI;
 
-/// Los widgets del Home en dos columnas por filas. Los widgets compactos de cada fila empiezan alineados y la siguiente fila espera al más alto;
+/// Los widgets de la vista corta en dos columnas por filas. Los compactos de cada fila empiezan alineados y la siguiente espera al más alto;
 /// los de dos celdas ocupan el ancho completo.
 public sealed class MasonryPanel : Panel
 {
@@ -13,7 +13,7 @@ public sealed class MasonryPanel : Panel
     {
         var kids = InternalChildren.Cast<UIElement>().ToList();
         double narrow = kids.Where(k => k.DesiredSize.Width < WideFrom).Select(k => k.DesiredSize.Width).DefaultIfEmpty(0).Max();
-        double total = Math.Max(narrow * 2, kids.Select(k => k.DesiredSize.Width).DefaultIfEmpty(0).Max());
+        double total = kids.Count == 1 ? kids[0].DesiredSize.Width : Math.Max(narrow * 2, kids.Select(k => k.DesiredSize.Width).DefaultIfEmpty(0).Max());   // uno solo: centrado, sin hueco para un compañero
         if (narrow == 0) narrow = total / 2;
         var xs = new double[kids.Count];
         var ys = new double[kids.Count];

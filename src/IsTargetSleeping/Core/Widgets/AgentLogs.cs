@@ -14,8 +14,36 @@ public sealed record AgentSnapshot(string Session, string Project, string Provid
     string? Message, IReadOnlyList<AgentActivity> RecentActivity, DateTime LastActivity)
 {
     public string ProjectName => Path.GetFileName(Project.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+    public bool IsCodex => string.Equals(Provider, "Codex", StringComparison.OrdinalIgnoreCase);
+    /// El id completo con el que el CLI reanuda la sesión: el nombre del archivo en Claude Code; en Codex, el UUID del final de «rollout-<fecha>-<uuid>».
+    /// Null si no es un id que el CLI entienda (las sesiones de ayuda de Claude Code no lo son).
+    public string? ResumeId
+    {
+        get
+        {
+            if (!Session.StartsWith("rollout-", StringComparison.Ordinal)) return Guid.TryParse(Session, out _) ? Session : null;
+            var parts = Session.Split('-');
+            if (parts.Length < 5) return null;
+            var id = string.Join('-', parts[^5..]);
+            return Guid.TryParse(id, out _) ? id : null;
+        }
+    }
     public string? Title { get; init; }
     public string? AutomationId { get; init; }
+    /// Cuántas llamadas seguidas, al final, usan la misma herramienta con el mismo archivo (un bucle de releer o reeditar lo mismo).
+    public int RepeatCount { get; init; }
+    /// Lo que ocupa el contexto de la sesión según la última respuesta del log (entrada + caché), en tokens. 0 si el log no lo dice.
+    public long ContextTokens { get; init; }
+    /// «126k» (miles de tokens) o los tokens tal cual si son menos de mil; vacío si no se sabe.
+    public string ContextLabel => ContextTokens <= 0 ? "" : ContextTokens < 1000 ? ContextTokens.ToString() : $"{ContextTokens / 1000}k";
+    /// La rama de git de la carpeta del proyecto, o null.
+    public string? GitBranch => AgentGit.Branch(Project);
+    /// «feature/x · 126k tokens»: lo que se enseña bajo el nombre de la sesión.
+    public string MetaLine => string.Join(" · ", new[] { GitBranch, ContextLabel.Length > 0 ? L10n.tr("%@ tokens de contexto", ContextLabel) : null }.Where(x => !string.IsNullOrEmpty(x)));
+    public bool HasMeta => MetaLine.Length > 0;
+    /// Se puede retomar en una terminal de verdad (no la usa nadie ahora y su carpeta existe).
+    public bool CanResumeInTerminal => AgentTerminal.CanOpen(this);
+    public string? RepeatSubject { get; init; }
     public bool IsAutomation => !string.IsNullOrWhiteSpace(AutomationId);
     public string Name => !string.IsNullOrWhiteSpace(Title) ? Title : $"{(string.IsNullOrWhiteSpace(ProjectName) ? Provider : ProjectName)} · {SessionId}";
     public string SessionId
@@ -34,6 +62,9 @@ public sealed record AgentSnapshot(string Session, string Project, string Provid
         }
     }
     public string ToolAction => DescribeTool(Tool);
+    /// Lo que la sesión hace o dijo en último lugar, en una línea, para las tarjetas del widget.
+    public string Line => State == AgentState.Working && Tool is { Length: > 0 } ? ToolAction
+        : (Message ?? "").ReplaceLineEndings(" ").Trim();
     public IReadOnlyList<string> CompletedWork { get; init; } = [];
     public string WorkSummary => string.Join(" · ", CompletedWork);
     public static string DescribeTool(string? tool) => tool switch
@@ -100,7 +131,7 @@ public static class AgentLogs
         var age = now.ToUniversalTime() - lastActivity.ToUniversalTime();
         var minutes = Math.Max(1, (int)Math.Max(0, age.TotalMinutes));
         return age.TotalHours < 1 ? L10n.tr("%d min", minutes)
-            : L10n.tr("%d h %d min", (int)age.TotalHours, minutes % 60);
+            : minutes % 60 == 0 ? L10n.tr("%d h", (int)age.TotalHours) : L10n.tr("%d h %d min", (int)age.TotalHours, minutes % 60);
     }
 
     public static List<AgentSnapshot> RecentSessions(IEnumerable<AgentSnapshot> previous, IEnumerable<AgentSnapshot> latest, DateTime now)
@@ -120,11 +151,17 @@ public static class AgentLogs
 
     public static string Key(AgentSnapshot session) => $"{session.Provider}\0{session.Session}";
 
+    public static List<AgentSnapshot> NewlyFinishedAutomations(IEnumerable<AgentSnapshot> sessions, ISet<string> seen) =>
+        sessions.Where(s => s.IsAutomation && s.State == AgentState.Finished && seen.Add(Key(s)))
+            .OrderBy(s => s.LastActivity).ToList();
+
     public static AgentSnapshot Parse(string session, string project, string provider, IEnumerable<string> lines, DateTime lastActivity)
     {
         var state = AgentState.Unknown;
         string? tool = null, toolCallId = null, file = null, messageText = null, title = null, automationId = null;
         int? added = null, removed = null;
+        long contextTokens = 0;
+        static long N(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt64(out var n) ? n : 0;
         var activity = new List<AgentActivity>();
         void AddMessage(string? text)
         {
@@ -148,10 +185,17 @@ public static class AgentLogs
                 var root = doc.RootElement;
                 var type = Str(root, "type") ?? Str(root, "event");
                 var payload = root.TryGetProperty("payload", out var p) ? p : default;
+                var automationName = Str(root, "automation_name") ?? Str(root, "scheduled_task_name")
+                    ?? Str(payload, "automation_name") ?? Str(payload, "scheduled_task_name");
+                automationId = Str(root, "automation_id") ?? Str(root, "scheduled_task_id")
+                    ?? Str(payload, "automation_id") ?? Str(payload, "scheduled_task_id") ?? automationId;
+                title = automationName ?? title;
+                if (automationName is not null && automationId is null) automationId = $"scheduled:{automationName}";
                 project = Str(root, "cwd") ?? Str(root, "working_directory") ?? Str(payload, "cwd") ?? project;
                 if (type is "assistant")
                 {
                     var message = root.TryGetProperty("message", out var m) ? m : root;
+                    if (message.TryGetProperty("usage", out var usage) && N(usage, "input_tokens") + N(usage, "cache_read_input_tokens") + N(usage, "cache_creation_input_tokens") is > 0 and var used) contextTokens = used;
                     if (message.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.Array)
                         foreach (var part in content.EnumerateArray())
                             if (Str(part, "type") == "text")
@@ -283,10 +327,19 @@ public static class AgentLogs
         if (webLookups > 0) completedWork.Add(CountLabel(webLookups, "1 consulta web", "%d consultas web"));
         var otherTools = Calls(completedActivity.Where(a => a.Tool is not ("exec" or "exec_command" or "Edit" or "Write" or "apply_patch" or "Read" or "Glob" or "Grep" or "Task" or "WebSearch" or "WebFetch")));
         if (otherTools > 0) completedWork.Add(CountLabel(otherTools, "1 herramienta usada", "%d herramientas usadas"));
+        // Bucle: las últimas llamadas con archivo son todas la misma herramienta sobre el mismo archivo.
+        var calls = activity.Where(a => a.Tool is not null && !a.Completed && !string.IsNullOrWhiteSpace(a.File)).ToArray();
+        int repeat = 0;
+        if (calls.Length > 0)
+        {
+            var last = calls[^1];
+            repeat = calls.Reverse().TakeWhile(a => a.Tool == last.Tool && string.Equals(a.File, last.File, StringComparison.OrdinalIgnoreCase)).Count();
+        }
+        var repeatSubject = repeat > 1 ? $"{calls[^1].Tool} {Path.GetFileName(calls[^1].File)}" : null;
         var recentActivity = activity.TakeLast(32).Reverse().DistinctBy(a => (a.Tool, a.File, a.Message, a.Completed)).Take(6).ToArray();
         return new AgentSnapshot(session, project, provider, state, tool, file, added, removed, messageText, recentActivity, lastActivity)
         { Title = title ?? (automationId is null ? null : AutomationTitle(automationId)),
-            AutomationId = automationId, CompletedWork = completedWork };
+            AutomationId = automationId, CompletedWork = completedWork, RepeatCount = repeat, RepeatSubject = repeatSubject, ContextTokens = contextTokens };
     }
 
     private static string AutomationTitle(string id)

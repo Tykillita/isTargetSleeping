@@ -26,15 +26,17 @@ internal static class Program
             Text(dc, AppInfo.Name, 78, 206, 66, white, FontWeights.SemiBold);
             Text(dc, "Let idle models sleep.", 82, 308, 35, muted);
             Text(dc, "Get your RAM back.", 82, 355, 35, muted);
-            Logo.Draw(dc, new Rect(785, 69, 470, 470), white);
+            dc.PushTransform(new TranslateTransform(785, 69));
+            Logo.DrawIcon(dc, 470, dark, white);
+            dc.Pop();
             Text(dc, "WINDOWS  ·  FREE & OPEN SOURCE", 82, 535, 21, muted, FontWeights.Medium);
         }
         Save(cover, 1280, 640, Path.Combine(images, "social-preview.png"));
         var mark = new DrawingVisual();
         using (var dc = mark.RenderOpen()) Logo.Draw(dc, new Rect(0, 0, 512, 512), white);
         Save(mark, 512, 512, Path.Combine(root, "Assets", "istargetsleeping-mark-white-512.png"));
-        string symbol = Logo.Svg("#FFFFFF").Replace("<svg ", "<svg x=\"785\" y=\"69\" ")
-            .Replace("width=\"1024\" height=\"1024\"", "width=\"470\" height=\"470\"");
+        string symbol = Logo.Svg("#FFFFFF", "#0C0C0E").Replace("<svg ", "<svg x=\"785\" y=\"69\" ")
+            .Replace("viewBox=\"0 0 1024 1024\" width=\"1024\" height=\"1024\"", "viewBox=\"0 0 1024 1024\" width=\"470\" height=\"470\"");
         string svg = """
             <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title description">
             <title id="title">isTargetSleeping — white symbol cover</title>
@@ -65,7 +67,8 @@ internal static class Program
         bitmap.Render(visual);
         var png = new PngBitmapEncoder();
         png.Frames.Add(BitmapFrame.Create(bitmap));
-        using var stream = File.Create(path);
-        png.Save(stream);
+        string temporary = path + ".tmp";
+        using (var stream = File.Create(temporary)) png.Save(stream);
+        File.Move(temporary, path, overwrite: true);
     }
 }

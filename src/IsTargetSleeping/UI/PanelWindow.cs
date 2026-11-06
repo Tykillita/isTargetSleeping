@@ -63,7 +63,7 @@ public sealed class PanelWindow : Window
             Glass.Apply(this, extendFrame: false);
         };
         Deactivated += (_, _) => HidePanel();
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) HidePanel(); };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && !(view.DataContext is PanelViewModel m && m.CloseTopOverlay())) HidePanel(); };
         // Al crecer o encoger (Ajustes, lista de modelos), se reancla sobre la bandeja (o
         // se mantiene donde lo dejaste, dentro de la pantalla) cuando ya tiene su tamaño nuevo.
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(Place, System.Windows.Threading.DispatcherPriority.Background);

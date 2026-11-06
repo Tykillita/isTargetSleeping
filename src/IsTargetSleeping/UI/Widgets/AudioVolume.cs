@@ -23,6 +23,10 @@ public sealed class AudioVolume
 
     public string Text => Muted ? L10n.tr("Silencio") : $"{(int)Math.Round(Level * 100)} %";
 
+    /// Fija el volumen general (0–1) o silencia/activa el altavoz; el aviso de Windows actualiza Level y Muted.
+    public void SetLevel(float level) { var none = Guid.Empty; endpoint?.SetMasterVolumeLevelScalar(Math.Clamp(level, 0, 1), ref none); }
+    public void ToggleMute() { var none = Guid.Empty; endpoint?.SetMute(!Muted, ref none); }
+
     /// Empieza a escuchar los cambios (una sola vez).
     public void Start()
     {

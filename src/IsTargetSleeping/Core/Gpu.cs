@@ -144,6 +144,25 @@ public static unsafe class Gpu
         }
     }
 
+    /// Una sola muestra para el indicador principal y la lista de adaptadores.
+    public static (GpuUsage? Primary, List<AdapterUsage> All) ReadWithAll(IEnumerable<int> pids)
+    {
+        if (Adapters.Count == 0) return (null, []);
+        lock (gate)
+        {
+            bool ok = Collect();
+            var all = Summarize(Adapters, ok ? Values(adapterCounter) : null, ok ? Values(processCounter) : null, pids.ToHashSet());
+            return (PrimaryFrom(all, ok), all);
+        }
+    }
+
+    internal static GpuUsage? PrimaryFrom(IReadOnlyList<AdapterUsage> all, bool available)
+    {
+        if (!available || all.Count == 0) return null;
+        var primary = all.MaxBy(a => a.Adapter.Total)!;
+        return new GpuUsage(primary.Used ?? 0, primary.Model ?? 0);
+    }
+
     /// Reparte los contadores por adaptador (por su LUID). `null` = el contador no existe;
     /// un adaptador sin instancia en él queda «no disponible» en vez de 0.
     internal static List<AdapterUsage> Summarize(IEnumerable<GpuAdapter> adapters, IReadOnlyList<(string Name, long Value)>? adapterCounters,

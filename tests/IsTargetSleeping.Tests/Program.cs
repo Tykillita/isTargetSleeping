@@ -5,6 +5,23 @@ using System.Security.Cryptography;
 using System.Text;
 using IsTargetSleeping;
 
+// Proceso auxiliar de una sola prueba: mantiene una programación reclamada hasta que el padre lo libera.
+if (args.Length == 5 && args[0] == "--claim-team-schedule")
+{
+    try
+    {
+        var store = new TeamStore(args[1]);
+        var result = store.ClaimSchedule(args[2], DateTime.Now, runNow: true, out _, out var lease);
+        File.WriteAllText(args[3], result == ScheduleClaimResult.Claimed ? "claimed" : result.ToString());
+        if (result != ScheduleClaimResult.Claimed || lease is null) Environment.Exit(2);
+        var stopAt = DateTime.UtcNow.AddSeconds(15);
+        while (!File.Exists(args[4]) && DateTime.UtcNow < stopAt) Thread.Sleep(20);
+        lease.Dispose();
+        Environment.Exit(File.Exists(args[4]) ? 0 : 3);
+    }
+    catch { Environment.Exit(4); }
+}
+
 // Banco de pruebas de la lógica pura: .\build.ps1 -Test
 int failures = 0;
 void Check(string name, bool ok)
@@ -115,18 +132,24 @@ var nm = NR(0, 0, 1920, 1080);
 var nw = NR(0, 0, 1920, 1040);   // barra de tareas abajo
 var nr = NotchLayout.Place(nm, nw, 1.0, 340, 600);
 Check("notch: la pastilla queda centrada y pegada al borde de arriba",
-    nr.Pill.Top == 0 && nr.Pill.Width == 230 && nr.Pill.Height == 37 && nr.Pill.Left == 960 - 115);
+    nr.Pill.Top == 0 && nr.Pill.Width == 150 && nr.Pill.Height == 30 && nr.Pill.Left == 960 - 75);
 Check("notch: expandida mantiene el centro y mide lo que el contenido", nr.Expanded.Width == 340 && nr.Expanded.Height == 600
     && nr.Expanded.Left + nr.Expanded.Width / 2 == 960);
 Check("notch: la zona activa llega al borde de la pantalla y es más ancha que la pastilla",
     nr.Hot.Top == 0 && nr.Hot.Left < nr.Pill.Left && nr.Hot.Right > nr.Pill.Right && NotchLayout.Contains(nr.Hot, 960, 0));
 Check("notch: el cursor lejos de la pastilla no la despierta", !NotchLayout.Contains(nr.Hot, 200, 5) && !NotchLayout.Contains(nr.Hot, 960, 200));
+var nStrip = NotchLayout.Place(nm, nw, 1.0, 340, 600, strip: true);
+Check("notch mínimo: la pastilla es la franja fina, centrada y pegada arriba",
+    nStrip.Pill.Width == 96 && nStrip.Pill.Height == 5 && nStrip.Pill.Top == 0 && nStrip.Pill.Left == 960 - 48);
+Check("notch mínimo: la zona de ratón sigue siendo la de la pastilla entera",
+    nStrip.Hot.Left == nr.Hot.Left && nStrip.Hot.Right == nr.Hot.Right && nStrip.Hot.Bottom == nr.Hot.Bottom && NotchLayout.Contains(nStrip.Hot, 960, 20));
+Check("notch mínimo: abierto mide lo mismo que sin franja", nStrip.Expanded.Width == nr.Expanded.Width && nStrip.Expanded.Height == nr.Expanded.Height);
 var nTop = NotchLayout.Place(nm, NR(0, 48, 1920, 1080), 1.0, 340, 600);
 Check("notch: con la barra de tareas arriba queda justo debajo", nTop.Pill.Top == 48 && nTop.Hot.Top == 0);
 var tall = NotchLayout.Place(nm, nw, 1.0, 340, 5000);
 Check("notch: la vista expandida no se sale del área de trabajo", tall.Expanded.Bottom <= nw.Bottom);
 var hi = NotchLayout.Place(NR(0, 0, 3840, 2160), NR(0, 0, 3840, 2120), 2.0, 340, 600);
-Check("notch: a 200 % de escala todo se duplica en píxeles", hi.Pill.Width == 460 && hi.Pill.Height == 74 && hi.Expanded.Width == 680);
+Check("notch: a 200 % de escala todo se duplica en píxeles", hi.Pill.Width == 300 && hi.Pill.Height == 60 && hi.Expanded.Width == 680);
 var nLeft = NotchLayout.Place(NR(-1920, 0, 0, 1080), NR(-1920, 0, 0, 1040), 1.5, 340, 600);
 Check("notch: un monitor a la izquierda (origen negativo) centra en su propio ancho",
     nLeft.Pill.Left + nLeft.Pill.Width / 2 == -960 && nLeft.Pill.Left >= -1920 && nLeft.Pill.Right <= 0);
@@ -149,7 +172,7 @@ Check("notch: tarda 0,15 s en abrirse con el cursor encima", ns.Mode == NotchMod
     && ns.Update(true, false, false, 1.16) && ns.Mode == NotchMode.Expanded);
 Check("notch: un instante fuera no la cierra", !ns.Update(false, false, false, 2) && !ns.Update(true, false, false, 2.2) && ns.Mode == NotchMode.Expanded);
 ns.Update(false, false, false, 3);
-Check("notch: tarda 0,4 s en cerrarse", ns.Mode == NotchMode.Expanded && ns.Update(false, false, false, 3.41) && ns.Mode == NotchMode.Collapsed);
+Check("notch: tarda 0,15 s en cerrarse", ns.Mode == NotchMode.Expanded && ns.Update(false, false, false, 3.16) && ns.Mode == NotchMode.Collapsed);
 ns.Update(true, false, false, 4); ns.Update(true, false, false, 4.2);
 Check("notch: con un menú abierto no se cierra aunque el cursor salga",
     ns.Mode == NotchMode.Expanded && !ns.Update(false, false, true, 5) && !ns.Update(false, false, true, 6) && ns.Mode == NotchMode.Expanded);
@@ -158,6 +181,63 @@ Check("notch: fijada, no se cierra sola ni se oculta por pantalla completa",
     ns.Mode == NotchMode.Pinned && !ns.Update(false, true, false, 10) && ns.Mode == NotchMode.Pinned && !ns.Hidden);
 ns.Close();
 Check("notch: Esc o perder el foco la devuelven a la pastilla", ns.Mode == NotchMode.Collapsed);
+// Visibilidad del notch: pura, con una instantánea del sistema.
+VisibilitySnapshot Snap(bool hideFs = true, bool fs = false, bool here = true, int notif = 1, string? proc = "chrome", bool self = false, string[]? hidden = null,
+    bool pinned = false, bool locked = false, bool secure = false) =>
+    new(hideFs, fs, here, notif, proc, self, hidden ?? [], pinned, locked, secure);
+Check("visibilidad: sin nada raro se enseña", NotchVisibility.Decide(Snap()) == HideReason.None);
+Check("visibilidad: una app a pantalla completa en este monitor la oculta", NotchVisibility.Decide(Snap(fs: true)) == HideReason.Fullscreen);
+Check("visibilidad: con el interruptor apagado no se oculta a pantalla completa", NotchVisibility.Decide(Snap(hideFs: false, fs: true)) == HideReason.None);
+Check("visibilidad: la pantalla completa de otro monitor no la oculta", NotchVisibility.Decide(Snap(fs: true, here: false)) == HideReason.None);
+Check("visibilidad: Direct3D exclusivo solo oculta el monitor del primer plano", NotchVisibility.Decide(Snap(notif: 3)) == HideReason.Fullscreen
+    && NotchVisibility.Decide(Snap(notif: 3, here: false)) == HideReason.None);
+Check("visibilidad: modo presentación se distingue", NotchVisibility.Decide(Snap(notif: 4)) == HideReason.PresentationMode);
+Check("visibilidad: Inicio y Búsqueda la ocultan aunque el interruptor esté apagado", NotchVisibility.Decide(Snap(hideFs: false, proc: "SearchHost")) == HideReason.StartOrSearch);
+Check("visibilidad: una app de la lista la oculta, con o sin .exe y sin mayúsculas",
+    NotchVisibility.Decide(Snap(proc: "Chrome", hidden: ["chrome.exe"])) == HideReason.HiddenApp
+    && NotchVisibility.Decide(Snap(proc: "obs64", hidden: [" OBS64 "])) == HideReason.HiddenApp
+    && NotchVisibility.Decide(Snap(proc: "firefox", hidden: ["chrome"])) == HideReason.None);
+Check("visibilidad: fijada, no se oculta por pantalla completa ni por app oculta ni por Inicio",
+    NotchVisibility.Decide(Snap(fs: true, pinned: true)) == HideReason.None
+    && NotchVisibility.Decide(Snap(proc: "chrome", hidden: ["chrome"], pinned: true)) == HideReason.None
+    && NotchVisibility.Decide(Snap(proc: "SearchApp", pinned: true)) == HideReason.None);
+Check("visibilidad: la sesión bloqueada y el escritorio seguro ocultan siempre, también fijada",
+    NotchVisibility.Decide(Snap(locked: true, pinned: true)) == HideReason.LockedSession
+    && NotchVisibility.Decide(Snap(secure: true, pinned: true)) == HideReason.SecureDesktop);
+Check("visibilidad: si el primer plano es la propia app no se oculta", NotchVisibility.Decide(Snap(fs: true, self: true)) == HideReason.None);
+var visGate = new VisibilityGate();
+Check("visibilidad: oculta al instante", visGate.Update(HideReason.Fullscreen, 1) && !visGate.Shown);
+Check("visibilidad: no reaparece hasta pasar el retardo (sin parpadeo)", !visGate.Update(HideReason.None, 2) && !visGate.Shown && !visGate.Update(HideReason.None, 2.2) && !visGate.Shown
+    && visGate.Update(HideReason.None, 2.26) && visGate.Shown);
+visGate.Update(HideReason.Fullscreen, 5); visGate.Update(HideReason.None, 5.1); visGate.Update(HideReason.Fullscreen, 5.2);
+Check("visibilidad: un instante de «mostrar» entre dos «ocultar» no reinicia nada raro", !visGate.Update(HideReason.None, 5.3) && !visGate.Shown && visGate.Update(HideReason.None, 5.6) && visGate.Shown);
+// Pantallas del notch.
+ScreenInfo Scr(string id, int left, bool primary = false, int top = 0, int w = 1920, int h = 1080) => new(id, new Win32.RECT { Left = left, Top = top, Right = left + w, Bottom = top + h }, primary);
+var monA = Scr(@"\\.\DISPLAY1", -1920); var monB = Scr(@"\\.\DISPLAY5", 0, primary: true); var monC = Scr(@"\\.\DISPLAY6", 1920);
+Check("pantallas: en modo cursor no hay selección (una ventana que sigue al ratón)", NotchScreens.Select([monA, monB], NotchScreens.FollowCursor, [monA.Id]) is null);
+Check("pantallas: las elegidas llevan notch", NotchScreens.Select([monA, monB, monC], NotchScreens.Selected, [monA.Id, monC.Id])!.Select(s => s.Id).Order().SequenceEqual([monA.Id, monC.Id]));
+Check("pantallas: todas menos una", NotchScreens.Select([monA, monB, monC], NotchScreens.Selected, [monB.Id, monC.Id])!.Count == 2);
+Check("pantallas: sin ninguna elegida (o ausente) cae al principal", NotchScreens.Select([monA, monB], NotchScreens.Selected, [])!.Single().Id == monB.Id
+    && NotchScreens.Select([monA, monB], NotchScreens.Selected, [@"\\.\DISPLAY9"])!.Single().Id == monB.Id);
+var dup = Scr(@"\\.\DISPLAY2", 0);
+Check("pantallas: dos monitores duplicados (mismo rectángulo) llevan un solo notch, y gana el principal",
+    NotchScreens.Select([dup, monB], NotchScreens.Selected, [dup.Id, monB.Id])!.Single().Id == monB.Id);
+Check("pantallas: la firma no cambia con el orden", NotchScreens.Signature([monA, monC]) == NotchScreens.Signature([monC, monA]));
+// Letras sincronizadas y avisos del sistema.
+var lrc = "[ar:Tainy]\n[00:12.50] Primera\n[00:20.00]Segunda [x]\n[01:05.5][02:10.25] Estribillo\n[00:30.00]\nsin marca\n";
+var lyricLines = LyricsTimeline.ParseLrc(lrc);
+Check("letras: el LRC se lee, ordenado, sin metadatos ni líneas vacías", lyricLines.Count == 4 && lyricLines[0].Text == "Primera" && lyricLines[0].Time == TimeSpan.FromSeconds(12.5)
+    && lyricLines[^1].Time == TimeSpan.FromSeconds(130.25) && lyricLines[^1].Text == "Estribillo");
+Check("letras: una línea con dos marcas sale dos veces", lyricLines.Count(l => l.Text == "Estribillo") == 2);
+Check("letras: la línea actual por tiempo", LyricsTimeline.CurrentIndex(lyricLines, TimeSpan.FromSeconds(5)) == -1
+    && LyricsTimeline.CurrentIndex(lyricLines, TimeSpan.FromSeconds(12.5)) == 0 && LyricsTimeline.CurrentIndex(lyricLines, TimeSpan.FromSeconds(25)) == 1
+    && LyricsTimeline.CurrentIndex(lyricLines, TimeSpan.FromSeconds(500)) == lyricLines.Count - 1);
+Check("letras: una letra vacía o nula no rompe", LyricsTimeline.ParseLrc(null).Count == 0 && LyricsTimeline.CurrentIndex([], TimeSpan.FromSeconds(3)) == -1);
+var hudNow = DateTime.Now;
+var capsHud = new HudInfo(HudKind.CapsLock, "Caps", On: true); var volHud = new HudInfo(HudKind.Volume, "Vol", 0.4);
+Check("avisos: gana el último que cambió, y caduca", HudPicker.Latest([(hudNow.AddSeconds(-1), capsHud), (hudNow.AddSeconds(-0.2), volHud)], hudNow) == volHud
+    && HudPicker.Latest([(hudNow.AddSeconds(-3), capsHud)], hudNow) is null && HudPicker.Latest([], hudNow) is null);
+Check("avisos: las barras y el ancho de cada uno", volHud.HasBar && !capsHud.HasBar && capsHud.Width == 280 && new HudInfo(HudKind.Language, "x").Width == 320);
 Check("notch: a pantalla completa se oculta, y no se abre con el cursor",
     ns.Update(true, true, false, 20) && ns.Hidden && ns.Mode == NotchMode.Collapsed && !ns.Update(true, true, false, 21) && ns.Mode == NotchMode.Collapsed);
 Check("notch: al salir de pantalla completa reaparece", ns.Update(false, false, false, 22) && !ns.Hidden);
@@ -187,15 +267,80 @@ Check("widgets: el editor guarda ancho sin romper ids anteriores y no ensancha l
     WidgetLayout.ToggleWidth(new[] { "system" }, "system").SequenceEqual(new[] { "system@2" })
     && WidgetLayout.Normalize(new[] { "system@2", "ollama" }).SequenceEqual(new[] { "system@2", "ollama" })
     && WidgetLayout.Cells(new[] { "system@2", "clock" }) == 3
-    && !WidgetLayout.CanResize("ollama")
-    && WidgetLayout.ToggleWidth(new[] { "system", "ollama", "clock" }, "system").SequenceEqual(new[] { "system", "ollama", "clock" })
+    && WidgetLayout.CanResize("ollama") && !WidgetLayout.CanResize("led")
+    && WidgetLayout.ToggleWidth(new[] { "system", "clock" }, "system").SequenceEqual(new[] { "system@2", "clock" })
+    && WidgetLayout.ToggleWidth(new[] { "led" }, "led").SequenceEqual(new[] { "led" })
     && !WidgetLayout.DragResizeTriggered(false, 35) && WidgetLayout.DragResizeTriggered(false, 36)
     && !WidgetLayout.DragResizeTriggered(true, -35) && WidgetLayout.DragResizeTriggered(true, -36));
 Check("widgets: el editor mueve arrastrando delante del destino",
     WidgetLayout.MoveBefore(new[] { "system", "clock", "pomodoro" }, "pomodoro", "system").SequenceEqual(new[] { "pomodoro", "system", "clock" })
-    && WidgetLayout.MoveBefore(new[] { "system", "clock" }, "audio", "system").SequenceEqual(new[] { "audio", "system", "clock" }));
+    && WidgetLayout.MoveBefore(new[] { "system", "clock" }, "audio", "system").SequenceEqual(new[] { "audio", "system", "clock" })
+    && WidgetLayout.MoveBefore(new[] { "team@2x2", "clock@2x2", "system" }, "battery@2", "system", WidgetCatalog.MaxHomeCells, home: true)
+        .SequenceEqual(new[] { "team@2x2", "clock@2x2", "battery@2", "system" }));
+Check("widgets: el selector aplica el ancho elegido y calcula las celdas del tamaño pedido",
+    WidgetLayout.SetWidth(new[] { "clock", "system" }, "clock", 2, WidgetCatalog.MaxHomeCells, home: true).Contains("clock@2")
+    && !WidgetLayout.CanAdd(new[] { "team@2x2", "clock@2x2", "system@2", "pomodoro" }, "battery@2", WidgetCatalog.MaxHomeCells, home: true));
+Check("widgets: Ollama, Código y LM Studio admiten 1×1, se guardan y se pueden redimensionar",
+    WidgetCatalog.All.All(widget => WidgetLayout.Sizes(widget.Id).Contains((1, 1)))
+    && new[] { "ollama", "code", "lmstudio" }.All(id => WidgetLayout.Sizes(id).Contains((1, 1)) && WidgetLayout.CanResize(id)
+        && WidgetLayout.Span(WidgetLayout.Token(id, 1, 1, home: true)) == 1)
+    && WidgetLayout.Normalize(new[] { "ollama@1", "code@1x1", "lmstudio@1" }, home: true)
+        .SequenceEqual(new[] { "ollama@1", "code@1x1", "lmstudio@1" }));
 Check("widgets: el catálogo no repite ids y todos son de una o dos celdas",
     WidgetCatalog.All.Select(w => w.Id).Distinct().Count() == WidgetCatalog.All.Count && WidgetCatalog.All.All(w => w.Cells is 1 or 2));
+{
+    AgentSnapshot Session(string id, string provider, AgentState state, string project = @"C:\src\Alpha") =>
+        new(id, project, provider, state, null, null, null, null, "Listo.", [], DateTime.UtcNow);
+    var claude = Session("01234567-89ab-4cde-8f01-23456789abcd", "Claude Code", AgentState.Finished);
+    var codex = Session("rollout-2026-10-21T01-01-01-01a15d0c-7c40-72f2-9f76-999ef19d50b1", "Codex", AgentState.Inactive);
+    Check("agentes: el id para reanudar es el del archivo en Claude Code y el UUID del final en Codex, y una sesión de ayuda no se puede reanudar",
+        claude.ResumeId == "01234567-89ab-4cde-8f01-23456789abcd" && codex.ResumeId == "01a15d0c-7c40-72f2-9f76-999ef19d50b1" && Session("agent-3f9a", "Claude Code", AgentState.Finished).ResumeId is null);
+    Func<string, bool> exists = _ => true;
+    Check("agentes: solo se reanuda una sesión que nadie usa ahora, con carpeta y que no es una automatización",
+        AgentResume.CanResume(claude, exists) && AgentResume.CanResume(codex, exists)
+        && !AgentResume.CanResume(Session(claude.Session, "Claude Code", AgentState.Working), exists)
+        && !AgentResume.CanResume(Session(claude.Session, "Claude Code", AgentState.NeedsAttention), exists)
+        && !AgentResume.CanResume(claude with { AutomationId = "daily" }, exists)
+        && !AgentResume.CanResume(claude, _ => false) && !AgentResume.CanResume(Session(claude.Session, "Claude Code", AgentState.Finished, "Codex"), exists));
+    var claudeArgs = AgentResume.Args(claude);
+    var codexArgs = AgentResume.Args(codex);
+    Check("agentes: reanudar va en solo lectura y con el id de la sesión (Claude con herramientas que no escriben; Codex con la sandbox de solo lectura)",
+        claudeArgs.Contains("--resume") && claudeArgs.Contains(claude.ResumeId!) && claudeArgs.Contains("-p") && !claudeArgs.Contains("--no-session-persistence")
+        && claudeArgs[Array.IndexOf(claudeArgs.ToArray(), "--allowedTools") + 1] == "Read,Grep,Glob,WebSearch,WebFetch" && !claudeArgs.Any(a => a.Contains("Edit") || a.Contains("Bash"))
+        && codexArgs.Take(3).SequenceEqual(new[] { "exec", "resume", "--json" }) && codexArgs.Contains(codex.ResumeId!) && codexArgs.Contains("sandbox_mode=\"read-only\"") && codexArgs[^1] == "-");
+}
+Check("widgets: cada widget está en una sola carpeta y las carpetas solo tienen widgets que existen",
+    WidgetCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(WidgetCatalog.All.Select(w => w.Id).OrderBy(x => x))
+    && WidgetCatalog.Folders.Select(f => f.Id).Distinct().Count() == WidgetCatalog.Folders.Count);
+{
+    var watch = new CaptureToolWatch();
+    var guardStart = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc);
+    var nothing = Array.Empty<int>();
+    Check("recortes: una superposición a pantalla completa de menos de 30 segundos no se toca, y a los 30 se cierra una sola vez",
+        watch.Tick(guardStart, [7], nothing).Count == 0 && watch.Tick(guardStart.AddSeconds(29), [7], nothing).Count == 0
+        && watch.Tick(guardStart.AddSeconds(30), [7], nothing).SequenceEqual(new[] { 7 }) && watch.Tick(guardStart.AddSeconds(33), [7], nothing).Count == 0);
+    var other = new CaptureToolWatch();
+    Check("recortes: si la superposición desaparece el contador vuelve a empezar de cero",
+        other.Tick(guardStart, [7], nothing).Count == 0 && other.Tick(guardStart.AddSeconds(20), nothing, nothing).Count == 0
+        && other.Tick(guardStart.AddSeconds(25), [7], nothing).Count == 0 && other.Tick(guardStart.AddSeconds(50), [7], nothing).Count == 0
+        && other.Tick(guardStart.AddSeconds(55), [7], nothing).SequenceEqual(new[] { 7 }));
+    var hung = new CaptureToolWatch();
+    Check("recortes: una ventana que no responde se cierra a los ocho segundos, y si vuelve a responder antes no se toca",
+        hung.Tick(guardStart, nothing, [9]).Count == 0 && hung.Tick(guardStart.AddSeconds(7), nothing, [9]).Count == 0 && hung.Tick(guardStart.AddSeconds(8), nothing, [9]).SequenceEqual(new[] { 9 })
+        && hung.Tick(guardStart.AddSeconds(20), nothing, [4]).Count == 0 && hung.Tick(guardStart.AddSeconds(25), nothing, nothing).Count == 0 && hung.Tick(guardStart.AddSeconds(30), nothing, [4]).Count == 0);
+}
+Check("widgets: las carpetas de gráficas, actividades, pastilla, dock y favoritos cubren su catálogo exactamente una vez",
+    SystemMetricCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(SystemMetricCatalog.All.OrderBy(x => x))
+    && ActivityCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(ActivityCatalog.All.Select(a => a.Id).OrderBy(x => x))
+    && PillCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(PillCatalog.All.Select(p => p.Id).OrderBy(x => x))
+    && DockCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(DockCatalog.Optional.Select(d => d.Id).OrderBy(x => x))
+    && FavoriteCatalog.Folders.SelectMany(f => f.Widgets).OrderBy(x => x).SequenceEqual(FavoriteCatalog.All.Select(f => f.Id).OrderBy(x => x)));
+Check("cámara: solo marca activa una sesión cuyo inicio es posterior a su cierre",
+    CameraUsage.IsActive(20, 10) && CameraUsage.IsActive(20, 0) && !CameraUsage.IsActive(0, 0)
+    && !CameraUsage.IsActive(10, 20) && !CameraUsage.IsActive(10, 10));
+Check("cámara: solo devuelve PID distintos de procesos que están transmitiendo",
+    CameraUsage.ActiveProcessIds(new[] { (42, true), (9, false), (42, true), (0, true), (-1, true), (17, true) })
+        .SequenceEqual(new[] { 17, 42 }));
 Check("widgets: un widget de una celda solo en su fila se ensancha; con compañero se queda en una celda",
     WidgetLayout.Arrange(new[] { "ollama", "system", "clock" }).SequenceEqual(new[] { ("ollama", 2), ("system", 1), ("clock", 1) })
     && WidgetLayout.Arrange(new[] { "system" }).SequenceEqual(new[] { ("system", 2) })
@@ -218,19 +363,36 @@ Check("actividades: salen las más urgentes primero y caben dos",
 Check("actividades: las que el usuario apagó no salen y la siguiente ocupa su sitio",
     ActivityQueue.Pick(happening, ActivityCatalog.Toggle(ActivityCatalog.Normalize(null), "clean")).Select(a => a.Id).SequenceEqual(new[] { "pomodoro", "awake" })
     && !ActivityQueue.Pick(happening, Array.Empty<string>()).Any());
-var both = new List<Activity> { new("awake", "g", "", 10), new("pomodoro", "g", "24:00", 50), new("media", "g", "canción", 40), new("clean", "g", "Liberando…", 90, true), new("power", "g", "Encendiendo…", 80, true) };
+var both = new List<Activity> { new("awake", "g", "", 10), new("pomodoro", "g", "24:00", 50), new("media", "g", "canción", 40), new("clean", "g", "Liberando…", 90), new("power", "g", "Encendiendo…", 80) };
 var sides = ActivityQueue.PickSides(both, ActivityCatalog.All.Select(a => a.Id).ToList());
-Check("actividades: lo de Ollama sale a la izquierda (una) y lo demás a la derecha (dos), cada lado por urgencia",
-    sides.Left.Select(a => a.Id).SequenceEqual(new[] { "clean" }) && sides.Right.Select(a => a.Id).SequenceEqual(new[] { "pomodoro", "media" }));
-Check("actividades: limpieza, encendido y memoria crítica van a la izquierda; el resto, a la derecha",
-    ActivityCatalog.All.Where(a => a.Left).Select(a => a.Id).OrderBy(i => i).SequenceEqual(new[] { "clean", "power", "pressure" }));
-Check("actividades: sin nada de Ollama, la izquierda queda vacía", ActivityQueue.PickSides(both.Where(a => !a.Left), ActivityCatalog.All.Select(a => a.Id).ToList()).Left.Count == 0);
+Check("actividades: a la derecha sale una sola (la rápida más urgente) y la izquierda queda vacía sin cámara",
+    sides.Left.Count == 0 && sides.Right.Select(a => a.Id).SequenceEqual(new[] { "clean" }));
+var lasting = new List<Activity> { new("awake", "g", "", 10), new("pomodoro", "g", "24:00", 50), new("agents", "g", "", 32) };
+var allIds = ActivityCatalog.All.Select(a => a.Id).ToList();
+Check("actividades: las rápidas pasan por delante de las que duran y, al acabar, vuelve la que duraba",
+    ActivityQueue.PickSides([.. lasting, new("clean", "g", "Liberando…", 90)], allIds, rotation: 1).Right.Single().Id == "clean"
+    && ActivityQueue.PickSides(lasting, allIds, rotation: 0).Right.Single().Id == "pomodoro");
+Check("actividades: un aviso nuevo (la campana) pasa por delante de todo, también de liberar RAM",
+    ActivityQueue.PickSides([.. lasting, new("clean", "g", "Liberando…", 90), new("notice", "g", "Aviso", 97)], allIds).Right.Single().Id == "notice"
+    && ActivityCatalog.Find("notice") is { DefaultOn: true, Left: false });
+Check("actividades: las que duran se turnan una a una con el turno, sin salir dos a la vez",
+    Enumerable.Range(0, 3).Select(r => ActivityQueue.PickSides(lasting, allIds, rotation: r).Right.Single().Id).SequenceEqual(new[] { "pomodoro", "agents", "awake" })
+    && ActivityQueue.PickSides(lasting, allIds, rotation: -1).Right.Count == 1 && ActivityQueue.PickSides([], allIds, rotation: 5).Right.Count == 0);
+Check("actividades: solo la cámara está marcada para la izquierda",
+    ActivityCatalog.All.Where(a => a.Left).Select(a => a.Id).SequenceEqual(new[] { "camera" }));
+var cameraActivity = new Activity("camera", "camera", "", 30, true);
+var liveCameraSides = ActivityQueue.PickSides([.. both, cameraActivity], new[] { "clean" }, cameraInUse: true);
+var optionalCameraSides = ActivityQueue.PickSides([cameraActivity], new[] { "camera" });
+Check("actividades: la cámara forzada o activada va sola a la izquierda y lo demás, a la derecha",
+    liveCameraSides.Left.Select(a => a.Id).SequenceEqual(new[] { "camera" }) && liveCameraSides.Right.Select(a => a.Id).SequenceEqual(new[] { "clean" })
+    && optionalCameraSides.Left.Select(a => a.Id).SequenceEqual(new[] { "camera" })
+    && ActivityQueue.PickSides([cameraActivity], Array.Empty<string>()).Left.Count == 0);
 Check("actividades: sin nada guardado están las de siempre (la música no, hasta que se activa); lo desconocido se descarta",
     ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.DefaultOn).Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
     && ActivityCatalog.All.Select(a => a.Id).Distinct().Count() == ActivityCatalog.All.Count);
 Check("actividades: la pastilla más ancha mantiene su centro y su zona activa",
     NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Pill.Width == 330 && NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Hot.Right > NotchLayout.Place(nm, nw, 1.0, 340, 200).Hot.Right
-    && NotchLayout.Place(nm, nw, 1.0, 340, 200, 100).Pill.Width == 230);
+    && NotchLayout.Place(nm, nw, 1.0, 340, 200, 100).Pill.Width == 150);
 
 Section("Audio, series y datos locales");
 var audioLevels = AudioMixer.Remember(null, @"C:\Apps\Player.exe", 1.3);
@@ -282,6 +444,19 @@ Check("agentes: convierte el XML de automatización en un resultado legible sin 
     && !heartbeatAgent.Message.Contains("<heartbeat", StringComparison.Ordinal)
     && heartbeatAgent.RecentActivity.Count == 1
     && heartbeatAgent.RecentActivity[0].Summary == "Comprobación automática · sin aviso");
+var claudeScheduled = AgentLogs.Parse("claude-scheduled-1", "sample-project", "Claude Code",
+    ["{\"type\":\"system\",\"scheduled_task_id\":\"daily-review\",\"scheduled_task_name\":\"Daily review\"}", "{\"type\":\"result\"}"], DateTime.UtcNow);
+var seenScheduled = new HashSet<string>(StringComparer.Ordinal);
+var firstScheduledNotice = AgentLogs.NewlyFinishedAutomations([heartbeatAgent, claudeScheduled, heartbeatAgent with { AutomationId = null }], seenScheduled);
+Check("agentes: reconoce la tarea local de Claude y emite cada automatización terminada una sola vez",
+    claudeScheduled.IsAutomation && claudeScheduled.Name == "Daily review"
+    && firstScheduledNotice.Select(s => s.Name).OrderBy(x => x).SequenceEqual(new[] { "Daily review", heartbeatAgent.Name }.OrderBy(x => x))
+    && AgentLogs.NewlyFinishedAutomations([heartbeatAgent, claudeScheduled], seenScheduled).Count == 0);
+var previousLanguage = L10n.Effective;
+L10n.Init(Language.Es);
+bool taskNoticeKeepsName = L10n.tr("Tarea: %@", "Daily review") == "Tarea: Daily review";
+L10n.Init(previousLanguage == "en" ? Language.En : Language.Es);
+Check("agentes: la actividad conserva visible el nombre de la tarea", taskNoticeKeepsName);
 var agentNow = new DateTime(2026, 10, 19, 12, 0, 0, DateTimeKind.Utc);
 var justFinished = new AgentSnapshot("finished-1", "C:/src/App", "Codex", AgentState.Finished, null, null, null, null, "Terminé.", [], agentNow.AddMinutes(-1));
 var staleWorking = new AgentSnapshot("idle-1", "C:/src/Idle", "Claude Code", AgentState.Working, null, null, null, null, null, [], agentNow.AddMinutes(-7));
@@ -330,8 +505,16 @@ Check("agentes: acepta rutas explícitas de herramientas de archivo de Codex sin
     && codexPathAgent.RecentActivity.All(a => a.Summary != "{\"file_path\":\"src/Chosen.cs\"}"));
 var forecast = WeatherForecast.Parse("Panamá", "{\"current\":{\"time\":\"2026-10-17T12:00\",\"temperature_2m\":29,\"weather_code\":1},\"hourly\":{\"time\":[\"2026-10-17T12:00\",\"2026-10-17T13:00\"],\"temperature_2m\":[29,30],\"weather_code\":[1,2]}}");
 Check("tiempo: decodifica condiciones y horas", forecast is { Temperature: 29, Code: 1 } && forecast.Hours.Count == 2 && forecast.Hours[1].Temperature == 30);
+Section("Capacidad, clima, seguridad del código y alarmas LED");
+WidgetCorrectnessTests.Run(Check);
 Check("favoritos: sin nada guardado salen encender, liberar RAM y procesos",
     FavoriteCatalog.Normalize(null).SequenceEqual(new[] { "power", "clean", "processes" }));
+Check("equipo: la pastilla, la actividad y el favorito existen, con su glifo y apagados por defecto",
+    PillCatalog.Find("team") is { } && ActivityCatalog.Find("team") is { DefaultOn: true, Left: false } && FavoriteCatalog.Find("teamcancel") is { }
+    && ActivityCatalog.Normalize(null).Contains("team") && !FavoriteCatalog.Normalize(null).Contains("teamcancel")
+    && PillCatalog.WidgetsNeeded(new[] { "team" }).SequenceEqual(new[] { "team" }));
+Check("equipo: su actividad compite por prioridad y el progreso viaja con ella",
+    ActivityQueue.PickSides(new List<Activity> { new("team", "g", "2/6", 35, false, 0.33), new("awake", "g", "", 10) }, new[] { "team", "awake" }).Right.First() is { Id: "team", Progress: > 0.3 });
 var appFav = FavoriteCatalog.AppId(@"C:\Program Files\Demo\demo-app.exe");
 Check("favoritos: una app del usuario se guarda con su ruta y se titula con su nombre",
     FavoriteCatalog.IsApp(appFav) && FavoriteCatalog.AppPath(appFav) == @"C:\Program Files\Demo\demo-app.exe"
@@ -361,7 +544,38 @@ pomo.Toggle(pomoStart.AddHours(8));
 Check("pomodoro: el descanso dura 5 min y al acabar vuelve al enfoque",
     pomo.Tick(pomoStart.AddHours(8).AddMinutes(5)) && pomo.Phase == PomodoroPhase.Focus && pomo.Left == Pomodoro.FocusLength);
 pomo.Start(pomoStart); pomo.Reset();
+var pomoCycle = new Pomodoro();
+var pomoClock = new DateTime(2026, 1, 1, 9, 0, 0);
+bool cycleOk = true;
+for (int session = 1; session <= 4; session++)
+{
+    pomoCycle.Start(pomoClock); pomoClock = pomoClock.AddMinutes(26);
+    cycleOk &= pomoCycle.Tick(pomoClock) && pomoCycle.Phase == PomodoroPhase.Break && pomoCycle.Completed == session
+        && pomoCycle.LongBreak == (session == 4) && pomoCycle.Left == (session == 4 ? Pomodoro.LongBreakLength : Pomodoro.BreakLength);
+    pomoCycle.Start(pomoClock); pomoClock = pomoClock.AddMinutes(16);
+    cycleOk &= pomoCycle.Tick(pomoClock) && pomoCycle.Phase == PomodoroPhase.Focus;
+}
+Check("pomodoro: cada cuatro enfoques toca un descanso largo y el ciclo vuelve a empezar", cycleOk && pomoCycle.Completed == 0 && !pomoCycle.LongBreak && pomoCycle.Session == 1);
+var pomoSkip = new Pomodoro();
+pomoSkip.Skip(pomoClock);
+bool skippedFocus = pomoSkip.Phase == PomodoroPhase.Break && pomoSkip.Completed == 0 && !pomoSkip.Running && pomoSkip.Left == Pomodoro.BreakLength;
+pomoSkip.Skip(pomoClock);
+Check("pomodoro: saltar un enfoque no lo cuenta y deja el descanso listo, parado; saltar el descanso vuelve al enfoque",
+    skippedFocus && pomoSkip.Phase == PomodoroPhase.Focus && pomoSkip.Left == Pomodoro.FocusLength);
 Check("pomodoro: reiniciar lo deja en 25:00 parado", !pomo.Running && pomo.Left == Pomodoro.FocusLength && pomo.Phase == PomodoroPhase.Focus && pomo.Progress == 0);
+var pomoManual = new Pomodoro();
+pomoManual.Start(pomoClock);
+pomoManual.Select(PomodoroPhase.Break);
+bool manualBreak = pomoManual.Phase == PomodoroPhase.Break && !pomoManual.Running && pomoManual.Left == Pomodoro.BreakLength && !pomoManual.LongBreak;
+pomoManual.Start(pomoClock);
+pomoManual.Tick(pomoClock.AddSeconds(9));
+bool breakCounts = pomoManual.Left == Pomodoro.BreakLength - TimeSpan.FromSeconds(9);
+pomoManual.Pause(pomoClock.AddSeconds(9));
+pomoManual.Restart();
+bool restarted = !pomoManual.Running && pomoManual.Left == Pomodoro.BreakLength && pomoManual.Phase == PomodoroPhase.Break;
+pomoManual.Select(PomodoroPhase.Focus);
+Check("pomodoro: los modos manuales cambian de fase parados y con su duración; reiniciar vuelve la fase actual a su duración, parada",
+    manualBreak && breakCounts && restarted && pomoManual.Phase == PomodoroPhase.Focus && pomoManual.Left == Pomodoro.FocusLength && !pomoManual.Running && pomoManual.Completed == 0);
 Check("pomodoro: el formato es mm:ss y redondea hacia arriba",
     Pomodoro.Format(TimeSpan.FromSeconds(65)) == "01:05" && Pomodoro.Format(TimeSpan.Zero) == "00:00" && Pomodoro.Format(TimeSpan.FromSeconds(0.2)) == "00:01"
     && Pomodoro.Format(TimeSpan.FromSeconds(-3)) == "00:00");
@@ -389,7 +603,7 @@ Section("Agente de memoria");
         var text = new System.Text.StringBuilder();
         foreach (var f in agentFiles) text.Append(f).Append('\n').Append(File.ReadAllText(Path.Combine(repo, f)).Replace("\r\n", "\n")).Append('\n');
         var hash = Convert.ToHexString(sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes(text.ToString()))).ToLowerInvariant();
-        Check("agente: si cambia su código hay que subir AGENT_VERSION y actualizar este hash (" + hash + ")", hash == "0abcfa4ad267fd1b505f10d9500246176fe006133d5b70a942ed28b214a78c5b");
+        Check("agente: si cambia su código hay que subir AGENT_VERSION y actualizar este hash (" + hash + ")", hash == "fb3a9691be5cc91f3ba1a72133577fad69679371265c3690acbe36a98f6f7de6");
         var agentVersion = File.ReadAllText(Path.Combine(repo, "AGENT_VERSION")).Trim();
         var appVersion = File.ReadAllText(Path.Combine(repo, "VERSION")).Trim();
         Check("agente: AGENT_VERSION es una versión y no supera a la de la app",
@@ -454,7 +668,17 @@ Section("Historial del portapapeles");
     Check("portapapeles: se puede quitar una entrada y un índice fuera de rango no hace nada", history.Count == ClipboardHistory.Max - 1);
     Check("portapapeles: un texto enorme se recorta", new ClipboardHistory().Add(new string('x', ClipboardHistory.MaxLength + 50)));
     var huge = new ClipboardHistory(); huge.Add(new string('x', ClipboardHistory.MaxLength + 50));
-    Check("portapapeles: el recorte deja MaxLength caracteres", huge.Items[0].Length == ClipboardHistory.MaxLength);
+    Check("portapapeles: el recorte deja MaxLength caracteres e informa la longitud original",
+        huge.Entries[0].Text.Length == ClipboardHistory.MaxLength && huge.Entries[0].WasTruncated && huge.Entries[0].OriginalLength == ClipboardHistory.MaxLength + 50);
+    var pinned = new ClipboardHistory();
+    pinned.Add("fijado"); pinned.SetPinned("fijado", true);
+    for (int i = 0; i < ClipboardHistory.Max; i++) pinned.Add("guardado " + i);
+    Check("portapapeles: las entradas fijadas sobreviven a la expulsión automática", pinned.Count == ClipboardHistory.Max
+        && pinned.Entries.Any(e => e.Text == "fijado" && e.IsPinned) && pinned.Entries[0].Text == "guardado " + (ClipboardHistory.Max - 1));
+    for (int i = 0; i < ClipboardHistory.MaxPinned; i++) pinned.SetPinned(pinned.Entries[i].Text, true);
+    Check("portapapeles: el límite de fijados es explícito", pinned.PinnedCount == ClipboardHistory.MaxPinned
+        && !pinned.SetPinned(pinned.Entries[10].Text, true));
+    Check("portapapeles: quitar un fijado lo libera del filtro", pinned.SetPinned("fijado", false) && pinned.Entries.All(e => e.Text != "fijado" || !e.IsPinned));
     Check("portapapeles: la vista previa es la primera línea con contenido y se corta con «…»",
         ClipboardHistory.Preview("\n  hola mundo \nsegunda") == "hola mundo" && ClipboardHistory.Preview(new string('a', 200), 20) == new string('a', 19) + "…");
     Check("portapapeles: lo marcado por un gestor de contraseñas no se registra",
@@ -502,6 +726,11 @@ Section("Edición rápida de archivos de texto");
         var forced = TextFile.Save(docConflict!, "mis cambios\n", overwrite: true);
         Check("editor: sobrescribir lo guarda y deja el documento al día", forced.Result == TextSaveResult.Saved && File.ReadAllText(lf) == "mis cambios\n"
             && TextFile.Save(forced.Doc, "otra vez\n").Result == TextSaveResult.Saved);
+        var sameSize = Path.Combine(dir, "same-size.txt"); File.WriteAllText(sameSize, "original\n");
+        var (sameDoc, _, _) = TextFile.Load(sameSize);
+        File.WriteAllText(sameSize, "modified\n"); File.SetLastWriteTimeUtc(sameSize, sameDoc!.Stamp);
+        var sameSizeRefused = TextFile.Save(sameDoc, "my edit\n");
+        Check("editor: detecta cambios externos aunque conserven tamaño y fecha", sameSizeRefused.Result == TextSaveResult.Conflict && File.ReadAllText(sameSize) == "modified\n");
         Check("editor: no deja archivos temporales", Directory.GetFiles(dir, "*.tmp").Length == 0);
         File.SetAttributes(lf, FileAttributes.ReadOnly);
         var (docRo, _, _) = TextFile.Load(lf);
@@ -516,31 +745,68 @@ Section("Edición rápida de archivos de texto");
 Section("Árbol de archivos e iconos del widget Código");
 {
     var dir = Path.Combine(Path.GetTempPath(), "its-code-" + Guid.NewGuid().ToString("N"));
+    var outside = Path.Combine(Path.GetTempPath(), "its-code-outside-" + Guid.NewGuid().ToString("N"));
     try
     {
         Directory.CreateDirectory(Path.Combine(dir, "src", "sub"));
+        Directory.CreateDirectory(outside);
         foreach (var skipped in new[] { "node_modules", ".git", "bin", "obj" }) Directory.CreateDirectory(Path.Combine(dir, skipped));
         File.WriteAllText(Path.Combine(dir, "zeta.txt"), "z");
         File.WriteAllText(Path.Combine(dir, "Alpha.md"), "a");
+        var externalFile = Path.Combine(outside, "escape.txt"); File.WriteAllText(externalFile, "fuera");
+        bool fileLink = false, directoryLink = false;
+        try { File.CreateSymbolicLink(Path.Combine(dir, "escape.txt"), externalFile); fileLink = true; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or PlatformNotSupportedException or System.ComponentModel.Win32Exception) { }
+        try { Directory.CreateSymbolicLink(Path.Combine(dir, "escape-dir"), outside); directoryLink = true; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or PlatformNotSupportedException or System.ComponentModel.Win32Exception) { }
+        if (!fileLink || !directoryLink) Console.WriteLine($"   enlace simbólico no disponible en este entorno: archivo={fileLink}, carpeta={directoryLink}");
         File.WriteAllText(Path.Combine(dir, "src", "a.cs"), "a");
         File.WriteAllText(Path.Combine(dir, "src", "sub", "b.ts"), "b");
         var hiddenFile = Path.Combine(dir, "secreto.txt"); File.WriteAllText(hiddenFile, "s"); File.SetAttributes(hiddenFile, FileAttributes.Hidden);
-        var closed = CodeTree.Flatten(dir, new HashSet<string>());
+        var closedTree = CodeTree.Flatten(dir, new HashSet<string>());
+        var closed = closedTree.Rows;
         Check("árbol: carpetas antes que archivos y cada grupo por nombre, sin mayúsculas que descoloquen",
             closed.Select(r => r.Name).SequenceEqual(new[] { "src", "Alpha.md", "zeta.txt" }) && closed.All(r => r.Depth == 0));
         Check("árbol: esconde carpetas generadas (.git, node_modules, bin, obj) y lo oculto del sistema",
             closed.All(r => r.Name is not ("node_modules" or ".git" or "bin" or "obj" or "secreto.txt")));
-        var open = CodeTree.Flatten(dir, new HashSet<string> { Path.Combine(dir, "src"), Path.Combine(dir, "src", "sub") });
+        Check("árbol: la raíz admite un archivo interno y bloquea rutas fuera de ella",
+            CodeTree.IsSafePath(dir, Path.Combine(dir, "src", "a.cs")) && !CodeTree.IsSafePath(dir, externalFile)
+            && !CodeTree.IsSafePath(dir, Path.Combine(dir, "..", Path.GetFileName(outside), "escape.txt")));
+        if (fileLink || directoryLink)
+            Check("árbol: no muestra enlaces simbólicos a archivos ni carpetas que salen de la raíz",
+                (!fileLink || closed.All(r => r.Name != "escape.txt")) && (!directoryLink || closed.All(r => r.Name != "escape-dir")));
+        if (fileLink) Check("árbol: rechaza una ruta de archivo simbólica al abrir o guardar", !CodeTree.IsSafePath(dir, Path.Combine(dir, "escape.txt")));
+        if (directoryLink)
+        {
+            var escapedRows = CodeTree.Flatten(dir, new HashSet<string> { Path.Combine(dir, "escape-dir") }).Rows;
+            Check("árbol: volver a expandir una carpeta simbólica no sigue su destino externo",
+                !CodeTree.IsSafePath(dir, Path.Combine(dir, "escape-dir", "escape.txt")) && escapedRows.All(r => !r.Path.StartsWith(outside, StringComparison.OrdinalIgnoreCase)));
+        }
+        var open = CodeTree.Flatten(dir, new HashSet<string> { Path.Combine(dir, "src"), Path.Combine(dir, "src", "sub") }).Rows;
         Check("árbol: una carpeta abierta enseña su contenido justo debajo y con sangría",
             open.Select(r => $"{r.Depth}:{r.Name}").SequenceEqual(new[] { "0:src", "1:sub", "2:b.ts", "1:a.cs", "0:Alpha.md", "0:zeta.txt" })
             && open[0].Expanded && !open[3].IsDirectory);
-        Check("árbol: una carpeta que no existe o sin permiso da una lista vacía", CodeTree.Flatten(Path.Combine(dir, "no-existe"), new HashSet<string>()).Count == 0);
+        var missingTree = CodeTree.Flatten(Path.Combine(dir, "no-existe"), new HashSet<string>());
+        Check("árbol: una carpeta que no existe se informa como parcial", missingTree.Rows.Count == 0 && missingTree.IsPartial);
         var many = Path.Combine(dir, "muchos"); Directory.CreateDirectory(many);
         for (int i = 0; i < CodeTree.MaxPerFolder + 20; i++) File.WriteAllText(Path.Combine(many, $"f{i:D4}.txt"), "x");
-        Check("árbol: una carpeta enorme se corta en su tope", CodeTree.Flatten(many, new HashSet<string>()).Count == CodeTree.MaxPerFolder);
+        var manyTree = CodeTree.Flatten(many, new HashSet<string>());
+        Check("árbol: una carpeta enorme se corta en su tope y avisa que faltan archivos", manyTree.Rows.Count == CodeTree.MaxPerFolder && manyTree.IsPartial);
+        var manyRoot = Path.Combine(dir, "muchas-filas"); Directory.CreateDirectory(manyRoot);
+        var manyExpanded = new HashSet<string>();
+        for (int d = 0; d < 4; d++)
+        {
+            var child = Path.Combine(manyRoot, $"d{d}"); Directory.CreateDirectory(child); manyExpanded.Add(child);
+            for (int i = 0; i < CodeTree.MaxPerFolder; i++) File.WriteAllText(Path.Combine(child, $"f{i:D4}.txt"), "x");
+        }
+        var manyRows = CodeTree.Flatten(manyRoot, manyExpanded);
+        Check("árbol: el tope global también informa que faltan filas", manyRows.Rows.Count == CodeTree.MaxRows && manyRows.IsPartial);
+        Check("LED: cada hora y fecha tiene su propia marca de minuto, aunque coincidan los minutos del reloj",
+            LedTimer.MinuteStamp(new DateTime(2026, 10, 24, 10, 5, 0)) != LedTimer.MinuteStamp(new DateTime(2026, 10, 24, 11, 5, 0))
+            && LedTimer.MinuteStamp(new DateTime(2026, 10, 24, 11, 5, 1)) == LedTimer.MinuteStamp(new DateTime(2026, 10, 24, 11, 5, 59)));
         Check("árbol: reconoce las imágenes que el visor sabe mostrar", CodeTree.IsImage("a.PNG") && CodeTree.IsImage("b.jpeg") && !CodeTree.IsImage("c.svg") && !CodeTree.IsImage("d.cs"));
     }
-    finally { try { Directory.Delete(dir, true); } catch { } }
+    finally { try { Directory.Delete(dir, true); } catch { } try { Directory.Delete(outside, true); } catch { } }
 
     var iconFile = "";
     for (var probe = new DirectoryInfo(AppContext.BaseDirectory); probe is not null && iconFile.Length == 0; probe = probe.Parent)
@@ -658,6 +924,8 @@ Section("Lente de cristal del dock (física del muelle)");
 Section("Nombre de la app que suena");
 {
     Check("fuente: Spotify desde su identificador de la tienda", MediaSource.Name("SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify") == "Spotify");
+    Check("fuente: Spotify y reproductores conocidos pueden tener acceso directo", MediaSource.LauncherName("Spotify") == "Spotify" && MediaSource.LauncherName("Apple Music") == "Apple Music" && MediaSource.LauncherName("VLC media player") == "VLC");
+    Check("fuente: no ofrece navegadores ni apps de vídeo como reproductores de música", MediaSource.LauncherName("Google Chrome") is null && MediaSource.LauncherName("YouTube") is null && MediaSource.LauncherName("Films & TV") is null);
     Check("fuente: un navegador por su ejecutable", MediaSource.Name("chrome.exe") == "Chrome" && MediaSource.Name("MSEdge") == "Edge" && MediaSource.Name("firefox.exe") == "Firefox");
     Check("fuente: una app web de Chrome (YouTube Music instalado) no enseña su identificador", MediaSource.Name("Chrome._crx_h3nctbl7snswhxn4y4yxm5cewi") == "Chrome");
     Check("fuente: YouTube Music, mejor que YouTube", MediaSource.Name("th-ch.YoutubeMusic") == "YouTube Music" && MediaSource.Name("youtube.exe") == "YouTube");
@@ -683,7 +951,21 @@ Section("Agenda del calendario");
     var days = Agenda.Group(items, new DateOnly(2026, 10, 17), 10);
     Check("agenda: agrupa por días desde hoy, en orden, sin lo de ayer", days.Count == 2 && days[0].Items.Select(i => i.Id).SequenceEqual(["4", "1"]) && days[1].Items[0].Id == "3");
     Check("agenda: el máximo de cosas corta la lista", Agenda.Group(items, new DateOnly(2026, 10, 17), 2).Sum(d => d.Items.Count) == 2);
-    Check("agenda: semana ISO del 17 de octubre de 2026 es la 42", Agenda.IsoWeek(new DateOnly(2026, 10, 17)) == 42);
+    {
+    var today = new DateOnly(2026, 11, 5);
+    var mirrored = TodoStore.ToAgenda(
+    [
+        new TodoItem("a", "Con hora", "18:30 - 19:00", false, null, today),
+        new TodoItem("b", "Pendiente de ayer", "", false, null, today.AddDays(-1)),
+        new TodoItem("c", "Hecha ayer", "", false, today.AddDays(-1), today.AddDays(-1)),
+        new TodoItem("d", "Diaria", "", true, null, today.AddDays(-9)),
+        new TodoItem("e", "Para mañana", "", false, null, today.AddDays(1)),
+    ], today);
+    Check("agenda: las tareas de TodoList salen como recordatorios de solo lectura (id todo:)", mirrored.Count == 4 && mirrored.All(i => i.Id.StartsWith("todo:") && i.Kind == AgendaKind.Reminder));
+    Check("agenda: una tarea con franja sale a su hora de inicio y sin ella, todo el día", mirrored[0].Start.TimeOfDay == new TimeSpan(18, 30, 0) && !mirrored[0].AllDay && mirrored[1].AllDay);
+    Check("agenda: lo pendiente de antes sale hoy, lo hecho ayer no sale, y lo de mañana va mañana", mirrored[1].Start.Date == today.ToDateTime(TimeOnly.MinValue) && mirrored.All(i => i.Title != "Hecha ayer") && mirrored[^1].Start.Date == today.AddDays(1).ToDateTime(TimeOnly.MinValue));
+}
+Check("agenda: semana ISO del 17 de octubre de 2026 es la 42", Agenda.IsoWeek(new DateOnly(2026, 10, 17)) == 42);
 
     var from = new DateOnly(2026, 10, 1);
     var to = new DateOnly(2026, 12, 31);
@@ -716,6 +998,12 @@ Section("Color de la portada");
     var (dr, dg, db) = ArtColor.Dominant(Pixels((0, 0, 220), (0, 0, 220), (10, 10, 10), (10, 10, 10)));
     Check("portada: el rojo vivo pesa más que el negro apagado", dr > 150 && dg < 60 && db < 60);
     Check("portada: sin píxeles, gris medio", ArtColor.Dominant([]) == ((byte)128, (byte)128, (byte)128));
+    var silver = Enumerable.Range(0, 60).Select(_ => ((byte)215, (byte)205, (byte)198)).Concat(Enumerable.Range(0, 3).Select(_ => ((byte)40, (byte)40, (byte)210))).ToArray();
+    var (sr, sg, sb) = ArtColor.Dominant(Pixels(silver));
+    Check("portada: un corazón rojo en una portada plateada da rojo, no el azul del promedio", sr > 150 && sg < 80 && sb < 80);
+    var deep = ArtColor.Deep((220, 40, 40));
+    Check("portada: el tono hondo de un rojo sigue siendo rojo y es oscuro", deep.R > deep.G + 50 && deep.R < 170);
+    Check("portada: el tono hondo de una portada gris no es rojo", ArtColor.Deep((120, 120, 120)) is var gray && gray.B > gray.R);
     var vivid = ArtColor.Vivid((140, 30, 30));
     Check("portada: el rojo oscuro se aclara y sigue siendo rojo", vivid.R > 200 && vivid.R > vivid.G + 60 && vivid.R > vivid.B + 60);
     Check("portada: un azul pálido gana color sin cambiar de tono", ArtColor.Vivid((150, 170, 200)) is var v && v.B > v.R + 40);
@@ -958,6 +1246,11 @@ Section("Procesos y finalización");
 ProcessTests.Run(Check);
 Section("Informes y protocolo del agente");
 MemoryAgentTests.Run(Check);
+Section("Equipo Claude + Codex");
+TeamTests.Run(Check);
+TeamAgentsTests.Run(Check);
+Section("Equipo: servicio, historial y tareas programadas");
+TeamServiceTests.Run(Check);
 Section("Memoria ahora");
 // Dos archivos de paginación (12 GB cada uno, 1 y 2 GB en uso) en el formato de SYSTEM_PAGEFILE_INFORMATION.
 var pageBuffer = System.Runtime.InteropServices.Marshal.AllocHGlobal(64);
@@ -994,6 +1287,76 @@ cleanStats.Add(new StatEvent(now.AddHours(-2), StatKind.Clean, null, 1_500_000_0
 cleanStats.Add(new StatEvent(now.AddHours(-1), StatKind.Clean, null, 500_000_000, "manual"));
 var cw = cleanStats.Week(now);
 Check("la semana suma siestas y limpiezas", cw.Recovered == 7_000_000_000 && cw.Cleaned == 2_000_000_000 && cw.Cleans == 2 && cw.Naps == 1);
+
+// MARK: hooks de agentes
+
+Section("Hooks de agentes (aprobar desde el notch)");
+AgentHookTests.Run(Check);
+
+// MARK: vínculo y humor de la mascota
+
+Section("Vínculo y humor de la mascota");
+BondTests.Run(Check);
+
+// MARK: rama y contexto de las sesiones
+
+Section("Rama de git y contexto de las sesiones");
+AgentMetaTests.Run(Check);
+
+// MARK: disyuntor de tareas programadas
+
+Section("Disyuntor de las tareas programadas del equipo");
+TeamBreakerTests.Run(Check);
+
+// MARK: control de avisos
+
+Section("Control de avisos de agentes");
+AgentNotifyTests.Run(Check);
+
+// MARK: retomar sesiones en una terminal
+
+Section("Retomar una sesión en una terminal");
+AgentTerminalTests.Run(Check);
+
+// MARK: mientras no estabas
+
+Section("Mientras no estabas: ausencia y vuelta");
+AwayDigestTests.Run(Check);
+
+// MARK: luz del notch
+
+Section("Luz del notch según los agentes");
+AgentGlowTests.Run(Check);
+
+// MARK: avisos de agentes
+
+Section("Avisos de agentes: atasco, bucle y límite de uso");
+AgentAlertsTests.Run(Check);
+
+// MARK: preguntas y planes
+
+Section("Preguntas y planes de los agentes");
+AgentQuestionTests.Run(Check);
+
+// MARK: centro de agentes
+
+Section("Centro de agentes: riesgo, registro y reglas");
+AgentCenterTests.Run(Check);
+
+// MARK: resumen semanal y charla ambiente
+
+Section("Resumen semanal y charla ambiente");
+WeeklyTests.Run(Check);
+
+// MARK: voz de la mascota
+
+Section("Voz local de la mascota");
+VoiceTests.Run(Check);
+
+// MARK: chat con la mascota
+
+Section("Chat con la mascota (modelo local)");
+ChatTests.Run(Check);
 
 // MARK: fijar el ícono
 
@@ -1327,6 +1690,9 @@ Check("pantalla completa: ventanas ocultas, minimizadas o capas transparentes no
 Section("Colección y personalidades de mascotas");
 PetTests.Run(Check);
 
+Section("Mascota del notch cerrado");
+NotchMascotTests.Run(Check);
+
 // MARK: apagado aislado por backend
 Section("Apagado aislado");
 // Tarea A (envoltorio 100 → servidor 101), tarea B (200 → 201) y un servidor manual (400, padre 50).
@@ -1366,17 +1732,32 @@ Check("un adaptador: total, uso y parte de los modelos", gpuOne.Count == 1 && gp
 var two = Gpu.Summarize([gpuRtx, gpuArc], gpuCounters, gpuProcess, new HashSet<int> { 10 });
 Check("dos adaptadores: cada uno con su LUID, sin mezclar procesos",
     two[0].Used == 3 * GB && two[0].Model == 2 * GB && two[1].Used == 5 * GB && two[1].Model == GB);
+Check("muestra compartida: el indicador principal usa el adaptador de mayor VRAM", Gpu.PrimaryFrom(two, true) == new GpuUsage(5 * GB, GB));
+Check("muestra compartida: fallo conserva indicador no disponible", Gpu.PrimaryFrom(two, false) is null);
 var noCounter = Gpu.Summarize([gpuRtx], null, null, new HashSet<int> { 10 });
 Check("contadores ausentes: no disponible, no 0", noCounter[0].Used is null && noCounter[0].Model is null);
 var noProcess = Gpu.Summarize([gpuRtx], gpuCounters, null, new HashSet<int> { 10 });
 Check("sin contador por proceso: el uso se muestra y el modelo no", noProcess[0].Used == 3 * GB && noProcess[0].Model is null);
 var missingOne = Gpu.Summarize([gpuRtx, gpuArc], [(gpuRtx.Luid + "_phys_0", GB)], gpuProcess, new HashSet<int> { 10 });
 Check("un adaptador sin instancia en el contador queda no disponible", missingOne[0].Used == GB && missingOne[1].Used is null && missingOne[1].Model is null);
+Check("muestra compartida: indicador principal sin instancia conserva cero", Gpu.PrimaryFrom(missingOne, true) == new GpuUsage(0, 0));
 var noRunners = Gpu.Summarize([gpuRtx], gpuCounters, gpuProcess, new HashSet<int>());
 Check("sin runners cargados: modelo 0 (medido), no desconocido", noRunners[0].Model == 0);
 var capped = Gpu.Summarize([gpuRtx], [(gpuRtx.Luid + "_phys_0", 20 * GB)], gpuProcess, new HashSet<int> { 10 });
 Check("un contador mayor que la VRAM se limita al total", capped[0].Used == 8 * GB);
 Check("sin controladores, Adapters no falla", Gpu.Adapters is not null);
+
+// MARK: uso de IA
+Section("Uso de IA");
+AiUsageTests.Run(Check);
+
+Section("Modelos locales");
+LocalModelTests.Run(Check);
+
+Section("Notas");
+NotesTests.Run(Check);
+TodoTests.Run(Check);
+ShelfTests.Run(Check);
 
 // MARK: actualizaciones
 Section("Actualizaciones");

@@ -46,6 +46,7 @@ $agentOut = Join-Path $PSScriptRoot "obj\agent-$Arch"
 & $dotnet publish src\IsTargetSleeping.Agent\IsTargetSleeping.Agent.csproj -c Release -r "win-$Arch" -o $agentOut
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 $agent = Join-Path $agentOut "isTargetSleeping.MemoryAgent.exe"
+if (-not (Test-Path -LiteralPath $agent)) { throw "El agente de memoria no se publicó: toda build debe incluirlo." }
 & $dotnet publish src\IsTargetSleeping\IsTargetSleeping.csproj -c Release -r "win-$Arch" --self-contained true -o $out -p:PublishSingleFile=true "-p:AgentExe=$agent"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 foreach ($generated in Get-ChildItem -LiteralPath $out -Exclude "$app.exe") {

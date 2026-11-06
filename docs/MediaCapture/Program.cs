@@ -1,5 +1,4 @@
 using System.IO;
-using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,6 +21,13 @@ internal static class Program
     {
         if (args.Length < 1) throw new ArgumentException("Pass the repository root.");
         root = Path.GetFullPath(args[0]);
+        if (args.Contains("--live-widgets"))
+        {
+            var dataDir = Environment.GetEnvironmentVariable("ITS_DATA_DIR");
+            var captureRoot = Path.GetFullPath(Path.Combine(root, "obj")) + Path.DirectorySeparatorChar;
+            if (string.IsNullOrWhiteSpace(dataDir) || !Path.GetFullPath(dataDir).StartsWith(captureRoot, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Live widget captures require ITS_DATA_DIR inside the repository obj directory.");
+        }
         output = Path.Combine(root, "obj", "tour-work", "native");
         Directory.CreateDirectory(output);
         int result = 1;
@@ -32,7 +38,10 @@ internal static class Program
             try
             {
                 Theme.Apply();
-                if (!args.Contains("--pets-only"))
+                if (args.Contains("--live-widgets"))
+                    foreach (var lang in args.Contains("--en-only") ? new[] { "en" } : args.Contains("--es-only") ? new[] { "es" } : new[] { "es", "en" })
+                        CaptureNotch(lang, liveWidgets: true);
+                else if (!args.Contains("--pets-only"))
                     foreach (var lang in new[] { "es", "en" }) CaptureViews(lang);
                 if (!args.Contains("--views-only")) CapturePets();
                 manifest["version"] = File.ReadAllText(Path.Combine(root, "VERSION")).Trim();
@@ -52,14 +61,15 @@ internal static class Program
     private static void CaptureViews(string lang)
     {
         L10n.Init(lang == "es" ? Language.Es : Language.En);
-        foreach (var page in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings })
+        foreach (var page in new[] { PanelView.Main, PanelView.Activity, PanelView.Settings, PanelView.Home })
         {
             var (view, frame, _) = View(page);
-            string name = page switch { PanelView.Main => "panel", PanelView.Activity => "activity", _ => "settings" };
+            string name = page switch { PanelView.Main => "panel", PanelView.Activity => "activity", PanelView.Home => "home", _ => "settings" };
             Save(frame, new Rect(frame.RenderSize), Path.Combine(root, "docs", "images", $"{name}-{lang}.png"));
             SaveCards(view, frame, $"{name}-{lang}");
             Console.WriteLine($"{name}-{lang}: {frame.RenderSize.Width * Scale:0} × {frame.RenderSize.Height * Scale:0}");
         }
+        CaptureNotch(lang);
         foreach (var state in new[] { "loaded", "sleep", "game" })
         {
             var (view, frame, _) = View(PanelView.Main, state == "game", state != "sleep");
@@ -77,19 +87,7 @@ internal static class Program
         var supervisor = new Supervisor(controller, prefs);
         supervisor.LoadDemo(game);
         var model = new PanelViewModel(supervisor, page);
-        if (page == PanelView.Activity)
-        {
-            // Set sample data before creating bindings. No live process names or icons.
-            bool spanish = L10n.Effective == "es";
-            Set(model, nameof(PanelViewModel.ProcessSummaryRows), new List<ProcessSummaryRow>
-            {
-                new(spanish ? "Navegador web" : "Web browser", "1.6 GB", L10n.tr("%d procesos", 12), null),
-                new(spanish ? "Modelo local" : "Local model", "1.2 GB", L10n.tr("%d procesos", 2), null),
-                new("Editor", "0.8 GB", L10n.tr("%d procesos", 4), null),
-                new("Windows Explorer", "0.3 GB", L10n.tr("%d procesos", 2), null),
-                new("isTargetSleeping", "0.1 GB", L10n.tr("%d procesos", 1), Mark.AppIcon(24)),
-            });
-        }
+        if (page == PanelView.Home) model.WideLayout = true;
         var view = new ContentView(model);
         var desktop = new Canvas { Background = Brush(0x0A0A0B) };
         desktop.Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 90 };
@@ -109,6 +107,94 @@ internal static class Program
         }
         Layout(frame);
         return (view, frame, model);
+    }
+
+    private static void CaptureNotch(string lang, bool liveWidgets = false)
+    {
+        L10n.Init(lang == "es" ? Language.Es : Language.En);
+        var controller = new OllamaController();
+        if (liveWidgets)
+        {
+            controller.WatchdogEnabled = false;
+            controller.IdleReleaseMinutes = 0;
+        }
+        var prefs = new Prefs();
+        var supervisor = new Supervisor(controller, prefs);
+        if (!liveWidgets)
+        {
+            controller.LoadDemo();
+            prefs.LoadDemo();
+            supervisor.LoadDemo();
+        }
+        var model = new PanelViewModel(supervisor);
+        if (liveWidgets) _ = controller.Refresh();
+        var content = new ContentView(model);
+        var desktop = new Window
+        {
+            WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize,
+            WindowState = WindowState.Maximized, ShowInTaskbar = false,
+            Background = Brush(0x0A0A0B), Content = DemoBackdrop(),
+        };
+        NotchWindow? notch = null;
+        try
+        {
+            desktop.Show();
+            notch = new NotchWindow(model, content);
+            notch.Start();
+            if (!liveWidgets) model.Show(PanelView.Main);
+            notch.Reveal();
+            var wait = new System.Windows.Threading.DispatcherFrame();
+            var timer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+            { Interval = TimeSpan.FromSeconds(liveWidgets ? 20 : 0.65) };
+            timer.Tick += (_, _) => { timer.Stop(); wait.Continue = false; };
+            timer.Start();
+            System.Windows.Threading.Dispatcher.PushFrame(wait);
+            notch.UpdateLayout();
+            // The floating dock needs room below the notch in this off-screen capture.
+            notch.Height = notch.ActualHeight + 24;
+            notch.UpdateLayout();
+            var frame = (FrameworkElement)notch.Content;
+            Layout(frame);
+            if (liveWidgets && (!notch.IsVisible || model.CurrentView != PanelView.Home || frame.RenderSize.Height < 300))
+                throw new InvalidOperationException($"The live {lang} Home capture did not open fully.");
+            string name = liveWidgets ? "home" : "notch";
+            Save(frame, new Rect(frame.RenderSize), Path.Combine(root, "docs", "images", $"{name}-{lang}.png"));
+            Console.WriteLine($"{name}-{lang}: {frame.RenderSize.Width * Scale:0} × {frame.RenderSize.Height * Scale:0}");
+            if (liveWidgets)
+            {
+                notch.Collapse();
+                var closeWait = new System.Windows.Threading.DispatcherFrame();
+                var closeTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+                { Interval = TimeSpan.FromMilliseconds(450) };
+                closeTimer.Tick += (_, _) => { closeTimer.Stop(); closeWait.Continue = false; };
+                closeTimer.Start();
+                System.Windows.Threading.Dispatcher.PushFrame(closeWait);
+                notch.UpdateLayout();
+                frame = (FrameworkElement)notch.Content;
+                Layout(frame);
+                Save(frame, new Rect(frame.RenderSize), Path.Combine(root, "docs", "images", $"notch-{lang}.png"));
+                Console.WriteLine($"notch-{lang}: {frame.RenderSize.Width * Scale:0} × {frame.RenderSize.Height * Scale:0}");
+            }
+        }
+        finally
+        {
+            if (notch is not null) { notch.Stop(); notch.Close(); }
+            desktop.Close();
+        }
+    }
+
+    private static FrameworkElement DemoBackdrop()
+    {
+        var desktop = new Canvas { Background = Brush(0x0A0A0B) };
+        desktop.Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 90 };
+        foreach (var (color, x, y, d) in new[] { (0x2A2A2Eu, .10, .10, 300), (0x1F1F22u, .95, .45, 280), (0x26262Au, .05, .80, 240) })
+        {
+            var blob = new System.Windows.Shapes.Ellipse { Width = d, Height = d, Fill = Theme.Brush(Theme.Hex(color, .85)) };
+            Canvas.SetLeft(blob, x * SystemParameters.PrimaryScreenWidth - d / 2.0);
+            Canvas.SetTop(blob, y * SystemParameters.PrimaryScreenHeight - d / 2.0);
+            desktop.Children.Add(blob);
+        }
+        return desktop;
     }
 
     private static void SaveCards(ContentView view, Border frame, string name)
@@ -177,9 +263,6 @@ internal static class Program
             Console.WriteLine($"{pet.Id}/{name}: {seconds * Fps} native frames");
         }
     }
-
-    private static void Set(object target, string property, object value) =>
-        target.GetType().GetProperty(property, BindingFlags.Public | BindingFlags.Instance)!.SetValue(target, value);
 
     private static Brush Brush(uint hex) => Theme.Brush(Theme.Hex(hex));
 

@@ -2,6 +2,15 @@
 
 App de bandeja para Windows (C# .NET 10, WPF + Win32) y su web estática en `site/`.
 
+## Builds y paquetes: solo en D:
+
+Este checkout vive en `D:\Obsidian\MyVault\Escarlata\Proyectos\isTargetSleeping`. Toda salida generada de compilación,
+publicación, empaquetado o staging —incluidos los auxiliares temporales de verificación— debe quedarse dentro del
+proyecto en D:. Nunca uses C: (incluidos `%TEMP%`, Descargas o el Escritorio) como destino. Usa las salidas del proyecto:
+`build/` para builds y `dist/` para paquetes; `build.ps1` y `package.ps1` ya limitan sus salidas al checkout. Al terminar,
+borra de D: el staging temporal que ya no haga falta. La instalación normal de la app sigue su destino propio y no cuenta
+como salida de build o paquete.
+
 ## Obligatorio en cada versión nueva: web, README e informe
 
 Estas reglas son para cualquier agente que trabaje aquí (Claude, Codex u otro). **El agente que crea una versión
@@ -49,6 +58,11 @@ los archivos de `Core` que comparte). Así «Liberar RAM» sigue funcionando al 
 administrador. La prueba «Agente de memoria» calcula el hash de esas fuentes y falla si cambian sin subir
 `AGENT_VERSION` y actualizar el hash en el mismo commit.
 
+**El agente de memoria va siempre dentro de la build.** Toda build o paquete publicado (`build.ps1`, `package.ps1`, builds de
+prueba incluidas) lo lleva incrustado en el `.exe`; sin él «Liberar RAM» falla en silencio. `build.ps1` falla si el agente no se
+publica y `IsTargetSleeping.csproj` detiene cualquier publicación de un solo archivo sin `-p:AgentExe=…`. Nunca quites ni
+condiciones esa incrustación, y no publiques la app con `dotnet publish` directo: usa `build.ps1` o `package.ps1`.
+
 Al subirla, actualiza **todo a la vez**:
 
 - `VERSION` — única fuente: los `.csproj` leen `<Version>` de este archivo y el instalador la recibe de `package.ps1`.
@@ -72,9 +86,9 @@ Un widget nuevo del notch (`Core/Widgets/WidgetCatalog.cs`) no está terminado h
    la celda sin dejar huecos; hoy la tiene Música). Si no necesita una variante distinta, se dice en un comentario del propio widget.
 2. **Combinaciones.** Se prueba con todos los demás widgets, en el Home y en la vista corta: la prueba «combinaciones de
    widgets» de `tests/IsTargetSleeping.UiTests` recorre el catálogo y falla si algo no cabe, queda cortado, no se pinta o tiene
-   un botón sin nombre. Al añadir un widget cambia el número total de combinaciones (hoy 831): actualiza esa cifra en la prueba
+   un botón sin nombre. Al añadir un widget cambia el número total de combinaciones (hoy 28.716): actualiza esa cifra en la prueba
    y corre `ITS_ALL_COMBOS=1 ./build.ps1 -Test` para recorrerlas **todas** (tarda varios minutos; la ejecución normal solo
-   revisa una de cada siete).
+   revisa una de cada siete). Con poca RAM: `ITS_ONLY_COMBOS=1 ITS_ALL_COMBOS=1 ITS_COMBO_SLICE=k/n` corre solo las combinaciones (sin el resto de la suite, que por sí sola pasa de 3 GB) en la porción k de n; con `DOTNET_GCConserveMemory=9` una porción de 1/60 tarda ~8 min y llega a ~3,3 GB.
 3. **Vistazo.** Mira capturas del widget solo, con compañeros de una y de dos celdas, y en la vista corta, en español e inglés.
 4. **Pastilla y favoritos.** Si el widget tiene un dato corto o una acción de un toque, añádelos a `PillCatalog` o a
    `FavoriteCatalog` con sus pruebas.

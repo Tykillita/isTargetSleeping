@@ -71,7 +71,7 @@ public abstract class EngineBase : IEngine
 
     public async Task Refresh()
     {
-        if (refreshing || IsDemo) return;
+        if (refreshing || IsDemo || UI.Motion.IsAnimating) return;   // el sondeo toca la interfaz: si el notch se está moviendo, espera al siguiente
         refreshing = true;
         try
         {

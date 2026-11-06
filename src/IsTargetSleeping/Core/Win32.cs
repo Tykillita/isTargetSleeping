@@ -302,6 +302,21 @@ public static class Win32
     // MARK: eventos del sistema (primer plano), sin sondeo
 
     public const uint EVENT_SYSTEM_FOREGROUND = 0x0003, WINEVENT_OUTOFCONTEXT = 0x0000;
+    public const uint EVENT_SYSTEM_MINIMIZESTART = 0x0016, EVENT_SYSTEM_MINIMIZEEND = 0x0017, EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
+
+    /// La distribución del teclado de un hilo (el de la ventana de primer plano): la palabra baja es el identificador de idioma.
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetKeyboardLayout(uint thread);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+    /// El escritorio que recibe la entrada: con UAC o la pantalla de bloqueo delante no se puede abrir (devuelve 0).
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
+
+    [DllImport("user32.dll")]
+    public static extern bool CloseDesktop(IntPtr desktop);
 
     public delegate void WinEventProc(IntPtr hook, uint eventType, IntPtr hwnd, int idObject, int idChild, uint thread, uint time);
 
@@ -376,6 +391,23 @@ public static class Win32
         public RECT rcMonitor, rcWork;
         public int dwFlags;
     }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct MONITORINFOEX
+    {
+        public int cbSize;
+        public RECT rcMonitor, rcWork;
+        public int dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string szDevice;
+    }
+
+    public delegate bool MonitorEnumProc(IntPtr monitor, IntPtr hdc, ref RECT rect, IntPtr data);
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr clip, MonitorEnumProc proc, IntPtr data);
+
+    [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", CharSet = CharSet.Unicode)]
+    public static extern bool GetMonitorInfoEx(IntPtr monitor, ref MONITORINFOEX info);
 
     // MARK: DWM (esquinas redondeadas, borde y modo oscuro)
 
@@ -561,7 +593,7 @@ public static class Win32
 
     // MARK: íconos de ejecutables
 
-    public const uint SHGFI_ICON = 0x100, SHGFI_SMALLICON = 0x1;
+    public const uint SHGFI_ICON = 0x100, SHGFI_SMALLICON = 0x1, SHGFI_LARGEICON = 0x0;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct SHFILEINFO

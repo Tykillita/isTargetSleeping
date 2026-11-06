@@ -9,9 +9,29 @@ public static class MediaSource
     [
         ("youtubemusic", "YouTube Music"), ("youtube-music", "YouTube Music"), ("ytmusic", "YouTube Music"), ("youtube", "YouTube"),
         ("spotify", "Spotify"), ("applemusic", "Apple Music"), ("itunes", "iTunes"), ("amazonmusic", "Amazon Music"), ("tidal", "Tidal"),
+        ("apple music", "Apple Music"), ("amazon music", "Amazon Music"),
         ("deezer", "Deezer"), ("soundcloud", "SoundCloud"), ("vlc", "VLC"), ("zunemusic", "Media Player"), ("zunevideo", "Films & TV"),
+        ("musicbee", "MusicBee"), ("foobar2000", "foobar2000"), ("foobar 2000", "foobar2000"), ("plexamp", "Plexamp"), ("winamp", "Winamp"), ("aimp", "AIMP"),
         ("msedge", "Edge"), ("edge", "Edge"), ("chrome", "Chrome"), ("firefox", "Firefox"), ("brave", "Brave"), ("opera", "Opera"), ("vivaldi", "Vivaldi"),
     ];
+
+    /// App launchers are limited to music apps; generic browsers and video apps are not useful shortcuts here.
+    private static readonly (string Key, string Name)[] Launchable =
+    [
+        ("spotify", "Spotify"), ("apple music", "Apple Music"), ("applemusic", "Apple Music"), ("itunes", "iTunes"),
+        ("amazon music", "Amazon Music"), ("amazonmusic", "Amazon Music"), ("youtube music", "YouTube Music"), ("youtubemusic", "YouTube Music"), ("youtube-music", "YouTube Music"),
+        ("tidal", "Tidal"), ("deezer", "Deezer"), ("soundcloud", "SoundCloud"), ("vlc", "VLC"),
+        ("windows media player", "Media Player"), ("media player", "Media Player"), ("zunemusic", "Media Player"), ("groove music", "Groove Music"),
+        ("musicbee", "MusicBee"), ("foobar2000", "foobar2000"), ("foobar 2000", "foobar2000"), ("plexamp", "Plexamp"), ("winamp", "Winamp"), ("aimp", "AIMP"),
+    ];
+
+    public static string? LauncherName(string? appName)
+    {
+        if (string.IsNullOrWhiteSpace(appName)) return null;
+        var lower = appName.ToLowerInvariant();
+        foreach (var (key, name) in Launchable) if (lower.Contains(key)) return name;
+        return null;
+    }
 
     public static string Name(string? id)
     {

@@ -84,6 +84,15 @@ public sealed class PixelCanvas(int width, int height)
     {
         int w = Width * scale, h = Height * scale;
         var bytes = new byte[w * h * 4];
+        CopyToBgra(bytes, scale);
+        return bytes;
+    }
+
+    public void CopyToBgra(byte[] bytes, int scale = 1)
+    {
+        int w = Width * scale, h = Height * scale;
+        if (bytes.Length != w * h * 4) throw new ArgumentException("El búfer no coincide con el tamaño del lienzo.", nameof(bytes));
+        Array.Clear(bytes);
         for (int y = 0; y < Height; y++)
             for (int x = 0; x < Width; x++)
             {
@@ -100,6 +109,5 @@ public sealed class PixelCanvas(int width, int height)
                     }
                 }
             }
-        return bytes;
     }
 }

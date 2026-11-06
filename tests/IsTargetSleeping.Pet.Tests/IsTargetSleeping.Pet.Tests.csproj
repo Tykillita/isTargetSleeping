@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Mismo estilo que IsTargetSleeping.Tests: sin framework de pruebas, un banco con Check(...). Referencia al complemento
+       para probar el servidor HTTPS/WebSocket de verdad (CA propia, token, limites). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\..\src\IsTargetSleeping.Pet\IsTargetSleeping.Pet.csproj" />
+    <!-- El enlace de la app principal (escribe el estado de los agentes): se prueba aqui sin arrancar WPF. -->
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetBridge.cs" Link="App\PetBridge.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetLease.cs" Link="App\PetLease.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\PetCommands.cs" Link="App\PetCommands.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Agents\AgentGlow.cs" Link="App\AgentGlow.cs" />
+  </ItemGroup>
+
+</Project>

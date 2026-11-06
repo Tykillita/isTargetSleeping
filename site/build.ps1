@@ -8,6 +8,8 @@ $root = Split-Path $PSScriptRoot -Parent
 $site = $PSScriptRoot
 $media = Join-Path $site 'media'
 $publicUrl = 'https://istargetsleeping.web.app/'
+# Archivos propios de la web (la carpeta castillo/ con sus imágenes se copia entera)
+$siteFiles = 'site.css', 'site.js', 'simulador.js', 'escena.js', 'firebase.js', 'castillo.css', 'castillo.js', 'castillo-intro.js', 'castillo-fx.js', 'mundo.css', 'mundo.js'
 
 $files = @(
     'Assets\istargetsleeping-icon.svg',
@@ -17,8 +19,11 @@ $files = @(
     'Assets\istargetsleeping-mark-ink.svg',
     'Assets\istargetsleeping-mark-white.svg',
     'Assets\istargetsleeping-mark-white-512.png',
-    'docs\images\social-preview.png'
+    'docs\images\social-preview.png',
+    'docs\images\sim-wallpaper.jpg'
 )
+foreach ($p in 0..3) { foreach ($e in 0..5) { $files += "docs\images\pet-sprites\p${p}s${e}.png" } }
+foreach ($p in 0..3) { $files += "docs\images\pet-sprites\peek${p}.png" }
 foreach ($lang in 'es', 'en') {
     $files += "docs\images\panel-$lang.png"
     $files += "docs\images\notch-$lang.png"
@@ -52,7 +57,7 @@ foreach ($file in $files) {
     $name = [IO.Path]::GetFileName($file)
     $hashes["media/$name"] = (Get-FileHash -LiteralPath (Join-Path $root $file) -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 16)
 }
-foreach ($file in 'site.css', 'site.js', 'firebase.js') {
+foreach ($file in $siteFiles) {
     $hashes[$file] = (Get-FileHash -LiteralPath (Join-Path $site $file) -Algorithm SHA256).Hash.ToLowerInvariant().Substring(0, 16)
 }
 
@@ -145,9 +150,10 @@ if ($Out) {
         throw 'La salida debe ser otra carpeta dentro del workspace, fuera de site.'
     }
     New-Item -ItemType Directory -Force $dest | Out-Null
-    foreach ($file in 'site.css', 'site.js', 'firebase.js') {
+    foreach ($file in $siteFiles) {
         Copy-Item -LiteralPath (Join-Path $site $file) -Destination $dest -Force
     }
+    Copy-Item -LiteralPath (Join-Path $site 'castillo') -Destination $dest -Recurse -Force
     $outputMedia = Join-Path $dest 'media'
     New-Item -ItemType Directory -Force $outputMedia | Out-Null
     foreach ($file in $files) {

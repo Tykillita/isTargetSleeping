@@ -71,21 +71,7 @@
 
   <!-- 1 · Intro -->
   <div class="scene" id="s1">
-    <svg id="logo1" class="abs" viewBox="0 0 1024 1024" width="380" height="380" style="left:770px;top:250px">
-      <g fill="none" stroke="#4DA3FF" stroke-linecap="round" stroke-linejoin="round">
-        <circle id="l1ring" cx="512" cy="512" r="250" stroke-width="52" pathLength="1" stroke-dasharray="1" transform="rotate(-90 512 512)"/>
-        <line class="tick" x1="512" y1="148" x2="512" y2="322" stroke-width="46"/>
-        <line class="tick" x1="702" y1="512" x2="876" y2="512" stroke-width="46"/>
-        <line class="tick" x1="512" y1="702" x2="512" y2="876" stroke-width="46"/>
-        <line class="tick" x1="148" y1="512" x2="322" y2="512" stroke-width="46"/>
-        <path id="l1eye" d="M 380 496 Q 512 600 644 496" stroke-width="42" pathLength="1" stroke-dasharray="1"/>
-        <g id="l1lash">
-          <line x1="446" y1="535" x2="422" y2="590" stroke-width="36"/>
-          <line x1="512" y1="548" x2="512" y2="606" stroke-width="36"/>
-          <line x1="578" y1="535" x2="602" y2="590" stroke-width="36"/>
-        </g>
-      </g>
-    </svg>
+    <img id="logo1" class="abs" src="icon.svg" alt="" width="380" height="380" style="left:770px;top:250px">
     <div id="zzz" class="abs mono" style="left:1040px;top:330px;font-size:46px;color:var(--blue);font-weight:700"></div>
     <div id="title1" class="abs h1" style="left:0;right:0;top:690px;text-align:center"></div>
     <div id="tag1" class="abs p" style="left:0;right:0;top:810px;text-align:center;font-size:34px"></div>
@@ -253,10 +239,10 @@ const T = {
       ['bell', 'Notifications', 'Native Windows toasts, one switch each.'],
       ['chip', 'GPU & VRAM', 'Dedicated memory, read like Task Manager.'],
       ['chart', 'Activity', 'GB reclaimed, naps and a 30-min chart.'],
-      ['layers', 'Models', 'Load, download or delete from the panel.'],
-      ['link', 'Links', 'istargetsleeping://sleep for Stream Deck.'],
-      ['refresh', 'Updates', 'Verified with SHA-256, automatic rollback.'],
-      ['lock', 'Private', 'No accounts, no telemetry. MIT licensed.'],
+      ['layers', 'Models', 'Load, download, delete and inspect.'],
+      ['grid', 'Widgets', 'System, calendar, notes, music and more.'],
+      ['camera', 'Camera access', 'See active apps; manage Comet site access.'],
+      ['chart', 'AI usage · optional', 'Adds Muse, Ollama models & Grok API.'],
     ],
     s6k: 'Game mode', s6t: 'Launch a game.<br><span class="dim">Get your RAM and VRAM back.</span>',
     s6p: 'Ollama turns off 5 s after the game opens, and comes back the same way 30 s after you quit.',
@@ -287,7 +273,7 @@ const T = {
       ['You pet it', 'hearts'],
     ],
     s10k: 'Activity & settings', s10t: 'See what happened.<br><span class="dim">Tune how it behaves.</span>',
-    s10p: '90-day history, who woke the model, idle timers, game mode, hotkeys, links — in English and Spanish.',
+    s10p: '90-day history, who woke the model, idle timers, game mode, hotkeys and links — in English and Spanish.',
     pills: ['Native Windows', 'Private', 'Open source · MIT'], by: 'By CodeSentry - Tykillita · Not affiliated with Ollama',
   },
   es: {
@@ -314,10 +300,10 @@ const T = {
       ['bell', 'Notificaciones', 'Avisos nativos, un interruptor por tipo.'],
       ['chip', 'GPU y VRAM', 'Memoria dedicada, como el Administrador.'],
       ['chart', 'Actividad', 'GB recuperados, siestas y gráfica de 30 min.'],
-      ['layers', 'Modelos', 'Carga, descarga o borra desde el panel.'],
-      ['link', 'Enlaces', 'istargetsleeping://sleep para Stream Deck.'],
-      ['refresh', 'Actualizaciones', 'Verificadas con SHA-256, con vuelta atrás.'],
-      ['lock', 'Privado', 'Sin cuentas ni telemetría. Licencia MIT.'],
+      ['layers', 'Modelos', 'Carga, descarga, borra y consulta.'],
+      ['grid', 'Widgets', 'Sistema, calendario, notas, música y más.'],
+      ['camera', 'Acceso a cámara', 'Apps activas y permisos web de Comet.'],
+      ['chart', 'Uso de IA · opcional', 'Añade Muse, modelos Ollama y Grok API.'],
     ],
     s6k: 'Modo juego', s6t: 'Abre un juego.<br><span class="dim">Recupera tu RAM y tu VRAM.</span>',
     s6p: 'Ollama se apaga 5 s después de abrir el juego y vuelve por el mismo camino 30 s después de salir.',
@@ -410,6 +396,8 @@ const ICONS = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3.6-3.6a4 4 0 0 0-5.7-5.7L12 6.3"/><path d="M14 10a4 4 0 0 0-5.7 0l-3.6 3.6a4 4 0 0 0 5.7 5.7L12 17.7"/>',
   refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L3 9"/><path d="M3 4v5h5"/><path d="M4 13a8 8 0 0 0 14.5 4.5L21 15"/><path d="M21 20v-5h-5"/>',
   lock: '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  camera: '<path d="M4 7h3l2-2h6l2 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3.5"/>',
 };
 const TOAST_IC = {
   warn: '<svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#F5B04A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>',
@@ -472,7 +460,7 @@ function build() {
     ${['#F2C94C,#E0A800', '#5B9DFF,#2B6BDE', '#C77DFF,#7B2FF7', '#3DDC97,#14A06B', '#FF8A65,#E64A19'].map((g, i) =>
       `<div class="tbicon" style="left:${startX + 450 + i * 100}px;background:linear-gradient(135deg,${g})"></div>`).join('')}
     <div class="abs" style="right:300px;top:46px">${LOGO_SM.replace('width="40" height="40"', 'width="52" height="52"')}</div>
-    <div class="abs" style="right:70px;top:34px;text-align:right;font-size:27px;line-height:1.35;color:#ddd">10:42<br><span style="font-size:23px;color:#aaa">01/10/2026</span></div>`;
+    <div class="abs" style="right:70px;top:34px;text-align:right;font-size:27px;line-height:1.35;color:#ddd">10:42<br><span style="font-size:23px;color:#aaa">${LANG === 'es' ? '27/10/2026' : '10/27/2026'}</span></div>`;
   const petT = spriteEl('mira', 1.5); petT.id = 'tbpet';
   $('s9wrap').appendChild(petT);
   const glow = document.createElement('div'); glow.id = 'wglow'; glow.className = 'abs';
@@ -499,18 +487,7 @@ function render(t) {
 
   // 1 · Intro
   if (t < 6.5) {
-    const ring = eInOut(seg(t, 0.2, 1.4));
-    $('l1ring').style.strokeDashoffset = 1 - ring;
-    document.querySelectorAll('#logo1 .tick').forEach((el, i) => {
-      const k = eBack(seg(t, 0.9 + i * 0.12, 1.5 + i * 0.12));
-      const dir = [[0, -1], [1, 0], [0, 1], [-1, 0]][i];
-      el.style.transform = `translate(${dir[0] * (1 - k) * 160}px, ${dir[1] * (1 - k) * 160}px)`;
-      el.style.opacity = seg(t, 0.9 + i * 0.12, 1.1 + i * 0.12);
-    });
-    $('l1eye').style.strokeDashoffset = 1 - eOut(seg(t, 1.6, 2.2));
-    const lash = eBack(seg(t, 2.1, 2.5));
-    $('l1lash').style.opacity = seg(t, 2.1, 2.3);
-    $('l1lash').style.transform = `translateY(${(1 - lash) * -30}px)`;
+    $('logo1').style.opacity = eOut(seg(t, 0.2, 1.4));
     const up = eInOut(seg(t, 2.6, 3.4));
     $('logo1').style.transform = `translateY(${-up * 120}px) scale(${lerp(1, 0.8, up)})`;
     const zk = seg(t, 2.8, 6);

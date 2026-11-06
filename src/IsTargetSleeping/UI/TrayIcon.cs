@@ -96,16 +96,36 @@ public sealed class TrayIcon : IDisposable
         }
     }
 
-    /// Notificación nativa: el globo de la bandeja, que Windows 10/11 muestra como
-    /// notificación de la app, con el logo grande.
-    public bool Notify(string title, string text)
+    /// Notificación nativa, con el aviso de bandeja como respaldo.
+    public bool Notify(string title, string text, bool details = false)
+    {
+        if (!added) return false;
+        if (Modern() is { } modern)
+        {
+            try
+            {
+                modern.Show(title, text, details, () =>
+                {
+                    if (!source.Dispatcher.HasShutdownStarted) source.Dispatcher.BeginInvoke(() =>
+                    {
+                        modernFailed = true;
+                        if (!disposed) NotifyLegacy(title, text);
+                    });
+                });
+                return true;
+            }
+            catch (Exception e) { AppLog.Write($"notificación moderna: {e.Message}"); }
+        }
+        return NotifyLegacy(title, text);
+    }
+
+    private bool NotifyLegacy(string title, string text)
     {
         if (!added) return false;
         if (balloonIcon == IntPtr.Zero)
         {
-            uint dpi = Win32.GetDpiForWindow(Handle);
-            int px = Win32.GetSystemMetricsForDpi(11 /* SM_CXICON */, dpi == 0 ? 96 : dpi);
-            balloonIcon = Mark.ToHIcon(Mark.AppIcon(px > 0 ? px : 32));
+            // Windows puede mostrar el logo de la notificación más grande que SM_CXICON.
+            balloonIcon = Mark.ToHIcon(Mark.AppIcon(256));
         }
         var data = Data();
         data.uFlags = Win32.NIF_INFO;
@@ -117,6 +137,26 @@ public sealed class TrayIcon : IDisposable
     }
 
     private IntPtr balloonIcon;
+    private ModernNotifications? modernNotifications;
+    private bool modernAttempted;
+    private bool modernFailed;
+    private bool disposed;
+
+    private ModernNotifications? Modern()
+    {
+        if (modernAttempted) return modernFailed ? null : modernNotifications;
+        modernAttempted = true;
+        try { modernNotifications = ModernNotifications.Create(); }
+        catch (Exception e) { AppLog.Write($"notificaciones modernas no disponibles: {e.Message}"); }
+        return modernNotifications;
+    }
+
+    public void DownloadProgress(PullJob? job)
+    {
+        if (!added || job is null && modernNotifications is null) return;
+        try { if (job is null) modernNotifications?.EndDownload(); else Modern()?.Download(job); }
+        catch (Exception e) { AppLog.Write($"progreso de descarga: {e.Message}"); }
+    }
 
     /// Manda una orden a la instancia que ya corre. Devuelve si la encontró.
     public static bool SendToRunning(string command)
@@ -203,6 +243,7 @@ public sealed class TrayIcon : IDisposable
 
     public void Dispose()
     {
+        disposed = true;
         if (added)
         {
             var data = Data();

@@ -13,7 +13,7 @@ namespace IsTargetSleeping;
 ///   isTargetSleeping --url istargetsleeping://sleep
 ///   isTargetSleeping --memory
 ///   isTargetSleeping --idle-test 20
-    ///   isTargetSleeping --snapshot salida.png [settings|activity|pet] [demo] [game] [--lang en] [--pet id]
+    ///   isTargetSleeping --snapshot salida.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet id] [--tab display|general|notch…]
 ///   isTargetSleeping --export-logo carpeta
 ///   isTargetSleeping --export-tray carpeta
 ///   isTargetSleeping --export-pet carpeta
@@ -21,7 +21,7 @@ namespace IsTargetSleeping;
 /// para que la terminal espere a que termine.
 public static class Cli
 {
-    private static readonly string[] Flags = ["--status", "--on", "--off", "--sleep", "--clean", "--memory", "--idle-test", "--snapshot", "--export-logo", "--export-tray", "--export-pet", "--help"];
+    private static readonly string[] Flags = ["--status", "--on", "--off", "--sleep", "--clean", "--memory", "--idle-test", "--snapshot", "--export-logo", "--export-tray", "--export-pet", "--team-run", "--team-due", "--help"];
 
     public static bool Wants(string[] args) => args.Any(Flags.Contains);
 
@@ -30,6 +30,8 @@ public static class Cli
         AttachConsole();
         try
         {
+            if (Value(args, "--team-run") is { } scheduleId) return TeamRun(scheduleId);
+            if (args.Contains("--team-due")) return TeamRun(null);
             if (args.Contains("--memory")) return Memory();
             if (Value(args, "--idle-test") is { } s && double.TryParse(s, CultureInfo.InvariantCulture, out var limit)) return IdleTest(limit);
             if (Value(args, "--snapshot") is { } output) return Snapshot(output, args);
@@ -41,10 +43,36 @@ public static class Cli
             if (args.Contains("--sleep")) return SleepNow();
             if (args.Contains("--clean")) return CleanNow();
             if (args.Contains("--status")) return Status();
-            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity|pet] [demo] [game] [--lang en] [--pet mira|llama|capybara|orange-cat] | --export-logo dir | --export-tray dir | --export-pet dir");
+            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --team-due | --team-run id | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet mira|llama|capybara|orange-cat] | --export-logo dir | --export-tray dir | --export-pet dir");
             return 0;
         }
         finally { Console.Out.Flush(); }
+    }
+
+    /// Tareas programadas del equipo sin abrir la app: `--team-run id` ejecuta una ahora y `--team-due` las que ya tocan. Pensado para el
+    /// Programador de tareas de Windows (por ejemplo, `--team-due` cada 15 minutos). Termina cuando acaba todo; 0 si todo salió bien.
+    /// Nunca fusiona: deja la rama y lo cuenta en la salida y en el historial del widget.
+    private static int TeamRun(string? scheduleId)
+    {
+        var service = new TeamService(TeamStore.Default);
+        var scheduler = new TeamScheduler(service, () => CodexModels.Load());
+        var outcomes = new List<string>();
+        service.Finished += e =>
+        {
+            outcomes.Add(e.Outcome);
+            Console.WriteLine($"{e.Title} · {e.Outcome} · rama team/{e.BranchId} · {e.Files} archivos +{e.Added} -{e.Removed} · {e.Tokens:N0} tokens");
+        };
+        int started;
+        if (scheduleId is not null)
+        {
+            var launch = scheduler.RunNow(scheduleId, DateTime.Now);
+            if (launch != TeamScheduler.Launch.Started) { Console.WriteLine($"No se lanzó «{scheduleId}»: {launch}"); return 1; }
+            started = 1;
+        }
+        else started = scheduler.Tick(DateTime.Now).Count(r => r.Result == TeamScheduler.Launch.Started);
+        if (started == 0) { Console.WriteLine("Ninguna tarea programada toca ahora."); return 0; }
+        service.WhenIdle().GetAwaiter().GetResult();
+        return outcomes.All(o => o == nameof(TeamOutcome.Done)) ? 0 : 2;
     }
 
     private static string? Value(string[] args, string flag)
@@ -194,6 +222,7 @@ public static class Cli
     /// Captura del panel a 2x, con datos de ejemplo (`demo`) o los reales.
     private static int Snapshot(string output, string[] args) => RunWithApp(() =>
     {
+        Theme.ForceHighContrast = args.Contains("high-contrast");
         Theme.Apply();
         if (args.Contains("pet")) return SnapshotPet(output, PetCatalog.Find(Value(args, "--pet")));
         var ollama = new OllamaController();
@@ -210,8 +239,42 @@ public static class Cli
             args.Contains("downloading") ? UpdateStage.Downloading : args.Contains("verifying") ? UpdateStage.Verifying
                 : args.Contains("applying") ? UpdateStage.Applying : UpdateStage.Idle, args.Contains("update-error"));
 
-        var panelView = args.Contains("settings") ? PanelView.Settings : args.Contains("activity") ? PanelView.Activity : PanelView.Main;
-        var view = new ContentView(new PanelViewModel(supervisor, panelView));
+        if (args.Contains("demo") && args.Contains("approvals-on")) prefs.SetSwitch(PrefKeys.AgentApprovals, true);   // el interruptor de agentes encendido
+        if (args.Contains("demo") && Value(args, "--home-widgets") is { } homeWidgets) prefs.SetList(PrefKeys.NotchWidgets, homeWidgets.Split(','));   // el Home de la captura (solo en memoria)
+        var panelView = args.Contains("settings") ? PanelView.Settings : args.Contains("processes") ? PanelView.Processes : args.Contains("activity") ? PanelView.Activity : args.Contains("home") ? PanelView.Home : args.Contains("widgets") ? PanelView.Widgets : PanelView.Main;
+        var snapshotModel = new PanelViewModel(supervisor, panelView);
+        bool wide = args.Contains("home") || args.Contains("wide");   // `wide`: el ancho de la ventana de la app (Ajustes y Widgets)
+        if (wide) snapshotModel.WideLayout = true;
+        if (args.Contains("--team-plan")) snapshotModel.Hub.Team.ShowPlan.Execute(null);   // la pestaña Plan del widget Equipo   // el notch abierto: 640 px y páginas de widgets
+        if (Value(args, "--tab") is { } tab && Enum.TryParse<PanelViewModel.SettingsTab>(tab, true, out var settingsTab)) snapshotModel.CurrentSettingsTab = settingsTab;   // p. ej. --tab display
+        if (args.Contains("approval"))   // `approval` enseña la tarjeta de un permiso de agente (Claude Code) con un comando largo
+        {
+            var payload = new System.Text.Json.Nodes.JsonObject
+            {
+                ["hook_event_name"] = AgentHooks.PermissionEvent,
+                ["session_id"] = "demo",
+                ["cwd"] = @"C:\dev\korus",
+                ["tool_name"] = "Bash",
+                ["tool_input"] = new System.Text.Json.Nodes.JsonObject { ["command"] = "npm test -- --coverage && git commit -am \"Aplica la TVA al 20 %\" && git push origin feature/invoice-vat" },
+            };
+            snapshotModel.ShowApproval(AgentHooks.Parse(new System.Text.Json.Nodes.JsonObject { ["agent"] = "claude", ["payload"] = payload }.ToJsonString())!);
+        }
+        if (args.Contains("appwindow"))   // la ventana de la app entera (pestañas arriba), sobre un escritorio simulado
+        {
+            var appView = args.Contains("processes") ? PanelView.Processes : args.Contains("widgets") ? PanelView.Widgets : PanelView.Settings;
+            var appRoot = AppWindow.Preview(supervisor, appView);
+            var surface = new System.Windows.Controls.Border { Width = 980, Height = 660, Background = Theme.Brush(Theme.Hex(0x161616)), Child = appRoot };
+            surface.Measure(new Size(980, 660));
+            surface.Arrange(new Rect(0, 0, 980, 660));
+            surface.UpdateLayout();
+            var appBmp = new RenderTargetBitmap(1960, 1320, 192, 192, PixelFormats.Pbgra32);
+            appBmp.Render(surface);
+            File.WriteAllBytes(output, Mark.Png(appBmp));
+            Console.WriteLine($"captura: {Path.GetFullPath(output)}");
+            return 0;
+        }
+        var view = new ContentView(snapshotModel);
+        if (wide) { view.Width = args.Contains("home") ? 640 : 812; if (!args.Contains("home")) view.HideHeader(); }
         // El acrílico lo pinta DWM y una captura de WPF no lo ve: se simula un
         // escritorio oscuro y neutro desenfocado detrás (sin colores que tiñan el
         // vidrio negro), con el velo gris del acrílico oscuro.

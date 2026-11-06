@@ -7,6 +7,9 @@ public sealed class Notifier(TrayIcon tray, Prefs prefs)
 {
     private readonly Dictionary<(Notice, string), DateTime> last = [];
 
+    /// Se dispara con cada aviso que se muestra (título): el notch cerrado enseña entonces una campana un rato.
+    public event Action<string>? Shown;
+
     public bool IsOn(Notice kind) => prefs.Switch(kind.Key(), kind.DefaultOn());
 
     public void Show(Notice kind, string title, string text)
@@ -18,8 +21,12 @@ public sealed class Notifier(TrayIcon tray, Prefs prefs)
         else
         {
             last[(kind, title)] = now;
-            result = tray.Notify(title, text) ? "mostrado" : "Windows lo rechazó";
+            if (kind == Notice.Download) tray.DownloadProgress(null);
+            result = tray.Notify(title, text, details: kind == Notice.Sleep) ? "mostrado" : "Windows lo rechazó";
+            Shown?.Invoke(title);
         }
         AppLog.Write($"aviso {kind}: {title} — {text} [{result}]");
     }
+
+    public void DownloadProgress(PullJob? job) => tray.DownloadProgress(IsOn(Notice.Download) ? job : null);
 }

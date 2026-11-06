@@ -22,10 +22,19 @@ public sealed class ParamCommand(Action<object?> action) : ICommand
     public void Execute(object? parameter) => action(parameter);
 }
 
-public enum PanelView { Main, Activity, Settings, Home, Widgets, Tray, Clipboard, Editor }
+public enum PanelView { Main, Activity, Settings, Home, Widgets, Tray, Clipboard, Camera, Editor, Chat, Agents, Processes }
 
 /// Una opción del selector segmentado.
 public sealed record Segment(string Title, bool IsSelected, ICommand Pick);
+
+/// Un icono del mini dock de la vista corta: la página a la que lleva.
+public sealed record PagerIcon(string Glyph, string Title, bool IsSelected, ICommand Pick);
+
+/// Una categoría de la barra lateral de Ajustes: icono blanco sobre un cuadrado de color, como en Nusa.
+/// Un monitor en la página Pantalla: un rectángulo con su número, su resolución y si el notch vive en él.
+public sealed record ScreenTile(string Number, string Resolution, string PrimaryLabel, bool IsOn, ICommand Toggle);
+
+public sealed record SettingsNavItem(string Title, string Glyph, System.Windows.Media.Brush Tint, bool IsSelected, bool ShowLabel, ICommand Pick);
 
 public sealed class PetChoice(string title, ImageSource preview, bool selected, ICommand pick) : INotifyPropertyChanged
 {
@@ -48,6 +57,12 @@ public sealed record SwitchRow(string Title, string? Detail, bool IsOn, ICommand
     public bool HasDetail => Detail is not null;
 }
 
+/// Un anillo de uso (memoria, GPU): título, «10,9 / 16 GB», porcentaje y fracción.
+/// El estado de un motor para la píldora de su cabecera: el texto y el color del punto.
+public sealed record EngineStateInfo(string Title, Brush Dot);
+
+public sealed record EngineRingInfo(string Title, string Value, string Percent, double Fraction, bool Alert);
+
 /// Una fila de «Modelos instalados».
 public sealed class ModelRow
 {
@@ -59,6 +74,8 @@ public sealed class ModelRow
     public bool IsMain { get; init; }
     public bool IsBusy { get; init; }
     public bool CanLoad { get; init; }
+    /// El chip del widget: el cargado no se deshabilita (se ve entero), aunque no haya nada que cargar.
+    public bool ChipEnabled => CanLoad || IsLoaded;
     public bool CanDelete { get; init; }
     public bool IsConfirming { get; init; }
     public bool IsIdle => !IsConfirming;
@@ -206,11 +223,22 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             if (p is string name && name.Trim().Length > 0) { Ollama.Pull(name); addingModel = false; Notify(); }
         });
         CancelPull = new Command(Ollama.CancelPull);
-        ToggleTrayPin = new Command(() => { TrayPin.SetPinned(!TrayPin.Pinned); Notify(); });
+        ToggleTrayPin = new Command(() => { Prefs.SetTrayPinned(!TrayPin.Pinned); Notify(); });
         OpenTrayFallback = new Command(() => Paths.Open("ms-settings:taskbar"));
         ToggleReducedMotion = new Command(Prefs.ToggleReducedMotion);
+        ToggleNotchMinimal = new Command(Prefs.ToggleNotchMinimal);
+        ToggleHideFullscreen = new Command(Prefs.ToggleHideInFullscreen);
+        ToggleLyricsSetting = new Command(() =>
+        {
+            Prefs.ToggleLyrics();
+            Prefs.SetLyricsView(Prefs.Lyrics);
+            Hub.Media.SetLyricsOpen(Prefs.Lyrics);   // activadas, la música se abre con la letra; apagadas, sin ella
+            Hub.Media.RefreshLyrics(Prefs.Lyrics);
+        });
+        ToggleLyricsPillSetting = new Command(Prefs.ToggleLyricsPill);
+        ToggleNotchMascot = new Command(Prefs.ToggleNotchMascot);
         SetGlassLevel = new ParamCommand(v => { if (v is double d) Prefs.SetGlassLevel(d); });
-        ToggleNotchDock = new Command(() => Prefs.Toggle(PrefKeys.NotchDock, false));
+        ToggleNotchDock = new Command(() => Prefs.Toggle(PrefKeys.LegacyPanel, false));
         ToggleTaskbarPet = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPet, false));
         TogglePetInteractive = new Command(() => Prefs.Toggle(PrefKeys.TaskbarPetInteractive));
         CleanNow = new Command(() =>
@@ -231,9 +259,13 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         PullSuggestions = new[] { "llama3.2", "qwen3", "gemma3", "phi4" }
             .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; Notify(); })))
             .ToList();
+        OpenFullFromPeek = new Command(() => AttentionRequested?.Invoke());   // fija el notch abierto en la vista de siempre (ya no se abre con un clic en la vista corta)
         InitWidgets();
         InitTray();
         InitClipboard();
+        InitCamera();
+        InitPet();
+        InitChat();
         InitEditor();
         Rebuild();
     }
@@ -244,8 +276,16 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
     }
 
+    /// Con el notch, Ajustes, Widgets y Procesos se abren en la ventana de la app en vez de dentro del panel.
+    public bool WindowHost { get; set; }
+    public event Action<PanelView>? WindowRequested;
+    public bool OpensInWindow(PanelView v) => WindowHost && v is PanelView.Settings or PanelView.Widgets or PanelView.Processes;
+
     public void Show(PanelView v)
     {
+        if (OpensInWindow(v)) { WindowRequested?.Invoke(v); return; }
+        if (v == PanelView.Processes) activityTab = ActivityTab.Processes;
+        if (view == PanelView.Camera && v != PanelView.Camera) Camera.StopPreview();
         view = v;
         confirmingDelete = null;
         UpdateProcessSampling();
@@ -257,10 +297,10 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     /// Algo pide que se vea el panel entero (el notch se abre y se fija).
     public event Action? AttentionRequested;
     public ICommand OpenProcesses { get; }
-    /// Los procesos viven en la pestaña Procesos de Actividad (antes una ventana aparte).
+    /// La lista se comparte entre la pestaña independiente y Actividad.
     public ProcessViewModel Procs { get; }
     private bool panelVisible;
-    public bool ProcessSamplingActive => panelVisible && ShowingActivity && activityTab == ActivityTab.Processes && !Ollama.IsDemo;
+    public bool ProcessSamplingActive => panelVisible && ShowingActivityProcesses && !Ollama.IsDemo;
     public string ProcessesTitle => tr("Reconocimiento de procesos");
     public string OpenProcessesLabel => tr("Ver todos los procesos");
     public string ProcessesIntro => tr("Identifica qué aplicaciones usan la RAM y finaliza las que quieras cerrar.");
@@ -274,33 +314,54 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
     private void UpdateProcessSampling()
     {
-        Hub.SetVisible(panelVisible && ShowingHome, WidgetIds);
+        Hub.SetVisible(panelVisible && (ShowingHome || previewWidget is not null), previewWidget is null ? WidgetIds : [.. WidgetIds, previewWidget]);
         Hub.SetPeekVisible(peekVisible, PeekIds);
         Procs.SetSamplingActive(ProcessSamplingActive);
     }
 
     // MARK: pestañas de Ajustes y de Actividad
 
-    public enum SettingsTab { Ollama, Memory, Notch, Pet, General }
+    public enum SettingsTab { Ollama, Memory, Notch, Display, Alerts, Calendar, Tray, Pet, General }
     public enum ActivityTab { Memory, Processes, History }
     private SettingsTab settingsTab;
     private ActivityTab activityTab;
     public bool ShowingSettingsOllama => settingsTab == SettingsTab.Ollama;
     public bool ShowingSettingsMemory => settingsTab == SettingsTab.Memory;
     public bool ShowingSettingsNotch => settingsTab == SettingsTab.Notch;
+    public bool ShowingSettingsDisplay => settingsTab == SettingsTab.Display;
+    public bool ShowingSettingsAlerts => settingsTab == SettingsTab.Alerts;
+    public bool ShowingSettingsCalendar => settingsTab == SettingsTab.Calendar;
+    public bool ShowingSettingsTray => settingsTab == SettingsTab.Tray;
     public bool ShowingSettingsPet => settingsTab == SettingsTab.Pet;
     public bool ShowingSettingsGeneral => settingsTab == SettingsTab.General;
     public bool ShowingActivityMemory => activityTab == ActivityTab.Memory;
-    public bool ShowingActivityProcesses => activityTab == ActivityTab.Processes;
+    public bool ShowingActivityProcesses => activityTab == ActivityTab.Processes && (ShowingActivity || ShowingProcesses);
     public bool ShowingActivityHistory => activityTab == ActivityTab.History;
     public string TabsLabel => tr("Secciones");
     public SettingsTab CurrentSettingsTab { get => settingsTab; set { settingsTab = value; Notify(); } }
     public ActivityTab CurrentActivityTab { get => activityTab; set { activityTab = value; UpdateProcessSampling(); Notify(); } }
-    public List<Segment> SettingsTabs => new[]
+    private static System.Windows.Media.Brush Tint(string hex)
     {
-        (SettingsTab.Ollama, "Ollama"), (SettingsTab.Memory, tr("Memoria")), (SettingsTab.Notch, tr("Notch")),
-        (SettingsTab.Pet, tr("Mascota")), (SettingsTab.General, tr("General")),
-    }.Select(t => new Segment(t.Item2, settingsTab == t.Item1, new Command(() => CurrentSettingsTab = t.Item1))).ToList();
+        var brush = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
+        brush.Freeze();
+        return brush;
+    }
+    private (SettingsTab Tab, string Title, string Glyph, string Color)[] SettingsPages =>
+    [
+        (SettingsTab.General, tr("General"), "", "#8E8E93"),
+        (SettingsTab.Notch, tr("Notch"), "", "#0A84FF"),
+        (SettingsTab.Display, tr("Pantalla"), "", "#5E5CE6"),
+        (SettingsTab.Alerts, tr("Avisos"), "", "#FF453A"),
+        (SettingsTab.Calendar, tr("Calendario y tiempo"), "", "#FF9F0A"),
+        (SettingsTab.Tray, tr("Bandeja y portapapeles"), "", "#30B0C7"),
+        (SettingsTab.Ollama, "Ollama", "", "#5E5CE6"),
+        (SettingsTab.Memory, tr("Memoria"), PillCatalog.Find("ram")!.Glyph, "#32D74B"),
+        (SettingsTab.Pet, tr("Mascota"), "", "#FF6482"),
+    ];
+    /// La barra lateral de Ajustes; con poco ancho (la bandeja) solo los iconos, con el nombre en el tooltip.
+    public List<SettingsNavItem> SettingsNav => SettingsPages.Select(t => new SettingsNavItem(t.Title, t.Glyph, Tint(t.Color),
+        settingsTab == t.Tab, WideLayout, new Command(() => CurrentSettingsTab = t.Tab))).ToList();
+    public string SettingsPageTitle => SettingsPages.First(t => t.Tab == settingsTab).Title;
     public List<Segment> ActivityTabs => new[]
     {
         (ActivityTab.Memory, tr("Memoria")), (ActivityTab.Processes, tr("Procesos")), (ActivityTab.History, tr("Historial")),
@@ -323,8 +384,11 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             if (Math.Abs(value - bodyMaxHeight) < 1) return;
             bodyMaxHeight = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(BodyMaxHeight)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SettingsBodyMax)));
         }
     }
+    /// El alto de lo que se desplaza en Ajustes (la columna de la derecha): el del cuerpo menos el margen y, en el notch, el pie; la barra de pestañas de Ajustes no entra y no se desplaza.
+    public double SettingsBodyMax => double.IsInfinity(bodyMaxHeight) ? double.PositiveInfinity : Math.Max(120, bodyMaxHeight - (wideLayout ? 70 : 28));
 
     // MARK: comandos
 
@@ -362,6 +426,8 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     private PanelView view;
     public bool ShowingMain => view == PanelView.Main;
     public bool ShowingActivity => view == PanelView.Activity;
+    public bool ShowingProcesses => view == PanelView.Processes;
+    public bool ShowingActivityPanel => ShowingActivity || ShowingProcesses;
     public bool ShowingSettings => view == PanelView.Settings;
     public bool ShowingSecondary => !ShowingBrand;
 
@@ -369,9 +435,13 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     {
         PanelView.Settings => tr("Ajustes"),
         PanelView.Activity => tr("Actividad"),
+        PanelView.Processes => tr("Procesos"),
         PanelView.Widgets => tr("Widgets"),
         PanelView.Tray => tr("Bandeja"),
         PanelView.Clipboard => tr("Portapapeles"),
+        PanelView.Camera => tr("Cámara"),
+        PanelView.Chat => tr("Chat"),
+        PanelView.Agents => tr("Agentes"),
         PanelView.Editor => EditTitle,
         _ => AppInfo.Name,
     };
@@ -379,9 +449,13 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string HeaderGlyph => view switch
     {
         PanelView.Settings => "",   // Settings
+        PanelView.Processes => ChartGlyph,
         PanelView.Widgets => "",
         PanelView.Tray => "",
         PanelView.Clipboard => "",
+        PanelView.Camera => "\uE722",
+        PanelView.Chat => "\uE8BD",
+        PanelView.Agents => "\uE716",
         PanelView.Editor => "",
         _ => "",   // AreaChart
     };
@@ -393,9 +467,13 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         {
             if (view == PanelView.Settings) return $"v{AppInfo.Version}";
             if (view == PanelView.Activity) return tr("Historial de %d días, en este PC", StatsStore.KeepDays);
+            if (ShowingProcesses) return ProcessesIntro;
             if (view == PanelView.Widgets) return tr("Elige y ordena lo que ve el notch");
             if (view == PanelView.Editor) return EditSubtitle;
             if (view == PanelView.Clipboard) return tr("Lo último que copiaste, solo en esta sesión");
+            if (view == PanelView.Camera) return tr("Vista previa privada y local");
+            if (view == PanelView.Chat) return tr("Modelo local, solo en este PC");
+            if (view == PanelView.Agents) return tr("Permisos, decisiones y reglas de tus agentes");
             if (view == PanelView.Tray) return Tray.Count == 0 ? tr("Archivos de paso, en este PC") : TraySummary;
             return $"v{AppInfo.Version}";   // la versión de esta app; nada de Ollama bajo el nombre
         }
@@ -411,14 +489,18 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     {
         PanelView.Settings => tr("Cerrar ajustes"),
         PanelView.Activity => tr("Cerrar actividad"),
+        PanelView.Processes => tr("Cerrar procesos"),
         PanelView.Widgets => tr("Cerrar widgets"),
         PanelView.Tray => tr("Cerrar bandeja"),
         PanelView.Clipboard => tr("Cerrar portapapeles"),
+        PanelView.Camera => tr("Cerrar cámara"),
+        PanelView.Chat => tr("Cerrar el chat"),
+        PanelView.Agents => tr("Cerrar agentes"),
         PanelView.Editor => tr("Cerrar el editor"),
         _ => tr("Ajustes"),
     };
-    public string SideGlyph => ShowingActivity ? SettingsGlyph : ChartGlyph;
-    public string SideHelp => ShowingActivity ? tr("Ajustes") : tr("Actividad");
+    public string SideGlyph => ShowingActivity || ShowingProcesses ? SettingsGlyph : ChartGlyph;
+    public string SideHelp => ShowingActivity || ShowingProcesses ? tr("Ajustes") : tr("Actividad");
 
     public string PillText => P switch
     {
@@ -593,6 +675,18 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string GpuLegendModel => $"{tr("Modelo")} {Num(GpuNow.Model)}";
     public string GpuLegendOther => $"{tr("Resto")} {Num(Math.Max(0, GpuNow.Used - GpuNow.Model))}";
     public string GpuUsedLabel => $"{GpuNow.Used.MemoryGB()} / {Math.Round(GpuTotal / 1_073_741_824.0)} GB";
+    // Los anillos del widget de Ollama: memoria del PC y de la GPU con su porcentaje.
+    public EngineRingInfo RamRing => new(tr("Memoria"), UsedLabel, $"{UsedFraction * 100:0}%", UsedFraction, UsedFraction >= 0.9);
+    public EngineRingInfo GpuRing => new(tr("GPU"), GpuUsedLabel, $"{GpuUsedFraction * 100:0}%", GpuUsedFraction, GpuUsedFraction >= 0.9);
+    public EngineStateInfo StatePill => new(HeroTitle, B(HeroColor));
+    public double IdleFraction => Ollama.IdleLimit is { } limit && Ollama.IdleSeconds is { } seconds && limit > 0 ? Math.Clamp(seconds / limit, 0, 1) : 0;
+    public bool HasIdleBar => Ollama.Loaded.Count > 0 && Ollama.IdleLimit is not null && Ollama.IdleSeconds is not null;
+    public string AutoFreeTitle => tr("Se libera solo");
+    public string InstalledTitle => tr("Modelos instalados");
+    public string InstalledEmpty => P == Power.On ? tr("No hay modelos instalados.") : tr("Enciende Ollama para ver tus modelos.");
+    public IReadOnlyList<ModelRow> ChipModels => Models.Take(8).ToList();
+    public bool HasChipModels => Models.Count > 0;
+    public bool NoChipModels => !HasChipModels;
 
     public bool HasLoaded => Ollama.Loaded.Count > 0;
     public bool NoLoaded => !HasLoaded;
@@ -697,7 +791,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     /// El panel de la bandeja lleva una sombra negra abajo y una línea sobre el pie; el notch de cristal no (se funde).
     public bool FlatFooter => !wideLayout;
     /// En el notch el pie va al final de cada página (dentro del desplazamiento); en el panel de la bandeja, fijo abajo.
-    public bool NotchFooter => wideLayout;
+    public bool NotchFooter => wideLayout && view is PanelView.Widgets or PanelView.Settings or PanelView.Processes;
     /// En el notch el pie queda dentro de la esquina redondeada (26 px de radio): la misma distancia al lado y abajo, para que sea simétrico con la curva.
     public Thickness FooterMargin => wideLayout ? new Thickness(22, 2, 22, 19) : new Thickness(14, 9, 14, 9);
     public ObservableCollection<ModelRow> Models { get; } = [];
@@ -950,6 +1044,19 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public List<Segment> ThresholdSegments { get; private set; } = [];
     public string CooldownTitle => tr("Si sigue por encima, repetir como mucho cada");
     public List<Segment> CooldownSegments { get; private set; } = [];
+    public List<Segment> ThemeSegments { get; private set; } = [];
+    public string ThemeTitle => tr("Aspecto del notch");
+    public string ThemeDetail => tr("Cristal negro (el de siempre) o claro con contornos: fondo blanco, texto negro y cada pieza con su línea fina.");
+    private void SetThemeStyle(bool outline)
+    {
+        if (Prefs.OutlineTheme == outline) return;
+        Prefs.SetOutlineTheme(outline);
+        Theme.OutlineStyle = outline;
+        Theme.Apply();
+    }
+    public List<Segment> TeamViewSegments { get; private set; } = [];
+    public string TeamViewTitle => tr("Estilo del widget Equipo");
+    public string TeamViewDetail => tr("Cómo se dibuja el avance de Claude y Codex: tubería de nodos, línea de tiempo con barras o la mesa del equipo con retratos.");
     public bool ShowCooldown => Supervisor.CleanThreshold > 0;
     public string IntervalTitle => tr("Además, limpiar cada");
     public List<Segment> IntervalSegments { get; private set; } = [];
@@ -965,15 +1072,34 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string GlassLevelText => tr("Nivel de cristal: %@", $"{Math.Round(GlassLevel * 100):0}%");
     public ICommand SetGlassLevel { get; }
     public string HiddenAppsTitle => tr("Ocultar en apps");
-    public string HiddenAppsDetail => tr("Una app por línea. El notch se oculta y deja pasar los clics sobre esas apps.");
+    public string HiddenAppsDetail => tr("Una app por línea (por ejemplo «chrome» o «obs64.exe»). El notch no se muestra mientras esas apps tengan el foco; fijado con un clic, sí.");
     public string HiddenAppsText
     {
         get => string.Join(Environment.NewLine, Prefs.List(PrefKeys.HiddenApps));
         set => Prefs.SetList(PrefKeys.HiddenApps, (value ?? "").Split(["\r\n", "\n", ";"], StringSplitOptions.RemoveEmptyEntries)
             .Select(x => Path.GetFileNameWithoutExtension(x.Trim())).Where(x => x.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase));
     }
-    public string WeatherCityTitle => tr("Ciudad para Tiempo");
-    public string WeatherCityText { get => Prefs.WeatherCity; set => Prefs.SetWeatherCity(value ?? ""); }
+    public string WeatherCityTitle => tr("Ciudad para el clima");
+    public string WeatherCountryTitle => tr("País para el clima");
+    // Se elige de dos listas (país con su bandera y ciudad), no se escribe: el notch no recibe bien el teclado, y «Ciudad, País» tampoco lo entendía el buscador.
+    public IReadOnlyList<WeatherCountryItem> WeatherCountries => WeatherPlaces.Countries.Select(c => new WeatherCountryItem(c.Code, c.Name(Effective))).ToList();
+    public IReadOnlyList<WeatherCityItem> WeatherCities => WeatherPlaces.InCountry(WeatherCountryCode).Select(p => new WeatherCityItem(p.Id, p.City(Effective))).ToList();
+    public string? WeatherCountryCode
+    {
+        get => WeatherPlaces.Resolve(Prefs.WeatherCity)?.Country;
+        set
+        {
+            if (value is null || value == WeatherCountryCode || WeatherPlaces.InCountry(value).FirstOrDefault() is not { } first) return;
+            Prefs.SetWeatherCity(first.Id);
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WeatherCities)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WeatherCityId)));
+        }
+    }
+    public string? WeatherCityId
+    {
+        get => WeatherPlaces.Resolve(Prefs.WeatherCity)?.Id;
+        set { if (value is not null && WeatherPlaces.Find(value) is not null && value != WeatherCityId) Prefs.SetWeatherCity(value); }
+    }
 
     public string IntegrationsTitle => tr("Integraciones");
     public string LinksHint => tr("Enlaces para Stream Deck, PowerToys, scripts o una nota: ábrelos con start o desde el navegador.");
@@ -1006,9 +1132,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string TrayFallbackDetail => tr("Si queda tras la ^, actívalo en los ajustes de Windows: Personalización › Barra de tareas › Otros iconos de la bandeja del sistema (Windows 11) o Elige los iconos que aparecerán en la barra de tareas (Windows 10).");
     public string TrayFallbackOpen => tr("Abrir ajustes de la barra de tareas");
     public ICommand OpenTrayFallback { get; }
-    public string NotchDockTitle => tr("Dock tipo notch (experimental)");
-    public string NotchDockDetail => tr("Una pastilla pegada al borde superior de la pantalla que se abre al pasar el ratón y muestra todo el panel, en lugar de salir de la bandeja. Se apaga desde aquí mismo.");
-    public bool NotchDockOn => Prefs.Switch(PrefKeys.NotchDock, false);
+    public string NotchDockTitle => tr("Versión legacy (panel de la bandeja)");
+    public string NotchDockDetail => tr("Usa el panel que sale de la bandeja en lugar del notch. El notch es la versión principal; esto se apaga desde aquí mismo.");
+    public bool NotchDockOn => Prefs.Switch(PrefKeys.LegacyPanel, false);
     public ICommand ToggleNotchDock { get; }
     /// Lo que enseña la pastilla colapsada: el modelo cargado (o que no hay) y la RAM en uso.
     public string NotchModel => Ollama.Loaded.Count switch
@@ -1031,6 +1157,39 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string ReducedMotionDetail => tr("El ícono de la bandeja sin animaciones: punto ámbar fijo mientras Ollama cambia. Por defecto, como Windows");
     public bool ReducedMotionOn => Prefs.ReducedMotion;
     public ICommand ToggleReducedMotion { get; }
+    public string NotchMinimalTitle => tr("Notch mínimo");
+    public string NotchMinimalDetail => tr("Una pastilla más pequeña cuando no pasa nada: una franja negra fina. La música, los avisos y el ratón la despiertan.");
+    public bool NotchMinimalOn => Prefs.NotchMinimal;
+    public string ScreensIntro => tr("En qué pantalla vive el notch. Con «Seguir al cursor» hay uno solo que pasa a la pantalla donde está el ratón; con «Pantallas elegidas» hay uno en cada pantalla marcada.");
+    public string ScreensClickHint => tr("Pulsa una pantalla para ponerle o quitarle el notch.");
+    public string AllScreensLabel => tr("Todas");
+    public List<Segment> ScreenModeSegments { get; private set; } = [];
+    public List<ScreenTile> ScreenTiles { get; private set; } = [];
+    public bool ScreensPickable => (Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected) != NotchScreens.FollowCursor;
+    public ICommand SelectAllScreens { get; private set; } = null!;
+    public string VisibilitySectionTitle => tr("Visibilidad y animación");
+    public string LyricsTitle => tr("Letras sincronizadas");
+    public string LyricsDetail => tr("Busca la letra de lo que suena en lrclib.net: manda el título y el artista de la canción. Se activan al pulsar el botón de letras de la página de música.");
+    public bool LyricsOn => Prefs.Lyrics;
+    public ICommand ToggleLyricsSetting { get; private set; } = null!;
+    public string LyricsPillTitle => tr("Letra en el notch cerrado");
+    public string LyricsPillDetail => tr("Con letras, el notch cerrado enseña la línea que se canta en vez de la hora.");
+    public bool LyricsPillOn => Prefs.LyricsPill;
+    public ICommand ToggleLyricsPillSetting { get; private set; } = null!;
+    public string HideFullscreenTitle => tr("Ocultar a pantalla completa");
+    public string HideFullscreenDetail => tr("Juegos, vídeos y presentaciones que llenan la pantalla.");
+    public bool HideFullscreenOn => Prefs.HideInFullscreen;
+    public ICommand ToggleHideFullscreen { get; }
+    public string OpenModeTitle => tr("Abrir el notch");
+    public string OpenModeDetail => tr("Con un clic, la vista corta se abre al pulsar la pastilla; con el ratón, al pasar por encima.");
+    public List<Segment> OpenModeSegments { get; private set; } = [];
+    public string AnimSpeedTitle => tr("Velocidad de animación");
+    public List<Segment> AnimSpeedSegments { get; private set; } = [];
+    public ICommand ToggleNotchMinimal { get; }
+    public string NotchMascotTitle => tr("Mascota en el notch");
+    public string NotchMascotDetail => tr("Si dejas de usar el equipo un rato, aparece dormida en el notch cerrado; al volver te saluda y deja paso al notch normal. Los avisos salen a su lado; la música y abrir el notch la apartan.");
+    public bool NotchMascotOn => Prefs.NotchMascot;
+    public ICommand ToggleNotchMascot { get; }
     public string TaskbarPetTitle => tr("Mascota junto a Inicio");
     public string TaskbarPetDetail => tr("Elige a Mira, una llama, un capibara o un gatito: duermen, comen, trabajan y barren con tus modelos.");
     public bool TaskbarPetOn => Prefs.Switch(PrefKeys.TaskbarPet, false);
@@ -1170,11 +1329,12 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var engineIdle = string.Join(",", engines.Select(e => $"{e.Id}{e.IdleMinutes}{e.Power}"));
         var cleanSwitches = string.Join(",", new[] { PrefKeys.CleanOnCritical, PrefKeys.CleanOnGame, PrefKeys.CleanHotKey }.Select(k => Prefs.Switch(k)))
                             + Prefs.Switch(PrefKeys.TrayPercent, false);
-        var segSignature = $"{Ollama.IdleReleaseMinutes}#{pref}#{string.Join(",", Ollama.Mechanisms.Select(b => b.Key))}#{Prefs.Language}"
+        var segSignature = $"{Ollama.IdleReleaseMinutes}#{pref}#{string.Join(",", Ollama.Mechanisms.Select(b => b.Key))}#{Prefs.Language}#{Prefs.OutlineTheme}"
                            + $"#{string.Join(",", games)}#{string.Join(",", ignored)}#{notices}#{engineIdle}#{Supervisor.UpdatesAvailable}"
                            + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanCooldown}#{Supervisor.CleanInterval}#{cleanSwitches}"
                            + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}#{string.Join(",", ActivityIds)}"
-                           + $"#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}";
+                           + $"#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.UsageEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}"
+                           + $"#{Prefs.StoredList(PrefKeys.TeamView)?.FirstOrDefault()}";
         if (segSignature == segmentsSignature) return;
         segmentsSignature = segSignature;
         IdleSegments = Segments(Ollama.IdleReleaseMinutes, m => Ollama.IdleReleaseMinutes = m);
@@ -1191,6 +1351,28 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         if (PetChoices.Count == 0)
             PetChoices = Pets.PetCatalog.All.Select(s => new PetChoice(s.Name, Pets.PetPreview.For(s), s == pet, new Command(() => Prefs.SetPetSpecies(s.Id)))).ToList();
         for (int i = 0; i < PetChoices.Count; i++) PetChoices[i].Select(Pets.PetCatalog.All[i] == pet);
+        var screens = Screens.List();
+        bool picking = (Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected) != NotchScreens.FollowCursor;
+        var chosen = Prefs.StoredList(PrefKeys.NotchScreens) ?? [];
+        ScreenModeSegments = [new Segment(tr("Seguir al cursor"), !picking, new Command(() => Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.FollowCursor]))),
+            new Segment(tr("Pantallas elegidas"), picking, new Command(() => Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected])))];
+        ScreenTiles = screens.Select(sc => new ScreenTile(Screens.Number(sc, screens), $"{sc.Bounds.Width}×{sc.Bounds.Height}", sc.Primary ? tr("Principal") : "",
+            picking && (chosen.Contains(sc.Id) || chosen.Count == 0 && sc.Primary),
+            new Command(() =>
+            {
+                if (!picking) return;
+                var current = Prefs.StoredList(PrefKeys.NotchScreens) is { Count: > 0 } list ? list : screens.Where(x => x.Primary).Select(x => x.Id).ToList();
+                var next = current.Contains(sc.Id) ? current.Where(id => id != sc.Id).ToList() : [.. current, sc.Id];
+                if (next.Count == 0) return;   // siempre queda al menos una pantalla
+                Prefs.SetList(PrefKeys.NotchScreens, next);
+            }))).ToList();
+        SelectAllScreens = new Command(() => { Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected]); Prefs.SetList(PrefKeys.NotchScreens, screens.Select(x => x.Id)); });
+        bool clickMode = Prefs.OpenOnClick, fastMode = Prefs.AnimSpeed < 1;
+        OpenModeSegments = [new Segment(tr("Al pasar el ratón"), !clickMode, new Command(() => Prefs.SetList(PrefKeys.NotchOpenMode, ["hover"]))),
+            new Segment(tr("Con un clic"), clickMode, new Command(() => Prefs.SetList(PrefKeys.NotchOpenMode, ["click"])))];
+        AnimSpeedSegments = [new Segment(tr("Normal"), !fastMode, new Command(() => Prefs.SetList(PrefKeys.NotchAnimSpeed, ["normal"]))),
+            new Segment(tr("Rápida"), fastMode, new Command(() => Prefs.SetList(PrefKeys.NotchAnimSpeed, ["fast"])))];
+        ThemeSegments = [new Segment(tr("Cristal negro"), !Prefs.OutlineTheme, new Command(() => SetThemeStyle(false))), new Segment(tr("Claro con contornos"), Prefs.OutlineTheme, new Command(() => SetThemeStyle(true)))];
         LanguageSegments = Enum.GetValues<Language>().Select(l => new Segment(
             l.Label(), l == Prefs.Language, new Command(() => Prefs.SetLanguage(l)))).ToList();
 
@@ -1220,8 +1402,10 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         [
             new(tr("Agentes de IA"), tr("Lee metadatos de sesiones locales de Claude Code y Codex; apagado por defecto."),
                 Prefs.Switch(PrefKeys.AgentsEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.AgentsEnabled, false)), false),
-            new(tr("Tiempo con Open-Meteo"), tr("Envía solo la ciudad elegida; apagado por defecto."),
+            new(tr("Clima con Open-Meteo"), tr("Envía solo la ciudad elegida; apagado por defecto."),
                 Prefs.Switch(PrefKeys.WeatherEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.WeatherEnabled, false)), true),
+            new(tr("Uso de IA"), tr("Lee sesiones locales de Claude Code, Codex y Gemini; Muse y Ollama local si están disponibles, y Grok API si está configurado. Apagado por defecto."),
+                Prefs.Switch(PrefKeys.UsageEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.UsageEnabled, false)), true),
             new(tr("OCR de pantalla"), tr("Ctrl+Alt+I selecciona una región y copia el texto reconocido; el procesamiento es local."),
                 Prefs.Switch(PrefKeys.OcrEnabled, false), new Command(() => Prefs.Toggle(PrefKeys.OcrEnabled, false)), true),
         ];
@@ -1242,7 +1426,11 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             a.Area == CleanAreas.WorkingSets ? a.Hint : tr("Avanzado · %@", a.Hint), areas.HasFlag(a.Area),
             new Command(() => Supervisor.ToggleArea(a.Area)), i > 0)).ToList();
         ThresholdSegments = Choices([0, 50, 60, 70, 80, 90], Supervisor.CleanThreshold, m => $"{m} %", m => Supervisor.CleanThreshold = m);
-        CooldownSegments = Choices([1, 2, 5, 10, 15, 30], Supervisor.CleanCooldown, m => $"{m} min", m => Supervisor.CleanCooldown = m);
+        var teamView = Enum.TryParse<TeamViewStyle>(Prefs.StoredList(PrefKeys.TeamView)?.FirstOrDefault(), out var chosenView) ? chosenView : TeamViewStyle.Pipeline;
+        TeamViewSegments = Enum.GetValues<TeamViewStyle>().Select(v => new Segment(
+            v switch { TeamViewStyle.Pipeline => tr("Tubería"), TeamViewStyle.Timeline => tr("Línea de tiempo"), _ => tr("Mesa de equipo") },
+            v == teamView, new Command(() => Prefs.SetList(PrefKeys.TeamView, [v.ToString()])))).ToList();
+        CooldownSegments = Choices([5, 10, 15, 30, 60], Supervisor.CleanCooldown, m => $"{m} min", m => Supervisor.CleanCooldown = m);
         IntervalSegments = Choices([0, 5, 10, 15, 30, 60], Supervisor.CleanInterval, m => $"{m} min", m => Supervisor.CleanInterval = m);
         CleanRuleRows =
         [
@@ -1279,3 +1467,6 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             m == current,
             new Command(() => pick(m)))).ToList();
 }
+
+public sealed record WeatherCountryItem(string Code, string Name);
+public sealed record WeatherCityItem(string Id, string Name);

@@ -4,7 +4,7 @@ using static IsTargetSleeping.L10n;
 namespace IsTargetSleeping;
 
 /// Tipos de aviso, cada uno con su interruptor en Ajustes › Notificaciones.
-public enum Notice { Sleep, Watchdog, Pressure, Game, Download, Update, Clean, Pomodoro }
+public enum Notice { Sleep, Watchdog, Pressure, Game, Download, Update, Clean, Pomodoro, Team }
 
 public static class NoticeExt
 {
@@ -19,9 +19,10 @@ public static class NoticeExt
         Notice.Watchdog => tr("Caídas y reinicios de Ollama"),
         Notice.Pressure => tr("Memoria crítica"),
         Notice.Game => tr("Modo juego"),
-        Notice.Download => tr("Descargas terminadas"),
+        Notice.Download => tr("Descargas de modelos"),
         Notice.Clean => tr("RAM liberada"),
         Notice.Pomodoro => tr("Pomodoro terminado"),
+        Notice.Team => tr("Equipo: respuesta o tarea lista"),
         _ => tr("Actualizaciones"),
     };
 }

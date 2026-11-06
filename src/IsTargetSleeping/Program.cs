@@ -10,6 +10,8 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Hook de un agente: sin interfaz y antes de nada, para no estorbar a Claude Code.
+        if (args is ["--hook", var hookAgent]) return AgentHooks.RunClient(hookAgent, Console.OpenStandardInput(), Console.OpenStandardOutput());
         if (Value(args, "--apply-update") is { } apply)
         {
             L10n.Init();
@@ -47,6 +49,7 @@ public static class Program
             return 0;
         }
 
+        FrameRate.MatchDisplays();   // las animaciones de WPF van a 60 fps salvo que se pida otra cosa: se pide la frecuencia del monitor
         var app = new App();
         app.InitializeComponent();
         // En Startup ya corre el Dispatcher: los await vuelven al hilo de la interfaz.

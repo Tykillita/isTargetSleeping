@@ -25,6 +25,8 @@ Set-Location $PSScriptRoot
 $app = "isTargetSleeping"
 $version = (Get-Content VERSION -Raw).Trim()
 if ($version -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw "VERSION debe tener una versión estable MAJOR.MINOR.PATCH." }
+$petVersion = (Get-Content src\IsTargetSleeping.Pet\PET_VERSION -Raw).Trim()
+if ($petVersion -notmatch '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') { throw "PET_VERSION debe tener una versión estable MAJOR.MINOR.PATCH." }
 $dist = Join-Path $PSScriptRoot "dist"
 New-Item -ItemType Directory -Force $dist | Out-Null
 
@@ -74,5 +76,29 @@ foreach ($a in $Arch) {
         Checksum $setup
         "instalador: $setup"
     }
+
+    $petBuildOut = Join-Path $PSScriptRoot "obj\package-pet-$a"
+    & dotnet publish src\IsTargetSleeping.Pet\IsTargetSleeping.Pet.csproj -c Release -r "win-$a" --self-contained true -o $petBuildOut -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+    if ($LASTEXITCODE -ne 0) { throw "La compilación del complemento Pet $a falló." }
+    $petExe = Join-Path $petBuildOut "$app-pet.exe"
+    if (-not (Test-Path -LiteralPath $petExe)) { throw "El complemento Pet no se publicó para $a." }
+    Sign $petExe
+
+    $petStage = Join-Path $dist "$app-pet-$petVersion-win-$a"
+    if (-not ([IO.Path]::GetFullPath($petStage)).StartsWith($dist + '\', [StringComparison]::OrdinalIgnoreCase)) { throw "Ruta de paquete Pet no válida." }
+    if (Test-Path -LiteralPath $petStage) { Remove-Item -LiteralPath $petStage -Recurse -Force }
+    New-Item -ItemType Directory -Force $petStage | Out-Null
+    Copy-Item $petExe, LICENSE, src\IsTargetSleeping.Pet\THIRD-PARTY-NOTICES.md $petStage -Force
+    $petZip = "$petStage.zip"
+    Remove-Item $petZip -ErrorAction SilentlyContinue
+    Compress-Archive -Path "$petStage\*" -DestinationPath $petZip
+    Remove-Item -LiteralPath $petStage -Recurse -Force
+    Checksum $petZip
+    "complemento Pet: $petZip"
+
+    $petAlias = Join-Path $dist "$app-pet-win-$a.zip"
+    Copy-Item $petZip $petAlias -Force
+    Checksum $petAlias
+
 }
 if (-not $iscc) { "Inno Setup 6 no está instalado: solo se generaron los .zip (winget install JRSoftware.InnoSetup)." }
