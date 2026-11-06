@@ -106,7 +106,7 @@ Ollama and other local engines are one part of the app. isTargetSleeping can unl
 | **Team reliability** | A Team merge can complete even when Git has no user identity configured. |
 
 <a id="mobile-companion"></a>
-## Mobile companion and ESP32
+## Private mobile companion
 
 The mobile web app is a private companion to the desktop app; it does not depend on an ESP32. It can also configure which provider and model Nimbo uses; API keys stay encrypted on the desktop PC.
 
@@ -114,7 +114,24 @@ The mobile web app is a private companion to the desktop app; it does not depend
 2. Extract <code>isTargetSleeping-pet.exe</code> to <code>%LOCALAPPDATA%\isTargetSleeping\pet</code>.
 3. Reopen <strong>Settings › Notch</strong>, enable <strong>Show QR code</strong>, then scan it with a phone signed into the same Tailscale account.
 
-The desktop companion serves the web app through Tailscale inside your private tailnet. It does not use Funnel or a public endpoint. The same optional desktop add-on enables an ESP32 connection; the phone web app continues to work without the board.
+The desktop companion serves the web app through Tailscale inside your private tailnet. It does not use Funnel or a public endpoint. The phone web app continues to work without an ESP32.
+
+<a id="targetos"></a>
+## TargetOS for ESP32 (provisional name)
+
+TargetOS is the working name for the ESP32 system in the separate `ESP32-Mira` firmware project. Its `mira` profile includes the mascot app by default; the current board shows it as Nimbo. The mascot can animate and respond to touch on the board. Nimbo's chat service runs on the desktop PC, not as a local language model on the ESP32, and requires the optional desktop companion.
+
+**Supported installation:** install the complete TargetOS firmware with the built-in mascot app. Installing the mascot/Nimbo app separately on a bare ESP32 or another firmware is not supported. The Windows app's optional add-on is the PC companion; it does not flash ESP32 firmware. TargetOS firmware and its source are not yet published as a public download, so the current `pio run -e mira -t upload` procedure is for a development checkout only.
+
+| Hardware | Configuration recorded for the board |
+|---|---|
+| Board profile | ESP32-2432S028R-compatible project profile (`esp32dev` in PlatformIO); the exact retail board revision is not recorded. |
+| Chip | ESP32-D0WD-V3, revision 3.1; 2 cores at 240 MHz. |
+| Flash / PSRAM | 4 MB flash; no PSRAM. |
+| Display / touch | ILI9341 TFT, 240 × 320 pixels (TargetOS renders landscape at 320 × 240); resistive XPT2046 touch. |
+| USB serial | CH340. |
+
+For setup notes, screenshots and the current development flashing steps, see the [TargetOS ESP32 guide](https://istargetsleeping.web.app/targetos.html). The desktop app currently has no firmware installer. Its optional add-on is downloaded from <strong>Settings › Notch</strong> and provides the PC service used by the board and the private mobile web app.
 
 <a id="downloads"></a>
 ## Download and install

@@ -106,7 +106,7 @@ Ollama y otros motores locales son una parte de la app. isTargetSleeping puede d
 | **Equipo más fiable** | El Equipo puede fusionar una rama aunque Git no tenga una identidad configurada. |
 
 <a id="mobile-companion"></a>
-## Web móvil y ESP32
+## Web móvil privada
 
 La web móvil acompaña a la app de escritorio; no depende de una placa ESP32. También permite elegir qué proveedor y modelo usa Nimbo; las claves API se guardan cifradas en la PC de escritorio.
 
@@ -114,7 +114,24 @@ La web móvil acompaña a la app de escritorio; no depende de una placa ESP32. T
 2. Extrae <code>isTargetSleeping-pet.exe</code> en <code>%LOCALAPPDATA%\isTargetSleeping\pet</code>.
 3. Vuelve a <strong>Ajustes › Notch</strong>, activa <strong>Mostrar código QR</strong> y escanéalo con un teléfono que use la misma cuenta de Tailscale.
 
-El complemento sirve la web desde esta PC mediante Tailscale, dentro de tu tailnet privado. No utiliza Funnel ni una dirección pública. El mismo complemento opcional de escritorio permite conectar una placa ESP32; la web móvil sigue funcionando sin la placa.
+El complemento sirve la web desde esta PC mediante Tailscale, dentro de tu tailnet privado. No utiliza Funnel ni una dirección pública. La web móvil sigue funcionando sin una placa ESP32.
+
+<a id="targetos"></a>
+## TargetOS para ESP32 (nombre provisional)
+
+TargetOS es el nombre de trabajo del sistema ESP32 del proyecto de firmware independiente `ESP32-Mira`. El perfil `mira` incluye la app de la mascota de forma predeterminada; en la placa actual aparece como Nimbo. La mascota se anima y responde al tacto en la placa. El servicio de conversación de Nimbo corre en la PC, no como modelo de lenguaje dentro del ESP32, y requiere el complemento opcional de escritorio.
+
+**Instalación compatible:** se instala el firmware completo de TargetOS con la app de la mascota integrada. No se admite instalar por separado la app de la mascota/Nimbo en un ESP32 vacío ni sobre otro firmware. El complemento opcional de la app de Windows es el servicio de la PC; no graba firmware en la placa. El firmware y su código aún no se publican como descarga pública, así que el procedimiento actual `pio run -e mira -t upload` es para un checkout de desarrollo.
+
+| Hardware | Configuración registrada de la placa |
+|---|---|
+| Perfil de placa | Perfil de proyecto compatible con ESP32-2432S028R (`esp32dev` en PlatformIO); la revisión comercial exacta no está documentada. |
+| Chip | ESP32-D0WD-V3, revisión 3.1; 2 núcleos a 240 MHz. |
+| Flash / PSRAM | 4 MB de flash; sin PSRAM. |
+| Pantalla / táctil | TFT ILI9341, 240 × 320 píxeles (TargetOS la dibuja en horizontal a 320 × 240); táctil resistiva XPT2046. |
+| USB serie | CH340. |
+
+Consulta la [guía de TargetOS para ESP32](https://istargetsleeping.web.app/targetos.html) para ver la instalación de desarrollo, las capturas y los detalles actuales. La app desktop todavía no incluye instalador de firmware. El complemento opcional se descarga desde <strong>Ajustes › Notch</strong> y aporta el servicio de la PC que usa la placa y la web móvil privada.
 
 <a id="downloads"></a>
 ## Descarga e instalación

@@ -20,7 +20,10 @@ $files = @(
     'Assets\istargetsleeping-mark-white.svg',
     'Assets\istargetsleeping-mark-white-512.png',
     'docs\images\social-preview.png',
-    'docs\images\sim-wallpaper.jpg'
+    'docs\images\sim-wallpaper.jpg',
+    'docs\images\targetos-home.png',
+    'docs\images\targetos-pet.png',
+    'docs\images\targetos-info.png'
 )
 foreach ($p in 0..3) { foreach ($e in 0..5) { $files += "docs\images\pet-sprites\p${p}s${e}.png" } }
 foreach ($p in 0..3) { $files += "docs\images\pet-sprites\peek${p}.png" }
@@ -77,7 +80,7 @@ function Get-VersionedUrl([string]$Url) {
 }
 
 $pages = @{}
-foreach ($name in 'index.html', 'novedades.html') {
+foreach ($name in 'index.html', 'novedades.html', 'targetos.html') {
     $pages[$name] = [IO.File]::ReadAllText((Join-Path $site $name))
 }
 

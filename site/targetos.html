@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TargetOS para ESP32 · isTargetSleeping</title>
+<meta name="description" content="Guía de TargetOS, el sistema ESP32 de nombre provisional: pantallas reales, hardware, instalación de desarrollo y conexión con Nimbo.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="site.css">
+<script>document.documentElement.dataset.theme='dark'</script>
+</head>
+<body data-pagina="targetos">
+
+<header class="nav">
+  <div class="contenedor">
+    <a class="marca" href="index.html" aria-label="isTargetSleeping">
+      <img src="media/istargetsleeping-icon.svg" alt="" width="28" height="28">
+      <span>isTargetSleeping</span>
+    </a>
+    <nav class="nav-links" aria-label="Secciones">
+      <a href="index.html#funciones" data-i18n="nav.funciones">Funciones</a>
+      <a href="index.html#control" data-i18n="nav.como">Cómo funciona</a>
+      <a href="index.html#privacidad" data-i18n="nav.privacidad">Privacidad</a>
+      <a href="index.html#instalar" data-i18n="nav.instalar">Instalar</a>
+      <a href="novedades.html" data-i18n="nav.novedades">Novedades</a>
+      <a href="targetos.html" aria-current="page" data-i18n="nav.targetos">TargetOS para ESP32</a>
+    </nav>
+    <div class="nav-acciones">
+      <button class="icono-btn idioma-btn" id="idioma" type="button" aria-label="Switch to English">EN</button>
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/latest"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="nav.descargar">Descargar</span></a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="nov-hero targetos-hero">
+    <div class="contenedor">
+      <p class="eyebrow" data-i18n="targetos.eyebrow">ESP32 · nombre provisional</p>
+      <h1 data-i18n="targetos.title">TargetOS</h1>
+      <p class="hero-sub" data-i18n="targetos.lead">Un sistema táctil compacto para tu placa ESP32, con la mascota Nimbo integrada y conexión opcional con isTargetSleeping.</p>
+      <aside class="targetos-callout" role="note">
+        <b data-i18n="targetos.status.title">Estado de instalación</b>
+        <p data-i18n="targetos.status.body">El firmware aún no está publicado como descarga y la app de Windows todavía no puede instalarlo en la placa. El complemento opcional de Ajustes › Notch instala el servicio de la PC; no graba firmware.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="seccion" id="capturas">
+    <div class="contenedor">
+      <div class="cabecera">
+        <p class="eyebrow" data-i18n="targetos.gallery.eyebrow">En la placa</p>
+        <h2 data-i18n="targetos.gallery.title">Así se ve TargetOS.</h2>
+        <p data-i18n="targetos.gallery.text">Capturas tomadas directamente de la pantalla ESP32 conectada, a su resolución horizontal de 320 × 240.</p>
+      </div>
+      <div class="targetos-gallery">
+        <figure class="targetos-shot">
+          <img src="media/targetos-home.png" alt="Inicio de TargetOS con accesos a Calculadora, Wi-Fi, Ajustes, Información y la mascota" data-i18n-alt="targetos.home.alt" width="320" height="240" loading="lazy" decoding="async">
+          <figcaption><b data-i18n="targetos.home.title">Inicio y lanzador</b><span data-i18n="targetos.home.text">Accesos directos a las apps del sistema y a la mascota.</span></figcaption>
+        </figure>
+        <figure class="targetos-shot">
+          <img src="media/targetos-pet.png" alt="La mascota Nimbo duerme en su app, con indicador de conexión y botón Hablar" data-i18n-alt="targetos.pet.alt" width="320" height="240" loading="lazy" decoding="async">
+          <figcaption><b data-i18n="targetos.pet.title">La mascota Nimbo</b><span data-i18n="targetos.pet.text">Animaciones y gestos táctiles en la placa; la conversación usa el servicio de la PC.</span></figcaption>
+        </figure>
+        <figure class="targetos-shot">
+          <img src="media/targetos-info.png" alt="Información del sistema: versión 1.0.0, chip ESP32-D0WD-V3 rev 3 y 4 MB de flash" data-i18n-alt="targetos.info.alt" width="320" height="240" loading="lazy" decoding="async">
+          <figcaption><b data-i18n="targetos.info.title">Información del dispositivo</b><span data-i18n="targetos.info.text">El sistema muestra en la placa el chip, sus núcleos y la flash detectada.</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion" id="incluye">
+    <div class="contenedor">
+      <div class="cabecera">
+        <p class="eyebrow" data-i18n="targetos.overview.eyebrow">El sistema</p>
+        <h2 data-i18n="targetos.overview.title">Un pequeño entorno para el ESP32.</h2>
+        <p data-i18n="targetos.overview.text">TargetOS está construido para la pantalla táctil de la placa y conserva sus funciones básicas aunque no haya conexión con la PC.</p>
+      </div>
+      <div class="novedades">
+        <article class="novedad"><b data-i18n="targetos.feature.shell.title">Inicio y navegación</b><span data-i18n="targetos.feature.shell.text">Pantalla de bloqueo, inicio, lanzador de apps, transiciones y conmutador.</span></article>
+        <article class="novedad"><b data-i18n="targetos.feature.apps.title">Apps integradas</b><span data-i18n="targetos.feature.apps.text">Calculadora, Wi-Fi, Ajustes e Información del dispositivo.</span></article>
+        <article class="novedad"><b data-i18n="targetos.feature.pet.title">Mascota incluida</b><span data-i18n="targetos.feature.pet.text">El perfil de TargetOS incorpora la app de la mascota: animaciones, sueño y gestos táctiles.</span></article>
+        <article class="novedad"><b data-i18n="targetos.feature.nimbo.title">Nimbo en tu PC</b><span data-i18n="targetos.feature.nimbo.text">Al conectar el complemento, la mascota envía mensajes a Nimbo en la PC. El ESP32 muestra el chat; no ejecuta el modelo.</span></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="seccion" id="hardware">
+    <div class="contenedor">
+      <div class="cabecera">
+        <p class="eyebrow" data-i18n="targetos.hardware.eyebrow">Hardware</p>
+        <h2 data-i18n="targetos.hardware.title">La placa usada en el proyecto.</h2>
+        <p data-i18n="targetos.hardware.text">Estos datos combinan la configuración del firmware y la información leída desde la placa conectada.</p>
+      </div>
+      <div class="novedades targetos-specs">
+        <article class="novedad"><b data-i18n="targetos.hardware.profile.title">Perfil de placa</b><span data-i18n="targetos.hardware.profile.text">ESP32-2432S028R como placa objetivo; PlatformIO usa el perfil esp32dev.</span></article>
+        <article class="novedad"><b data-i18n="targetos.hardware.chip.title">Procesador</b><span data-i18n="targetos.hardware.chip.text">ESP32-D0WD-V3, revisión 3.1; 2 núcleos a 240 MHz.</span></article>
+        <article class="novedad"><b data-i18n="targetos.hardware.memory.title">Memoria</b><span data-i18n="targetos.hardware.memory.text">4 MB de flash; la placa no tiene PSRAM.</span></article>
+        <article class="novedad"><b data-i18n="targetos.hardware.display.title">Pantalla</b><span data-i18n="targetos.hardware.display.text">TFT ILI9341 de 240 × 320 píxeles, usada en horizontal a 320 × 240.</span></article>
+        <article class="novedad"><b data-i18n="targetos.hardware.touch.title">Táctil</b><span data-i18n="targetos.hardware.touch.text">Panel resistivo con controlador XPT2046.</span></article>
+        <article class="novedad"><b data-i18n="targetos.hardware.usb.title">USB y red</b><span data-i18n="targetos.hardware.usb.text">Conversor USB-serie CH340 y Wi-Fi integrado de 2,4 GHz.</span></article>
+      </div>
+      <p class="version-avance" data-i18n="targetos.hardware.note">El chip y la flash se verificaron en la placa. El proyecto apunta al perfil ESP32-2432S028R; no hay una foto del marcado del fabricante que confirme una revisión comercial concreta.</p>
+    </div>
+  </section>
+
+  <section class="seccion" id="instalacion">
+    <div class="contenedor">
+      <div class="cabecera">
+        <p class="eyebrow" data-i18n="targetos.install.eyebrow">Instalación</p>
+        <h2 data-i18n="targetos.install.title">Graba el sistema completo.</h2>
+        <p data-i18n="targetos.install.intro">El flujo que sigue corresponde al proyecto de desarrollo actual. No hay todavía un instalador de firmware dentro de isTargetSleeping ni un paquete público para descargar.</p>
+      </div>
+      <ol class="pasos targetos-steps">
+        <li class="paso"><span class="paso-num">01</span><h3 data-i18n="targetos.install.source.title">Prepara el proyecto</h3><p data-i18n="targetos.install.source.text">Necesitas el código fuente ESP32-Mira y PlatformIO Core o la extensión PlatformIO de VS Code. El código del firmware aún no está publicado como descarga pública.</p></li>
+        <li class="paso"><span class="paso-num">02</span><h3 data-i18n="targetos.install.flash.title">Compila y graba TargetOS</h3><p data-i18n="targetos.install.flash.text">Conecta la placa con un cable USB de datos. Desde la carpeta del firmware, compila y graba el perfil mira, que incluye la app de la mascota:</p><code class="targetos-command">pio run -e mira -t upload</code></li>
+        <li class="paso"><span class="paso-num">03</span><h3 data-i18n="targetos.install.setup.title">Configura la placa</h3><p data-i18n="targetos.install.setup.text">Al iniciar, abre Ajustes para conectarla a tu Wi-Fi. La mascota funciona en la placa sin PC; su nombre se puede editar tocándolo.</p></li>
+        <li class="paso"><span class="paso-num">04</span><h3 data-i18n="targetos.install.link.title">Conecta el servicio Nimbo (opcional)</h3><p data-i18n="targetos.install.link.text">En isTargetSleeping para Windows, abre Ajustes › Notch y descarga el complemento opcional. Extrae el ZIP en %LOCALAPPDATA%\isTargetSleeping\pet. Es el servicio de la PC, no el firmware del ESP32. Inicia el servicio con este comando y déjalo abierto mientras la placa se conecta:</p><code class="targetos-command">&amp; "$env:LOCALAPPDATA\isTargetSleeping\pet\isTargetSleeping-pet.exe" serve --port 8443</code></li>
+      </ol>
+      <div class="novedad targetos-note">
+        <b data-i18n="targetos.install.provision.title">Emparejamiento de desarrollo</b>
+        <span data-i18n="targetos.install.provision.text">Con la PC y la placa en la misma red local, el complemento genera las credenciales con provision y el proyecto las graba por USB con tools/provision.py. La placa no necesita Tailscale; Tailscale mantiene privada la web móvil. El token queda en la NVS del ESP32 sin cifrado de flash: usa un token por placa y no publiques ni compartas provision.json.</span>
+        <code class="targetos-command">$pet = "$env:LOCALAPPDATA\isTargetSleeping\pet\isTargetSleeping-pet.exe"
+&amp; $pet provision --host 192.168.1.20 --data "$env:LOCALAPPDATA\isTargetSleeping\pet"
+python tools/provision.py "$env:LOCALAPPDATA\isTargetSleeping\pet\provision.json" COMx</code>
+      </div>
+      <aside class="targetos-callout targetos-note" role="note">
+        <b data-i18n="targetos.support.title">Límite de soporte</b>
+        <p data-i18n="targetos.support.text">No se admite instalar la app de la mascota/Nimbo por separado en un ESP32 sin TargetOS. La app de Windows tampoco flashea la placa todavía. El servicio Nimbo corre en la PC; la app móvil privada por Tailscale funciona independientemente del ESP32.</p>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <div class="pie-arriba">
+      <div class="pie-marca">
+        <a class="pie-logo" href="index.html"><img src="media/istargetsleeping-icon.svg" alt="" width="32" height="32"><span>isTargetSleeping</span></a>
+        <p class="pie-lema" data-i18n="targetos.footer.lead">Un sistema ESP32 compacto con la mascota conectada al escritorio.</p>
+      </div>
+      <nav class="pie-columnas" aria-label="Pie de página" data-i18n-aria="pie.aria">
+        <div class="pie-columna"><h2 data-i18n="pie.producto">Producto</h2><ul>
+          <li><a href="index.html#funciones" data-i18n="nav.funciones">Funciones</a></li>
+          <li><a href="novedades.html" data-i18n="pie.novedades">Novedades</a></li>
+          <li><a href="targetos.html" data-i18n="pie.targetos">TargetOS para ESP32</a></li>
+        </ul></div>
+        <div class="pie-columna"><h2 data-i18n="pie.oss">Código abierto</h2><ul>
+          <li><a href="https://github.com/Tykillita/isTargetSleeping" data-i18n="pie.repo">Repositorio en GitHub</a></li>
+          <li><a href="https://github.com/Tykillita/isTargetSleeping/releases" data-i18n="targetos.footer.releases">Versiones de escritorio</a></li>
+        </ul></div>
+      </nav>
+    </div>
+    <div class="pie-abajo"><div class="pie-fila"><span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.30.0 disponible</span></span><nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria"><button type="button" data-lang="es">Español</button><button type="button" data-lang="en">English</button></nav></div></div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>

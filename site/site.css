@@ -641,6 +641,27 @@ h2 { font-size: clamp(34px, 5vw, 56px); line-height: 1.06; letter-spacing: -.03e
 .version-pendiente { color: var(--azul-txt); font-size: 13px; }
 .respuesta code { overflow-wrap: anywhere; }
 
+/* ---------- TargetOS ESP32 ---------- */
+.targetos-callout { max-width: 820px; margin: 28px auto 0; padding: 18px 22px; text-align: left; border: 1px solid var(--linea); border-radius: 18px; background: color-mix(in srgb, var(--gris) 82%, transparent); }
+.targetos-callout b { display: block; font-size: 16px; margin-bottom: 5px; }
+.targetos-callout p { color: var(--muted); font-size: 14px; margin: 0; }
+.targetos-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 32px; }
+.targetos-shot { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--linea); border-radius: 20px; background: var(--gris); }
+.targetos-shot img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: #050607; }
+.targetos-shot figcaption { display: grid; gap: 4px; padding: 14px 16px 16px; }
+.targetos-shot figcaption b { font-size: 15px; }
+.targetos-shot figcaption span { color: var(--muted); font-size: 13px; }
+.targetos-specs { margin-top: 28px; }
+.targetos-command { display: block; overflow-x: auto; margin: 14px 0 0; padding: 14px 16px; border: 1px solid var(--linea); border-radius: 12px; background: var(--fondo); color: var(--tinta); font: 13px/1.65 var(--mono); white-space: pre; }
+.targetos-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 28px; }
+.targetos-steps .paso { min-width: 0; }
+.targetos-steps .targetos-command { box-sizing: border-box; max-width: 100%; }
+.targetos-note { max-width: 920px; margin: 24px auto 0; }
+@media (max-width: 760px) {
+  .targetos-gallery, .targetos-steps { grid-template-columns: minmax(0, 1fr); }
+  .targetos-gallery { gap: 12px; }
+}
+
 
 /* ============ Estilo Nusa ============
    Oscuro y casi negro, titulares gruesos y apretados, un degradado cian → índigo → violeta como único color y tarjetas con filo fino.
