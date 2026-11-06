@@ -207,7 +207,9 @@ public static class TeamWorktree
     /// Fusiona la rama en la rama actual del repo; si hay conflictos, deshace y lo cuenta (el repo queda como estaba).
     public static async Task<string?> MergeAsync(string repo, string runId, CancellationToken ct = default)
     {
-        var m = await Run(repo, ct, "merge", "--no-ff", "-m", $"Equipo: {runId}", $"team/{runId}");
+        var who = (await Run(repo, ct, "config", "user.name")).Out.Trim().Length > 0
+            ? Array.Empty<string>() : ["-c", "user.name=isTargetSleeping", "-c", "user.email=team@istargetsleeping.local"];
+        var m = await Run(repo, ct, [.. who, "merge", "--no-ff", "-m", $"Equipo: {runId}", $"team/{runId}"]);
         if (m.Exit == 0) return null;
         await Run(repo, ct, "merge", "--abort");
         return (m.Err.Length > 0 ? m.Err : m.Out).Trim();
