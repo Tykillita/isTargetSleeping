@@ -9,7 +9,7 @@ $site = $PSScriptRoot
 $media = Join-Path $site 'media'
 $publicUrl = 'https://istargetsleeping.web.app/'
 # Archivos propios de la web (la carpeta castillo/ con sus imágenes se copia entera)
-$siteFiles = 'site.css', 'site.js', 'simulador.js', 'escena.js', 'firebase.js', 'castillo.css', 'castillo.js', 'castillo-intro.js', 'castillo-fx.js', 'mundo.css', 'mundo.js'
+$siteFiles = 'site.css', 'site.js', 'simulador.js', 'escena.js', 'firebase.js', 'castillo.css', 'castillo.js', 'castillo-intro.js', 'castillo-fx.js', 'mundo.css', 'mundo.js', 'teleprompter.html', 'teleprompter.js'
 
 $files = @(
     'Assets\istargetsleeping-icon.svg',
