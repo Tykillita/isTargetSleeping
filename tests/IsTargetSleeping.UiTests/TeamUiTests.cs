@@ -68,6 +68,9 @@ internal static class TeamUiTests
         return found;
     }
 
+    /// Con dos celdas el plan y el resultado viven en la pestaña Plan: se abre para poder mirarlos.
+    static void OpenPlanTab(Window host, TeamWidget team) { team.ShowPlan.Execute(null); host.UpdateLayout(); }
+
     static int Badges(FrameworkElement v, StepState? state = null) => Descendants(v).OfType<TeamAgentBadge>().Count(b => b.IsVisible && (state is null || b.State == state));
 
     public static void Run(Action<string, bool> check)
@@ -101,6 +104,7 @@ internal static class TeamUiTests
 
         // La tubería en cada vista y tamaño.
         var (h1, plan, _, team) = Open(["team@2"], "plan", TeamViewStyle.Pipeline);
+        OpenPlanTab(h1, team);
         check($"{lang}: equipo: el plan previsto pinta un nodo por paso (tubería)", team.Steps.Count == 6 && Badges(plan) == 6);
         check($"{lang}: equipo: lo detectado se enseña como etiquetas y el router explica el plan", team.ContextChips.Count >= 3 && team.PlanHint.Length > 0);
         check($"{lang}: equipo: en demostración no se puede lanzar", !team.CanLaunch);
@@ -222,8 +226,10 @@ internal static class TeamUiTests
         hl.Close();
 
         var (h2, running, _, live) = Open(["team@2"], "running", TeamViewStyle.Pipeline);
+        bool canCancel = Descendants(running).OfType<Button>().Any(b => b.IsVisible && b.Command == live.Cancel);   // Cancelar vive en la pestaña de la tarea
+        OpenPlanTab(h2, live);
         check($"{lang}: equipo: en marcha un nodo trabaja, otros están hechos y se puede cancelar",
-            Badges(running, StepState.Running) == 1 && Badges(running, StepState.Done) >= 3 && live.Busy && Descendants(running).OfType<Button>().Any(b => b.IsVisible && b.Command == live.Cancel));
+            Badges(running, StepState.Running) == 1 && Badges(running, StepState.Done) >= 3 && live.Busy && canCancel);
         check($"{lang}: equipo: en marcha se enseñan los tokens y su reparto entre Claude y Codex", live.HasTokens && live.HasShare && live.ClaudeShare is > 0 and <= 1);
         var (hp, _, pillModel, pillTeam) = Open(["team@2"], "running", TeamViewStyle.Pipeline);
         check($"{lang}: equipo: en marcha la pastilla dice el avance y la actividad lleva su progreso", pillModel.PillValue("team").Contains("/") && pillTeam.ProgressFraction is > 0 and < 1
@@ -246,10 +252,12 @@ internal static class TeamUiTests
         h3.Close();
 
         var (h4, done, _, result) = Open(["team@2"], "done", TeamViewStyle.Pipeline);
+        int taskBoxes = Descendants(done).OfType<TextBox>().Count(t => t.IsVisible);   // la caja de la tarea, en su pestaña
+        OpenPlanTab(h4, result);
         check($"{lang}: equipo: una tarea terminada enseña su resultado, sus archivos y cómo fusionarla, verla o pedir cambios",
             result.ShowResult && result.EntryOpen && result.HasChanges && result.HasVerdict
             && new[] { result.Merge, result.Discard, result.OpenFolder, result.ToggleDiff }.All(c => Descendants(done).OfType<Button>().Any(b => b.IsVisible && b.Command == c))
-            && Descendants(done).OfType<TextBox>().Count(t => t.IsVisible) >= 2);
+            && taskBoxes + Descendants(done).OfType<TextBox>().Count(t => t.IsVisible) >= 2);
         result.Merge.Execute(null);
         check($"{lang}: equipo: fusionar pide confirmar con un segundo clic", result.MergeLabel == L10n.tr("¿Fusionar?"));
         h4.Close();
@@ -282,7 +290,8 @@ internal static class TeamUiTests
         var (h9, barsHost, _, _) = Open(["team", "system"], "running", TeamViewStyle.Timeline);
         check($"{lang}: equipo: con una celda la línea de tiempo son barras finas", Descendants(barsHost).OfType<TeamTrack>().Count(t => t.IsVisible) == 6);
         h9.Close();
-        var (h10, crewHost, _, _) = Open(["team@2"], "running", TeamViewStyle.Crew);
+        var (h10, crewHost, _, crewTeam) = Open(["team@2"], "running", TeamViewStyle.Crew);
+        OpenPlanTab(h10, crewTeam);
         check($"{lang}: equipo: la mesa enseña un retrato por paso y lo último que dijo cada uno", Badges(crewHost) >= 6 && Descendants(crewHost).OfType<TextBlock>().Any(t => t.IsVisible && t.Text.Contains("Ajustes") || t.Text.Contains("Settings")));
         h10.Close();
         var (h11, peekHost, _, _) = Open(["team"], "running", TeamViewStyle.Pipeline, peek: true);

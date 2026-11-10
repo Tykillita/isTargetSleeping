@@ -24,6 +24,7 @@ internal static class Program
         }
         var app = new App();
         app.InitializeComponent();
+        Theme.OutlineStyle = Environment.GetEnvironmentVariable("ITS_ONLY_OUTLINE") == "1";
         Theme.Apply();
         if (Environment.GetEnvironmentVariable("ITS_ONLY_PERF") == "1")
         {
@@ -114,6 +115,40 @@ internal static class Program
         if (Environment.GetEnvironmentVariable("ITS_ONLY_BRAND") == "1")
         {
             BrandLogoTests.Run(Check);
+            app.Shutdown();
+            return failures == 0 ? 0 : 1;
+        }
+        if (Environment.GetEnvironmentVariable("ITS_ONLY_ABOUT") == "1")
+        {
+            var captureDir = Environment.GetEnvironmentVariable("ITS_CAPTURE_UI");
+            if (captureDir is { Length: > 0 }) Directory.CreateDirectory(captureDir);
+            var themes = Environment.GetEnvironmentVariable("ITS_ONLY_HIGH_CONTRAST") == "1" ? new[] { true }
+                : Environment.GetEnvironmentVariable("ITS_ONLY_NORMAL") == "1" ? new[] { false } : new[] { false, true };
+            foreach (var language in new[] { Language.Es, Language.En })
+                foreach (bool highContrast in themes)
+                {
+                    L10n.Init(language);
+                    Theme.ForceHighContrast = highContrast;
+                    Theme.Apply();
+                    var content = AboutWindow.Build();
+                    var host = new Window
+                    {
+                        Content = content, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false,
+                        Left = -20000, Top = -20000, Width = 392, SizeToContent = SizeToContent.Height,
+                        Background = Theme.Flat ? Theme.Brush(Theme.Current.Bg) : Brushes.Black,
+                    };
+                    host.Show();
+                    host.UpdateLayout();
+                    Check($"{language}/Acerca de: el contenido tiene tamaño visible", content.ActualWidth > 0 && content.ActualHeight > 0);
+                    if (captureDir is { Length: > 0 })
+                    {
+                        var locale = language == Language.Es ? "es" : "en";
+                        var theme = highContrast ? "high-contrast" : Theme.OutlineStyle ? "outline" : "normal";
+                        foreach (double dpi in new[] { 96d, 120d, 144d })
+                            ApprovalNotchTests.Save(content, dpi, Path.Combine(captureDir, $"about-{locale}-{theme}-{dpi:0}.png"));
+                    }
+                    host.Close();
+                }
             app.Shutdown();
             return failures == 0 ? 0 : 1;
         }
@@ -371,12 +406,14 @@ internal static class Program
             view.UpdateLayout();
             model.CurrentSettingsTab = PanelViewModel.SettingsTab.Alerts;
             view.UpdateLayout();
+            // Esta vista no está en una ventana (solo Measure/Arrange): IsVisible sería siempre falso, así que se mira la cadena de Visibility.
+            Func<UIElement, bool> shown = e => { for (DependencyObject? d = e; d is not null; d = VisualTreeHelper.GetParent(d)) if (d is UIElement { Visibility: not Visibility.Visible }) return false; return true; };
             Check($"{language}: las actividades en vivo aparecen en Ajustes > Avisos", Descendants(view).OfType<TextBlock>()
-                .Any(text => text.IsVisible && text.Text == model.ActivitiesTitle));
+                .Any(text => shown(text) && text.Text == model.ActivitiesTitle));
             model.Show(PanelView.Widgets);
             view.UpdateLayout();
             Check($"{language}: la página Widgets ya no contiene el selector de actividades", !Descendants(view).OfType<TextBlock>()
-                .Any(text => text.IsVisible && text.Text == model.ActivitiesTitle));
+                .Any(text => shown(text) && text.Text == model.ActivitiesTitle));
             model.Show(PanelView.Settings);
             model.CurrentSettingsTab = PanelViewModel.SettingsTab.Alerts;
             view.UpdateLayout();
@@ -386,6 +423,7 @@ internal static class Program
             var activityRow = model.ActivityRows.First(row => row.Title == model.OverlayFolder!.Options.First().Title);
             var activityControl = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(control => control.Command == activityRow.Toggle);
             Check($"{language}: las actividades se pueden configurar desde Ajustes", activityControl is not null);
+            model.CloseOverlay.Execute(null);   // la carpeta de actividades no debe quedar abierta para las pruebas que siguen
             Check($"{language}: los valores predeterminados activan todas las actividades salvo el indicador opcional de cámara",
                 ActivityCatalog.Normalize(null).ToHashSet(StringComparer.Ordinal).SetEquals(ActivityCatalog.All.Select(a => a.Id).Where(id => id != "camera"))
                 && ActivityCatalog.Normalize(null).All(model.ActivityIds.Contains));
