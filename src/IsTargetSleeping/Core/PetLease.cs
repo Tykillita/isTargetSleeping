@@ -13,7 +13,9 @@ internal static class PetLease
     {
         try
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(petDir, "lease.json")));
+            var path = Path.Combine(petDir, "lease.json");
+            if (!File.Exists(path)) return false;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
             if (now.ToUnixTimeSeconds() >= doc.RootElement.GetProperty("until").GetInt64()) return false;
             try { System.Diagnostics.Process.GetProcessById(doc.RootElement.GetProperty("pid").GetInt32()); return true; }
             catch (ArgumentException) { return false; }   // reserva huérfana: el complemento ya no está

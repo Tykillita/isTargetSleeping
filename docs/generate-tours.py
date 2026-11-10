@@ -27,6 +27,12 @@ def capture(dotnet):
         settings = native / f"settings-{lang}.png"
         run([dotnet, APP_DLL, "--snapshot", settings, "settings", "appwindow", "demo", "--tab", "general", "--lang", lang])
         shutil.copy2(settings, ROOT / "docs" / "images" / f"settings-{lang}.png")
+        for name, view, options in (
+            ("widgets", "widgets", ("--gallery", "media", "--home-widgets", "media,clock,pomodoro,todo,shelf")),
+            ("display", "settings", ("--tab", "display")),
+        ):
+            output = ROOT / "docs" / "images" / f"tour-ui-{name}-{lang}.png"
+            run([dotnet, APP_DLL, "--snapshot", output, view, "appwindow", "demo", *options, "--lang", lang])
 
 
 def render(args, lang):
@@ -39,7 +45,8 @@ def render(args, lang):
         "chrome": str(args.chrome), "ffmpeg": imageio_ffmpeg.get_ffmpeg_exe(),
         "audio": str(ROOT / "docs" / "audio" / "tour-soundtrack.m4a"),
         "output": str(temporary), "poster": str(temporary_poster),
-        "review": str(WORK / "review"),
+        "review": str(WORK / "review"), "title": "One edge, more of your day",
+        "reviewTimes": [2, 10, 19, 27, 38, 47, 57, 68, 75],
     }
     if args.stills:
         config["stills"] = [float(value) for value in args.stills.split(",")]

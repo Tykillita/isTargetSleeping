@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -13,6 +14,8 @@ namespace IsTargetSleeping.UI;
 /// Solo empieza a leer cuando algo lo necesita (el widget en alguna lista o la actividad activada); nada sale del PC.
 public sealed class MediaWidget : WidgetModel
 {
+    private const string LastTrackSetting = "notchLastMediaTrack";
+    private const string LastTrackCover = "last-media-cover.png";
     private GlobalSystemMediaTransportControlsSessionManager? manager;
     private GlobalSystemMediaTransportControlsSession? session;
     private MediaPlayer? previewPlayer;
@@ -25,9 +28,14 @@ public sealed class MediaWidget : WidgetModel
     private bool fallbackPreview;
     private TimeSpan? seekWhenPreviewOpens;
     private string artKey = "";
+    private string sourceAppId = "";
     private TimeSpan basePosition, duration;
     private DateTime baseAt;
     private IReadOnlyList<MediaLauncher> launchers = [];
+    private MediaTrackSnapshot? lastTrack;
+    private MediaTrackSnapshot? resumeRequested;
+    private int resumeRequest;
+    private string resumeMessage = "";
     private static readonly TimeSpan PreviewDuration = TimeSpan.FromSeconds(48);
 
     // MARK: letras sincronizadas (lrclib.net), solo si el usuario las activó
@@ -138,6 +146,9 @@ public sealed class MediaWidget : WidgetModel
             var next = Repeat switch { MediaPlaybackAutoRepeatMode.None => MediaPlaybackAutoRepeatMode.List, MediaPlaybackAutoRepeatMode.List => MediaPlaybackAutoRepeatMode.Track, _ => MediaPlaybackAutoRepeatMode.None };
             _ = s.TryChangeAutoRepeatModeAsync(next);
         });
+        lastTrack = ReadLastTrack();
+        if (lastTrack is { } cached) ApplyCachedTrack(cached, loadCover: false);
+        else LoadIdlePreview(loadArtwork: false);
     }
 
     private static readonly Brush Dim = Frozen(Theme.WithOpacity(Colors.White, 0.5));
@@ -175,15 +186,17 @@ public sealed class MediaWidget : WidgetModel
     public string RemainingText { get; private set; } = "-0:00";
 
     public bool HasSession { get; private set; }
-    public bool NoSession => !HasSession;
+    public bool HasCachedTrack => !HasSession && !fallbackPreview && lastTrack is not null;
+    public bool HasMediaCard => HasSession || fallbackPreview || HasCachedTrack;
+    public bool CanResumeLastTrack => lastTrack is { } cached && launchersLoaded
+        && launchers.Any(player => string.Equals(player.Name, cached.SourceApp, StringComparison.OrdinalIgnoreCase));
+    public bool CanToggle => HasSession || fallbackPreview || CanResumeLastTrack;
+    public bool CanSeek => duration.TotalSeconds > 1 && (HasSession || fallbackPreview);
+    public bool LaunchersLoaded => launchersLoaded;
+    public IReadOnlyList<MediaLauncher> Launchers => launchers;
     public bool IsPlaying { get; private set; }
     public bool IsPaused => !IsPlaying;
     public bool IsFallbackPreview => fallbackPreview;
-    public bool LaunchersLoaded => launchersLoaded;
-    public bool HasLaunchers => launchers.Count > 0;
-    public IReadOnlyList<MediaLauncher> Launchers => launchers;
-    public string LaunchersTitle => tr("Abrir música");
-    public string LaunchersHint => tr("Reproductores instalados");
     public string MediaTitle { get; private set; } = "";
     public string Artist { get; private set; } = "";
     /// «Artista - Álbum», como en la vista corta de Nusa (solo el artista si no hay álbum o es el mismo título).
@@ -221,7 +234,9 @@ public sealed class MediaWidget : WidgetModel
     public ICommand Seek { get; }
     public string SeekHelp => tr("Ir a otro momento de la canción");
     public string ToggleGlyph => IsPlaying ? "" : "";   // pausa / reproducir
-    public string ToggleHelp => IsPlaying ? tr("Pausar") : tr("Reproducir");
+    public string ToggleHelp => HasCachedTrack
+        ? resumeMessage.Length > 0 ? resumeMessage : CanResumeLastTrack ? tr("Reanudar la última canción") : launchersLoaded && lastTrack is { } track ? tr("No se encontró %@ instalado.", track.SourceApp) : tr("Reproducir")
+        : IsPlaying ? tr("Pausar") : tr("Reproducir");
     public string NextHelp => tr("Siguiente");
     public string PreviousHelp => tr("Anterior");
     public string Idle => tr("No suena nada ahora.");
@@ -234,22 +249,22 @@ public sealed class MediaWidget : WidgetModel
         accentColor = Color.FromRgb(0x59, 0xB4, 0xFF);
         AccentBrush = Frozen(accentColor);
         HasSession = true; IsPlaying = true; CanShuffle = true; CanRepeat = true; CanSkip = true; IsShuffle = true;
-        MediaTitle = "Midnight City"; Artist = ArtistLine = "M83"; SourceApp = "Spotify";
+        MediaTitle = "Midnight City"; Artist = ArtistLine = "M83"; SourceApp = "Spotify"; sourceAppId = "Spotify";
         Progress = 0.4; ElapsedText = "1:37"; TotalText = "4:03"; RemainingText = "-2:26"; ElapsedPadded = "01:37"; RemainingPadded = "-02:26";
         Art = DemoArtwork();
         Raise();
     }
 
-    /// La pista original, pausada, que sirve de preview interactivo cuando no hay un reproductor musical instalado.
-    public void LoadIdlePreview()
+    /// La pista original, pausada, que sirve de preview interactivo antes de que haya historial de reproducción.
+    public void LoadIdlePreview(bool loadArtwork = true)
     {
         StopPreviewPlayer();
         fallbackPreview = true;
         loopPreview = false;
         Repeat = MediaPlaybackAutoRepeatMode.None;
-        HasSession = true; IsPlaying = false; CanShuffle = false; CanRepeat = true; CanSkip = false; IsShuffle = false;
-        MediaTitle = tr("Una noche tranquila en Basin Street"); Artist = ArtistLine = tr("Jazz lento de Nueva Orleans"); SourceApp = tr("Vista previa");
-        Art = DemoArtwork();
+        HasSession = false; IsPlaying = false; CanShuffle = false; CanRepeat = true; CanSkip = false; IsShuffle = false;
+        MediaTitle = tr("Una noche tranquila en Basin Street"); Artist = ArtistLine = tr("Jazz lento de Nueva Orleans"); SourceApp = tr("Vista previa"); sourceAppId = "";
+        Art = loadArtwork ? DemoArtwork() : null;
         (Tint, AccentBrush) = Art is BitmapSource bitmap ? Analyze(bitmap) : (Brushes.Transparent, Frozen(Theme.Current.Fg));
         accentColor = ((SolidColorBrush)AccentBrush).Color;
         duration = PreviewDuration; basePosition = TimeSpan.Zero; baseAt = DateTime.Now;
@@ -269,6 +284,8 @@ public sealed class MediaWidget : WidgetModel
     {
         if (started) return;
         started = true;
+        if (lastTrack is { } cached) ApplyCachedTrack(cached, loadCover: true);
+        else LoadIdlePreview(loadArtwork: true);
         Volume.Changed += Raise;
         Volume.Start();
         var scan = Task.Run(MediaLaunchers.Find);
@@ -343,18 +360,30 @@ public sealed class MediaWidget : WidgetModel
             if (!HasSession) { ShowIdle(); return; }
             if (fallbackPreview) { StopPreviewPlayer(); fallbackPreview = false; }
             SourceApp = MediaSource.Name(s.SourceAppUserModelId);
+            sourceAppId = s.SourceAppUserModelId ?? "";
             var timeline = s.GetTimelineProperties();
             duration = timeline.EndTime - timeline.StartTime;
             basePosition = timeline.Position;
             baseAt = DateTime.Now - (DateTimeOffset.Now - timeline.LastUpdatedTime);
             UpdateProgress(DateTime.Now);
-            var key = $"{MediaTitle}|{Artist}";
+            var key = $"{sourceAppId}|{MediaTitle}|{Artist}";
             if (key != artKey)
             {
                 artKey = key;
                 Art = props.Thumbnail is { } thumbnail ? await LoadArt(thumbnail) : null;
                 (Tint, AccentBrush) = Art is BitmapSource bitmap ? Analyze(bitmap) : (Brushes.Transparent, Frozen(Theme.Current.Fg));
                 accentColor = ((SolidColorBrush)AccentBrush).Color;
+            }
+            SaveLastTrack();
+            if (resumeRequested is { } target && target.Matches(MediaTitle, Artist, ArtistLine, SourceApp, sourceAppId))
+            {
+                resumeRequested = null;
+                int request = ++resumeRequest;
+                bool resumed;
+                try { resumed = await s.TryPlayAsync(); }
+                catch { resumed = false; }
+                if (request == resumeRequest)
+                    resumeMessage = resumed ? "" : tr("El reproductor no pudo reanudar la última canción.");
             }
             RefreshLyrics();
             Raise();
@@ -364,23 +393,113 @@ public sealed class MediaWidget : WidgetModel
 
     private void ShowIdle()
     {
-        if (!launchersLoaded) { HasSession = false; RefreshLyrics(); Raise(); return; }
-        if (launchers.Count == 0)
+        if (lastTrack is { } cached) ApplyCachedTrack(cached, loadCover: false);
+        else if (!fallbackPreview) LoadIdlePreview(loadArtwork: true);
+        RefreshLyrics();
+    }
+
+    private static MediaTrackSnapshot? ReadLastTrack()
+    {
+        try
         {
-            if (!fallbackPreview) LoadIdlePreview();
-            return;
+            var json = Defaults.GetString(LastTrackSetting);
+            var track = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<MediaTrackSnapshot>(json);
+            return track is { Title.Length: > 0, Artist: not null, ArtistLine: not null, SourceApp: not null, SourceAppId: not null } ? track : null;
         }
+        catch { return null; }
+    }
+
+    private void ApplyCachedTrack(MediaTrackSnapshot track, bool loadCover)
+    {
         StopPreviewPlayer();
         fallbackPreview = false;
-        (HasSession, IsPlaying, CanShuffle, CanRepeat, CanSkip, IsShuffle, MediaTitle, Artist, SourceApp, Progress, Art, artKey, Tint) =
-            (false, false, false, false, false, false, "", "", "", 0, null, "", Brushes.Transparent);
-        duration = basePosition = TimeSpan.Zero;
+        HasSession = IsPlaying = CanShuffle = CanRepeat = CanSkip = IsShuffle = false;
+        (MediaTitle, Artist, ArtistLine, SourceApp, sourceAppId) =
+            (track.Title, track.Artist, track.ArtistLine, track.SourceApp, track.SourceAppId);
+        if (loadCover) LoadCachedCover();
+        (Tint, AccentBrush) = Art is BitmapSource bitmap ? Analyze(bitmap) : (Brushes.Transparent, Frozen(Theme.Current.Fg));
+        accentColor = ((SolidColorBrush)AccentBrush).Color;
+        artKey = $"{sourceAppId}|{MediaTitle}|{Artist}";
+        (Progress, basePosition, duration) = (0, TimeSpan.Zero, TimeSpan.Zero);
+        UpdateProgress(DateTime.Now);
         Raise();
+    }
+
+    private void LoadCachedCover()
+    {
+        var path = Path.Combine(Paths.DataDir, LastTrackCover);
+        if (!File.Exists(path)) { Art = null; return; }
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.DecodePixelWidth = 160;
+            image.UriSource = new Uri(path, UriKind.Absolute);
+            image.EndInit();
+            image.Freeze();
+            Art = image;
+        }
+        catch { Art = null; }
+    }
+
+    private void SaveLastTrack()
+    {
+        if (MediaTitle.Length == 0) return;
+        var next = new MediaTrackSnapshot(MediaTitle, Artist, ArtistLine, SourceApp, sourceAppId);
+        var path = Path.Combine(Paths.DataDir, LastTrackCover);
+        if (next == lastTrack && (Art is not BitmapSource || File.Exists(path))) return;
+        try
+        {
+            if (Art is BitmapSource bitmap)
+            {
+                Directory.CreateDirectory(Paths.DataDir);
+                var temporary = path + ".tmp";
+                try
+                {
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    using (var stream = File.Create(temporary)) encoder.Save(stream);
+                    File.Move(temporary, path, overwrite: true);
+                }
+                finally { try { if (File.Exists(temporary)) File.Delete(temporary); } catch { } }
+            }
+            else if (next != lastTrack && File.Exists(path)) File.Delete(path);
+            lastTrack = next;
+            Defaults.Set(LastTrackSetting, JsonSerializer.Serialize(next));
+        }
+        catch (Exception e) { AppLog.Write($"multimedia: no se pudo guardar la última canción: {e.Message}"); }
+    }
+
+    private void OpenLastTrack()
+    {
+        if (lastTrack is not { } track) return;
+        var launcher = launchers.FirstOrDefault(player => string.Equals(player.Name, track.SourceApp, StringComparison.OrdinalIgnoreCase));
+        if (launcher is null) { resumeMessage = tr("No se encontró %@ instalado.", track.SourceApp); Raise(); return; }
+        resumeRequested = track;
+        int request = ++resumeRequest;
+        resumeMessage = tr("Abriendo %@…", launcher.Name);
+        launcher.Open.Execute(null);
+        Raise();
+        _ = ExpireResume(request);
+    }
+
+    private async Task ExpireResume(int request)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        OnUi(() =>
+        {
+            if (request != resumeRequest || resumeRequested is null) return;
+            resumeRequested = null;
+            resumeMessage = tr("No se pudo reanudar la última canción.");
+            Raise();
+        });
     }
 
     private void TogglePlayback()
     {
         if (session is { } s) { _ = s.TryTogglePlayPauseAsync(); return; }
+        if (HasCachedTrack) { OpenLastTrack(); return; }
         if (!fallbackPreview) return;
         if (IsPlaying)
         {
@@ -581,7 +700,7 @@ public sealed class MediaWidget : WidgetModel
 
     public override void Tick(DateTime now)
     {
-        if (!HasSession) return;
+        if (!HasSession && !fallbackPreview) return;
         UpdateProgress(now);
         Raise();
     }

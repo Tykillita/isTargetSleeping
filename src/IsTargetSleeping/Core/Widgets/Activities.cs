@@ -30,15 +30,14 @@ public static class ActivityCatalog
         new("power", "Encendiendo o apagando Ollama", "", 80),
         new("pressure", "Memoria crítica", "", 70),
         new("pomodoro", "Pomodoro en marcha", "", 50),
-        // Apagada por defecto: leer qué suena es lo único que mira lo que hace el usuario fuera de la app.
-        new("media", "Música sonando", "", 40, DefaultOn: false),
-        new("brightness", "Brillo cambiado", "", 96, DefaultOn: false),
-        new("locks", "Bloq. Mayús o Bloq. Núm", "", 34, DefaultOn: false),
-        new("bluetooth", "Auricular Bluetooth", "", 33, DefaultOn: false),
+        new("media", "Música sonando", "", 40),
+        new("brightness", "Brillo cambiado", "", 96),
+        new("locks", "Bloq. Mayús o Bloq. Núm", "", 34),
+        new("bluetooth", "Auricular Bluetooth", "", 33),
         new("camera", "Indicador de cámara", "\uE722", 30, DefaultOn: false, Left: true),
         // Solo enseña algo mientras el equipo trabaja o acaba de dejar una respuesta o tarea lista.
         new("team", "Equipo trabajando", "", 35),
-        new("agents", "Agente trabajando", "", 32, DefaultOn: false),
+        new("agents", "Agente trabajando", "", 32),
         new("meeting", "Evento en curso", "", 31),
         new("awake", "Mantener despierto", "", 10),
     ];

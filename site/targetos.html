@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="media/istargetsleeping-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="castillo.css">
+<link rel="stylesheet" href="castillo.css?v=133">
 <script>document.documentElement.dataset.theme='dark'</script>
 </head>
 <body data-pagina="targetos">
@@ -31,9 +31,10 @@
     </nav>
     <button class="castillo-menu" id="castillo-menu" type="button" aria-label="Menú de navegación" aria-controls="castillo-links" aria-expanded="false" data-i18n-aria="castillo.nav.menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-open" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-close" d="m6 6 12 12M18 6 6 18"/></svg></button>
     <div class="nav-acciones">
-      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
     </div>
     <span class="nav-pintura" aria-hidden="true"></span>
+    <svg class="nav-beam" viewBox="0 0 200 300" preserveAspectRatio="none" aria-hidden="true"><path class="nav-beam-trail" pathLength="100" d="M200 0V284a16 16 0 0 1-16 16H16A16 16 0 0 1 0 284V0"/><path class="nav-beam-head" pathLength="100" d="M200 0V284a16 16 0 0 1-16 16H16A16 16 0 0 1 0 284V0"/></svg>
     <span class="nav-mascota" aria-hidden="true"><svg viewBox="0 0 56 30" focusable="false">
       <g class="nav-ojos-cerrados" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 12.5q5 1.2 10 0M33 12.5q5 1.2 10 0"/></g>
       <g class="nav-ojos-abiertos" fill="currentColor"><ellipse cx="18" cy="11" rx="2.5" ry="4.7"/><ellipse cx="38" cy="11" rx="2.5" ry="4.7"/></g>
@@ -44,7 +45,7 @@
 </header>
 
 <main>
-  <section class="nov-hero targetos-hero">
+  <section class="nov-hero targetos-hero" data-nav="claro">
     <div class="contenedor">
       <p class="eyebrow" data-i18n="targetos.eyebrow">ESP32 · nombre provisional</p>
       <h1 data-i18n="targetos.title">TargetOS</h1>
@@ -123,8 +124,8 @@
         <p data-i18n="targetos.install.intro">El flujo que sigue corresponde al proyecto de desarrollo actual. No hay todavía un instalador de firmware dentro de isTargetSleeping ni un paquete público para descargar.</p>
       </div>
       <ol class="pasos targetos-steps">
-        <li class="paso"><span class="paso-num">01</span><h3 data-i18n="targetos.install.source.title">Prepara el proyecto</h3><p data-i18n="targetos.install.source.text">Necesitas el código fuente ESP32-Mira y PlatformIO Core o la extensión PlatformIO de VS Code. El código del firmware aún no está publicado como descarga pública.</p></li>
-        <li class="paso"><span class="paso-num">02</span><h3 data-i18n="targetos.install.flash.title">Compila y graba TargetOS</h3><p data-i18n="targetos.install.flash.text">Conecta la placa con un cable USB de datos. Desde la carpeta del firmware, compila y graba el perfil mira, que incluye la app de la mascota:</p><code class="targetos-command">pio run -e mira -t upload</code></li>
+        <li class="paso"><span class="paso-num">01</span><h3 data-i18n="targetos.install.source.title">Prepara el proyecto</h3><p data-i18n="targetos.install.source.text">Necesitas el código fuente de TargetOS y PlatformIO Core o la extensión PlatformIO de VS Code. El código del firmware aún no está publicado como descarga pública.</p></li>
+        <li class="paso"><span class="paso-num">02</span><h3 data-i18n="targetos.install.flash.title">Compila y graba TargetOS</h3><p data-i18n="targetos.install.flash.text">Conecta la placa con un cable USB de datos. Desde la carpeta del firmware, compila y graba el entorno targetos, que incluye la app de Nimbo:</p><code class="targetos-command">pio run -e targetos -t upload</code></li>
         <li class="paso"><span class="paso-num">03</span><h3 data-i18n="targetos.install.setup.title">Configura la placa</h3><p data-i18n="targetos.install.setup.text">Al iniciar, abre Ajustes para conectarla a tu Wi-Fi. La mascota funciona en la placa sin PC; su nombre se puede editar tocándolo.</p></li>
         <li class="paso"><span class="paso-num">04</span><h3 data-i18n="targetos.install.link.title">Conecta el servicio Nimbo (opcional)</h3><p data-i18n="targetos.install.link.text">En isTargetSleeping para Windows, abre Ajustes › Notch y descarga el complemento opcional. Extrae el ZIP en %LOCALAPPDATA%\isTargetSleeping\pet. Es el servicio de la PC, no el firmware del ESP32. Inicia el servicio con este comando y déjalo abierto mientras la placa se conecta:</p><code class="targetos-command">&amp; "$env:LOCALAPPDATA\isTargetSleeping\pet\isTargetSleeping-pet.exe" serve --port 8443</code></li>
       </ol>
@@ -162,7 +163,7 @@ python tools/provision.py "$env:LOCALAPPDATA\isTargetSleeping\pet\provision.json
         </ul></div>
       </nav>
     </div>
-    <div class="pie-abajo"><div class="pie-fila"><span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.30.0 disponible</span></span><nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria"><button type="button" data-lang="es">Español</button><button type="button" data-lang="en">English</button></nav></div></div>
+    <div class="pie-abajo"><div class="pie-fila"><span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.30.1 disponible</span></span><nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria"><button type="button" data-lang="es">Español</button><button type="button" data-lang="en">English</button></nav></div></div>
   </div>
 </footer>
 

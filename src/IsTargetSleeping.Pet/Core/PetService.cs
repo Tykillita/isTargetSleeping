@@ -29,7 +29,7 @@ public sealed class PetService
     private readonly HashSet<string> seen = [];
     private readonly Queue<string> seenOrder = new();
     private long rev;
-    private string name = "Mira";
+    private string name = "Nimbo";
     private int energy = 80, affection = 60;
     private bool asleep = true;
     private string lastPose = "sleep";

@@ -504,33 +504,6 @@
   ajusta(); addEventListener('resize', ajusta);
 })();
 
-// la barra se vuelve clara (solo ella) cuando lo que hay detrás es negro puro; sobre imágenes, vídeo o fondos con color se queda oscura
-(() => {
-  const nav = document.querySelector('.nav');
-  if (!nav) return;
-  const negro = (c) => { const m = c.match(/[\d.]+/g); return m && (m[3] === undefined || +m[3] > .9) && Math.max(+m[0], +m[1], +m[2]) <= 14; };
-  const sinColor = (c) => { const m = c.match(/[\d.]+/g); return !m || (m[3] !== undefined && +m[3] < .05); };
-  let espera = false;
-  const mira = () => {
-    espera = false;
-    const x = innerWidth / 2, y = 34;
-    const el = document.elementsFromPoint(x, y).find((e) => !nav.contains(e));
-    let oscuro = false;
-    const marca = el && el.closest('[data-nav]');   // secciones negras con brillos (fondo con degradado) marcadas a mano
-    if (marca) oscuro = marca.dataset.nav === 'claro';
-    else if (el && !el.closest('.mundo')) {   // da igual que debajo haya un vídeo o una imagen: manda el fondo de la sección entera
-      for (let e = el.closest('section, footer') || el; e; e = e.parentElement) {   // se mira el fondo de la sección entera, no la tarjeta que haya justo debajo
-        const cs = getComputedStyle(e), c = cs.backgroundColor;
-        if (cs.backgroundImage !== 'none') break;   // degradados e imágenes de fondo (como el pálido de «Widgets»): la barra se queda oscura
-        if (!sinColor(c)) { oscuro = negro(c); break; }
-      }
-    }
-    nav.classList.toggle('nav--claro', oscuro);
-  };
-  const pide = () => { if (!espera) { espera = true; requestAnimationFrame(mira); } };
-  addEventListener('scroll', pide, { passive: true }); addEventListener('resize', pide); mira();
-})();
-
 // el escritorio de la barra de tareas en móvil: se reduce entero (fondo, barra, iconos y mascota) para que quepa en el ancho de la laptop
 (() => {
   const esc = document.querySelector('.marco-b .escritorio');

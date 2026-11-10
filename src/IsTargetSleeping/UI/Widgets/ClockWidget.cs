@@ -48,6 +48,7 @@ public sealed class ClockWidget : WidgetModel
     private List<AgendaItem> ics = [];
     private List<AgendaItem> todo = [];
     private DateTime todoStamp;
+    private long todoLength;
     private (string Path, DateTime Stamp) icsSource;
     private int newOffset;
     private string newTitle = "", newTime = "", hint = "";
@@ -189,7 +190,12 @@ public sealed class ClockWidget : WidgetModel
         Time = at.ToString("t", culture);
         var today = DateOnly.FromDateTime(at);
         if (dirty || today != DateOnly.FromDateTime(lastBuilt)) Rebuild();
-        else if (at >= nextIcsCheck) { LoadIcs(); if (dirty) Rebuild(); }
+        else
+        {
+            bool tasksChanged = LoadTasks();
+            if (at >= nextIcsCheck) LoadIcs();
+            if (tasksChanged || dirty) Rebuild();
+        }
         Raise();
     }
 
@@ -224,9 +230,21 @@ public sealed class ClockWidget : WidgetModel
     {
         if (prefs.IsDemo) return false;   // las capturas no leen tus tareas
         DateTime stamp = default;
-        try { if (File.Exists(TodoWidget.FilePath)) stamp = File.GetLastWriteTime(TodoWidget.FilePath); } catch (IOException) { }
-        if (stamp == todoStamp) return false;
+        long length = 0;
+        try
+        {
+            if (File.Exists(TodoWidget.FilePath))
+            {
+                var file = new FileInfo(TodoWidget.FilePath);
+                stamp = file.LastWriteTime;
+                length = file.Length;
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        if (stamp == todoStamp && length == todoLength) return false;
         todoStamp = stamp;
+        todoLength = length;
         todo = stamp == default ? [] : TodoStore.ToAgenda(TodoStore.Load(TodoWidget.FilePath, now).Items, Today);
         return true;
     }

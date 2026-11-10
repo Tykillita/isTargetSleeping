@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace IsTargetSleeping.Pet;
 
-/// Protocolo Mascota v1 (ver protocol/pet-v1.md del proyecto ESP32-Mira): validacion estricta de lo que llega y
+/// Protocolo Mascota v1 (ver protocol/pet-v1.md del proyecto TargetOS): validacion estricta de lo que llega y
 /// constructores de lo que sale. Nada de aqui toca la red: se prueba con bytes y cadenas.
 public static class PetProtocol
 {

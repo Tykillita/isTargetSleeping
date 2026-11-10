@@ -157,7 +157,7 @@ public sealed record Theme(
         // Tareas (TodoList): los colores medidos en la grabación de Nusa; en alto contraste, los del tema.
         Color Todo(uint rgb, Color flat) => Flat ? flat : Hex(rgb);
         r["TodoGreen"] = Brush(Todo(0x3EB753, t.Fg));
-        r["TodoOnGreen"] = Brush(Todo(0xFFFFFF, t.Bg));
+        r["TodoOnGreen"] = Brush(Todo(0x121212, t.Bg));
         r["TodoGreenSoft"] = Brush(Todo(0x0E2915, t.Track));
         r["TodoBlue"] = Brush(Todo(0x364CF5, t.Fg));
         r["TodoRed"] = Brush(Todo(0xE43732, t.Danger));
@@ -184,7 +184,7 @@ public sealed record Theme(
         r["TodoDim"] = Brush(Todo(0x9E9E9E, t.Secondary));
         r["TodoEmpty"] = Brush(Todo(0x757575, t.Secondary));
         r["TodoHint"] = Brush(Todo(0x5E5E5E, t.Muted));
-        r["TodoOff"] = Brush(Todo(0x5A5859, t.Muted));
+        r["TodoOff"] = Brush(Todo(0x757575, t.Muted));
         r["NoteSoft"] = Brush(Flat ? t.Track : WithOpacity(Hex(0xF5C531), 0.16));
         // Estante: los grises, el azul de la selección y el rojo de «Vaciar todo» medidos en el de Nusa; en alto contraste, los del tema.
         r["ShelfChip"] = Brush(Flat ? t.Track : Hex(0x181818));

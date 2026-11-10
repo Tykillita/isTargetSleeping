@@ -2,6 +2,10 @@
 
 App de bandeja para Windows (C# .NET 10, WPF + Win32) y su web estática en `site/`.
 
+## Enfoque del producto
+
+isTargetSleeping es el notch de Windows para música, sistema, widgets, actividad local y agentes. Ollama y la gestión de modelos son funciones opcionales dentro de ese producto, no su interfaz predeterminada: la pastilla nueva debe ser neutral y las capturas generales no deben destacar modelos de demostración. Música conserva en este PC la última canción y portada; Play reabre un reproductor compatible y solicita Play si devuelve la misma canción. Sin historial se ve la pista de muestra original, no una lista de reproductores.
+
 ## Builds y paquetes: solo en D:
 
 Este checkout vive en `D:\Obsidian\MyVault\Escarlata\Proyectos\isTargetSleeping`. Toda salida generada de compilación,

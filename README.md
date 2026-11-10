@@ -11,15 +11,15 @@ A small space for the things you use throughout the day.
 
 English · <a href="README.es.md">Español</a>
 
-<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.30.0-19B8FF?style=for-the-badge" alt="Version 1.30.0"></a>
+<a href="CHANGELOG.md"><img src="https://img.shields.io/badge/version-1.30.1-19B8FF?style=for-the-badge" alt="Version 1.30.1"></a>
 <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-111214?style=for-the-badge&logo=windows&logoColor=white" alt="Windows 10 and 11">
 <img src="https://img.shields.io/badge/x64%20%7C%20ARM64-native-111214?style=for-the-badge" alt="x64 and ARM64">
 <img src="https://img.shields.io/badge/license-MIT-19B8FF?style=for-the-badge" alt="MIT license">
 
-<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-x64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Download x64"></a>
-<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-ARM64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Download ARM64"></a>
+<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-x64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Download x64"></a>
+<a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-arm64.exe"><img src="https://img.shields.io/badge/Download%20for%20Windows-ARM64-19B8FF?style=for-the-badge&logo=windows&logoColor=04121F" alt="Download ARM64"></a>
 
-<a href="https://istargetsleeping.web.app/">Explore the new website</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.30.0">Release notes</a> · <a href="CHANGELOG.md">Changelog</a>
+<a href="https://istargetsleeping.web.app/">Explore the new website</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/tag/v1.30.1">Release notes</a> · <a href="CHANGELOG.md">Changelog</a>
 <a href="https://istargetsleeping.web.app/#video">Watch the 77-second tour</a>
 
 </div>
@@ -62,6 +62,8 @@ The notch is the main interface and is on by default. Choose what the closed pil
 
 Choose a few optional widgets for Home and its pages. They cover music, clock and calendar, system status, notes, camera, teleprompter, file tools and productivity.
 
+The Music widget keeps the last track and cover locally after its player closes. Play reopens a supported player and requests playback when it restores that same track. Before any playback history exists, the widget offers the bundled jazz sample with its starry-sky cover.
+
 Music controls, volume and brightness HUDs, keyboard state, camera use and Bluetooth devices can appear as live activities around the closed notch. Keyboard navigation, screen-reader names, reduced motion and Windows high contrast are supported. The interface is available in English and Spanish.
 
 ### Agents and optional pets
@@ -84,6 +86,15 @@ Ollama and other local engines are one part of the app. isTargetSleeping can unl
 - Stable updates are optional and off by default. When enabled, the app checks GitHub, verifies SHA-256 and lets you choose when to install.
 
 <a id="whats-new"></a>
+## New in v1.30.1 · November 9, 2026
+
+| Area | What is changing |
+|---|---|
+| **Legacy version** | It renders again when turned on: the tray panel no longer opens empty and gray. You can also turn it on or off from the tray icon's right-click menu. |
+| **Hover view** | New installations include Music, To-do, Pomodoro, Shelf and System, up to eight widgets, each on its own page. |
+| **Music** | Keeps the last track and cover on this PC; Play reopens a supported player. |
+| **Notch performance** | The closed notch no longer preloads the full panel, and the agent beam redraws at 60 fps at most. |
+
 ## New in v1.30.0 · November 6, 2026
 
 | Area | What is changing |
@@ -119,9 +130,9 @@ The desktop companion serves the web app through Tailscale inside your private t
 <a id="targetos"></a>
 ## TargetOS for ESP32 (provisional name)
 
-TargetOS is the working name for the ESP32 system in the separate `ESP32-Mira` firmware project. Its `mira` profile includes the mascot app by default; the current board shows it as Nimbo. The mascot can animate and respond to touch on the board. Nimbo's chat service runs on the desktop PC, not as a local language model on the ESP32, and requires the optional desktop companion.
+TargetOS is the working name for the ESP32 system in its separate firmware project. The `targetos` PlatformIO environment includes the Nimbo mascot app by default. Nimbo animates and responds to touch on the board. Nimbo's chat service runs on the desktop PC, not as a local language model on the ESP32, and requires the optional desktop companion.
 
-**Supported installation:** install the complete TargetOS firmware with the built-in mascot app. Installing the mascot/Nimbo app separately on a bare ESP32 or another firmware is not supported. The Windows app's optional add-on is the PC companion; it does not flash ESP32 firmware. TargetOS firmware and its source are not yet published as a public download, so the current `pio run -e mira -t upload` procedure is for a development checkout only.
+**Supported installation:** install the complete TargetOS firmware with the built-in mascot app. Installing the mascot/Nimbo app separately on a bare ESP32 or another firmware is not supported. The Windows app's optional add-on is the PC companion; it does not flash ESP32 firmware. TargetOS firmware and its source are not yet published as a public download, so the current `pio run -e targetos -t upload` procedure is for a development checkout only.
 
 | Hardware | Configuration recorded for the board |
 |---|---|
@@ -136,14 +147,14 @@ For setup notes, screenshots and the current development flashing steps, see the
 <a id="downloads"></a>
 ## Download and install
 
-<strong>Stable release v1.30.0 · November 6, 2026</strong>
+<strong>Stable release v1.30.1 · November 9, 2026</strong>
 
 | Architecture | Installer | Portable |
 |---|---|---|
-| <strong>x64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe">Setup</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-x64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-x64.zip.sha256">SHA-256</a> |
-| <strong>ARM64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe">Setup</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-arm64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-arm64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-win-arm64.zip.sha256">SHA-256</a> |
+| <strong>x64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe">Setup</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-win-x64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-win-x64.zip.sha256">SHA-256</a> |
+| <strong>ARM64</strong> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-arm64.exe">Setup</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-arm64.exe.sha256">SHA-256</a> | <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-win-arm64.zip">ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-win-arm64.zip.sha256">SHA-256</a> |
 
-<strong>Optional ESP32 add-on · Pet 0.2.0:</strong> <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-x64.zip">x64 ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-x64.zip.sha256">SHA-256</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-arm64.zip">ARM64 ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-pet-0.2.0-win-arm64.zip.sha256">SHA-256</a>
+<strong>Optional ESP32 add-on · Pet 0.2.0:</strong> <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-pet-0.2.0-win-x64.zip">x64 ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-pet-0.2.0-win-x64.zip.sha256">SHA-256</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-pet-0.2.0-win-arm64.zip">ARM64 ZIP</a> · <a href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-pet-0.2.0-win-arm64.zip.sha256">SHA-256</a>
 
 - <strong>Installer:</strong> installs for your Windows user without requiring administrator rights. .NET does not need to be installed.
 - <strong>Portable:</strong> extract the ZIP anywhere and run <code>isTargetSleeping.exe</code>.
@@ -180,7 +191,7 @@ The desktop app is written in C# on .NET 10 with a native WPF interface and Win3
     .\build.ps1
     .\build.ps1 -Test
     .\package.ps1 -RequireInstaller
-    .\packaging\verify-release.ps1 -Tag v1.30.0 -VerifyAssets
+    .\packaging\verify-release.ps1 -Tag v1.30.1 -VerifyAssets
 
 The release workflow runs the core logic suite, validates the assets and packages x64 and ARM64. The full WPF widget-combination matrix remains available for UI work by setting <code>ITS_ALL_COMBOS=1</code> before <code>.\build.ps1 -Test</code>.
 

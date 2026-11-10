@@ -1,8 +1,8 @@
 # Tour source / Fuentes del recorrido
 
-`index.html` is an eight-scene, 77-second storyboard in English and Spanish. It embeds the website notch simulator and its animated states for the mascot, compact pill, music, lyrics and system views, modeled on the notch's behavior in the app. The Ollama state stays hidden. The desktop scene uses the current `AppWindow` Settings › General page, with bilingual labels and demo data.
+`index.html` is a nine-scene, 77-second storyboard in English and Spanish. It moves from the animated notch states (resting mascot, compact pill, music, lyrics and system) into two full-screen views captured from the current desktop app: the widget gallery and display settings. The video uses measured camera movement and a brief edge-light sweep to connect scenes; the notch animation follows real-time frame pacing at 30 fps.
 
-The simulator uses its own sample data; it is not a live recording of the app. The Settings screen is a real WPF capture from the current source and uses demo data.
+The simulator uses sample data; it is not a live recording. The widget gallery and display settings are real WPF captures from the current source, generated with demo data. `tour-ui-widgets-{es,en}.png` and `tour-ui-display-{es,en}.png` are their source images.
 
 The soundtrack in `../audio/tour-soundtrack.m4a` is shared by both languages and copied into the videos without audio re-encoding. SHA-256: `ca75fa81af140e7a531eceb8a1859ab19690b89e3edf8d64782ad742518eae89`.
 
@@ -14,10 +14,12 @@ npm install --prefix obj/tour-tooling puppeteer-core@25.12.0
 python docs/generate-tours.py --capture
 ```
 
-Review scenes before encoding or replacing the public tour:
+Refresh current WPF captures, review scenes, encode both languages and verify the files:
 
 ```powershell
-python docs/generate-tours.py --stills 3,8,16,23,34,46,56,66,73,75
+python docs/generate-tours.py --capture
+python docs/generate-tours.py --stills 2,10,19,27,38,47,57,68,75
+python docs/generate-tours.py
 python docs/tour/verify.py
 ```
 
@@ -27,13 +29,13 @@ The site reads `../video/isTargetSleeping-tour-{es,en}.mp4` and `../images/tour-
 
 ---
 
-`index.html` presenta un guion de ocho escenas y 77 segundos, en español e inglés. Inserta el simulador del notch de la web y sus estados animados de mascota, pastilla compacta, música, letras y sistema, inspirados en el comportamiento del notch de la app. La vista de Ollama permanece oculta. La escena de escritorio usa la página actual de `AppWindow` en Ajustes › General, con etiquetas en ambos idiomas y datos de demostración.
+`index.html` presenta un guion de nueve escenas y 77 segundos, en español e inglés. Recorre los estados animados del notch (mascota en reposo, pastilla compacta, música, letras y sistema) y luego muestra a pantalla completa dos vistas capturadas de la app actual: la galería de widgets y los ajustes de pantalla. El movimiento de cámara es medido y un destello breve en el borde enlaza las escenas; las animaciones del notch se graban en tiempo real a 30 fps.
 
-El simulador usa sus propios datos de ejemplo; no es una grabación en directo de la app. La pantalla de Ajustes es una captura WPF real del código actual con datos de demostración.
+El simulador usa datos de ejemplo; no es una grabación en directo. La galería y los ajustes de pantalla son capturas WPF reales del código actual con datos de demostración. `tour-ui-widgets-{es,en}.png` y `tour-ui-display-{es,en}.png` son las imágenes fuente.
 
 La pista de `../audio/tour-soundtrack.m4a` se comparte entre idiomas y se copia a los videos sin volver a comprimir el audio. El SHA-256 figura arriba.
 
-Instala Python con Pillow e imageio-ffmpeg, Node.js, Chrome y .NET 10. Puppeteer ya está disponible en `obj/tour-tooling` en este workspace. En un checkout limpio, los comandos anteriores instalan las dependencias, compilan la app actual, regeneran capturas y portadas y preparan los videos.
+Instala Python con Pillow e imageio-ffmpeg, Node.js, Chrome y .NET 10. Puppeteer ya está disponible en `obj/tour-tooling` en este workspace. En un checkout limpio, el primer comando compila la app actual y regenera las capturas; después se revisan los fotogramas, se exportan los dos idiomas y se verifica la duración, el tamaño y la pista de audio.
 
 Revisa fotogramas con `--stills` antes de codificar o sustituir el recorrido público. Las revisiones quedan en `obj/tour-work/review/`; los MP4 y pósteres solo se reemplazan al terminar correctamente. `--lang es|en` exporta un idioma y los parámetros `--chrome`, `--node` y `--dotnet` permiten elegir otras rutas.
 

@@ -166,11 +166,15 @@ public sealed class SqlitePetStore : IPetStore, IDisposable
         lock (gate)
         {
             if (Get("rev") is not { } rev || !long.TryParse(rev, out long r)) return null;
-            string name = Get("name") ?? "Mira";
+            string name = Get("name") ?? "Nimbo";
             int.TryParse(Get("energy"), out int e);
             int.TryParse(Get("affection"), out int a);
             bool asleep = Get("asleep") != "0";
-            if (!PetProtocol.IsValidName(name)) name = "Mira";
+            if (string.Equals(name, "Mira", StringComparison.OrdinalIgnoreCase) || !PetProtocol.IsValidName(name))
+            {
+                name = "Nimbo";
+                Put("name", name);
+            }
             return new PetSnapshot(r, name, Math.Clamp(e, 0, 100), Math.Clamp(a, 0, 100), asleep ? "sleep" : "open", asleep);
         }
     }

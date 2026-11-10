@@ -34,6 +34,7 @@
     if (scrollY >= 40 || (location.hash && location.hash !== '#inicio')) { termina(); return; }
     removeEventListener('scroll', window.__introEscucha);   // desde aquí la intro ya corre entera
     const nb = barra.getBoundingClientRect(), mr = mascota.getBoundingClientRect();
+    pintura.style.setProperty('--intro-nav-height', `${nb.height}px`);
     const e = parseFloat(getComputedStyle(barra.closest('.nav')).getPropertyValue('--e')) || 24;
     const sueloY = mr.top + mr.height * 0.9245, mx = mr.left + mr.width / 2;   // los pies están al 92,45 % del alto (ver mundo.css)
     const y0 = nb.bottom - 4;

@@ -5,6 +5,28 @@ All notable changes to isTargetSleeping. The format follows
 
 ## [Unreleased]
 
+## [1.30.1] — 2026-11-09
+
+### Added
+- A «Legacy version (tray panel)» item in the tray menu turns the legacy version on or off.
+- New installations open the notch's hover view with Music, To-do, Pomodoro, Shelf and System, across five pages with arrows, dots and the full-view dock. The closed notch shows the time by default; saved widget and pill choices remain intact.
+- The Music widget keeps the last track and cover locally after its player closes. Play reopens a supported player and requests playback when it restores that same track; without playback history, it shows the bundled jazz sample with its starry-sky cover.
+
+### Changed
+- The closed notch detaches its full and hover views, and attaches them only while open. Music services also wait until the Music page is visible unless the pill or a live activity needs them.
+- The hover view can keep up to eight selected widgets, one widget per page.
+- Live activity controls move from Widgets to Settings › Alerts. All activities are enabled by default except the optional camera indicator shown while the camera is off.
+- System widget graphs, Dock buttons and Favorites move from Widgets to Settings › Notch.
+- Tall clock, battery and Shelf widgets center sparse content so it does not sit at the top with a large empty area below.
+- Todo completion marks, disabled labels and green buttons use readable foreground colors.
+
+### Fixed
+- The legacy version (tray panel) now renders when turned on: the panel builds its own view each time it opens instead of reusing the notch's, which left it empty and gray.
+- The agent beam redraws at a bounded 60 fps and reuses its drawing pens.
+- The compact notch no longer preloads the hidden full panel: its layout was blocking the UI thread for about 1 s and stalling animations.
+- The hover preview reserves the full panel width, so opening it from the mini dock does not shift the notch horizontally.
+- The full notch attaches its panel after resizing the transparent window, cutting the pause before the spring animation; its opening spring now runs for 340 ms with the same easing curve.
+
 ## [1.30.0] — 2026-11-06
 
 ### Added

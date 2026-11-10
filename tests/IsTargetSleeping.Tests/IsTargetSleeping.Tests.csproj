@@ -47,6 +47,7 @@
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\ArtColor.cs" Link="Core\Widgets\ArtColor.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\Agenda.cs" Link="Core\Widgets\Agenda.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MediaSource.cs" Link="Core\Widgets\MediaSource.cs" />
+    <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\MediaTrackSnapshot.cs" Link="Core\Widgets\MediaTrackSnapshot.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\SyntaxHighlighter.cs" Link="Core\Widgets\SyntaxHighlighter.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\Widgets\FileIconMap.cs" Link="Core\Widgets\FileIconMap.cs" />
     <Compile Include="..\..\src\IsTargetSleeping\Core\MemoryBreakdown.cs" Link="Core\MemoryBreakdown.cs" />

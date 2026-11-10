@@ -48,6 +48,30 @@
 
   const nav = document.querySelector('.nav');
   if (nav) {
+    // La barra compartida contrasta con el fondo de cada sección en todas las páginas.
+    const negro = (c) => { const m = c.match(/[\d.]+/g); return m && (m[3] === undefined || +m[3] > .9) && Math.max(+m[0], +m[1], +m[2]) <= 14; };
+    const sinColor = (c) => { const m = c.match(/[\d.]+/g); return !m || (m[3] !== undefined && +m[3] < .05); };
+    let esperaTono = false;
+    const miraTono = () => {
+      esperaTono = false;
+      const el = document.elementsFromPoint(innerWidth / 2, 34).find((e) => !nav.contains(e));
+      let claro = false;
+      const marca = el && el.closest('[data-nav]');
+      if (marca) claro = marca.dataset.nav === 'claro';
+      else if (el && !el.closest('.mundo')) {
+        for (let e = el.closest('section, footer') || el; e; e = e.parentElement) {
+          const cs = getComputedStyle(e), c = cs.backgroundColor;
+          if (cs.backgroundImage !== 'none') break;
+          if (!sinColor(c)) { claro = negro(c); break; }
+        }
+      }
+      nav.classList.toggle('nav--claro', claro);
+    };
+    const pideTono = () => { if (!esperaTono) { esperaTono = true; requestAnimationFrame(miraTono); } };
+    addEventListener('scroll', pideTono, { passive: true });
+    addEventListener('resize', pideTono);
+    miraTono();
+
     const menuButton = nav.querySelector('#castillo-menu');
     const compactable = [...nav.querySelector('.contenedor').children].filter((el) => !el.classList.contains('nav-mascota'));
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');

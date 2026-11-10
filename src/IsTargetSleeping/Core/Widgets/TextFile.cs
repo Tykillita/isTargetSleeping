@@ -23,8 +23,14 @@ public static class TextFile
         {
             var info = new FileInfo(path);
             if (!info.Exists) return (null, TextFileError.Unreadable, null);
-            var bytes = File.ReadAllBytes(path);
-            if (bytes.Length > MaxBytes) return (null, TextFileError.TooBig, null);
+            byte[] bytes;
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (stream.Length > MaxBytes) return (null, TextFileError.TooBig, null);
+                bytes = new byte[(int)stream.Length];
+                stream.ReadExactly(bytes);
+                if (stream.ReadByte() != -1) return (null, TextFileError.TooBig, null);
+            }
             Encoding enc;
             int skip;
             if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) { enc = new UTF8Encoding(true, true); skip = 3; }

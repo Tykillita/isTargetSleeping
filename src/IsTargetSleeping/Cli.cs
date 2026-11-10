@@ -13,7 +13,7 @@ namespace IsTargetSleeping;
 ///   isTargetSleeping --url istargetsleeping://sleep
 ///   isTargetSleeping --memory
 ///   isTargetSleeping --idle-test 20
-    ///   isTargetSleeping --snapshot salida.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet id] [--tab display|general|notch…]
+    ///   isTargetSleeping --snapshot salida.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet id] [--tab display|general|notch…] [--gallery id] [--home-widgets ids]
 ///   isTargetSleeping --export-logo carpeta
 ///   isTargetSleeping --export-tray carpeta
 ///   isTargetSleeping --export-pet carpeta
@@ -43,7 +43,7 @@ public static class Cli
             if (args.Contains("--sleep")) return SleepNow();
             if (args.Contains("--clean")) return CleanNow();
             if (args.Contains("--status")) return Status();
-            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --team-due | --team-run id | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet mira|llama|capybara|orange-cat] | --export-logo dir | --export-tray dir | --export-pet dir");
+            Console.WriteLine($"{AppInfo.Name} --status | --on | --off | --sleep | --clean | --team-due | --team-run id | --url link | --memory | --idle-test N | --snapshot out.png [settings|activity|processes|pet] [appwindow] [demo] [game] [high-contrast] [--lang en] [--pet mira|llama|capybara|orange-cat] [--gallery id] [--home-widgets ids] | --export-logo dir | --export-tray dir | --export-pet dir");
             return 0;
         }
         finally { Console.Out.Flush(); }
@@ -262,7 +262,7 @@ public static class Cli
         if (args.Contains("appwindow"))   // la ventana de la app entera (pestañas arriba), sobre un escritorio simulado
         {
             var appView = args.Contains("processes") ? PanelView.Processes : args.Contains("widgets") ? PanelView.Widgets : PanelView.Settings;
-            var appRoot = AppWindow.Preview(supervisor, appView, snapshotModel.CurrentSettingsTab);
+            var appRoot = AppWindow.Preview(supervisor, appView, snapshotModel.CurrentSettingsTab, Value(args, "--gallery"));
             var surface = new System.Windows.Controls.Border { Width = 980, Height = 660, Background = Theme.Brush(Theme.Hex(0x161616)), Child = appRoot };
             surface.Measure(new Size(980, 660));
             surface.Arrange(new Rect(0, 0, 980, 660));

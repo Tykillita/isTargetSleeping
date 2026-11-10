@@ -2401,7 +2401,13 @@
         <Grid>
           <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" />
-          <StackPanel Grid.Row="1" VerticalAlignment="Top">
+          <StackPanel Grid.Row="1">
+            <StackPanel.Style>
+              <Style TargetType="StackPanel">
+                <Setter Property="VerticalAlignment" Value="Top" />
+                <Style.Triggers><DataTrigger Binding="{Binding Tall}" Value="True"><Setter Property="VerticalAlignment" Value="Center" /></DataTrigger></Style.Triggers>
+              </Style>
+            </StackPanel.Style>
           <StackPanel Visibility="{Binding CompactOrPeek, Converter={StaticResource Visible}}">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -5395,7 +5401,7 @@
                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               </ItemsControl>
             </ScrollViewer>
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False" VerticalAlignment="Center">
               <ScrollViewer.Style>
                 <Style TargetType="ScrollViewer">
                   <Setter Property="Visibility" Value="Collapsed" />
@@ -5799,7 +5805,7 @@
             </ItemsControl.Style>
           </ItemsControl>
           <!-- Una celda y dos filas: la lista de seis -->
-          <ItemsControl Grid.Row="1" ItemsSource="{Binding Model.Top6}" ItemTemplate="{StaticResource DeviceBatteryLine}" Focusable="False" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,2,0,0">
+          <ItemsControl Grid.Row="1" ItemsSource="{Binding Model.Top6}" ItemTemplate="{StaticResource DeviceBatteryLine}" Focusable="False" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,2,0,0">
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.Style>
               <Style TargetType="ItemsControl">
@@ -5813,7 +5819,7 @@
             </ItemsControl.Style>
           </ItemsControl>
           <!-- Dos celdas y dos filas: la lista en dos columnas -->
-          <ItemsControl Grid.Row="1" ItemsSource="{Binding Model.Top10}" ItemTemplate="{StaticResource DeviceBatteryLine}" Focusable="False" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="0,2,0,0">
+          <ItemsControl Grid.Row="1" ItemsSource="{Binding Model.Top10}" ItemTemplate="{StaticResource DeviceBatteryLine}" Focusable="False" VerticalAlignment="Center" HorizontalAlignment="Stretch" Margin="0,2,0,0">
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.Style>
               <Style TargetType="ItemsControl">
@@ -5838,7 +5844,7 @@
         <Button Style="{StaticResource Plain}" Command="{Binding Previous}" AutomationProperties.Name="{Binding PreviousHelp}" ToolTip="{Binding PreviousHelp}" VerticalAlignment="Center" Visibility="{Binding CanSkip, Converter={StaticResource Visible}}">
           <Border Width="40" Height="40" Background="Transparent"><Path Data="M21,0 L10,9 L21,18 Z M11,0 L0,9 L11,18 Z" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         </Button>
-        <Button Style="{StaticResource Plain}" Command="{Binding Toggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}" Margin="6,0" VerticalAlignment="Center">
+        <Button Style="{StaticResource Plain}" Command="{Binding Toggle}" IsEnabled="{Binding CanToggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}" Margin="6,0" VerticalAlignment="Center">
           <Border Width="48" Height="48" Background="Transparent"><Grid><Path Data="M0,0 L7,0 L7,26 L0,26 Z M14,0 L21,0 L21,26 L14,26 Z" Visibility="{Binding IsPlaying, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /><Path Data="M0,0 L22,13 L0,26 Z" Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid></Border>
         </Button>
         <Button Style="{StaticResource Plain}" Command="{Binding Next}" AutomationProperties.Name="{Binding NextHelp}" ToolTip="{Binding NextHelp}" VerticalAlignment="Center" Visibility="{Binding CanSkip, Converter={StaticResource Visible}}">
@@ -5858,7 +5864,7 @@
         <Button Style="{StaticResource Plain}" Command="{Binding Previous}" AutomationProperties.Name="{Binding PreviousHelp}" ToolTip="{Binding PreviousHelp}" VerticalAlignment="Center" Visibility="{Binding CanSkip, Converter={StaticResource Visible}}">
           <Border Width="40" Height="40" Background="Transparent"><Path Data="M21,0 L10,9 L21,18 Z M11,0 L0,9 L11,18 Z" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
         </Button>
-        <Button Style="{StaticResource Plain}" Command="{Binding Toggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}" Margin="6,0" VerticalAlignment="Center">
+        <Button Style="{StaticResource Plain}" Command="{Binding Toggle}" IsEnabled="{Binding CanToggle}" AutomationProperties.Name="{Binding ToggleHelp}" ToolTip="{Binding ToggleHelp}" Margin="6,0" VerticalAlignment="Center">
           <Border Width="48" Height="48" Background="Transparent"><Grid><Path Data="M0,0 L7,0 L7,26 L0,26 Z M14,0 L21,0 L21,26 L14,26 Z" Visibility="{Binding IsPlaying, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /><Path Data="M0,0 L22,13 L0,26 Z" Visibility="{Binding IsPaused, Converter={StaticResource Visible}}" StrokeLineJoin="Round" StrokeThickness="2.5" Fill="{DynamicResource Fg}" Stroke="{DynamicResource Fg}" HorizontalAlignment="Center" VerticalAlignment="Center" /></Grid></Border>
         </Button>
         <Button Style="{StaticResource Plain}" Command="{Binding Next}" AutomationProperties.Name="{Binding NextHelp}" ToolTip="{Binding NextHelp}" VerticalAlignment="Center" Visibility="{Binding CanSkip, Converter={StaticResource Visible}}">
@@ -5887,42 +5893,17 @@
               <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource WidgetHeader}" Visibility="{Binding NotBare, Converter={StaticResource Visible}}" />
-            <Grid Grid.Row="1" Grid.RowSpan="2" Margin="0,6,0,0" Visibility="{Binding Model.NoSession, Converter={StaticResource Visible}}">
-              <Grid Visibility="{Binding Model.HasLaunchers, Converter={StaticResource Visible}}">
-                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
-                <DockPanel Margin="0,0,0,5" LastChildFill="False">
-                  <TextBlock Text="{Binding Model.LaunchersTitle}" Style="{StaticResource Hint}" FontWeight="SemiBold" />
-                  <TextBlock DockPanel.Dock="Right" Text="{Binding Model.LaunchersHint}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" />
-                </DockPanel>
-                <ScrollViewer Grid.Row="1" MaxHeight="112" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                  <ItemsControl ItemsSource="{Binding Model.Launchers}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Button Style="{StaticResource Bordered}" Command="{Binding Open}" AutomationProperties.Name="{Binding Name}"
-                                ToolTip="{Binding Name}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                Padding="8,4" Margin="0,0,0,4">
-                          <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="" FontFamily="{StaticResource Icons}" Foreground="{DynamicResource Secondary}" FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                          </StackPanel>
-                        </Button>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </ScrollViewer>
-              </Grid>
-            </Grid>
-            <Grid Grid.Row="2" Visibility="{Binding Model.HasSession, Converter={StaticResource Visible}}">
+            <Grid Grid.Row="2" Visibility="{Binding Model.HasMediaCard, Converter={StaticResource Visible}}">
               <!-- La vista corta con un solo widget (las medidas son las de Nusa, en píxeles): portada de 62, título de 15 y artista de 12 abajo a su derecha,
                    tiempos de 15 a los lados de la barra de 4 y, debajo, los controles en posiciones fijas -->
               <Grid Width="332" Margin="0,-6,0,-6">
                 <Grid.Style><Style TargetType="Grid"><Setter Property="Visibility" Value="Collapsed" /><Style.Triggers>
-                  <MultiDataTrigger><MultiDataTrigger.Conditions><Condition Binding="{Binding Wide}" Value="False" /><Condition Binding="{Binding Model.LyricsOpen}" Value="False" /></MultiDataTrigger.Conditions><Setter Property="Visibility" Value="Visible" /></MultiDataTrigger>
+                  <MultiDataTrigger><MultiDataTrigger.Conditions><Condition Binding="{Binding Wide}" Value="False" /><Condition Binding="{Binding Bare}" Value="True" /><Condition Binding="{Binding Model.LyricsOpen}" Value="False" /></MultiDataTrigger.Conditions><Setter Property="Visibility" Value="Visible" /></MultiDataTrigger>
                 </Style.Triggers></Style></Grid.Style>
                 <Grid.RowDefinitions><RowDefinition Height="62" /><RowDefinition Height="34" /><RowDefinition Height="20" /></Grid.RowDefinitions>
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <Border Width="62" Height="62" CornerRadius="8" Background="{DynamicResource Track}" Margin="0,0,17,0" Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
-                  <Rectangle RadiusX="8" RadiusY="8"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                  <Rectangle RadiusX="8" RadiusY="8"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,4">
                   <TextBlock Text="{Binding Model.MediaTitle}" FontSize="15" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" />
@@ -5931,7 +5912,7 @@
                 <Grid Grid.Row="1" Grid.ColumnSpan="2">
                   <Grid.ColumnDefinitions><ColumnDefinition Width="40" /><ColumnDefinition Width="*" /><ColumnDefinition Width="46" /></Grid.ColumnDefinitions>
                   <TextBlock Text="{Binding Model.ElapsedPadded}" FontSize="16.5" Foreground="White" VerticalAlignment="Center" />
-                  <ui:SeekBar Accent="White" TrackBrush="#4C4C4C" Grid.Column="1" Margin="13,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                  <ui:SeekBar Accent="White" TrackBrush="#4C4C4C" Grid.Column="1" Margin="13,0" IsEnabled="{Binding Model.CanSeek}" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" Text="{Binding Model.RemainingPadded}" FontSize="16.5" Foreground="White" VerticalAlignment="Center" TextAlignment="Right" />
                 </Grid>
                 <Canvas Grid.Row="2" Grid.ColumnSpan="2" Height="20">
@@ -5942,18 +5923,18 @@
                       <Path Data="M5.2,5.6 H7.6 V8 L6.4,9.8 M10.4,5.6 H12.8 V8 L11.6,9.8" Stroke="White" StrokeThickness="1.5" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
                     </Grid>
                   </Button>
-                  <Button Canvas.Left="98.5" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Previous}" Visibility="{Binding Model.CanSkip, Converter={StaticResource Visible}}"
+                  <Button Canvas.Left="98.5" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Previous}" IsEnabled="{Binding Model.CanSkip}"
                           AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
                     <Path Data="M17,0 L8.5,5.5 L17,11 Z M8.5,0 L0,5.5 L8.5,11 Z" Fill="White" Stroke="White" StrokeThickness="1" StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Button>
-                  <Button Canvas.Left="147" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Toggle}"
+                  <Button Canvas.Left="147" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" IsEnabled="{Binding Model.CanToggle}"
                           AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
                     <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                       <Path Data="M0.5,0.5 H4 V12.5 H0.5 Z M8,0.5 H11.5 V12.5 H8 Z" Fill="White" Stroke="White" StrokeThickness="1" StrokeLineJoin="Round" Visibility="{Binding Model.IsPlaying, Converter={StaticResource Visible}}" />
                       <Path Data="M0.5,0.5 L11.5,6.5 L0.5,12.5 Z" Fill="White" Stroke="White" StrokeThickness="1.4" StrokeLineJoin="Round" Visibility="{Binding Model.IsPaused, Converter={StaticResource Visible}}" />
                     </Grid>
                   </Button>
-                  <Button Canvas.Left="192.5" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Next}" Visibility="{Binding Model.CanSkip, Converter={StaticResource Visible}}"
+                  <Button Canvas.Left="192.5" Canvas.Top="-4" Width="40" Height="28" Style="{StaticResource Plain}" Command="{Binding Model.Next}" IsEnabled="{Binding Model.CanSkip}"
                           AutomationProperties.Name="{Binding Model.NextHelp}" ToolTip="{Binding Model.NextHelp}">
                     <Path Data="M0,0 L8.5,5.5 L0,11 Z M8.5,0 L17,5.5 L8.5,11 Z" Fill="White" Stroke="White" StrokeThickness="1" StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Button>
@@ -5977,7 +5958,7 @@
                   <Grid.RowDefinitions><RowDefinition Height="58" /><RowDefinition Height="36" /><RowDefinition Height="28" /></Grid.RowDefinitions>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                   <Border Width="58" Height="58" CornerRadius="8" Background="{DynamicResource Track}" Margin="0,0,18,0" Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
-                    <Rectangle RadiusX="8" RadiusY="8"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                    <Rectangle RadiusX="8" RadiusY="8"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,0,2">
                     <TextBlock Text="{Binding Model.MediaTitle}" FontSize="14" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" />
@@ -5986,7 +5967,7 @@
                   <Grid Grid.Row="1" Grid.ColumnSpan="2">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="50" /><ColumnDefinition Width="*" /><ColumnDefinition Width="56" /></Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Model.ElapsedPadded}" FontSize="16" Foreground="White" VerticalAlignment="Center" />
-                    <ui:SeekBar Accent="White" TrackBrush="#4C4C4C" Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <ui:SeekBar Accent="White" TrackBrush="#4C4C4C" Grid.Column="1" Margin="10,0" IsEnabled="{Binding Model.CanSeek}" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2" Text="{Binding Model.RemainingPadded}" FontSize="16" Foreground="White" VerticalAlignment="Center" TextAlignment="Right" />
                   </Grid>
                   <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,-5,0,5">
@@ -6003,7 +5984,7 @@
                     <Button Style="{StaticResource Plain}" Command="{Binding Model.Previous}" Width="40" Height="28" Visibility="{Binding Model.CanSkip, Converter={StaticResource Visible}}" AutomationProperties.Name="{Binding Model.PreviousHelp}" ToolTip="{Binding Model.PreviousHelp}">
                       <Path Data="M17,0 L8.5,5.5 L17,11 Z M8.5,0 L0,5.5 L8.5,11 Z" Fill="White" Stroke="White" StrokeThickness="1" StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Button>
-                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" Width="40" Height="28" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
+                    <Button Style="{StaticResource Plain}" Command="{Binding Model.Toggle}" IsEnabled="{Binding Model.CanToggle}" Width="40" Height="28" AutomationProperties.Name="{Binding Model.ToggleHelp}" ToolTip="{Binding Model.ToggleHelp}">
                       <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Path Data="M0.5,0.5 H4 V12.5 H0.5 Z M8,0.5 H11.5 V12.5 H8 Z" Fill="White" Stroke="White" StrokeThickness="1" StrokeLineJoin="Round" Visibility="{Binding Model.IsPlaying, Converter={StaticResource Visible}}" />
                         <Path Data="M0.5,0.5 L11.5,6.5 L0.5,12.5 Z" Fill="White" Stroke="White" StrokeThickness="1.4" StrokeLineJoin="Round" Visibility="{Binding Model.IsPaused, Converter={StaticResource Visible}}" />
@@ -6034,7 +6015,7 @@
                   <Border Width="140" Height="140" CornerRadius="14" Background="{DynamicResource Track}" HorizontalAlignment="Center"
                           Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
                     <Border.Effect><DropShadowEffect BlurRadius="20" ShadowDepth="5" Opacity="0.5" /></Border.Effect>
-                    <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                    <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                   </Border>
                   <TextBlock Text="{Binding Model.MediaTitle}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,14,0,0" />
                   <TextBlock Text="{Binding Model.Artist}" Style="{StaticResource Hint}" TextAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
@@ -6047,7 +6028,7 @@
                   <Border Width="54" Height="54" CornerRadius="10" Background="{DynamicResource Track}" Margin="0,0,14,0" VerticalAlignment="Center"
                           Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
                     <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.45" /></Border.Effect>
-                    <Rectangle RadiusX="10" RadiusY="10"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                    <Rectangle RadiusX="10" RadiusY="10"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                   </Border>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Model.MediaTitle}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" TextTrimming="CharacterEllipsis" />
@@ -6061,7 +6042,7 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock Text="{Binding Model.ElapsedText}" FontFamily="{StaticResource Sans}" FontSize="13" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" />
-                  <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                  <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="10,0" IsEnabled="{Binding Model.CanSeek}" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" FontFamily="{StaticResource Sans}" FontSize="13" Foreground="{DynamicResource Fg}" VerticalAlignment="Center" />
                 </Grid>
                 <ContentControl Grid.Row="2" Content="{Binding Model}" ContentTemplate="{StaticResource MediaTransport}" HorizontalAlignment="Center" Margin="0,8,0,0" Visibility="{Binding Full, Converter={StaticResource Visible}}"><ContentControl.LayoutTransform><ScaleTransform ScaleX="1.0" ScaleY="1.0" /></ContentControl.LayoutTransform></ContentControl>
@@ -6089,7 +6070,7 @@
                 <Border Width="186" Height="186" CornerRadius="18" Background="{DynamicResource Track}" Margin="8,0,30,0" VerticalAlignment="Center"
                         Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
                   <Border.Effect><DropShadowEffect BlurRadius="22" ShadowDepth="5" Opacity="0.55" /></Border.Effect>
-                  <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                  <Rectangle RadiusX="14" RadiusY="14"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                 </Border>
                 <Grid Grid.Column="1" VerticalAlignment="Center" Margin="0,0,6,0">
                   <Grid.RowDefinitions>
@@ -6109,7 +6090,7 @@
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="10,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="10,0" IsEnabled="{Binding Model.CanSeek}" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
                   </Grid>
                   <ContentControl Content="{Binding Model}" ContentTemplate="{StaticResource MediaTransport}" HorizontalAlignment="Center" Grid.Row="3"  Margin="0,12,0,0"><ContentControl.LayoutTransform><ScaleTransform ScaleX="1.2" ScaleY="1.2" /></ContentControl.LayoutTransform></ContentControl>
@@ -6125,7 +6106,7 @@
                 <Border Width="88" Height="88" CornerRadius="12" Background="{DynamicResource Track}" Margin="0,0,18,0"
                         Visibility="{Binding Model.HasArt, Converter={StaticResource Visible}}">
                   <Border.Effect><DropShadowEffect BlurRadius="18" ShadowDepth="4" Opacity="0.5" /></Border.Effect>
-                  <Rectangle RadiusX="12" RadiusY="12"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="UniformToFill" /></Rectangle.Fill></Rectangle>
+                  <Rectangle RadiusX="12" RadiusY="12"><Rectangle.Fill><ImageBrush ImageSource="{Binding Model.Art}" Stretch="Uniform" /></Rectangle.Fill></Rectangle>
                 </Border>
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                   <TextBlock Text="{Binding Model.MediaTitle}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" TextTrimming="CharacterEllipsis" />
@@ -6137,7 +6118,7 @@
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding Model.ElapsedText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
-                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="8,0" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
+                    <ui:SeekBar Accent="{Binding Model.AccentBrush}" Grid.Column="1" Margin="8,0" IsEnabled="{Binding Model.CanSeek}" Value="{Binding Model.Progress, Mode=OneWay}" Command="{Binding Model.Seek}" AutomationProperties.Name="{Binding Model.SeekHelp}" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2" Text="{Binding Model.RemainingText}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Muted}" VerticalAlignment="Center" />
                   </Grid>
                 </StackPanel>

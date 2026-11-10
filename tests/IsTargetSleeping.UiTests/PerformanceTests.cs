@@ -110,6 +110,33 @@ internal static class PerformanceTests
         }
         finally { gaugeHost.Close(); }
 
+        var bluetooth = new SystemHuds();
+        try
+        {
+            var trackBluetooth = typeof(SystemHuds).GetMethod("TrackBluetoothDevice", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var baselineReady = typeof(SystemHuds).GetField("bluetoothBaselineReady", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var initial = trackBluetooth.Invoke(bluetooth, ["device-1", "Auriculares", true]);
+            baselineReady.SetValue(bluetooth, true);
+            var added = trackBluetooth.Invoke(bluetooth, ["device-2", "Teclado", true]);
+            var duplicate = trackBluetooth.Invoke(bluetooth, ["DEVICE-2", "Teclado", true]);
+            var removed = trackBluetooth.Invoke(bluetooth, ["device-2", null, false]);
+            bluetooth.Configure(["bluetooth"]);
+            var watchers = (System.Collections.ICollection)typeof(SystemHuds).GetField("bluetoothWatchers", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(bluetooth)!;
+            var until = DateTime.UtcNow.AddSeconds(8);
+            while (!(bool)baselineReady.GetValue(bluetooth)! && DateTime.UtcNow < until)
+            {
+                Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.Background, new Action(() => { }));
+                System.Threading.Thread.Sleep(20);
+            }
+            bool enumeratedSilently = (bool)baselineReady.GetValue(bluetooth)! && bluetooth.BluetoothInfo is null;
+            bool bothWatchersStarted = watchers.Count == 2;
+            bluetooth.Configure([]);
+            check("bluetooth: enumera en silencio, avisa altas/bajas una vez y para al desactivarlo",
+                initial is null && added as string == "Teclado" && duplicate is null && removed as string == "Teclado"
+                && bothWatchersStarted && watchers.Count == 0 && enumeratedSilently);
+        }
+        finally { bluetooth.Dispose(); }
+
         if (Environment.GetEnvironmentVariable("ITS_ONLY_ARC_GAUGE") == "1") return;
 
         var oldData = Environment.GetEnvironmentVariable("ITS_DATA_DIR");
@@ -138,9 +165,6 @@ internal static class PerformanceTests
         var window = new NotchWindow(model, view);
         static int Subscribers(PanelViewModel model, string name) =>
             (typeof(PanelViewModel).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(model) as Delegate)?.GetInvocationList().Length ?? 0;
-        var before = Subscribers(model, "PropertyChanged");
-        var changing = Subscribers(model, "PeekPageChanging");
-        var changed = Subscribers(model, "PeekPageChanged");
         var lyricClock = (DispatcherTimer)typeof(NotchWindow).GetField("lyricClock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
         var mascotClock = (DispatcherTimer)typeof(NotchWindow).GetField("mascotClock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!;
         bool inactiveClocksStopped = !lyricClock.IsEnabled && !mascotClock.IsEnabled;
@@ -173,8 +197,9 @@ internal static class PerformanceTests
             arrowChangesPage && dockChangesPage && model.PeekWidgets.Single().Id == "pomodoro"
             && ReferenceEquals(homeBeforePaging, model.HomeWidgets) && ReferenceEquals(foldersBeforePaging, model.HomeFolders));
         model.PeekIcons[2].Pick.Execute(null);
+        bool shelfPageSelected = model.PeekWidgets.Single().Id == "shelf" && model.PeekDots[2].IsSelected;
         model.SetPeekVisible(true);
-        check("notch: al abrir la vista corta vuelve a la primera página", model.PeekWidgets.Single().Id == "pomodoro" && model.PeekDots[0].IsSelected);
+        check("notch: al reabrir la vista corta conserva la última página", shelfPageSelected && model.PeekWidgets.Single().Id == "shelf" && model.PeekDots[2].IsSelected);
         model.SetPeekVisible(false);
         bool originalReducedMotion = prefs.ReducedMotion;
         prefs.SetSwitch(PrefKeys.ReducedMotion, false);
@@ -252,6 +277,10 @@ internal static class PerformanceTests
             && ReferenceEquals(first.Pixels, next.Pixels) && copied.SequenceEqual(nextPixels)
             && ReferenceEquals(bitmap, camera.Frame) && changes == notifications);
 
+        typeof(NotchWindow).GetMethod("EnsurePeek", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(window, null);
+        var before = Subscribers(model, "PropertyChanged");
+        var changing = Subscribers(model, "PeekPageChanging");
+        var changed = Subscribers(model, "PeekPageChanged");
         window.Stop();
         bool stopped = new[] { "hudTimer", "lyricClock", "mascotClock" }.All(name =>
             !((DispatcherTimer)typeof(NotchWindow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(window)!).IsEnabled);

@@ -19,7 +19,10 @@ public sealed record WidgetRow(string Title, string Glyph, string Detail, bool I
 }
 
 /// Un icono pequeño dentro de una carpeta: el glifo del widget, encendido si está en la lista.
-public sealed record FolderMini(string Glyph, bool IsOn, ImageSource? Icon = null);
+public sealed record FolderMini(string Glyph, bool IsOn, string Id, ImageSource? IconOverride = null)
+{
+    public ImageSource? Icon => IconOverride ?? WidgetLogoCatalog.For(Id);
+}
 
 /// Una carpeta de widgets, cuadrada y de cristal: sus iconos en miniatura, cuántos hay activados y su orden de apertura.
 public sealed record WidgetFolderTile(string Title, bool IsOpen, string Name, IReadOnlyList<FolderMini> Minis, ICommand Open, string AutomationId);
@@ -28,7 +31,10 @@ public sealed record WidgetFolderTile(string Title, bool IsOpen, string Name, IR
 public sealed record WidgetFolders(IReadOnlyList<WidgetFolderTile> Tiles);
 
 /// Una opción dentro de una carpeta abierta: un icono con su nombre, como las apps de una carpeta del iPhone.
-public sealed record FolderOption(string Title, string Glyph, bool IsOn, string Name, ICommand Open, string AutomationId, ImageSource? Icon = null);
+public sealed record FolderOption(string Title, string Glyph, bool IsOn, string Name, ICommand Open, string AutomationId, string Id, ImageSource? IconOverride = null)
+{
+    public ImageSource? Icon => IconOverride ?? WidgetLogoCatalog.For(Id);
+}
 
 /// La carpeta abierta: su nombre grande y sus opciones.
 public sealed record FolderOverlay(string Title, IReadOnlyList<FolderOption> Options, ICommand Close);
@@ -74,29 +80,24 @@ public sealed partial class PanelViewModel
     public WidgetHub Hub { get; private set; } = null!;
     public List<WidgetSlot> HomeWidgets { get; private set; } = [];
     public List<WidgetSlot> PeekWidgets { get; private set; } = [];
-    /// Páginas de la vista al pasar el ratón: cada una lleva PeekPerPage widgets (1 por defecto; 2 lado a lado; 4 como siempre).
+    /// Páginas de la vista al pasar el ratón: un widget por página.
     private int peekPage;
-    public int PeekPerPage => Prefs.StoredList(PrefKeys.NotchPeekLayout)?.FirstOrDefault() is "2" ? 2 : Prefs.StoredList(PrefKeys.NotchPeekLayout)?.FirstOrDefault() is "4" ? 4 : 1;
     public List<Segment> PeekDots { get; private set; } = [];
     private bool peekIsMedia;
     /// La vista de letras está a la vista: la página de música del hover con la letra al lado (el notch se ensancha).
-    public bool LyricsShown => Hub.Media.LyricsOpen && PeekPerPage == 1 && PeekWidgets.Any(w => WidgetLayout.BaseId(w.Id) == "media");   // lo que se ve de verdad, no un dato guardado: así el notch nunca queda más estrecho que la letra
+    public bool LyricsShown => Hub.Media.LyricsOpen && PeekWidgets.Any(w => WidgetLayout.BaseId(w.Id) == "media");   // lo que se ve de verdad, no un dato guardado: así el notch nunca queda más estrecho que la letra
     public string LyricsHelp => tr("Letras");
-    /// La cabecera (batería, fecha y hora) solo sale en la vista de un widget; la página de música empieza arriba, con la cabecera junto a la portada,
-    /// y las demás dejan sitio a la cabecera y se centran en lo que queda.
-    public bool ShowPeekHeader => PeekPerPage == 1 && !LyricsShown;
+    /// La página de música empieza arriba, con la cabecera junto a la portada; las demás dejan sitio a la cabecera y se centran en lo que queda.
+    public bool ShowPeekHeader => !LyricsShown;
     public System.Windows.VerticalAlignment PeekContentAlign => peekIsMedia ? System.Windows.VerticalAlignment.Top : System.Windows.VerticalAlignment.Center;
-    public System.Windows.Thickness PeekContentMargin => PeekPerPage != 1 ? new(8, 4, 8, 4) : peekIsMedia ? new(0, 10, 0, 0) : new(0, 30, 0, 0);
+    public System.Windows.Thickness PeekContentMargin => peekIsMedia ? new(0, 21, 0, 0) : new(0, 46, 0, 0);
     /// El mini dock de la vista corta: un icono por página (y el de Ajustes), que sale al pasar el ratón por los puntos.
     public List<PagerIcon> PeekIcons { get; private set; } = [];
     public ICommand OpenFullFromPeek { get; private set; } = null!;
     public string PeekOpenFullLabel => tr("Abrir el notch completo");
-    public List<Segment> PeekLayoutSegments { get; private set; } = [];
     public bool HasPeekPages => PeekDots.Count > 1;
     /// Las flechas de página se esconden con la letra abierta (en Nusa la vista de letras va sin ellas).
     public bool ShowPageArrows => HasPeekPages && !LyricsShown;
-    public string PeekLayoutTitle => tr("Widgets por página");
-    public string PeekLayoutDetail => tr("Cuántos widgets se ven a la vez al pasar el ratón; el resto está en otras páginas.");
     public string PrevPageLabel => tr("Página anterior");
     public string NextPageLabel => tr("Página siguiente");
     public bool SelectPeekWidget(string id)
@@ -105,7 +106,7 @@ public sealed partial class PanelViewModel
         var ordered = OrderedPeekIds(PeekIds);
         int index = ordered.FindIndex(widget => WidgetLayout.BaseId(widget) == id);
         if (index < 0) return false;
-        GoPeekPage(index / PeekPerPage);
+        GoPeekPage(index);
         return true;
     }
     public void GoPeekPage(int page, int? slide = null)
@@ -198,7 +199,8 @@ public sealed partial class PanelViewModel
     private PanelView BackView => WideLayout ? PanelView.Home : PanelView.Main;
 
     public List<string> WidgetIds => WidgetLayout.Normalize(widgetDraft ?? Prefs.StoredList(PrefKeys.NotchWidgets), max: WidgetCatalog.MaxHomeCells, home: true);
-    public List<string> PeekIds => WidgetLayout.Normalize(Prefs.StoredList(PrefKeys.NotchPeekWidgets), WidgetCatalog.DefaultPeek);
+    public List<string> PeekIds => WidgetLayout.Normalize(Prefs.StoredList(PrefKeys.NotchPeekWidgets), WidgetCatalog.DefaultPeek, WidgetCatalog.MaxPeekCells)
+        .Take(WidgetCatalog.MaxPeekWidgets).ToList();
     public List<string> PillIds => PillCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchPill));
     public List<string> ActivityIds => ActivityCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchActivities));
     public List<string> FavoriteIds => FavoriteCatalog.Normalize(Prefs.StoredList(PrefKeys.NotchFavorites));
@@ -214,7 +216,7 @@ public sealed partial class PanelViewModel
     public bool WidgetsAreFull => WidgetLayout.Area(WidgetIds) >= WidgetCatalog.MaxHomeCells;
     public string PeekTitle => tr("Vista al pasar el ratón");
     public string PeekIntro => tr("Lo que se ve al acercar el ratón, antes de hacer clic. Para que sea corta, elige widgets pequeños.");
-    public string PeekCells => tr("%d de %d celdas en uso", WidgetLayout.Cells(PeekIds), WidgetCatalog.MaxCells);
+    public string PeekWidgetCount => tr("%d de %d widgets seleccionados", PeekIds.Count, WidgetCatalog.MaxPeekWidgets);
     public string PeekEmpty => tr("La vista corta está vacía. Elige widgets en la página Widgets.");
     public bool NoPeekWidgets => PeekWidgets.Count == 0;
     public string PeekScope => tr("vista al pasar el ratón");
@@ -245,7 +247,7 @@ public sealed partial class PanelViewModel
     };
 
     public string ActivitiesTitle => tr("Actividades en vivo");
-    public string ActivitiesIntro => tr("El punto de cámara va a la izquierda del notch (aparece cuando está en uso; actívalo para verlo también apagado). Las demás actividades salen a la derecha de una en una: las rápidas (volumen, brillo, liberar RAM…) pasan por delante y las que duran se turnan.");
+    public string ActivitiesIntro => tr("La cámara en uso siempre muestra su indicador a la izquierda. «Indicador de cámara» controla solo ese punto cuando está apagada; es independiente de «Cámara en el dock». Las demás actividades salen a la derecha de una en una: las rápidas (volumen, brillo, liberar RAM…) pasan por delante y las que duran se turnan.");
 
     /// Lo que está pasando ahora y el usuario deja ver: la pastilla cerrada lo enseña a su lado.
     public List<Activity> LiveActivities
@@ -425,10 +427,10 @@ public sealed partial class PanelViewModel
     {
         // Si suena música, su widget es la primera página.
         var ordered = OrderedPeekIds(peek);
-        var pages = ordered.Chunk(PeekPerPage).ToList();
-        peekIsMedia = PeekPerPage == 1 && pages.Count > 0 && WidgetLayout.BaseId(pages[Math.Clamp(peekPage, 0, pages.Count - 1)][0]) == "media";
+        var pages = ordered.Chunk(1).ToList();
+        peekIsMedia = pages.Count > 0 && WidgetLayout.BaseId(pages[Math.Clamp(peekPage, 0, pages.Count - 1)][0]) == "media";
         peekPage = Math.Clamp(peekPage, 0, Math.Max(0, pages.Count - 1));
-        PeekWidgets = Hub.Slots(pages.Count == 0 ? [] : pages[peekPage], peek: true, compact: PeekPerPage == 1);
+        PeekWidgets = Hub.Slots(pages.Count == 0 ? [] : pages[peekPage], peek: true, compact: true);
         PeekDots = Enumerable.Range(0, pages.Count).Select(i => new Segment(tr("Página %d", i + 1), i == peekPage, new Command(() => GoPeekPage(i)))).ToList();
         PeekIcons = pages.Select((page, i) => new PagerIcon(WidgetCatalog.Find(WidgetLayout.BaseId(page[0]))?.Glyph ?? "",
             string.Join(" + ", page.Select(id => WidgetCatalog.Find(WidgetLayout.BaseId(id))?.Title ?? id)), i == peekPage, new Command(() => GoPeekPage(i)))).ToList();
@@ -512,14 +514,12 @@ public sealed partial class PanelViewModel
         var favorites = FavoriteIds;
         var activities = ActivityIds;
         var dockPages = DockIds;
-        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{string.Join(",", activities)}#{string.Join(",", dockPages)}#{string.Join(",", SystemMetricCatalog.Normalize(Prefs.List(PrefKeys.SystemMetrics)))}#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.UsageEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}#{PeekPerPage}#{Hub.Media.HasSession}#{Effective}#{CustomizingWidgets}#{homePage}#{openOverlay}#{openOption}";
+        var signature = $"{string.Join(",", ids)}#{string.Join(",", peek)}#{string.Join(",", pill)}#{string.Join(",", favorites)}#{string.Join(",", activities)}#{string.Join(",", dockPages)}#{string.Join(",", SystemMetricCatalog.Normalize(Prefs.List(PrefKeys.SystemMetrics)))}#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.UsageEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}#{Hub.Media.HasSession}#{Effective}#{CustomizingWidgets}#{homePage}#{openOverlay}#{openOption}";
         if (signature == widgetsSignature) return;
         widgetsSignature = signature;
 
         RebuildHomePages(ids);
         RebuildPeekPages(peek);
-        PeekLayoutSegments = new[] { 1, 2, 4 }.Select(n => new Segment(n == 1 ? tr("1 widget") : tr("%d widgets", n), n == PeekPerPage,
-            new Command(() => Prefs.SetList(PrefKeys.NotchPeekLayout, [n.ToString()])))).ToList();
         WidgetRows = BuildRows(ids, PrefKeys.NotchWidgets, null);
         var systemMetrics = SystemMetricCatalog.Normalize(Prefs.List(PrefKeys.SystemMetrics));
         SystemMetricRows = SystemMetricCatalog.All.Select((id, i) => new FavoriteRow(id switch
@@ -533,8 +533,8 @@ public sealed partial class PanelViewModel
         PeekFolders = BuildFolders("peek", WidgetCatalog.Folders, id => PeekRows.FirstOrDefault(r => r.WidgetId == id), id => WidgetCatalog.Find(id)!.Glyph, id => peek.Any(x => WidgetLayout.BaseId(x) == id), kind: "widgets", peek: true, ids: peek);
         // El anillo de batería del hueco izquierdo de la pastilla siempre necesita leer la batería.
         Hub.SetPillNeeds(PillCatalog.WidgetsNeeded(pill).Append("battery").Distinct());
-        // La música solo se lee si algo la necesita: el widget en alguna lista o su actividad permitida.
-        if (ids.Contains("media") || peek.Contains("media") || pill.Contains("media") || activities.Contains("media")) Hub.Media.Start();
+        // La música se inicia al verse; la pastilla o actividad sí pueden necesitarla con el notch cerrado.
+        if (pill.Contains("media") || activities.Contains("media")) Hub.Media.Start();
         if (activities.Contains("volume")) Hub.Volume.Start();
         Hub.SetActivityNeeds(activities);
         DockRows = DockCatalog.Optional.Select((info, i) =>
@@ -604,16 +604,19 @@ public sealed partial class PanelViewModel
     private List<WidgetRow> BuildRows(List<string> ids, string key, string? scope) =>
         WidgetCatalog.All.Select((info, i) =>
         {
-            // La lista admite doce celdas: cuatro en Home y cada widget posterior en su página; la vista corta conserva cuatro.
+            // Home admite doce celdas; la vista corta, ocho widgets repartidos en páginas de hasta cuatro.
             bool home = key == PrefKeys.NotchWidgets;
-            int max = home ? WidgetCatalog.MaxHomeCells : WidgetCatalog.MaxCells;
+            bool peek = key == PrefKeys.NotchPeekWidgets;
+            int max = home ? WidgetCatalog.MaxHomeCells : peek ? WidgetCatalog.MaxPeekCells : WidgetCatalog.MaxCells;
             var id = info.Id;
             var token = ids.FirstOrDefault(x => WidgetLayout.BaseId(x) == id);
             var on = token is not null;
+            var fit = WidgetLayout.Fit(ids, id, max, home);
+            bool canAdd = fit is not null && (!peek || ids.Count < WidgetCatalog.MaxPeekWidgets);
             return new WidgetRow(info.Title, info.Glyph,
                 WidgetLayout.CanResize(id, home) ? (WidgetLayout.Span(token ?? id) == 2 ? tr("2 celdas") : tr("%@ celda", 1)) : info.Cells == 2 ? tr("2 celdas") : tr("%@ celda", 1),
-                on, on || WidgetLayout.Fit(ids, id, max, home) is not null,
-                new Command(() => StoreWidgetLayout(key, on ? WidgetLayout.Remove(ids, id) : WidgetLayout.Fit(ids, id, max, home) is { } fit ? [.. ids, fit] : [.. ids])),
+                on, on || canAdd,
+                new Command(() => StoreWidgetLayout(key, on ? WidgetLayout.Remove(ids, id) : canAdd ? [.. ids, fit!] : [.. ids])),
                 new Command(() => StoreWidgetLayout(key, WidgetLayout.Move(ids, id, -1))),
                 new Command(() => StoreWidgetLayout(key, WidgetLayout.Move(ids, id, +1))),
                 i > 0, scope, new ParamCommand(v => { if (v is int width) StoreWidgetLayout(key, WidgetLayout.SetWidth(ids, id, width, max, home)); }), on && WidgetLayout.CanResize(id, home),
@@ -630,16 +633,13 @@ public sealed partial class PanelViewModel
             var on = folder.Widgets.Count(isOn);
             return new WidgetFolderTile(folder.Title, openOverlay == (scope, folder.Id),
                 tr("%@: %d de %d activados", folder.Title, on, folder.Widgets.Count),
-                folder.Widgets.Select(w => new FolderMini(glyph(w), isOn(w), FolderIcon(w, row(w)))).ToList(),
+                folder.Widgets.Select(w => new FolderMini(glyph(w), isOn(w), w, (row(w) as FavoriteRow)?.Icon)).ToList(),
                 new Command(() => { openOverlay = (scope, folder.Id); openOption = null; Notify(); }), $"folder-{scope}-{folder.Id}");
         }).ToList();
         return new WidgetFolders(tiles);
     }
 
     private static string RowTitle(object row) => row switch { WidgetRow w => w.Title, FavoriteRow f => f.Title, _ => "" };
-
-    private static ImageSource? FolderIcon(string id, object? row) =>
-        (row as FavoriteRow)?.Icon ?? WidgetLogoCatalog.For(id);
 
     /// La carpeta abierta y la ventana de su opción, con el estado de ahora (se rehace con cada cambio).
     private void BuildOverlay()
@@ -655,7 +655,7 @@ public sealed partial class PanelViewModel
             var row = source.Row(id)!;
             var title = RowTitle(row);
             var on = source.IsOn(id);
-            return new FolderOption(title, source.Glyph(id), on, $"{title}, {tr(on ? "activado" : "desactivado")}", new Command(() => { openOption = id; Notify(); }), $"option-{open.Scope}-{id}", FolderIcon(id, row));
+            return new FolderOption(title, source.Glyph(id), on, $"{title}, {tr(on ? "activado" : "desactivado")}", new Command(() => { openOption = id; Notify(); }), $"option-{open.Scope}-{id}", id, (row as FavoriteRow)?.Icon);
         }).ToList();
         OverlayFolder = new FolderOverlay(folder.Title, options, CloseOverlay);
         if (openOption is { } chosen && folder.Widgets.Contains(chosen) && source.Row(chosen) is { } row) Sheet = BuildSheet(source, chosen, row);
@@ -714,6 +714,13 @@ public sealed partial class PanelViewModel
                 break;
             case FavoriteRow f:
                 (title, on, canToggle, toggle, switchName) = (f.Title, f.IsOn, f.CanToggle, f.Toggle, f.Title);
+                if (source.Kind == "activities") detail = id switch
+                {
+                    "brightness" => tr("Solo pantallas internas compatibles. El aviso de Windows permanece."),
+                    "locks" => tr("Muestra Bloq. Mayús o Bloq. Núm tras pulsarlos."),
+                    "bluetooth" => tr("Detecta salidas de audio Bluetooth al conectarse o desconectarse."),
+                    _ => "",
+                };
                 break;
             default: throw new InvalidOperationException();
         }

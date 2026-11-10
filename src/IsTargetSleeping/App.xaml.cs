@@ -18,8 +18,7 @@ public partial class App : Application
     private DispatcherTimer? petCommands;
     private DateTime lastPetUsageTick;
     private TrayIcon tray = null!;
-    private PanelWindow panel = null!;
-    private ContentView content = null!;
+    private PanelWindow? panel;
     private NotchHost? notch;
     private PanelViewModel model = null!;
     private TrayAnimator animator = null!;
@@ -125,9 +124,6 @@ public partial class App : Application
         model = new PanelViewModel(supervisor);
         model.ProcessesRequested += () => ShowPanel();   // los procesos son una pestaña de Actividad: solo hay que enseñar el panel
         model.WindowRequested += v => AppWindow.Present(supervisor, v);
-        content = new ContentView(model);
-        panel = new PanelWindow(content);
-
         tray = new TrayIcon();
         tray.Click += TogglePanel;
         tray.RightClick += ShowMenu;
@@ -180,9 +176,12 @@ public partial class App : Application
             // El widget de Uso solo se lee con el panel visible: aquí se lee a petición de la mascota, y cada minuto mientras conversa.
             PetCommands.Poll(HandlePetTool);
             model.PublishPetApprovals(heartbeat: true);
-            PublishPetState();
-            if (Directory.Exists(Path.Combine(Paths.DataDir, "pet"))) { model.PublishPetSessions(); model.PublishPetTeam(); }
-            if (PetLease.Active && prefs.Switch(PrefKeys.UsageEnabled, false) && DateTime.UtcNow - lastPetUsageTick > TimeSpan.FromMinutes(1))
+            var petDir = Path.Combine(Paths.DataDir, "pet");
+            bool petDirectoryExists = Directory.Exists(petDir);
+            bool petActive = petDirectoryExists && PetLease.IsActive(petDir, DateTimeOffset.UtcNow);
+            PublishPetState(petDirectoryExists, petActive);
+            if (petDirectoryExists) { model.PublishPetSessions(); model.PublishPetTeam(); }
+            if (petActive && prefs.Switch(PrefKeys.UsageEnabled, false) && DateTime.UtcNow - lastPetUsageTick > TimeSpan.FromMinutes(1))
             {
                 lastPetUsageTick = DateTime.UtcNow;
                 model.Hub.Usage.Tick(DateTime.Now);
@@ -209,13 +208,13 @@ public partial class App : Application
     private DateTime lastPetState;
 
     /// Estado de solo lectura para la mascota (pomodoro, tareas, clima): cada 10 s mientras conversa y cada minuto si no. El clima solo se lee a petición.
-    private void PublishPetState()
+    private void PublishPetState(bool petDirectoryExists, bool petActive)
     {
-        var gap = PetLease.Active ? TimeSpan.FromSeconds(10) : TimeSpan.FromSeconds(60);
-        if (DateTime.UtcNow - lastPetState < gap || !Directory.Exists(Path.Combine(Paths.DataDir, "pet"))) return;
+        var gap = petActive ? TimeSpan.FromSeconds(10) : TimeSpan.FromSeconds(60);
+        if (!petDirectoryExists || DateTime.UtcNow - lastPetState < gap) return;
         lastPetState = DateTime.UtcNow;
         var hub = model.Hub;
-        if (PetLease.Active && prefs.Switch(PrefKeys.WeatherEnabled, false)) hub.Weather.Tick(DateTime.Now);
+        if (petActive && prefs.Switch(PrefKeys.WeatherEnabled, false)) hub.Weather.Tick(DateTime.Now);
         PetBridge.PublishAppState(new
         {
             pomodoro = new { running = hub.Pomodoro.Running, focus = hub.Pomodoro.IsFocus, remaining = hub.Pomodoro.Remaining },
@@ -476,8 +475,11 @@ public partial class App : Application
         if (view is { } v) model.Show(v);
         if (view is { } w && model.OpensInWindow(w)) return;   // se abrió en su propia ventana
         if (notch is not null) notch.Reveal();
-        else panel.ShowAt(tray.Rect());
+        else EnsurePanel().ShowAt(tray.Rect());
     }
+
+    private ContentView CreateContent() => new(model);
+    private PanelWindow EnsurePanel() => panel ??= new PanelWindow(CreateContent);
 
     /// El notch (lo principal) comparte la vista del panel: solo una ventana la aloja a la vez.
     private void ApplyNotchDock()
@@ -488,25 +490,23 @@ public partial class App : Application
         if (want == (notch is not null)) return;
         if (want)
         {
-            panel.HidePanel();
-            panel.Content = null;
-            notch = new NotchHost(model, prefs, content);
+            panel?.HidePanel();
+            notch = new NotchHost(model, prefs, CreateContent);
             notch.Start();
         }
         else
         {
             notch!.Stop();
             notch = null;
-            panel.Attach(content);
         }
     }
 
     private void TogglePanel()
     {
         if (notch is not null) { notch.Toggle(); return; }
-        if (panel.IsVisible) { panel.HidePanel(); return; }
+        if (panel?.IsVisible == true) { panel.HidePanel(); return; }
         // El clic en el ícono ya cerró el panel al quitarle el foco: no se reabre.
-        if ((DateTime.Now - panel.LastHidden).TotalMilliseconds < 350) return;
+        if (panel is { } existing && (DateTime.Now - existing.LastHidden).TotalMilliseconds < 350) return;
         ShowPanel();
     }
 
@@ -514,7 +514,7 @@ public partial class App : Application
 
     private void ShowMenu()
     {
-        panel.HidePanel();
+        panel?.HidePanel();
         notch?.Windows.ToList().ForEach(w => w.Collapse());
         var menu = new ContextMenu { Placement = PlacementMode.MousePoint };
 
@@ -549,6 +549,9 @@ public partial class App : Application
         }
         var still = Add(menu, tr("Movimiento reducido"), prefs.ToggleReducedMotion);   // Prefs.Changed repinta
         still.IsChecked = prefs.ReducedMotion;
+        // Prefs.Changed ya llama a ApplyNotchDock: cambia entre notch y panel de la bandeja al instante.
+        var legacy = Add(menu, tr("Versión legacy (panel de la bandeja)"), () => prefs.Toggle(PrefKeys.LegacyPanel, false));
+        legacy.IsChecked = prefs.Switch(PrefKeys.LegacyPanel, false);
         menu.Items.Add(PetMenu());
         Add(menu, tr("Actividad"), () => ShowPanel(PanelView.Activity));
 

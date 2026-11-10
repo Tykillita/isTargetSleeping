@@ -11,7 +11,8 @@ namespace IsTargetSleeping.UI;
 /// al hacer clic fuera.
 public sealed class PanelWindow : Window
 {
-    private FrameworkElement view;
+    private readonly Func<FrameworkElement> viewFactory;
+    private FrameworkElement? view;
     private Win32.RECT? anchor;
     private IntPtr hwnd;
 
@@ -25,10 +26,9 @@ public sealed class PanelWindow : Window
         ? new Win32.POINT { X = Defaults.GetInt("panelX"), Y = Defaults.GetInt("panelY") }
         : null;
 
-    public PanelWindow(FrameworkElement content)
+    public PanelWindow(Func<FrameworkElement> viewFactory)
     {
-        view = content;
-        Content = content;
+        this.viewFactory = viewFactory;
         Title = AppInfo.Name;
         WindowStyle = WindowStyle.SingleBorderWindow;
         ResizeMode = ResizeMode.NoResize;
@@ -63,22 +63,24 @@ public sealed class PanelWindow : Window
             Glass.Apply(this, extendFrame: false);
         };
         Deactivated += (_, _) => HidePanel();
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && !(view.DataContext is PanelViewModel m && m.CloseTopOverlay())) HidePanel(); };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && !(view?.DataContext is PanelViewModel m && m.CloseTopOverlay())) HidePanel(); };
         // Al crecer o encoger (Ajustes, lista de modelos), se reancla sobre la bandeja (o
         // se mantiene donde lo dejaste, dentro de la pantalla) cuando ya tiene su tamaño nuevo.
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(Place, System.Windows.Threading.DispatcherPriority.Background);
     }
 
-    /// Vuelve a alojar la vista (el dock tipo notch la comparte: solo puede tener un padre).
-    public void Attach(FrameworkElement content)
+    private FrameworkElement EnsureView()
     {
-        view = content;
-        Content = content;
+        var current = view ??= viewFactory();
+        if (current is ContentView panel) panel.ActivateModel();
+        Content = current;
+        return current;
     }
 
     public void ShowAt(Win32.RECT? iconRect)
     {
         anchor = iconRect;
+        EnsureView();
         new WindowInteropHelper(this).EnsureHandle();
         Place();
         Show();
@@ -92,6 +94,9 @@ public sealed class PanelWindow : Window
         if (!IsVisible) return;
         LastHidden = DateTime.Now;
         Hide();
+        Content = null;
+        if (view is ContentView panel) panel.DeactivateModel();
+        view = null;
     }
 
     // MARK: arrastrar desde la cabecera
@@ -148,7 +153,7 @@ public sealed class PanelWindow : Window
     private void Place()
     {
         if (hwnd == IntPtr.Zero) hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd == IntPtr.Zero || drag is not null) return;   // mientras lo arrastras, manda el ratón
+        if (hwnd == IntPtr.Zero || drag is not null || view is not { } currentView) return;   // mientras lo arrastras, manda el ratón
 
         Win32.POINT point;
         if (moved is { } m) point = new Win32.POINT { X = m.X + 20, Y = m.Y + 20 };
@@ -163,7 +168,7 @@ public sealed class PanelWindow : Window
 
         // El cuerpo (Ajustes, Actividad, muchos modelos) se desplaza en vez de salirse
         // de la pantalla: como mucho ~75 % del área de trabajo.
-        if (view.DataContext is PanelViewModel model)
+        if (currentView.DataContext is PanelViewModel model)
         {
             double workDip = info.rcWork.Height / scale;
             model.BodyMaxHeight = PanelViewModel.BodyMaxFor(workDip);
@@ -171,9 +176,9 @@ public sealed class PanelWindow : Window
 
         // El tamaño sale del contenido, no de GetWindowRect: al pasar a Ajustes
         // Windows aún no ha redimensionado la ventana cuando llega SizeChanged.
-        view.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        int w = (int)Math.Ceiling(view.DesiredSize.Width * scale);
-        int h = (int)Math.Ceiling(view.DesiredSize.Height * scale);
+        currentView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        int w = (int)Math.Ceiling(currentView.DesiredSize.Width * scale);
+        int h = (int)Math.Ceiling(currentView.DesiredSize.Height * scale);
 
         var work = info.rcWork;
         var mon = info.rcMonitor;

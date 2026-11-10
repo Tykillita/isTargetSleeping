@@ -35,7 +35,7 @@
     </Style>
   </UserControl.Resources>
   <!-- La versión corta del notch (al pasar el ratón): una página por widget (o por 2 o 4, según Ajustes); cabecera con batería, fecha y hora; flechas,
-       puntos, rueda y ← → para cambiar de página; el mini dock sale por debajo al pasar el ratón por los puntos. Las medidas son las de Nusa (420 × 140). -->
+       puntos, rueda y ← → para cambiar de página; el mini dock sale por debajo al pasar el ratón por los puntos. Las medidas siguen la referencia (420 × 157). -->
   <StackPanel>
   <Grid x:Name="top" MinHeight="60">
     <!-- Con la vista de letras, el borde de abajo se tiñe con el color de la portada -->
@@ -48,7 +48,7 @@
     </StackPanel>
     <Canvas IsHitTestVisible="False"><Image x:Name="oldPage" Stretch="Fill" Visibility="Collapsed" /></Canvas>
     <!-- Fecha y hora centradas en la vista corta; el indicador en vivo queda anclado a la derecha. -->
-    <Grid x:Name="header" Grid.Row="0" Width="420" Height="30" VerticalAlignment="Top" HorizontalAlignment="Center" IsHitTestVisible="False"
+    <Grid x:Name="header" Grid.Row="0" Width="420" Height="30" Margin="0,16,0,0" VerticalAlignment="Top" HorizontalAlignment="Center" IsHitTestVisible="False"
             Visibility="{Binding ShowPeekHeader, Converter={StaticResource Visible}}">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
         <ui:BatteryRing x:Name="headerRing" Width="18" Height="18" Margin="0,0,7,0" />
@@ -118,7 +118,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </Grid>
-      <Border x:Name="dockRow" Grid.Row="1" Visibility="Collapsed" Opacity="0" Height="22" Margin="0,0,0,14" Background="Transparent">
+      <Border x:Name="dockRow" Grid.Row="1" Visibility="Collapsed" Opacity="0" Height="22" Margin="0,-4,0,4" Background="Transparent">
     <Border CornerRadius="11" Padding="4,0" Height="22" HorizontalAlignment="Center" VerticalAlignment="Top" Background="#121212">
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <ItemsControl ItemsSource="{Binding PeekIcons}" Focusable="False" VerticalAlignment="Center">

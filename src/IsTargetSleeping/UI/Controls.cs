@@ -283,7 +283,8 @@ public static class AppIcons
         {
             var icons = large ? largeCache : cache;
             if (icons.TryGetValue(path, out var known)) return known;
-            if (icons.Count >= 2048) icons.Remove(icons.Keys.First());
+            // 128 cubren los 100 elementos del Estante y hasta 4 apps favoritas sin retener su historial entero.
+            if (icons.Count >= (large ? 128 : 2048)) icons.Remove(icons.Keys.First());
             if (!File.Exists(path)) return icons[path] = null;
             ImageSource? image = null;
             IntPtr hIcon = IntPtr.Zero;

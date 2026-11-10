@@ -359,20 +359,6 @@
                          Visibility="{Binding WidgetsAreFull, Converter={StaticResource Visible}}" />
             </StackPanel>
           </Border>
-          <Border Style="{StaticResource WidgetFoldersCardBox}" Margin="0,10,0,0">
-            <StackPanel>
-              <TextBlock Text="{Binding SystemMetricsTitle}" Style="{StaticResource Eyebrow}" />
-              <TextBlock Text="{Binding SystemMetricsDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
-              <ContentControl Content="{Binding MetricFolders}" Focusable="False" />
-            </StackPanel>
-          </Border>
-          <Border Style="{StaticResource WidgetFoldersCardBox}" Margin="0,10,0,0">
-            <StackPanel>
-              <TextBlock Text="{Binding ActivitiesTitle}" Style="{StaticResource Eyebrow}" />
-              <TextBlock Text="{Binding ActivitiesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
-              <ContentControl Content="{Binding ActivityFolders}" Focusable="False" />
-            </StackPanel>
-          </Border>
           <Border Style="{StaticResource CardBox}" Margin="0,10,0,0">
             <StackPanel>
               <TextBlock Text="{Binding PillTitle}" Style="{StaticResource Eyebrow}" />
@@ -385,29 +371,8 @@
             <StackPanel>
               <TextBlock Text="{Binding PeekTitle}" Style="{StaticResource Eyebrow}" />
               <TextBlock Text="{Binding PeekIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,4" />
-              <TextBlock Text="{Binding PeekLayoutTitle}" Style="{StaticResource Label}" Margin="0,6,0,0" />
-              <TextBlock Text="{Binding PeekLayoutDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,1,0,0" />
-              <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding PeekLayoutSegments}" Margin="0,7,0,10" AutomationProperties.Name="{Binding PeekLayoutTitle}" />
-              <TextBlock Text="{Binding PeekCells}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,12" />
+              <TextBlock Text="{Binding PeekWidgetCount}" Style="{StaticResource MonoSmall}" Foreground="{DynamicResource Secondary}" Margin="0,0,0,12" />
               <ContentControl Content="{Binding PeekFolders}" Focusable="False" />
-            </StackPanel>
-          </Border>
-          <Border Style="{StaticResource WidgetFoldersCardBox}" Margin="0,10,0,0">
-            <StackPanel>
-              <TextBlock Text="{Binding DockTitle}" Style="{StaticResource Eyebrow}" />
-              <TextBlock Text="{Binding DockIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
-              <ContentControl Content="{Binding DockFolders}" Focusable="False" />
-            </StackPanel>
-          </Border>
-          <Border Style="{StaticResource WidgetFoldersCardBox}" Margin="0,10,0,0">
-            <StackPanel>
-              <TextBlock Text="{Binding FavoritesTitle}" Style="{StaticResource Eyebrow}" />
-              <TextBlock Text="{Binding FavoritesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
-              <ContentControl Content="{Binding FavoriteFolders}" Focusable="False" />
-              <Button Style="{StaticResource Bordered}" Command="{Binding AddFavoriteApp}" IsEnabled="{Binding CanAddFavoriteApp}" HorizontalAlignment="Left" Margin="0,12,0,0"
-                      AutomationProperties.Name="{Binding AddAppLabel}" ToolTip="{Binding AddAppHelp}">
-                <TextBlock Text="{Binding AddAppLabel}" />
-              </Button>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -1110,7 +1075,7 @@
                             <Button DockPanel.Dock="Right" Style="{StaticResource Prominent}" Content="{Binding PullLabel}" Margin="8,0,0,0"
                                     Command="{Binding PullModel}" CommandParameter="{Binding Text, ElementName=PullBox}" />
                             <Grid>
-                                <TextBox x:Name="PullBox" Style="{StaticResource Field}">
+                                <TextBox x:Name="PullBox" Style="{StaticResource Field}" Text="{Binding PullModelName, UpdateSourceTrigger=PropertyChanged}">
                                     <TextBox.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding PullModel}" CommandParameter="{Binding Text, ElementName=PullBox}" />
                                     </TextBox.InputBindings>
@@ -1845,6 +1810,31 @@
                     <ui:SeekBar Value="{Binding GlassLevel}" Command="{Binding SetGlassLevel}" AutomationProperties.Name="{Binding GlassLevelText}" Margin="0,5,0,0" />
                 </StackPanel>
             </Border>
+            <Border x:Name="SystemMetricSettingsCard" Style="{StaticResource WidgetFoldersCardBox}" Margin="0,8,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding SystemMetricsTitle}" Style="{StaticResource Eyebrow}" />
+                    <TextBlock Text="{Binding SystemMetricsDetail}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                    <ContentControl Content="{Binding MetricFolders}" Focusable="False" />
+                </StackPanel>
+            </Border>
+            <Border x:Name="DockSettingsCard" Style="{StaticResource WidgetFoldersCardBox}" Margin="0,8,0,0">
+              <StackPanel>
+                <TextBlock Text="{Binding DockTitle}" Style="{StaticResource Eyebrow}" />
+                <TextBlock Text="{Binding DockIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                <ContentControl Content="{Binding DockFolders}" Focusable="False" />
+              </StackPanel>
+            </Border>
+            <Border x:Name="FavoritesSettingsCard" Style="{StaticResource WidgetFoldersCardBox}" Margin="0,8,0,0">
+              <StackPanel>
+                <TextBlock Text="{Binding FavoritesTitle}" Style="{StaticResource Eyebrow}" />
+                <TextBlock Text="{Binding FavoritesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                <ContentControl Content="{Binding FavoriteFolders}" Focusable="False" />
+                <Button Style="{StaticResource Bordered}" Command="{Binding AddFavoriteApp}" IsEnabled="{Binding CanAddFavoriteApp}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                        AutomationProperties.Name="{Binding AddAppLabel}" ToolTip="{Binding AddAppHelp}">
+                  <TextBlock Text="{Binding AddAppLabel}" />
+                </Button>
+              </StackPanel>
+            </Border>
             <Border Style="{StaticResource CardBox}" Margin="0,8,0,0">
                 <StackPanel>
                     <TextBlock Text="{Binding PhoneTitle}" Style="{StaticResource Label}" />
@@ -1982,38 +1972,58 @@
                 <StackPanel>
                     <TextBlock Text="{Binding ScreensIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" />
                     <ItemsControl Style="{StaticResource Segmented}" ItemsSource="{Binding ScreenModeSegments}" Margin="0,9,0,0" AutomationProperties.Name="{Binding SettingsPageTitle}" />
+                    <Border Margin="0,10,0,0" Padding="9,6" CornerRadius="8" Background="{DynamicResource AccentSoft}" BorderBrush="{DynamicResource Accent}" BorderThickness="1">
+                        <TextBlock Text="{Binding ScreenSelectionSummary}" Foreground="{DynamicResource Accent}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </Border>
                     <ItemsControl ItemsSource="{Binding ScreenTiles}" Focusable="False" Margin="-4,12,-4,0">
                         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type ui:ScreenTile}">
-                                <Button Command="{Binding Toggle}" Style="{StaticResource Plain}" Margin="4" AutomationProperties.Name="{Binding Number}">
-                                    <Border x:Name="tile" Width="132" Height="78" CornerRadius="10" BorderThickness="1.5" BorderBrush="{DynamicResource CardStroke}" Background="{DynamicResource CardFill}">
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding Number}" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" HorizontalAlignment="Center" />
-                                            <TextBlock Text="{Binding Resolution}" Style="{StaticResource Hint}" HorizontalAlignment="Center" />
-                                            <TextBlock Text="{Binding PrimaryLabel}" Style="{StaticResource Hint}" FontSize="10" HorizontalAlignment="Center" />
-                                        </StackPanel>
+                                <Button Command="{Binding Toggle}" IsEnabled="{Binding CanSelect}" Style="{StaticResource Plain}" Margin="4"
+                                        ToolTip="{Binding StatusLabel}" AutomationProperties.Name="{Binding AccessibleName}">
+                                    <Border x:Name="tile" Width="148" Height="104" CornerRadius="10" BorderThickness="1.5" BorderBrush="{DynamicResource CardStroke}" Background="{DynamicResource CardFill}">
+                                        <Grid>
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="14,8">
+                                                <TextBlock Text="{Binding Number}" FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource Fg}" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{Binding Resolution}" Style="{StaticResource Hint}" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{Binding PrimaryLabel}" Style="{StaticResource Hint}" FontSize="10" HorizontalAlignment="Center" />
+                                                <TextBlock x:Name="tileStatus" Text="{Binding StatusLabel}" Style="{StaticResource Hint}" FontSize="10" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                            </StackPanel>
+                                            <Border x:Name="selectedBadge" Width="20" Height="20" CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                    Margin="0,5,5,0" Background="{DynamicResource Accent}" Visibility="Collapsed">
+                                                <TextBlock Text="✓" Foreground="{DynamicResource OnAccent}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
                                     </Border>
                                 </Button>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsOn}" Value="True">
                                         <Setter TargetName="tile" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                        <Setter TargetName="tile" Property="BorderThickness" Value="2" />
+                                        <Setter TargetName="tile" Property="Background" Value="{DynamicResource AccentSoft}" />
+                                        <Setter TargetName="tileStatus" Property="Foreground" Value="{DynamicResource Accent}" />
+                                        <Setter TargetName="selectedBadge" Property="Visibility" Value="Visible" />
                                     </DataTrigger>
                                 </DataTemplate.Triggers>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <DockPanel Margin="0,10,0,0">
-                        <Button DockPanel.Dock="Right" Style="{StaticResource Bordered}" Content="{Binding AllScreensLabel}" Command="{Binding SelectAllScreens}" />
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource Bordered}" Content="{Binding PrimaryScreenLabel}" Command="{Binding SelectPrimaryScreen}" Margin="0,0,6,0" />
+                            <Button Style="{StaticResource Bordered}" Content="{Binding AllScreensLabel}" Command="{Binding SelectAllScreens}" />
+                        </StackPanel>
                         <TextBlock Text="{Binding ScreensClickHint}" Style="{StaticResource Hint}" TextWrapping="Wrap" VerticalAlignment="Center" />
                     </DockPanel>
                 </StackPanel>
             </Border>
             </StackPanel>
             <StackPanel Visibility="{Binding ShowingSettingsAlerts, Converter={StaticResource Visible}}">
-            <Border Style="{StaticResource CardBox}">
+            <Border Style="{StaticResource WidgetFoldersCardBox}">
                 <StackPanel>
-                    <ItemsControl ItemsSource="{Binding HudRows}" ItemTemplate="{StaticResource SwitchRowTemplate}" Focusable="False" />
+                    <TextBlock Text="{Binding ActivitiesTitle}" Style="{StaticResource Eyebrow}" />
+                    <TextBlock Text="{Binding ActivitiesIntro}" Style="{StaticResource Hint}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                    <ContentControl Content="{Binding ActivityFolders}" Focusable="False" />
                 </StackPanel>
             </Border>
             </StackPanel>

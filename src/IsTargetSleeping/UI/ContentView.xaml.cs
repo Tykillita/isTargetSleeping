@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Automation;
@@ -14,6 +15,8 @@ namespace IsTargetSleeping.UI;
 
 public partial class ContentView : UserControl
 {
+    private readonly PanelViewModel model;
+    private bool modelActive;
     private bool pulsing;
     private bool wide;
     private readonly Dictionary<Panel, UIElement[]> columnized = [];
@@ -54,13 +57,12 @@ public partial class ContentView : UserControl
 
     public ContentView(PanelViewModel model)
     {
+        this.model = model;
         InitializeComponent();
         galleryPreviousVisual = GalleryPreviousFrame;
         galleryCenterVisual = GalleryPreviewFrame;
         galleryNextVisual = GalleryNextFrame;
-        DataContext = model;
-        model.ChatLines.CollectionChanged += (_, _) => Dispatcher.BeginInvoke(ChatScroll.ScrollToEnd, System.Windows.Threading.DispatcherPriority.Background);
-        PropertyChangedEventManager.AddHandler(model, OnModelChanged, string.Empty);
+        ActivateModel();
         GalleryViewportHost.SizeChanged += (_, _) => { if (galleryMotionSceneReady) UpdateGalleryMotionScene(); else EnsureGalleryMotionScene(); };
         GalleryMotionViewport.SizeChanged += (_, _) => { if (galleryMotionSceneReady) UpdateGalleryMotionScene(); else EnsureGalleryMotionScene(); };
         foreach (var frame in new[] { galleryPreviousVisual, galleryCenterVisual, galleryNextVisual })
@@ -68,6 +70,7 @@ public partial class ContentView : UserControl
         IsVisibleChanged += (_, _) => model.SetPanelVisible(IsVisible);
         Loaded += (_, _) =>
         {
+            ActivateModel();
             model.GallerySelectionRequested += AnimateGallerySelection;
             model.HomePageChanged += SlideHomePage;
             GalleryAddButton.ApplyTemplate();
@@ -77,6 +80,7 @@ public partial class ContentView : UserControl
         };
         Unloaded += (_, _) =>
         {
+            DeactivateModel();
             model.GallerySelectionRequested -= AnimateGallerySelection;
             model.HomePageChanged -= SlideHomePage;
             CancelGalleryTransition(commitPending: true);
@@ -84,6 +88,31 @@ public partial class ContentView : UserControl
         };
         ApplyWide(model.WideLayout);
     }
+
+    internal void ActivateModel()
+    {
+        if (modelActive) return;
+        modelActive = true;
+        DataContext = model;
+        model.ChatLines.CollectionChanged += OnChatLinesChanged;
+        PropertyChangedEventManager.AddHandler(model, OnModelChanged, string.Empty);
+        OnModelChanged(model, new PropertyChangedEventArgs(string.Empty));
+    }
+
+    internal void DeactivateModel()
+    {
+        if (!modelActive) return;
+        modelActive = false;
+        model.ChatLines.CollectionChanged -= OnChatLinesChanged;
+        PropertyChangedEventManager.RemoveHandler(model, OnModelChanged, string.Empty);
+        DataContext = null;
+        pulsing = false;
+        HaloScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        HaloScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+    }
+
+    private void OnChatLinesChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+        Dispatcher.BeginInvoke(ChatScroll.ScrollToEnd, System.Windows.Threading.DispatcherPriority.Background);
 
     /// Al pasar de página el contenido entra deslizándose desde el lado al que se va, con un fundido; sin animaciones del sistema, cambia sin más.
     private void SlideHomePage(int direction)

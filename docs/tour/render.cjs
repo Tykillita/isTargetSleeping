@@ -35,15 +35,15 @@ const server = http.createServer((request, response) => {
     await page.setViewport({ width: config.width || 1920, height: config.height || 1080, deviceScaleFactor: 1 });
     page.on('pageerror', error => errors.push(error.message));
     await page.goto(`http://127.0.0.1:${server.address().port}/${config.page || 'index.html'}?lang=${config.lang}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => window.ready === 77 && window.tourReady === true, { timeout: 30000 });
+    await page.waitForFunction(() => Number.isFinite(window.ready) && window.tourReady === true, { timeout: 30000 });
     const duration = await page.evaluate(() => window.ready);
-    if (duration !== 77) throw new Error('The presentation must last exactly 77 seconds.');
+    if (Math.round(duration * FPS) !== duration * FPS) throw new Error('The duration must land on a whole video frame.');
     if (errors.length) throw new Error(`Presentation assets failed: ${errors.join(', ')}`);
     fs.mkdirSync(config.review, { recursive: true });
     if (config.stills) {
       for (const time of config.stills) {
         await page.evaluate(t => window.render(t), time);
-        await new Promise(resolve => setTimeout(resolve, 900));
+        await new Promise(resolve => setTimeout(resolve, 1300));
         await page.screenshot({ path: path.join(config.review, `${config.lang}-${time}.png`) });
       }
       return;
@@ -61,7 +61,8 @@ const server = http.createServer((request, response) => {
     const complete = once(encoder, 'close');
     encoder.stdin.on('error', error => errors.push(error.message));
     const frames = duration * FPS;
-    const reviewFrames = new Set((config.reviewTimes || [3, 8, 12, 16, 23, 28, 34, 39, 46, 50, 56, 60, 66, 69, 73, 75]).map(t => Math.round(t * FPS)));
+    const reviewFrames = new Set((config.reviewTimes || [2, 10, 19, 27, 38, 47, 57, 68, 75]).map(t => Math.round(t * FPS)));
+    const renderStart = performance.now();
     for (let i = 0; i < frames; i++) {
       await page.evaluate(t => window.render(t), i / FPS);
       const frame = await page.screenshot({ type: 'jpeg', quality: 97 });
@@ -72,11 +73,14 @@ const server = http.createServer((request, response) => {
         await page.screenshot({ path: config.poster, type: 'jpeg', quality: 98 });
       }
       if (i % 150 === 0) console.log(`${config.lang}: ${i}/${frames} frames`);
+      const nextFrameAt = renderStart + (i + 1) * 1000 / FPS;
+      await new Promise(resolve => setTimeout(resolve, Math.max(0, nextFrameAt - performance.now())));
+      if (performance.now() + 2 < nextFrameAt) throw new Error('Frame clock advanced ahead of real time.');
     }
     encoder.stdin.end();
     const [code] = await complete;
     if (code !== 0) throw new Error(`FFmpeg exited with ${code}`);
-    console.log(`${config.lang}: 2310 frames, supplied audio preserved`);
+    console.log(`${config.lang}: ${frames} frames at ${FPS} fps, supplied audio preserved`);
   } finally {
     if (encoder && encoder.exitCode === null) encoder.kill();
     if (browser) await browser.close();

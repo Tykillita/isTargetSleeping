@@ -157,6 +157,7 @@ static class WebTests
         check(up.IsSuccessStatusCode, "adjuntos: una imagen se sube");
         string upId = System.Text.Json.JsonDocument.Parse(await up.Content.ReadAsStringAsync()).RootElement.GetProperty("id").GetString()!;
         check(File.Exists(Path.Combine(dir, "uploads", upId, "foto.png")), "adjuntos: queda en uploads/<id>/<nombre>");
+        check((await http.SendAsync(Up("foto-grande.jpg", new byte[8192]))).IsSuccessStatusCode, "adjuntos: la subida supera el límite del protocolo de 4 KB");
         check((int)(await http.SendAsync(Up("virus.exe", [1, 2, 3]))).StatusCode == 415, "adjuntos: un .exe se rechaza");
         check((int)(await http.SendAsync(Up("../../evil.txt", [65]))).StatusCode == 200 && !File.Exists(Path.Combine(dir, "evil.txt")), "adjuntos: el nombre no puede salirse de su carpeta");
         check((int)(await http.SendAsync(Up("grande.pdf", new byte[10 * 1024 * 1024 + 10]))).StatusCode == 413, "adjuntos: mas de 10 MB -> 413");

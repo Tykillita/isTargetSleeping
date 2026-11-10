@@ -9,12 +9,15 @@ namespace IsTargetSleeping.UI;
 /// <summary>Lee cambios de brillo, teclas de bloqueo y aparatos Bluetooth; no oculta los avisos de Windows.</summary>
 public sealed class SystemHuds : IDisposable
 {
+    private const int BrightnessEventWaitMs = 5000;
     private readonly KeyboardLocks locks;
-    private int lastBrightness = -1, ticks;
+    private int lastBrightness = -1;
     private DateTime brightnessAt;
-    private Dictionary<string, string>? bluetoothDevices;
+    private readonly Dictionary<string, string> bluetoothDevices = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<DeviceWatcher> bluetoothWatchers = [];
+    private int bluetoothWatcherCount, bluetoothEnumerations, bluetoothGeneration;
+    private bool bluetoothBaselineReady, disposed;
     private (string Name, bool Connected, int? Percent, DeviceKind Kind, DateTime At)? bluetoothInfo;
-    private bool bluetoothReading;
     private bool brightnessEnabled, bluetoothEnabled;
     private bool brightnessReading;
     private CancellationTokenSource? brightnessEvents;
@@ -36,7 +39,13 @@ public sealed class SystemHuds : IDisposable
             if (wantsBrightness) { PollBrightness(); brightnessPoll.Start(); } else brightnessPoll.Stop();
         }
         locks.BrightnessEnabled = wantsBrightness;
-        bluetoothEnabled = ids.Contains("bluetooth");
+        var wantsBluetooth = ids.Contains("bluetooth");
+        if (wantsBluetooth != bluetoothEnabled)
+        {
+            bluetoothEnabled = wantsBluetooth;
+            if (wantsBluetooth) StartBluetoothWatchers();
+            else StopBluetoothWatchers();
+        }
         locks.Enabled = ids.Contains("locks");
         if (locks.Enabled && !languagePoll.IsEnabled) { lastLanguage = 0; languagePoll.Start(); }
         else if (!locks.Enabled) languagePoll.Stop();
@@ -86,12 +95,6 @@ public sealed class SystemHuds : IDisposable
     public string? LocksText => locks.Recent;
     /// El último aparato Bluetooth que se conectó o desconectó: nombre, si quedó conectado, su batería (si la dice) y cuándo.
     public (string Name, bool Connected, int? Percent, DeviceKind Kind, DateTime At)? BluetoothInfo => bluetoothInfo;
-
-    public void Refresh()
-    {
-        ticks++;
-        if (bluetoothEnabled) ReadBluetooth();
-    }
 
     private void PollBrightness()
     {
@@ -143,7 +146,7 @@ public sealed class SystemHuds : IDisposable
                 {
                     try
                     {
-                        dynamic item = source.NextEvent(1000);
+                        dynamic item = source.NextEvent(BrightnessEventWaitMs);
                         if (item is null) continue;
                         int value = Convert.ToInt32(item.Properties_.Item("Brightness").Value);   // por Properties_: leer la propiedad directo falla a ratos con «Unspecified error»
                         Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -162,45 +165,150 @@ public sealed class SystemHuds : IDisposable
         }
     }
 
-    private void ReadBluetooth()
+    private void StartBluetoothWatchers()
     {
-        // shortcut: polls connected Bluetooth devices every second; replace with a DeviceWatcher if the delay shows.
-        if (bluetoothReading) return;
-        bluetoothReading = true;
-        _ = Task.Run(async () =>
+        bluetoothDevices.Clear();
+        bluetoothWatcherCount = bluetoothEnumerations = 0;
+        bluetoothGeneration++;
+        bluetoothBaselineReady = false;
+        string[] selectors;
+        try
         {
+            selectors =
+            [
+                BluetoothDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected),
+                BluetoothLEDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected),
+            ];
+        }
+        catch (Exception e)
+        {
+            bluetoothBaselineReady = true;
+            AppLog.Write($"bluetooth: no se pudieron obtener los selectores: {e.Message}");
+            return;
+        }
+        foreach (var selector in selectors)
+        {
+            DeviceWatcher? watcher = null;
             try
             {
-                var current = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var selector in new[] { BluetoothDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected), BluetoothLEDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected) })
-                    foreach (var device in await DeviceInformation.FindAllAsync(selector))
-                        if (device.Name.Length > 0) current[device.Id] = device.Name;
-                var before = bluetoothDevices;
-                bluetoothDevices = current;
-                if (before is null) return;   // la primera lectura solo anota lo que ya estaba conectado
-                var joined = current.Where(c => !before.ContainsKey(c.Key)).Select(c => c.Value).FirstOrDefault();
-                var left = before.Where(b => !current.ContainsKey(b.Key)).Select(b => b.Value).FirstOrDefault();
-                if (joined is null && left is null) return;
-                var name = joined ?? left!;
-                var at = DateTime.Now;
-                var kind = DeviceKinds.Classify(name);
-                void Publish(int? percent) => Application.Current?.Dispatcher.BeginInvoke(() => { bluetoothInfo = (name, joined is not null, percent, kind, at); Changed?.Invoke(); });
-                Publish(null);   // la tarjeta sale ya; la batería se añade cuando Windows la tiene
-                if (joined is null) return;
-                foreach (var wait in new[] { 700, 1300 })
-                {
-                    await Task.Delay(wait);
-                    try
-                    {
-                        var battery = (await DeviceBatteryReader.ReadAsync()).FirstOrDefault(b => name.Contains(b.Name, StringComparison.OrdinalIgnoreCase) || b.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
-                        if (battery is not null) { Publish(battery.Percent); return; }
-                    }
-                    catch { }
-                }
+                watcher = DeviceInformation.CreateWatcher(selector);
+                watcher.Added += BluetoothAdded;
+                watcher.Removed += BluetoothRemoved;
+                watcher.EnumerationCompleted += BluetoothEnumerationCompleted;
+                watcher.Stopped += BluetoothStopped;
+                bluetoothWatchers.Add(watcher);
+                watcher.Start();
+                bluetoothWatcherCount++;
             }
-            catch (Exception e) { AppLog.Write($"bluetooth: lectura falló: {e.Message}"); }
-            finally { bluetoothReading = false; }
+            catch (Exception e)
+            {
+                if (watcher is not null)
+                {
+                    bluetoothWatchers.Remove(watcher);
+                    DetachBluetoothWatcher(watcher);
+                }
+                AppLog.Write($"bluetooth: no se pudo iniciar el vigilante: {e.Message}");
+            }
+        }
+        if (bluetoothWatcherCount == 0) bluetoothBaselineReady = true;
+    }
+
+    private void BluetoothAdded(DeviceWatcher sender, DeviceInformation info) => Application.Current?.Dispatcher.BeginInvoke(() =>
+    {
+        if (!bluetoothEnabled || !bluetoothWatchers.Contains(sender)) return;
+        var name = TrackBluetoothDevice(info.Id, info.Name, true);
+        if (name is not null) PublishBluetooth(name, true);
+    });
+
+    private void BluetoothRemoved(DeviceWatcher sender, DeviceInformationUpdate info) => Application.Current?.Dispatcher.BeginInvoke(() =>
+    {
+        if (!bluetoothEnabled || !bluetoothWatchers.Contains(sender)) return;
+        var name = TrackBluetoothDevice(info.Id, null, false);
+        if (name is not null) PublishBluetooth(name, false);
+    });
+
+    private void BluetoothEnumerationCompleted(DeviceWatcher sender, object args) => Application.Current?.Dispatcher.BeginInvoke(() =>
+    {
+        if (!bluetoothEnabled || !bluetoothWatchers.Contains(sender)) return;
+        if (++bluetoothEnumerations >= bluetoothWatcherCount) bluetoothBaselineReady = true;
+    });
+
+    private void BluetoothStopped(DeviceWatcher sender, object args) => Application.Current?.Dispatcher.BeginInvoke(async () =>
+    {
+        if (!bluetoothEnabled || !bluetoothWatchers.Contains(sender)) return;
+        AppLog.Write($"bluetooth: un vigilante se detuvo inesperadamente ({sender.Status}) y se recuperará");
+        StopBluetoothWatchers();
+        int generation = bluetoothGeneration;
+        await Task.Delay(2000);
+        if (bluetoothEnabled && !disposed && generation == bluetoothGeneration) StartBluetoothWatchers();
+    });
+
+    private string? TrackBluetoothDevice(string id, string? name, bool connected)
+    {
+        if (connected)
+        {
+            if (string.IsNullOrWhiteSpace(name) || bluetoothDevices.ContainsKey(id)) return null;
+            bluetoothDevices[id] = name;
+            return bluetoothBaselineReady ? name : null;
+        }
+        if (!bluetoothDevices.Remove(id, out var previous)) return null;
+        return bluetoothBaselineReady ? previous : null;
+    }
+
+    private void PublishBluetooth(string name, bool connected)
+    {
+        var at = DateTime.Now;
+        var kind = DeviceKinds.Classify(name);
+        void Publish(int? percent) => Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            if (!bluetoothEnabled || disposed) return;
+            bluetoothInfo = (name, connected, percent, kind, at);
+            Changed?.Invoke();
         });
+        Publish(null);
+        if (!connected) return;
+        _ = Task.Run(() => ReadBluetoothBattery(name, Publish));
+    }
+
+    private static async Task ReadBluetoothBattery(string name, Action<int?> publish)
+    {
+        foreach (var wait in new[] { 700, 1300 })
+        {
+            await Task.Delay(wait);
+            try
+            {
+                var battery = (await DeviceBatteryReader.ReadAsync()).FirstOrDefault(b => name.Contains(b.Name, StringComparison.OrdinalIgnoreCase) || b.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+                if (battery is not null) { publish(battery.Percent); return; }
+            }
+            catch { }
+        }
+    }
+
+    private void StopBluetoothWatchers()
+    {
+        bluetoothGeneration++;
+        foreach (var watcher in bluetoothWatchers.ToArray())
+        {
+            DetachBluetoothWatcher(watcher);
+            try
+            {
+                if (watcher.Status is DeviceWatcherStatus.Started or DeviceWatcherStatus.EnumerationCompleted)
+                    watcher.Stop();
+            }
+            catch { }
+        }
+        bluetoothWatchers.Clear();
+        bluetoothDevices.Clear();
+        bluetoothWatcherCount = bluetoothEnumerations = 0;
+        bluetoothBaselineReady = false;
+    }
+
+    private void DetachBluetoothWatcher(DeviceWatcher watcher)
+    {
+        watcher.Added -= BluetoothAdded;
+        watcher.Removed -= BluetoothRemoved;
+        watcher.EnumerationCompleted -= BluetoothEnumerationCompleted;
+        watcher.Stopped -= BluetoothStopped;
     }
 
     private static int ReadBrightness()
@@ -217,7 +325,13 @@ public sealed class SystemHuds : IDisposable
         return -1;
     }
 
-    public void Dispose() { brightnessPoll.Stop(); brightnessEvents?.Cancel(); brightnessEvents?.Dispose(); locks.Dispose(); }
+    public void Dispose()
+    {
+        disposed = true;
+        bluetoothEnabled = false;
+        StopBluetoothWatchers();
+        brightnessPoll.Stop(); brightnessEvents?.Cancel(); brightnessEvents?.Dispose(); locks.Dispose();
+    }
 }
 
 internal sealed class KeyboardLocks : IDisposable

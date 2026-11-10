@@ -55,6 +55,7 @@ public abstract class EngineBase : IEngine
 
     protected readonly IdleTracker tracker = new();
     private bool refreshing;
+    private long offRetryAt;
 
     public int IdleMinutes
     {
@@ -71,7 +72,7 @@ public abstract class EngineBase : IEngine
 
     public async Task Refresh()
     {
-        if (refreshing || IsDemo || UI.Motion.IsAnimating) return;   // el sondeo toca la interfaz: si el notch se está moviendo, espera al siguiente
+        if (refreshing || IsDemo || UI.Motion.IsAnimating || Power == Power.Off && Environment.TickCount64 < offRetryAt) return;   // shortcut: un motor iniciado fuera de la app puede tardar hasta 10 s en aparecer
         refreshing = true;
         try
         {
@@ -93,6 +94,7 @@ public abstract class EngineBase : IEngine
         catch (Exception e) { Error = e.Message; }
         finally
         {
+            offRetryAt = Power == Power.Off ? Environment.TickCount64 + 10_000 : 0;
             refreshing = false;
             Notify();
         }

@@ -94,6 +94,7 @@ public sealed class OllamaController
     private System.Windows.Threading.DispatcherTimer? timer;
     private Timer? clientTimer;
     private bool refreshing;
+    private long offRetryAt;
     private readonly IdleTracker tracker = new();
     private readonly Watchdog watchdog = new();
     private bool releasing;
@@ -129,6 +130,7 @@ public sealed class OllamaController
         {
             try
             {
+                if (Power is Power.Off or Power.Missing) return;
                 var apps = TcpClients.Connected(port).Select(AppIdentity.Of).OfType<ClientApp>().ToList();
                 if (apps.Count > 0) Clients.Seen(apps, DateTime.Now);
             }
@@ -139,6 +141,7 @@ public sealed class OllamaController
     public async Task Refresh()
     {
         if (refreshing || IsDemo || UI.Motion.IsAnimating) return;   // el sondeo toca la interfaz: si el notch se está moviendo, espera al siguiente
+        if (!wantOn && (Power is Power.Off or Power.Missing) && Environment.TickCount64 < offRetryAt) return;   // shortcut: un servidor iniciado fuera de la app puede tardar hasta 10 s en aparecer
         refreshing = true;
         try
         {
@@ -178,6 +181,7 @@ public sealed class OllamaController
         }
         finally
         {
+            offRetryAt = !wantOn && (Power is Power.Off or Power.Missing) ? Environment.TickCount64 + 10_000 : 0;
             refreshing = false;
             Changed?.Invoke();
         }

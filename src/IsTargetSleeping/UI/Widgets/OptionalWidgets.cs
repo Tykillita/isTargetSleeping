@@ -547,9 +547,11 @@ public sealed class AgentsWatcher : IDisposable
         var root = Environment.GetEnvironmentVariable("CLAUDE_CONFIG_DIR");
         if (string.IsNullOrWhiteSpace(root)) root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude");
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var scheduledTasks = Path.Combine(root, "scheduled-tasks");
+        if (!Directory.Exists(scheduledTasks)) return result;
         try
         {
-            foreach (var directory in Directory.EnumerateDirectories(Path.Combine(root, "scheduled-tasks")))
+            foreach (var directory in Directory.EnumerateDirectories(scheduledTasks))
             {
                 try
                 {

@@ -28,7 +28,9 @@ public sealed class NotchWindow : Window
     private const double CornerRadiusDip = 26, EarDip = 40;   // 40: hombros ≈ 6,5 % del ancho del cuerpo, medidos en el video del notch de Droppy (44 px de 662)
 
     private readonly PanelViewModel model;
-    private readonly FrameworkElement view;
+    private readonly Func<FrameworkElement> viewFactory;
+    private FrameworkElement? view;
+    private bool releaseViewOnDetach = true;
     /// El negro animado: un trazo (con suavizado) con la forma del notch y, encima, el contenido recortado a su cuerpo.
     private readonly Grid shell = new() { VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly System.Windows.Shapes.Path body = new() { Stretch = Stretch.None };
@@ -51,7 +53,8 @@ public sealed class NotchWindow : Window
     /// La luz de los agentes: un hilo de color en el borde de abajo (y las esquinas) que se enciende según lo que hacen.
     private readonly System.Windows.Shapes.Path stateGlow = Bevel(2.6);
     private const int BeamLayers = 48;
-    // La cola del haz: capas del mismo borde, cada una más larga y casi transparente, que acaban todas en la cabeza; sumadas dan un degradado suave, sin escalones.
+    // Una sola superficie dibuja las capas de la cola: 48 Path separados recalculaban el clip y la geometría en cada cuadro.
+    private readonly BeamTrail beamTrail = new();
     private readonly Grid stateGlowTail = new() { IsHitTestVisible = false, Visibility = Visibility.Collapsed, Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 0.8, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance } };
     private double beamTurn;
     private DateTime beamStartedAt;
@@ -68,7 +71,10 @@ public sealed class NotchWindow : Window
     }
     private double beamPeriod;
     private double[] beamDash = [];
-    private System.Windows.Shapes.Path[] beamParts = [];
+    private static readonly TimeSpan BeamFrameInterval = TimeSpan.FromSeconds(1d / 60);
+    private TimeSpan beamLastFrame;
+    private int beamFrameCount;
+    private bool beamShapeDirty;
     private bool beamHooked;
     private AgentGlowState glowState;
     private bool glowStill;
@@ -77,7 +83,7 @@ public sealed class NotchWindow : Window
     // El margen es el de los hombros de la pastilla cerrada (7): con el de los del panel (40) la pastilla de 150 solo tenía 70 px de ancho útil y se recortaba todo menos la hora.
     private readonly Grid holder = new() { Margin = new Thickness(PillEarDip, 0, PillEarDip, 0) };
     private readonly Button pill;
-    private readonly NotchPeek peek;
+    private NotchPeek? peek;
     /// Los botones flotantes bajo la isla: Resumen, Actividad, Ajustes y Procesos.
     /// Dos pastillas lado a lado, como en Droppy: la navegación y, al lado, los favoritos de un toque (encender, liberar RAM, procesos).
     private readonly Border dock = new() { HorizontalAlignment = HorizontalAlignment.Center, Visibility = Visibility.Collapsed };
@@ -136,10 +142,21 @@ public sealed class NotchWindow : Window
     public event Action<NotchWindow>? Pinned;
 
     public NotchWindow(PanelViewModel model, FrameworkElement view, string? lockedScreenId = null)
+        : this(model, () => view, lockedScreenId)
+    {
+        this.view = view;
+        releaseViewOnDetach = false;
+        PrepareView(view);
+        DetachView();
+    }
+
+    public NotchWindow(PanelViewModel model, Func<FrameworkElement> viewFactory, string? lockedScreenId = null)
     {
         this.model = model;
         this.lockedScreenId = lockedScreenId;
-        this.view = view;
+        this.viewFactory = viewFactory;
+        // Mantiene calculada la huella de apertura sin construir la vista corta mientras el notch permanece cerrado.
+        lastPeek = new(PeekSingleWidth, PeekSingleHeight);
         mouseMonitor = new NotchMouseMonitor(Dispatcher, OnMouseMoved, OnMouseClicked);
         visibility = new VisibilityMonitor(Dispatcher, EvaluateVisibility);
         gateTimer.Tick += (_, _) => { gateTimer.Stop(); EvaluateVisibility(); };
@@ -160,14 +177,7 @@ public sealed class NotchWindow : Window
         AutomationProperties.SetName(this, AppInfo.Name);
 
         pill = BuildPill();
-        view.VerticalAlignment = VerticalAlignment.Top;
-        view.HorizontalAlignment = HorizontalAlignment.Center;
-        view.Visibility = Visibility.Hidden;
-        peek = new NotchPeek(model) { VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center, Visibility = Visibility.Hidden };
-        if (view is System.Windows.Controls.Control control) control.Background = Brushes.Transparent;   // deja ver el vidrio de abajo
         holder.Children.Add(pill);
-        holder.Children.Add(peek);
-        holder.Children.Add(view);
         backdrop.Element.HorizontalAlignment = HorizontalAlignment.Center;
         backdrop.Element.VerticalAlignment = VerticalAlignment.Top;
         backdropHost.Children.Add(backdrop.Element);
@@ -177,13 +187,19 @@ public sealed class NotchWindow : Window
         shell.Children.Add(holder);
         shell.Children.Add(bevelColor);
         shell.Children.Add(bevelLight);
+        stateGlowTail.Children.Add(beamTrail);
         shell.Children.Add(stateGlowTail);
         shell.Children.Add(stateGlow);
         glowTimer.Tick += (_, _) => ApplyStateGlow();
-        BuildDock();
-        Content = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Children = { shell, dock } };
+        IsVisibleChanged += (_, _) => SyncBeamRendering();
+        var content = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch, VerticalAlignment = VerticalAlignment.Top, RowDefinitions = { new RowDefinition { Height = GridLength.Auto }, new RowDefinition { Height = GridLength.Auto } } };
+        Grid.SetRow(dock, 1);
+        content.Children.Add(shell);
+        content.Children.Add(dock);
+        Content = content;
         dock.SizeChanged += (_, _) => UpdateDockGlass();
         dock.IsVisibleChanged += (_, _) => Dispatcher.BeginInvoke(UpdateDockGlass, DispatcherPriority.Loaded);
+        dockSignature = DockSignature();
         shell.SizeChanged += (_, e) =>
         {
             UpdateDockGlass();
@@ -193,9 +209,9 @@ public sealed class NotchWindow : Window
             backdropHost.Clip = shape;
             PaintBevel(shape, e.NewSize.Height);
             stateGlow.Clip = shape;
-            foreach (var layer in stateGlowTail.Children.OfType<System.Windows.Shapes.Path>()) layer.Clip = shape;
-            if (glowState != AgentGlowState.Off && !glowStill) SetupBeam(e.NewSize.Width, e.NewSize.Height);   // el haz sigue la forma fotograma a fotograma (sin reiniciarse); el aro fijo, el contorno cerrado
-            else { stateGlow.Data = shape; foreach (var layer in stateGlowTail.Children.OfType<System.Windows.Shapes.Path>()) layer.Data = shape; }
+            beamTrail.Clip = shape;
+            if (glowState != AgentGlowState.Off && !glowStill) { beamShapeDirty = true; SyncBeamRendering(); }   // el haz sigue la forma al siguiente fotograma útil
+            else stateGlow.Data = shape;
             // Mientras la forma crece o se recoge, el cuerpo pasa de negro macizo a vidrio según lo abierta que esté (cúbico: casi todo el vidrio llega al final).
             double full = lastExpanded is { } expanded ? expanded.Height / Math.Max(0.5, scale) : e.NewSize.Height;
             double o = Math.Clamp((e.NewSize.Height - 45) / Math.Max(1, full - 45), 0, 1);
@@ -242,22 +258,13 @@ public sealed class NotchWindow : Window
         DpiChanged += (_, _) => Dispatcher.BeginInvoke(Apply, DispatcherPriority.Background);
         // Solo si el contenido cambió de tamaño de verdad: mientras la animación encoge o agranda el negro, la vista
         // también cambia de tamaño visible, y reaccionar a eso reiniciaría la animación una y otra vez.
-        view.SizeChanged += OnViewSizeChanged;
-        peek.IsVisibleChanged += (_, _) => model.SetPeekVisible(peek.IsVisible);
-        peek.SizeChanged += (_, _) => { if (state.Mode != NotchMode.Collapsed) RelayoutIfContentChanged(); };
-        peek.DockLayoutChanged += () =>
-        {
-            if (state.Mode == NotchMode.Collapsed) return;
-            dockResize = true;   // el mini dock solo mueve el borde de abajo unos píxeles: se anima suave, sin el rebote de abrir
-            try { RelayoutIfContentChanged(); } finally { dockResize = false; }
-        };
         model.AttentionRequested += OnAttention;
         model.TrayFilesAdded += OnTrayFiles;
         model.Hub.Shelf.PropertyChanged += OnShelfChanged;
         // Archivos arrastrados al notch: se abre la bandeja y se pueden soltar en ella.
         // WPF solo da el arrastre al elemento bajo el cursor si ese elemento lo permite: se permite en todo lo que cubre la isla.
         AllowDrop = true;
-        foreach (var part in new UIElement[] { shell, holder, peek, view, dock, pill }) part.AllowDrop = true;
+        foreach (var part in new UIElement[] { shell, holder, dock, pill }) part.AllowDrop = true;
         ((UIElement)Content).AllowDrop = true;
         PreviewDragEnter += OnDragOver;
         PreviewDragOver += OnDragOver;
@@ -297,8 +304,9 @@ public sealed class NotchWindow : Window
         StopBeam();
         if (next == AgentGlowState.Off) { stateGlow.Visibility = stateGlowTail.Visibility = Visibility.Collapsed; return; }
         var (r, g, b) = AgentGlowRules.Color(next);
-        stateGlow.Stroke = flat ? Theme.Brush(Theme.Current.Fg) : new SolidColorBrush(Color.FromRgb(r, g, b));
-        foreach (var layer in stateGlowTail.Children.OfType<System.Windows.Shapes.Path>()) layer.Stroke = stateGlow.Stroke;
+        var stroke = flat ? Theme.Brush(Theme.Current.Fg) : new SolidColorBrush(Color.FromRgb(r, g, b));
+        if (!flat) stroke.Freeze();
+        stateGlow.Stroke = stroke;
         stateGlow.Effect = flat || !still ? null : new System.Windows.Media.Effects.DropShadowEffect { Color = Color.FromRgb(r, g, b), BlurRadius = 8, ShadowDepth = 0, Opacity = 0.5 };
         stateGlow.Visibility = Visibility.Visible;
         if (still) { stateGlow.Opacity = 1; stateGlow.Data = body.Data; stateGlow.StrokeDashArray = null; stateGlow.StrokeThickness = 2.6; stateGlowTail.Visibility = Visibility.Collapsed; return; }   // fija: el aro entero, sin haz
@@ -308,46 +316,77 @@ public sealed class NotchWindow : Window
 
     private void StopBeam()
     {
-        if (beamHooked) { CompositionTarget.Rendering -= OnBeamFrame; beamHooked = false; }
+        PauseBeamRendering();
         stateGlow.BeginAnimation(OpacityProperty, null);
         stateGlowTail.BeginAnimation(OpacityProperty, null);
         stateGlow.Opacity = stateGlowTail.Opacity = 1;
+    }
+
+    private void PauseBeamRendering()
+    {
+        if (beamHooked)
+        {
+            CompositionTarget.Rendering -= OnBeamFrame;
+            beamHooked = false;
+        }
+        beamLastFrame = TimeSpan.Zero;
+        beamFrameCount = 0;
+        beamShapeDirty = false;
+        beamTrail.Clear();
+        stateGlow.StrokeDashArray = null;
+        stateGlow.StrokeDashOffset = 0;
+        stateGlow.Visibility = stateGlowTail.Visibility = Visibility.Collapsed;
+    }
+
+    private void SyncBeamRendering()
+    {
+        if (!gate.Shown || !IsVisible || state.Hidden || glowState == AgentGlowState.Off)
+        {
+            PauseBeamRendering();
+            return;
+        }
+        if (glowStill)
+        {
+            PauseBeamRendering();
+            stateGlow.Visibility = Visibility.Visible;
+            return;
+        }
+        if (!beamTrail.Ready || (!beamHooked && beamShapeDirty)) SetupBeam(shell.ActualWidth, shell.ActualHeight);
+        if (!beamTrail.Ready) return;
+        stateGlow.Visibility = stateGlowTail.Visibility = Visibility.Visible;
+        if (beamHooked) return;
+        beamStartedAt = DateTime.UtcNow;
+        beamLastFrame = TimeSpan.Zero;
+        beamFrameCount = 0;
+        CompositionTarget.Rendering += OnBeamFrame;
+        beamHooked = true;
     }
 
     /// El haz de luz: una punta nítida con una cola que se desvanece detrás, que entra por la oreja derecha, recorre el notch y sale por la izquierda (bordes con guiones
     /// cuyo desfase se pone en cada fotograma). Como el largo y la fase se calculan en cada fotograma, el haz sigue la forma mientras el notch se abre o cambia de widget.
     private void StartBeam()
     {
-        while (stateGlowTail.Children.Count < BeamLayers) stateGlowTail.Children.Add(Bevel(2.6));
-        var layers = stateGlowTail.Children.OfType<System.Windows.Shapes.Path>().ToArray();
-        beamParts = [.. layers, stateGlow];
-        foreach (var part in beamParts)
-        {
-            part.Stroke = stateGlow.Stroke;
-            part.StrokeThickness = 3;   // fino: más ancho se ve como un bloque en la pastilla (solo mide ~38 px)
-            part.OpacityMask = null;   // la máscara del canto de vidrio (sin luz arriba) cortaba la cola de golpe
-            part.StrokeDashCap = PenLineCap.Flat;
-            part.Visibility = Visibility.Visible;
-            part.Clip = stateGlow.Clip;
-        }
+        if (!gate.Shown || !IsVisible || state.Hidden) return;
+        if (stateGlowTail.Effect is { IsFrozen: false, CanFreeze: true } effect) effect.Freeze();
         // Un solo degradado de punta a cola: el borde delantero es nítido y a pleno color, y la luz baja de forma continua hasta cero en el extremo de atrás.
         // Cada capa suma su parte de modo que lo acumulado a distancia d de la punta sea ~ (1 - d/largo)^1,4.
-        int n = layers.Length;
-        double Cover(int count) => 0.97 * Math.Pow((double)count / n, 1.4);
-        for (int i = 0; i < n; i++) layers[i].Opacity = 1 - (1 - Cover(n - i)) / (1 - Cover(n - i - 1));
+        stateGlow.StrokeThickness = 3;   // fino: más ancho se ve como un bloque en la pastilla (solo mide ~38 px)
+        stateGlow.OpacityMask = null;   // la máscara del canto de vidrio (sin luz arriba) cortaba la cola de golpe
+        stateGlow.StrokeDashCap = PenLineCap.Flat;
+        stateGlow.Visibility = Visibility.Visible;
         stateGlow.Opacity = 1;
         stateGlowTail.Visibility = Visibility.Visible;
         // Más lenta que un latido: una vuelta de varios segundos (un haz rápido se ve nervioso). 1,55 = (camino + cola) / camino.
         beamTurn = (glowState == AgentGlowState.Done ? 3.2 : AgentGlowRules.PulseSeconds(glowState) * 2.4) * 1.55;
         beamStartedAt = DateTime.UtcNow;
         SetupBeam(shell.ActualWidth, shell.ActualHeight);
-        if (!beamHooked) { CompositionTarget.Rendering += OnBeamFrame; beamHooked = true; }
+        SyncBeamRendering();
     }
 
     /// Ajusta el contorno y los guiones al tamaño actual: el periodo (camino + cola) hace que el haz no vuelva a entrar hasta que la cola ha salido.
     private void SetupBeam(double w, double h)
     {
-        if (w < 1 || h < 1 || beamParts.Length == 0) return;
+        if (w < 1 || h < 1) return;
         const double t = 3;
         var (e, r) = ShapeMetrics(h);
         double length = Math.PI * (e + r) + 2 * (h - r - e) + (w - 2 * e - 2 * r);   // las dos orejas y las dos esquinas, los lados y la base
@@ -355,22 +394,113 @@ public sealed class NotchWindow : Window
         var shape = NotchBeamPath(w, h);
         double path = length / t, tail = 0.55 * path;
         beamPeriod = path + tail;
-        int n = beamParts.Length - 1;
+        int n = BeamLayers;
         if (beamDash.Length != n + 1) beamDash = new double[n + 1];
         for (int i = 0; i < n; i++) beamDash[i] = tail * (i + 1.0) / n;
         beamDash[n] = tail / n;   // la punta: el tramo más corto, a pleno color
-        for (int i = 0; i <= n; i++)
-        {
-            beamParts[i].Data = shape;
-            beamParts[i].StrokeDashArray = [beamDash[i], beamPeriod - beamDash[i]];
-        }
+        if (stateGlow.Stroke is not SolidColorBrush stroke) return;
+        beamTrail.Configure(shape, stroke.Color, t, path, tail, n);
+        beamShapeDirty = false;
+        var head = new DoubleCollection { beamDash[n], beamPeriod - beamDash[n] };
+        head.Freeze();
+        stateGlow.Data = shape;
+        stateGlow.StrokeDashArray = head;
     }
 
     private void OnBeamFrame(object? sender, EventArgs e)
     {
-        if (beamTurn <= 0 || beamParts.Length == 0 || beamPeriod <= 0) return;
+        if (beamTurn <= 0 || !beamTrail.Ready || beamPeriod <= 0 || e is not RenderingEventArgs frame) return;
+        if (frame.RenderingTime - beamLastFrame < BeamFrameInterval) return;
+        beamLastFrame = frame.RenderingTime;
+        beamFrameCount++;
+        if (beamShapeDirty) SetupBeam(shell.ActualWidth, shell.ActualHeight);
+        if (!beamTrail.Ready || beamPeriod <= 0) return;
         double front = (DateTime.UtcNow - beamStartedAt).TotalSeconds % beamTurn / beamTurn * beamPeriod;
-        for (int i = 0; i < beamParts.Length; i++) beamParts[i].StrokeDashOffset = beamDash[i] - front;   // el guion ocupa [frente - largo, frente]
+        beamTrail.SetFront(front);
+        stateGlow.StrokeDashOffset = beamDash[^1] - front;   // el guion ocupa [frente - largo, frente]
+    }
+
+    /// Renderiza la cola como un único visual para evitar que WPF recalcule 48 árboles de Path en cada cuadro.
+    private sealed class BeamTrail : FrameworkElement
+    {
+        private const int PathSamples = 1025;
+        private Point[] path = [];
+        private Pen[] pens = [];
+        private Color penColor;
+        private double penThickness;
+        private readonly DrawingVisual visual = new();
+        private double pathUnits;
+        private double tailUnits;
+        private double front;
+        public bool Ready => path.Length == PathSamples && pens.Length > 0;
+
+        public BeamTrail() => AddVisualChild(visual);
+
+        protected override int VisualChildrenCount => 1;
+        protected override Visual GetVisualChild(int index) => index == 0 ? visual : throw new ArgumentOutOfRangeException(nameof(index));
+
+        public void Configure(Geometry shape, Color color, double thickness, double pathLength, double tailLength, int count)
+        {
+            if (path.Length != PathSamples) path = new Point[PathSamples];
+            var flattened = shape.GetFlattenedPathGeometry();
+            for (int i = 0; i < path.Length; i++) flattened.GetPointAtFractionLength((double)i / (path.Length - 1), out path[i], out _);
+            pathUnits = pathLength;
+            tailUnits = tailLength;
+            if (pens.Length != count || penColor != color || penThickness != thickness)
+            {
+                penColor = color;
+                penThickness = thickness;
+                pens = new Pen[count];
+                for (int i = 0; i < count; i++)
+                {
+                    double opacity = 0.97 * Math.Pow((i + 0.5) / count, 1.4);
+                    byte alpha = (byte)Math.Round(color.A * opacity);
+                    var brush = new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+                    brush.Freeze();
+                    var pen = new Pen(brush, thickness) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                    pen.Freeze();
+                    pens[i] = pen;
+                }
+            }
+        }
+
+        public void SetFront(double front)
+        {
+            this.front = front;
+            RenderTrail();
+        }
+
+        public void Clear()
+        {
+            path = [];
+            pens = [];
+            pathUnits = tailUnits = front = 0;
+            using var dc = visual.RenderOpen();
+        }
+
+        private void RenderTrail()
+        {
+            using var dc = visual.RenderOpen();
+            if (!Ready || pathUnits <= 0) return;
+            double segment = tailUnits / pens.Length;
+            for (int i = 0; i < pens.Length; i++)
+            {
+                double start = Math.Max(0, front - tailUnits + segment * i);
+                double end = Math.Min(pathUnits, front - tailUnits + segment * (i + 1));
+                if (end <= start) continue;
+                dc.DrawLine(pens[i], PointAt(start / pathUnits), PointAt(end / pathUnits));
+            }
+        }
+
+        private Point PointAt(double fraction)
+        {
+            double sample = Math.Clamp(fraction, 0, 1) * (path.Length - 1);
+            int index = Math.Min((int)sample, path.Length - 2);
+            double amount = sample - index;
+            var start = path[index];
+            var end = path[index + 1];
+            return new Point(start.X + (end.X - start.X) * amount, start.Y + (end.Y - start.Y) * amount);
+        }
     }
 
     private bool pinnedForApproval;
@@ -498,10 +628,11 @@ public sealed class NotchWindow : Window
         model.Hub.Ticked -= RefreshPill;
         model.PropertyChanged -= OnModelChanged;
         glowTimer.Stop();
+        PauseBeamRendering();
         model.ApprovalRequested -= OnApprovalRequested;
         model.ApprovalsCleared -= OnApprovalsCleared;
-        view.SizeChanged -= OnViewSizeChanged;
-        peek.Stop();
+        DetachPeek();
+        DetachView();
         lens?.Dispose();
         model.Camera.StopMonitoring();
         if (model.ShowingCamera || model.ShowingChat || model.ShowingAgents) model.Show(PanelView.Main);
@@ -520,7 +651,8 @@ public sealed class NotchWindow : Window
         Theme.Changed -= PaintShell;
         generation++;
         Hide();
-        holder.Children.Remove(view);   // la vista vuelve al panel de la bandeja
+        DetachPeek();
+        DetachView();   // la vista vuelve al panel de la bandeja
         if (view is System.Windows.Controls.Control control) control.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, "PanelTint");
         model.WideLayout = false;
         if (model.ShowingHome || model.ShowingWidgets) model.Show(PanelView.Main);   // la bandeja no tiene Home ni Widgets
@@ -612,7 +744,7 @@ public sealed class NotchWindow : Window
     private void OnMouseMoved(Win32.POINT cursor)
     {
         if (closing) return;
-        if (state.Mode == NotchMode.Expanded) peek.TrackCursor(cursor.X, cursor.Y);   // el mini dock de los puntos no depende de MouseEnter de WPF
+        if (state.Mode == NotchMode.Expanded) peek?.TrackCursor(cursor.X, cursor.Y);   // el mini dock de los puntos no depende de MouseEnter de WPF
         if (!gate.Shown)
         {
             // Oculto en este monitor (pantalla completa, app oculta…): si el cursor pasó a otro, el notch vive allí y se vuelve a decidir.
@@ -660,10 +792,15 @@ public sealed class NotchWindow : Window
 
     /// Agranda la ventana (transparente) al tamaño con el que se abrirá, antes de que empiece la animación. Cambiar el tamaño de una ventana en capas tarda un buen rato en
     /// aplicarse; si se hacía justo al abrir, la forma crecía recortada por la ventana vieja y la animación se veía a saltos (incluso con un pequeño hundimiento al empezar).
-    /// Lo que ocupa la vista corta abierta, con margen para el rebote.
+    /// Reserva el ancho del panel entero sin construirlo: al fijar la vista corta, el HWND no tiene que moverse para crecer.
     private Win32.RECT OpenFootprint()
     {
-        var open = Wings(rects.Expanded, (int)Math.Round(shapeEar * scale));
+        double width = Math.Max(Math.Max(NaturalPanelWidth, lastDesired.Width), Math.Max(rects.Expanded.Width / scale, dockWidth));
+        var full = NotchLayout.Place(monitor, work, scale, width, rects.Expanded.Height / scale, pillWidthDip, stripNow, pillHeightDip).Expanded;
+        var open = Wings(full, (int)Math.Round(EarDip * scale));
+        var dock = NotchLayout.WithOvershoot(NotchLayout.DockBelow(full, scale, dockWidth), scale);
+        open.Left = Math.Min(open.Left, dock.Left);
+        open.Right = Math.Max(open.Right, dock.Right);
         int growX = (int)Math.Round(10 * scale) + (int)(open.Width * 0.03), growY = (int)Math.Round(10 * scale) + (int)(open.Height * 0.07);
         return new Win32.RECT { Left = open.Left - growX, Top = open.Top, Right = open.Right + growX, Bottom = open.Bottom + growY };
     }
@@ -727,6 +864,7 @@ public sealed class NotchWindow : Window
 
     private void HideNotch()
     {
+        SyncBeamRendering();
         // Una sesión bloqueada o el escritorio seguro apartan incluso un notch fijado: antes se cierra su estado.
         if (state.Mode != NotchMode.Collapsed)
         {
@@ -741,6 +879,8 @@ public sealed class NotchWindow : Window
         {
             if (gate.Shown) return;   // volvió a enseñarse mientras se desvanecía
             Hide();
+            DetachPeek();
+            if (state.Mode != NotchMode.Pinned) DetachView();
             Opacity = 1;
             shownOpen = null;
             painted = null;
@@ -759,6 +899,7 @@ public sealed class NotchWindow : Window
         bool fade = !model.Prefs.ReducedMotion;
         Opacity = fade ? 0 : 1;
         Apply();
+        SyncBeamRendering();
         if (fade) BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140)) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } });
         if (Win32.GetCursorPos(out var cursor)) OnMouseMoved(cursor);
     }
@@ -772,7 +913,8 @@ public sealed class NotchWindow : Window
         var info = new Win32.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Win32.MONITORINFO>() };
         if (!Win32.GetMonitorInfo(handle, ref info)) return;
         Win32.GetDpiForMonitor(handle, 0, out uint dpi, out _);
-        var there = NotchLayout.Place(info.rcMonitor, info.rcWork, (dpi == 0 ? 96 : dpi) / 96.0, double.IsNaN(view.Width) ? view.DesiredSize.Width : view.Width, 0);
+        double width = view is { } current && !double.IsNaN(current.Width) ? current.Width : NaturalPanelWidth;
+        var there = NotchLayout.Place(info.rcMonitor, info.rcWork, (dpi == 0 ? 96 : dpi) / 96.0, width, 0);
         if (!NotchLayout.Contains(there.Hot, cursor.X, cursor.Y)) return;
         PickMonitor(handle);
         shownOpen = null;
@@ -792,25 +934,38 @@ public sealed class NotchWindow : Window
 
     // MARK: pintar
 
-    /// La vista al pasar el ratón con un widget por página es una isla estrecha; con 2 o 4, tan ancha como el panel.
+    /// La vista al pasar el ratón muestra un widget por página en una isla estrecha.
     private void SyncPeekWidth()
     {
-        bool single = model.PeekPerPage == 1;
-        peek.Width = single ? (model.LyricsShown ? PeekLyricsWidth : PeekSingleWidth) : double.IsNaN(view.Width) ? 640 : view.Width;
-        peek.SetContentMinHeight(single ? PeekSingleHeight : 0);   // todas las páginas del mismo alto: los puntos de página siempre en el mismo sitio
+        var preview = EnsurePeek();
+        preview.Width = model.LyricsShown ? PeekLyricsWidth : PeekSingleWidth;
+        preview.SetContentMinHeight(PeekSingleHeight);   // todas las páginas del mismo alto: los puntos de página siempre en el mismo sitio
     }
-    private const double PeekSingleHeight = 126;   // 140 en Nusa; aquí los puntos quedan más cerca de los controles
+    private const double PeekSingleHeight = 157;   // la altura de la referencia: controles y paginador respiran dentro de la isla
     private const double PeekSingleWidth = 420;
     private const double NaturalPanelWidth = 640;
 
     private bool dockResize;
+    private Size PeekDesiredSize => peek is { } preview ? new(preview.DesiredSize.Width, preview.DesiredSize.Height + preview.DockOpenExtraHeight) : Size.Empty;
 
     private void RelayoutIfContentChanged()
     {
-        view.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        if (state.Mode == NotchMode.Pinned)
+        {
+            var previousDesired = lastDesired;
+            var fullView = EnsureView();
+            fullView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            lastDesired = fullView.DesiredSize;
+            if (lastDesired != previousDesired) Apply();
+            return;
+        }
+        if (state.Mode != NotchMode.Expanded) return;
+        var preview = EnsurePeek();
         SyncPeekWidth();
-        peek.Measure(new Size(view.DesiredSize.Width, double.PositiveInfinity));
-        if (view.DesiredSize != lastDesired || peek.DesiredSize != lastPeek) Apply();
+        preview.Measure(new Size(lastDesired.Width > 0 ? lastDesired.Width : NaturalPanelWidth, double.PositiveInfinity));
+        bool changed = PeekDesiredSize != lastPeek;
+        lastPeek = PeekDesiredSize;
+        if (changed) Apply();
     }
 
     private bool closing;
@@ -828,25 +983,41 @@ public sealed class NotchWindow : Window
         if (state.Hidden)
         {
             if (IsVisible) Hide();
+            SyncBeamRendering();
+            DetachPeek();
+            DetachView();
             shownOpen = null;
             painted = null;
             return;
         }
         if (hwnd == IntPtr.Zero) return;
-        model.BodyMaxHeight = PanelViewModel.BodyMaxFor(work.Height / scale, wide: true);
-        view.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        SyncPeekWidth();
-        peek.Measure(new Size(view.DesiredSize.Width, double.PositiveInfinity));
-        (lastDesired, lastPeek) = (view.DesiredSize, peek.DesiredSize);
         var mode = state.Mode;
+        if (mode == NotchMode.Pinned) EnsureDock();
+        SyncBeamRendering();
+        // Las dos vistas se descargan al cerrar; durante el cierre se conservan hasta terminar la animación.
+        if (mode == NotchMode.Pinned) DetachPeek();
+        else if (mode == NotchMode.Expanded) { DetachView(); SyncPeekWidth(); AttachPeek(); }
+        else if (shownOpen != true && !closeCleanupPending) { DetachView(); DetachPeek(); }
+        model.BodyMaxHeight = PanelViewModel.BodyMaxFor(work.Height / scale, wide: true);
+        if (mode == NotchMode.Pinned)
+        {
+            var fullView = EnsureView();
+            fullView.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            lastDesired = fullView.DesiredSize;
+        }
+        if (mode == NotchMode.Expanded)
+        {
+            EnsurePeek().Measure(new Size(lastDesired.Width > 0 ? lastDesired.Width : NaturalPanelWidth, double.PositiveInfinity));
+            lastPeek = PeekDesiredSize;
+        }
         // El hover enseña la versión corta; el clic, el panel entero.
-        var content = mode == NotchMode.Pinned ? view.DesiredSize : peek.DesiredSize;
+        var content = mode == NotchMode.Pinned ? EnsureView().DesiredSize : mode == NotchMode.Expanded ? PeekDesiredSize : lastPeek;
         rects = NotchLayout.Place(monitor, work, scale, content.Width, content.Height, pillWidthDip, stripNow, pillHeightDip);
         bool open = mode != NotchMode.Collapsed;
         if (!IsVisible) Show();
 
-        // La vista corta con un widget: las orejas y esquinas de Nusa (22, 32 y 47 con el mini dock) con el vidrio de siempre; el resto, la forma del panel.
-        bool compactPeek = mode == NotchMode.Expanded && model.PeekPerPage == 1;
+        // El hover usa la isla compacta de un widget; el panel fijado conserva la forma grande.
+        bool compactPeek = mode == NotchMode.Expanded;
         (shapeEar, shapeRadius, shapeRadiusTall) = compactPeek ? (22, 32, 47) : (EarDip, CornerRadiusDip, CornerRadiusDip);
         double earDip = shapeEar;
         int ear = (int)Math.Round(earDip * scale);
@@ -883,13 +1054,18 @@ public sealed class NotchWindow : Window
             if (!glassBody) { glassBody = true; PaintBody(); PaintBevel((Geometry)body.Data, shell.ActualHeight); }
             // La ventana crece primero (transparente) y luego se abre la pastilla; al revés al cerrar.
             Place(placed is { } already ? NotchLayout.Union(already, NotchLayout.Union(openRect, OpenFootprint())) : NotchLayout.Union(openRect, OpenFootprint()));   // no más pequeña que la ventana de la pastilla: si encogiera, la pastilla daría un salto
+            // Cambiar el tamaño de la ventana de cristal antes de adjuntar el árbol completo evita bloquear el inicio de la animación.
+            if (mode == NotchMode.Pinned) AttachView();
             bool crossfade = modeChanged && (previousMode is null or NotchMode.Collapsed);
             if (!crossfade) pill.Visibility = Visibility.Collapsed;
-            peek.Visibility = mode == NotchMode.Expanded ? Visibility.Visible : Visibility.Hidden;
-            view.Visibility = mode == NotchMode.Pinned ? Visibility.Visible : Visibility.Hidden;   // Hidden y no Collapsed: Collapsed mediría 0
-            if (mode == NotchMode.Pinned) view.Width = openSize.Width - 2 * earDip;
-            else view.ClearValue(WidthProperty);   // el ancho natural del panel: el de la vista corta (más estrecha) no debe quedarse puesto al hacer clic
-            SyncPeekWidth();
+            if (peek is { } preview) preview.Visibility = mode == NotchMode.Expanded ? Visibility.Visible : Visibility.Hidden;
+            if (view is { } fullView)
+            {
+                fullView.Visibility = mode == NotchMode.Pinned ? Visibility.Visible : Visibility.Hidden;   // Hidden y no Collapsed: Collapsed mediría 0
+                if (mode == NotchMode.Pinned) fullView.Width = openSize.Width - 2 * earDip;
+                else fullView.ClearValue(WidthProperty);   // el ancho natural del panel: el de la vista corta (más estrecha) no debe quedarse puesto al hacer clic
+            }
+            if (mode == NotchMode.Expanded) SyncPeekWidth();
             dock.Visibility = showDock ? Visibility.Visible : Visibility.Collapsed;
             PaintTabs();
             // Como en Nusa: la forma crece rápido y frenando (150 ms) y el contenido se cruza con la pastilla: ella se desvanece (70 ms) mientras la
@@ -898,7 +1074,7 @@ public sealed class NotchWindow : Window
             holder.Opacity = 1;
             if (modeChanged)
             {
-                FadeIn(mode == NotchMode.Expanded ? peek : view, 160, 60);   // el contenido entra enseguida: si tarda, la forma crece vacía y se ve un bloque negro
+                FadeIn(mode == NotchMode.Expanded ? EnsurePeek() : EnsureView(), 160, 60);   // el contenido entra enseguida: si tarda, la forma crece vacía y se ve un bloque negro
                 if (crossfade) FadeOut(pill, 120, 0, () => { if (state.Mode != NotchMode.Collapsed) pill.Visibility = Visibility.Collapsed; });
             }
             lastExpanded = activeRect;
@@ -922,7 +1098,8 @@ public sealed class NotchWindow : Window
             holder.Opacity = 1;
             if (modeChanged)
             {
-                FadeOut(peek.Visibility == Visibility.Visible ? peek : view, 220, 0);
+                if (peek is { Visibility: Visibility.Visible } preview) FadeOut(preview, 220, 0);
+                else if (view is { } fullView) FadeOut(fullView, 220, 0);
                 if (!stripNow)
                 {
                     pill.Visibility = Visibility.Visible;
@@ -943,16 +1120,94 @@ public sealed class NotchWindow : Window
                 bevelVersion = -1;
                 if (body.Data is { } shape) PaintBevel(shape, shell.ActualHeight);
                 Place(CollapsedWindow(pillRect));
-                view.Visibility = Visibility.Hidden;
-                peek.Visibility = Visibility.Hidden;
-                foreach (var part in new UIElement[] { view, peek }) { part.BeginAnimation(OpacityProperty, null); part.Opacity = 1; }
+                if (view is { } fullView)
+                {
+                    fullView.Visibility = Visibility.Hidden;
+                    fullView.BeginAnimation(OpacityProperty, null);
+                    fullView.Opacity = 1;
+                }
                 pill.Visibility = stripNow ? Visibility.Hidden : Visibility.Visible;
+                DetachPeek();
+                if (state.Mode != NotchMode.Pinned) DetachView();
                 if (!model.ShowingHome) model.Show(PanelView.Home);   // la próxima vez se abre en el Home
             }) : null);
         }
         shownOpen = open;
         laidOut = true;
         UpdateGlow();
+    }
+
+    private void AttachView()
+    {
+        var fullView = EnsureView();
+        if (fullView is ContentView content) content.ActivateModel();
+        if (!holder.Children.Contains(fullView)) holder.Children.Add(fullView);
+    }
+
+    private FrameworkElement EnsureView()
+    {
+        if (view is { } existing) return existing;
+        var fullView = view = viewFactory();
+        PrepareView(fullView);
+        return fullView;
+    }
+
+    private void PrepareView(FrameworkElement fullView)
+    {
+        fullView.VerticalAlignment = VerticalAlignment.Top;
+        fullView.HorizontalAlignment = HorizontalAlignment.Center;
+        fullView.Visibility = Visibility.Hidden;
+        fullView.SizeChanged += OnViewSizeChanged;
+        fullView.AllowDrop = true;
+        if (fullView is System.Windows.Controls.Control control) control.Background = Brushes.Transparent;
+    }
+
+    private void AttachPeek()
+    {
+        var preview = EnsurePeek();
+        if (!holder.Children.Contains(preview)) holder.Children.Insert(1, preview);
+    }
+
+    private void DetachPeek()
+    {
+        if (peek is not { } preview) return;
+        preview.Stop();
+        if (holder.Children.Contains(preview)) holder.Children.Remove(preview);
+        model.SetPeekVisible(false);
+        peek = null;
+    }
+
+    private NotchPeek EnsurePeek()
+    {
+        if (peek is { } existing) return existing;
+        var preview = peek = new NotchPeek(model)
+        {
+            VerticalAlignment = VerticalAlignment.Top,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Visibility = Visibility.Hidden,
+            AllowDrop = true,
+        };
+        preview.IsVisibleChanged += (_, _) => model.SetPeekVisible(preview.IsVisible);
+        preview.SizeChanged += (_, _) => { if (state.Mode != NotchMode.Collapsed) RelayoutIfContentChanged(); };
+        preview.DockLayoutChanged += () =>
+        {
+            if (state.Mode == NotchMode.Collapsed) return;
+            dockResize = true;   // el mini dock solo mueve el borde de abajo unos píxeles: se anima suave, sin el rebote de abrir
+            try { RelayoutIfContentChanged(); } finally { dockResize = false; }
+        };
+        return preview;
+    }
+
+    private void DetachView()
+    {
+        if (view is not { } fullView) return;
+        if (holder.Children.Contains(fullView)) holder.Children.Remove(fullView);
+        if (fullView is ContentView content) content.DeactivateModel();
+        if (releaseViewOnDetach)
+        {
+            fullView.SizeChanged -= OnViewSizeChanged;
+            view = null;
+        }
     }
 
     private void FadeIn(UIElement element, int ms, int delayMs)
@@ -989,8 +1244,14 @@ public sealed class NotchWindow : Window
 
     private void RebuildDock()
     {
+        if (dock.Child is null) { dockSignature = DockSignature(); return; }
         BuildDock();
         if (laidOut) Apply();   // si el ancho del dock cambia la ventana, Apply lo nota al comparar con lo pintado
+    }
+
+    private void EnsureDock()
+    {
+        if (dock.Child is null || DockSignature() != dockSignature) BuildDock();
     }
 
     private void BuildDock()
@@ -1349,7 +1610,7 @@ public sealed class NotchWindow : Window
         baseColor.A = 255;
         body.Stroke = glassBody || contrast ? shellStroke : null;   // la pastilla cerrada es negro puro, sin canto
         if (contrast || !glassBody) { body.Fill = Theme.Brush(baseColor); return; }
-        byte tint = (byte)(0x24 + 0x70 * Math.Clamp(backdrop.Luminance, 0, 1));   // sin tarjetas detrás, el tinte es lo que da el contraste
+        byte tint = (byte)(0x24 + 0x70 * Math.Clamp(backdrop.Luminance, 0, 1) + (state.Mode == NotchMode.Expanded ? 0x40 : 0));   // en hover, el cristal es menos transparente como en la referencia
         bool shelfPeek = state.Mode == NotchMode.Expanded && model.PeekWidgets.Any(widget => WidgetLayout.BaseId(widget.Id) == "shelf");
         int shelfLift = shelfPeek ? 0x40 : 0, shelfFloor = shelfPeek ? 0x28 : 0;
         var g = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
@@ -1439,7 +1700,7 @@ public sealed class NotchWindow : Window
     {
         // El panel mide lo que mide su contenido; antes de la primera medida (o con el ancho de la vista corta puesto) valdría 0 y la copia saldría estrecha:
         // se copia siempre, al menos, el ancho natural del panel.
-        double panelWidth = Math.Max(view.DesiredSize.Width, NaturalPanelWidth);
+        double panelWidth = Math.Max(view?.DesiredSize.Width ?? 0, NaturalPanelWidth);
         var area = NotchLayout.Place(monitor, work, scale, panelWidth, 0, pillWidthDip).Expanded;
         int ear = (int)Math.Round(EarDip * scale);
         area.Left -= ear;
@@ -2236,10 +2497,17 @@ public sealed class NotchWindow : Window
     private void ApplyMascotPill()
     {
         bool onMascot = mascot.Visibility == Visibility.Visible;
-        pillBefore.Visibility = pillRow.Visibility = pillAfter.Visibility = onMascot ? Visibility.Hidden : Visibility.Visible;
+        var visibility = onMascot ? Visibility.Hidden : Visibility.Visible;
+        if (pillBefore.Visibility != visibility) pillBefore.Visibility = visibility;
+        if (pillRow.Visibility != visibility) pillRow.Visibility = visibility;
+        if (pillAfter.Visibility != visibility) pillAfter.Visibility = visibility;
         foreach (var row in new[] { activityRow, activityRowLeft })
         {
-            if (onMascot) row.Resources["Fg"] = mascot.Ink; else row.Resources.Remove("Fg");
+            if (onMascot)
+            {
+                if (!ReferenceEquals(row.Resources["Fg"], mascot.Ink)) row.Resources["Fg"] = mascot.Ink;
+            }
+            else if (row.Resources.Contains("Fg")) row.Resources.Remove("Fg");
         }
     }
 

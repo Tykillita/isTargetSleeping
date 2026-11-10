@@ -86,12 +86,12 @@ static string NewId(int n) => n.ToString("x32");
 
 // ------------------------------------------------------------------ protocolo: salida
 {
-    var snap = new PetSnapshot(42, "Mira", 74, 61, "happy", false);
+    var snap = new PetSnapshot(42, "Nimbo", 74, 61, "happy", false);
     var s = PetProtocol.State(snap);
     using var doc = JsonDocument.Parse(s);
     var root = doc.RootElement;
     Check(root.GetProperty("type").GetString() == "state" && root.GetProperty("rev").GetInt64() == 42, "state serializa rev");
-    Check(root.GetProperty("pet").GetProperty("name").GetString() == "Mira", "state serializa nombre");
+    Check(root.GetProperty("pet").GetProperty("name").GetString() == "Nimbo", "state serializa nombre");
     Check(PetProtocol.IsId(root.GetProperty("id").GetString()), "state lleva id de 128 bits");
     Check(s.Length <= PetProtocol.MaxMessageBytes, "state <= 4 KB");
 
@@ -109,7 +109,7 @@ static string NewId(int n) => n.ToString("x32");
     Check(PetProtocol.HttpStatus("unauthorized") == 401 && PetProtocol.HttpStatus("busy") == 409 &&
           PetProtocol.HttpStatus("model_missing") == 503 && PetProtocol.HttpStatus("bad_json") == 400 &&
           PetProtocol.HttpStatus("text_too_long") == 400 && PetProtocol.HttpStatus("too_large") == 400, "codigos HTTP");
-    Check(PetProtocol.IsValidName("Mira") && !PetProtocol.IsValidName(" Mira") && !PetProtocol.IsValidName("") &&
+    Check(PetProtocol.IsValidName("Nimbo") && !PetProtocol.IsValidName(" Nimbo") && !PetProtocol.IsValidName("") &&
           !PetProtocol.IsValidName("Nombre muy largo!") && !PetProtocol.IsValidName("a\nb"), "validacion de nombre");
 }
 
@@ -118,7 +118,7 @@ static string NewId(int n) => n.ToString("x32");
     var now = new DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero);
     var svc = new PetService(new MemStore(), () => now);
     var start = svc.Snapshot;
-    Check(start.Asleep && start.Name == "Mira" && start.Rev == 0, "estado inicial dormida, rev 0");
+    Check(start.Asleep && start.Name == "Nimbo" && start.Rev == 0, "estado inicial dormida, rev 0");
 
     var r = svc.Apply(new ActionMsg(NewId(1), "tap", 0, null));
     Check(r.Outcome == ApplyOutcome.Applied && r.Rev == 1, "tap aplica y sube rev");
@@ -490,11 +490,11 @@ static string NewId(int n) => n.ToString("x32");
     string idA = PetProtocol.NewId(), idB = PetProtocol.NewId(), idQ = PetProtocol.NewId();
     string Items(long ts, params string[] items) => "{\"ts\":" + ts + ",\"items\":[" + string.Join(",", items) + "]}";
     long Ts() => clockNow.ToUnixTimeSeconds();
-    string Perm(string id, string detail, string? risk = null) => "{\"id\":\"" + id + "\",\"agent\":\"claude\",\"kind\":\"permission\",\"tool\":\"Bash\",\"cwd\":\"D:\\\\Proyectos\\\\ESP32-Mira\\\\src\",\"detail\":\"" + detail + "\",\"risk\":" + (risk is null ? "null" : "\"" + risk + "\"") + ",\"expires\":" + (Ts() + 200) + "}";
+    string Perm(string id, string detail, string? risk = null) => "{\"id\":\"" + id + "\",\"agent\":\"claude\",\"kind\":\"permission\",\"tool\":\"Bash\",\"cwd\":\"D:\\\\Proyectos\\\\TargetOS\\\\src\",\"detail\":\"" + detail + "\",\"risk\":" + (risk is null ? "null" : "\"" + risk + "\"") + ",\"expires\":" + (Ts() + 200) + "}";
     File.WriteAllText(file, Items(Ts(), Perm(idA, "npm test"), Perm(idB, "rm -rf build", "Borra archivos de forma recursiva")));
     feed.Poll();
     Check(added.SequenceEqual([idA, idB]) && feed.Current.Count == 2, "feed: llegan las peticiones nuevas");
-    Check(feed.Find(idA)!.Cwd == "ESP32-Mira/src" && feed.Find(idB)!.Risk == "Borra archivos de forma recursiva", "feed: la carpeta se acorta y el riesgo se conserva");
+    Check(feed.Find(idA)!.Cwd == "TargetOS/src" && feed.Find(idB)!.Risk == "Borra archivos de forma recursiva", "feed: la carpeta se acorta y el riesgo se conserva");
     feed.Poll();
     Check(added.Count == 2 && removed.Count == 0, "feed: sin cambios no avisa otra vez");
     File.WriteAllText(file, Items(Ts(), Perm(idB, "rm -rf build", "Borra archivos de forma recursiva")));

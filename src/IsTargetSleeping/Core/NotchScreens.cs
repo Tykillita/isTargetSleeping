@@ -25,4 +25,10 @@ public static class NotchScreens
 
     /// Lo que cambia las ventanas del notch: modo y monitores elegidos (para no rehacerlas sin motivo).
     public static string Signature(IReadOnlyList<ScreenInfo>? selection) => selection is null ? FollowCursor : string.Join("|", selection.Select(s => s.Id).Order());
+
+    public static string PreferenceSignature(string? mode, IReadOnlyCollection<string>? chosen)
+    {
+        var screens = chosen is null ? "" : string.Join("|", chosen.Order(StringComparer.OrdinalIgnoreCase));
+        return $"{mode ?? Selected}|{screens}";
+    }
 }

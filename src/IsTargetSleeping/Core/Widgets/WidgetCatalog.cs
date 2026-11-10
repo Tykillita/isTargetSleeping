@@ -22,8 +22,12 @@ public sealed record WidgetFolder(string Id, string Key, IReadOnlyList<string> W
 
 public static class WidgetCatalog
 {
-    /// La primera pantalla del Home (y la vista al pasar el ratón) cabe en cuatro celdas: un widget ocupa una o dos.
+    /// Cada página del Home y de la vista al pasar el ratón cabe en cuatro celdas: un widget ocupa una o dos.
     public const int MaxCells = 4;
+    /// La lista de la vista corta admite hasta ocho widgets.
+    public const int MaxPeekWidgets = 8;
+    /// Presupuesto para el tamaño máximo de dos celdas por widget seleccionado.
+    public const int MaxPeekCells = MaxPeekWidgets * 2;
     /// El Home muestra cuatro celdas; cada widget restante tiene su propia página. El tope total sigue siendo doce celdas.
     public const int MaxHomeCells = 12;
 
@@ -52,8 +56,8 @@ public static class WidgetCatalog
     ];
 
     public static readonly IReadOnlyList<string> DefaultWidgets = ["ollama", "system", "clock"];
-    /// Lo que enseña la versión corta (al pasar el ratón) si nunca se eligió: Ollama, como siempre.
-    public static readonly IReadOnlyList<string> DefaultPeek = ["ollama"];
+    /// Lo que enseña la versión corta si nunca se eligió; una celda por widget para que quepan cuatro por página.
+    public static readonly IReadOnlyList<string> DefaultPeek = ["media", "todo@1", "pomodoro", "shelf@1", "system"];
 
     public static readonly IReadOnlyList<WidgetFolder> Folders =
     [
@@ -143,7 +147,7 @@ public static class WidgetLayout
         var baseId = BaseId(id);
         var info = WidgetCatalog.Find(baseId);
         if (info is null) return 0;
-        var canResize = (info.Cells == 1 && baseId is ("system" or "clock" or "pomodoro" or "awake" or "battery" or "media" or "audio" or "agents" or "usage" or "launcher" or "weather" or "teleprompter" or "team"))
+        var canResize = (info.Cells == 1 && baseId is ("system" or "clock" or "pomodoro" or "awake" or "battery" or "media" or "audio" or "agents" or "usage" or "launcher" or "weather" or "teleprompter" or "team" or "led"))
             || baseId is ("notes" or "todo" or "shelf" or "ollama" or "code" or "lmstudio");
         var suffix = id.IndexOf('@');
         return canResize && suffix >= 0 && int.TryParse(Digits(id[(suffix + 1)..], 0), out int span) && span is 1 or 2 ? span : info.Cells;
@@ -198,7 +202,9 @@ public static class WidgetLayout
                 var next = Sizes(baseId).Where(s => s.Cols * s.Rows > current && Area(list) - current + s.Cols * s.Rows <= cells)
                     .OrderBy(s => s.Cols * s.Rows).ThenByDescending(s => s.Cols).Select(s => ((int Cols, int Rows)?)s).FirstOrDefault();
                 if (next is null) continue;
-                list[i] = Token(baseId, next.Value.Cols, next.Value.Rows, true);
+                var resized = Token(baseId, next.Value.Cols, next.Value.Rows, true);
+                if (Span(resized) * Rows(resized) <= current) continue;
+                list[i] = resized;
                 grew = true;
             }
         }
@@ -365,7 +371,7 @@ public static class PillCatalog
         new("usage", "Uso de IA", "El % semanal de cada suscripción de IA", ""),
     ];
 
-    public static readonly IReadOnlyList<string> Defaults = ["state", "model", "ram"];
+    public static readonly IReadOnlyList<string> Defaults = ["clock"];
 
     public static readonly IReadOnlyList<WidgetFolder> Folders =
     [

@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="media/istargetsleeping-icon-256.png?v=aa181b9c468b9712">
 <script>document.documentElement.dataset.theme='dark'</script>
 <link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="castillo.css">
+<link rel="stylesheet" href="castillo.css?v=133">
 </head>
 <body data-pagina="novedades">
 
@@ -33,9 +33,10 @@
     </nav>
     <button class="castillo-menu" id="castillo-menu" type="button" aria-label="Menú de navegación" aria-controls="castillo-links" aria-expanded="false" data-i18n-aria="castillo.nav.menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path class="menu-open" d="M4 7h16M4 12h16M4 17h16"/><path class="menu-close" d="m6 6 12 12M18 6 6 18"/></svg></button>
     <div class="nav-acciones">
-      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
+      <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe" data-descarga="setup"><span data-i18n="castillo.nav.download">Descargar</span></a>
     </div>
     <span class="nav-pintura" aria-hidden="true"></span>
+    <svg class="nav-beam" viewBox="0 0 200 300" preserveAspectRatio="none" aria-hidden="true"><path class="nav-beam-trail" pathLength="100" d="M200 0V284a16 16 0 0 1-16 16H16A16 16 0 0 1 0 284V0"/><path class="nav-beam-head" pathLength="100" d="M200 0V284a16 16 0 0 1-16 16H16A16 16 0 0 1 0 284V0"/></svg>
     <span class="nav-mascota" aria-hidden="true"><svg viewBox="0 0 56 30" focusable="false">
       <g class="nav-ojos-cerrados" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="M13 12.5q5 1.2 10 0M33 12.5q5 1.2 10 0"/></g>
       <g class="nav-ojos-abiertos" fill="currentColor"><ellipse cx="18" cy="11" rx="2.5" ry="4.7"/><ellipse cx="38" cy="11" rx="2.5" ry="4.7"/></g>
@@ -47,12 +48,13 @@
 
 <main>
 
-<section class="nov-hero">
+<section class="nov-hero" data-nav="claro">
   <div class="contenedor">
     <p class="eyebrow" data-i18n="nov.eyebrow">Novedades</p>
     <h1 data-i18n="nov.titulo">Cada versión, función por función.</h1>
     <p class="hero-sub" data-i18n="nov.sub">Lo que ha cambiado en isTargetSleeping, de lo más nuevo a lo más antiguo. El detalle técnico está en el CHANGELOG.</p>
     <nav class="nov-indice" aria-label="Versiones" data-i18n-aria="nov.indice">
+      <a href="#v1-30-1" data-i18n="nov.v1_30_1.indice">1.30.1</a>
       <a href="#v1-30-0" data-i18n="nov.v1_30_0.indice">1.30.0</a>
       <a href="#v1-29-0" data-i18n="nov.v1_29_0.indice">1.29.0</a>
       <a href="#v1-28-0" data-i18n="nov.v1_28_0.indice">1.28.0</a>
@@ -85,6 +87,25 @@
 <!-- La versión más reciente aparece primero. -->
 <section class="contenedor">
   <div class="linea-tiempo">
+    <article class="version" id="v1-30-1">
+      <div class="version-meta">
+        <div class="version-num" data-i18n="nov.v1_30_1.indice">1.30.1</div>
+        <span class="version-fecha" data-i18n="nov.v1_30_1.fecha">9 de noviembre de 2026</span>
+        <span class="salto salto--arreglo" data-i18n="nov.s.arreglo">Arreglo</span>
+      </div>
+      <div class="version-cuerpo">
+        <p data-i18n="nov.proxima.peek.resumen">El notch abre con una vista neutral y páginas para los widgets que más se usan, y la versión legacy vuelve a funcionar.</p>
+        <div class="grupo"><h3 data-i18n="nov.g.nuevo">Nuevo</h3><div class="novedades">
+          <div class="novedad"><b data-i18n="nov.proxima.peek.widgetsT">Música, Tareas, Pomodoro, Estante y Sistema por defecto</b><span data-i18n="nov.proxima.peek.widgetsD">En instalaciones nuevas, la vista al pasar el ratón incluye estos cinco widgets y muestra las flechas, los puntos y el dock para abrir el notch completo. Las preferencias guardadas se conservan.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.peek.limiteT">Hasta ocho widgets al pasar el ratón</b><span data-i18n="nov.proxima.peek.limiteD">Puedes elegir hasta ocho widgets para la vista corta. Cada uno aparece en su propia página y se conserva el orden elegido.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.peek.pillT">La hora en la pastilla cerrada</b><span data-i18n="nov.proxima.peek.pillD">En instalaciones nuevas, la pastilla muestra la hora y deja los datos de Ollama fuera; los indicadores aparecen cuando ocurre una actividad. Tus preferencias guardadas se conservan.</span></div>
+          <div class="novedad"><b data-i18n="nov.proxima.peek.musicT">Música recuerda la última canción</b><span data-i18n="nov.proxima.peek.musicD">Si cierras el reproductor, conserva la canción y su portada en este PC. Play vuelve a abrir un reproductor compatible y solicita la misma canción cuando restaura esa sesión. Sin historial, aparece la pista de jazz incluida con la portada estrellada.</span></div>
+        </div></div>
+        <div class="grupo"><h3 data-i18n="nov.g.arreglos">Arreglos</h3><div class="novedades">
+          <div class="novedad"><b data-i18n="nov.v1_30_1.legacyT">La versión legacy se dibuja al activarla</b><span data-i18n="nov.v1_30_1.legacyD">El panel de la bandeja ya no sale vacío y gris. Además, se activa o desactiva desde el menú del clic derecho del ícono.</span></div>
+        </div></div>
+      </div>
+    </article>
     <article class="version" id="v1-30-0">
   <div class="version-meta">
     <div class="version-num" data-i18n="nov.v1_30_0.indice">1.30.0</div>
@@ -751,7 +772,7 @@
           <span>isTargetSleeping</span>
         </a>
         <p class="pie-lema" data-i18n="pie.lema">Vigila tus modelos locales y los pone a dormir cuando no trabajan. Tu RAM, de vuelta.</p>
-        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.0/isTargetSleeping-1.30.0-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
+        <a class="btn btn--chico" href="https://github.com/Tykillita/isTargetSleeping/releases/download/v1.30.1/isTargetSleeping-1.30.1-setup-x64.exe" data-descarga="setup"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7.5 8 11.5l4-4M3 14h10"/></svg><span data-i18n="pie.descargar">Descargar para Windows</span></a>
       </div>
       <nav class="pie-columnas" aria-label="Pie de página" data-i18n-aria="pie.aria">
         <div class="pie-columna">
@@ -792,7 +813,7 @@
     <div class="pie-abajo">
       <p class="pie-aviso" data-i18n="pie.aviso">isTargetSleeping es un proyecto independiente, no afiliado a Ollama. La idea de dormir los modelos inactivos viene de <a href="https://github.com/eriktaveras/modelnap">ModelNap</a>, de Erik Taveras (MIT); el diseño y el código de la app de Windows son propios.</p>
       <div class="pie-fila">
-        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.30.0 disponible</span></span>
+        <span>© 2026 CodeSentry - Tykillita · <span data-i18n="pie.version">1.30.1 disponible</span></span>
         <nav class="pie-idioma" aria-label="Idioma" data-i18n-aria="pie.idiomaAria">
           <button type="button" data-lang="es">Español</button>
           <button type="button" data-lang="en">English</button>

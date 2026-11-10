@@ -223,6 +223,8 @@ var dup = Scr(@"\\.\DISPLAY2", 0);
 Check("pantallas: dos monitores duplicados (mismo rectángulo) llevan un solo notch, y gana el principal",
     NotchScreens.Select([dup, monB], NotchScreens.Selected, [dup.Id, monB.Id])!.Single().Id == monB.Id);
 Check("pantallas: la firma no cambia con el orden", NotchScreens.Signature([monA, monC]) == NotchScreens.Signature([monC, monA]));
+Check("pantallas: cambiar modo o monitor seleccionado invalida los ajustes", NotchScreens.PreferenceSignature(NotchScreens.FollowCursor, [monA.Id]) != NotchScreens.PreferenceSignature(NotchScreens.Selected, [monA.Id])
+    && NotchScreens.PreferenceSignature(NotchScreens.Selected, [monA.Id]) != NotchScreens.PreferenceSignature(NotchScreens.Selected, [monB.Id]));
 // Letras sincronizadas y avisos del sistema.
 var lrc = "[ar:Tainy]\n[00:12.50] Primera\n[00:20.00]Segunda [x]\n[01:05.5][02:10.25] Estribillo\n[00:30.00]\nsin marca\n";
 var lyricLines = LyricsTimeline.ParseLrc(lrc);
@@ -348,9 +350,12 @@ Check("widgets: un widget de una celda solo en su fila se ensancha; con compañe
     && WidgetLayout.Arrange(new[] { "system", "ollama", "clock" }).SequenceEqual(new[] { ("system", 2), ("ollama", 2), ("clock", 2) })
     && WidgetLayout.Arrange(Array.Empty<string>()).Count == 0);
 Check("widgets: la vista corta tiene sus propios valores por defecto y su propia lista vacía",
-    WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek).SequenceEqual(new[] { "ollama" }) && WidgetLayout.Normalize(Array.Empty<string>(), WidgetCatalog.DefaultPeek).Count == 0);
-Check("pastilla: sin nada guardado salen estado, modelo y RAM, y caben tres",
-    PillCatalog.Normalize(null).SequenceEqual(new[] { "state", "model", "ram" })
+    WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek, WidgetCatalog.MaxPeekCells).SequenceEqual(new[] { "media", "todo@1", "pomodoro", "shelf@1", "system" })
+    && WidgetLayout.Normalize(new[] { "todo", "shelf@1", "media" }, WidgetCatalog.DefaultPeek, WidgetCatalog.MaxPeekCells).SequenceEqual(new[] { "todo", "shelf@1", "media" })
+    && WidgetLayout.Normalize(Array.Empty<string>(), WidgetCatalog.DefaultPeek, WidgetCatalog.MaxPeekCells).Count == 0);
+Check("pastilla: sin nada guardado sale la hora, y la elección personalizada se conserva",
+    PillCatalog.Normalize(null).SequenceEqual(new[] { "clock" })
+    && PillCatalog.Normalize(new[] { "state", "model", "ram" }).SequenceEqual(new[] { "state", "model", "ram" })
     && PillCatalog.Normalize(new[] { "clock", "x", "cpu", "clock", "ram", "state" }).SequenceEqual(new[] { "clock", "cpu", "ram" })
     && PillCatalog.Toggle(new List<string> { "state", "model", "ram" }, "cpu").Count == 3
     && PillCatalog.Toggle(new List<string> { "state", "model" }, "cpu").SequenceEqual(new[] { "state", "model", "cpu" }));
@@ -387,8 +392,9 @@ Check("actividades: la cámara forzada o activada va sola a la izquierda y lo de
     liveCameraSides.Left.Select(a => a.Id).SequenceEqual(new[] { "camera" }) && liveCameraSides.Right.Select(a => a.Id).SequenceEqual(new[] { "clean" })
     && optionalCameraSides.Left.Select(a => a.Id).SequenceEqual(new[] { "camera" })
     && ActivityQueue.PickSides([cameraActivity], Array.Empty<string>()).Left.Count == 0);
-Check("actividades: sin nada guardado están las de siempre (la música no, hasta que se activa); lo desconocido se descarta",
+Check("actividades: por defecto están todas salvo el indicador con la cámara apagada; lo desconocido se descarta",
     ActivityCatalog.Normalize(null).SequenceEqual(ActivityCatalog.All.Where(a => a.DefaultOn).Select(a => a.Id)) && ActivityCatalog.Normalize(new[] { "x", "awake", "awake" }).SequenceEqual(new[] { "awake" })
+    && ActivityCatalog.Normalize(null).ToHashSet(StringComparer.Ordinal).SetEquals(ActivityCatalog.All.Select(a => a.Id).Where(id => id != "camera"))
     && ActivityCatalog.All.Select(a => a.Id).Distinct().Count() == ActivityCatalog.All.Count);
 Check("actividades: la pastilla más ancha mantiene su centro y su zona activa",
     NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Pill.Width == 330 && NotchLayout.Place(nm, nw, 1.0, 340, 200, 330).Hot.Right > NotchLayout.Place(nm, nw, 1.0, 340, 200).Hot.Right
@@ -931,6 +937,12 @@ Section("Nombre de la app que suena");
     Check("fuente: YouTube Music, mejor que YouTube", MediaSource.Name("th-ch.YoutubeMusic") == "YouTube Music" && MediaSource.Name("youtube.exe") == "YouTube");
     Check("fuente: un nombre normal se capitaliza", MediaSource.Name("Foo.Bar!baz") == "Baz" && MediaSource.Name("miapp.exe") == "Miapp");
     Check("fuente: un identificador interno desconocido no se enseña", MediaSource.Name("H3NCTBL7SNSWHXN4Y4YXM5CEWI") == "" && MediaSource.Name("_crx_abcdef") == "" && MediaSource.Name(null) == "" && MediaSource.Name("  ") == "");
+    var previous = new MediaTrackSnapshot(" Midnight City ", "M83", "M83 - Hurry Up, We're Dreaming", "Spotify", "SpotifyAB.SpotifyMusic!Spotify");
+    Check("fuente: reanuda solo la misma canción y el mismo reproductor", previous.Matches("Midnight City", "m83", "M83 - Hurry Up, We're Dreaming", "Spotify", "SpotifyAB.SpotifyMusic!Spotify")
+        && !previous.Matches("Outro", "M83", "M83", "Spotify", "SpotifyAB.SpotifyMusic!Spotify")
+        && !previous.Matches("Midnight City", "M83", "M83", "VLC", "vlc.exe")
+        && !previous.Matches("Midnight City", "M83", "M83 - Different album", "Spotify", "SpotifyAB.SpotifyMusic!Spotify"));
+    Check("fuente: reconoce el reproductor reinstalado por su nombre", previous.Matches("Midnight City", "M83", "M83", "Spotify", "new-spotify-id"));
 }
 
 Section("Agenda del calendario");
@@ -1019,6 +1031,14 @@ Section("Vidrio del notch (desenfoque del fondo)");
     for (int y = 0; y < 10; y++) for (int x = 10; x < 20; x++) { int i = (y * 20 + x) * 4; half[i] = half[i + 1] = half[i + 2] = 200; }
     var split = BackdropBlur.Reduce(half, 20, 10, 5, out int sw, out _, 1);
     Check("vidrio: cada celda promedia sus píxeles (negro a un lado, claro al otro)", sw == 4 && split[0] == 0 && split[(3) * 4] == 200);
+    unsafe
+    {
+        fixed (byte* source = half)
+        {
+            var fromPointer = BackdropBlur.Reduce(new ReadOnlySpan<byte>(source, half.Length), 20, 10, 5, out _, out _, 1);
+            Check("vidrio: reducir desde el búfer nativo conserva los mismos píxeles", fromPointer.SequenceEqual(split));
+        }
+    }
     var odd = BackdropBlur.Reduce(Solid(23, 11, 50, 50, 50), 23, 11, 10, out int ow, out int oh, 1);
     Check("vidrio: un tamaño que no es múltiplo de la celda no deja bordes negros", ow == 3 && oh == 2 && odd[(2 * 4 / 4 * 0) + 0] == 50 && odd[(1 * 3 + 2) * 4] == 50);
     var vivid = BackdropBlur.Reduce(Solid(10, 10, 40, 80, 160), 10, 10, 10, out _, out _, 1.5);

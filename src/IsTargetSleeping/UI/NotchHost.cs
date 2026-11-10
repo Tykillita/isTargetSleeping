@@ -8,12 +8,12 @@ internal sealed class NotchHost
 {
     private readonly PanelViewModel model;
     private readonly Prefs prefs;
-    private readonly System.Windows.FrameworkElement sharedView;
+    private readonly Func<System.Windows.FrameworkElement> sharedView;
     private readonly List<NotchWindow> windows = [];
     private string signature = "";
     private bool started;
 
-    public NotchHost(PanelViewModel model, Prefs prefs, System.Windows.FrameworkElement sharedView)
+    public NotchHost(PanelViewModel model, Prefs prefs, Func<System.Windows.FrameworkElement> sharedView)
     {
         this.model = model;
         this.prefs = prefs;
@@ -54,7 +54,8 @@ internal sealed class NotchHost
         var ids = selection is null ? [(string?)null] : selection.Select(s => (string?)s.Id).ToList();
         foreach (var id in ids)
         {
-            var window = new NotchWindow(model, windows.Count == 0 ? sharedView : new ContentView(model), id);
+            var viewFactory = windows.Count == 0 ? sharedView : () => new ContentView(model);
+            var window = new NotchWindow(model, viewFactory, id);
             window.Pinned += OnPinned;
             windows.Add(window);
             window.Start();

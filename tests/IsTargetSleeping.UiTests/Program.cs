@@ -31,6 +31,74 @@ internal static class Program
             app.Shutdown();
             return failures == 0 ? 0 : 1;
         }
+        if (Environment.GetEnvironmentVariable("ITS_ONLY_PEEK_LIMIT") == "1")
+        {
+            var originalContrast = Theme.ForceHighContrast;
+            var captureDir = Environment.GetEnvironmentVariable("ITS_CAPTURE_UI");
+            if (captureDir is { Length: > 0 }) Directory.CreateDirectory(captureDir);
+            try
+            {
+                foreach (var (language, locale) in new[] { (Language.Es, "es"), (Language.En, "en") })
+                    foreach (bool highContrast in new[] { false, true })
+                    {
+                        L10n.Init(language);
+                        Theme.ForceHighContrast = highContrast;
+                        Theme.Apply();
+                        var prefs = new Prefs(); prefs.LoadDemo();
+                        prefs.SetList(PrefKeys.NotchPeekWidgets, ["media", "todo@1", "pomodoro", "shelf@1", "system", "notes", "clock", "code"]);
+                        prefs.SetList("notchPeekLayout", [highContrast ? "2" : "4"]);
+                        var controller = new OllamaController(); controller.LoadDemo();
+                        var supervisor = new Supervisor(controller, prefs); supervisor.LoadDemo();
+                        var model = new PanelViewModel(supervisor, PanelView.Widgets) { WideLayout = true, BodyMaxHeight = 760 };
+                        var view = new ContentView(model);
+                        var host = new Window { Content = view, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false, Left = -20000, Top = -20000, Width = 760, Height = 900 };
+                        var theme = highContrast ? "high-contrast" : "normal";
+                        try
+                        {
+                            host.Show(); host.UpdateLayout();
+                            var bodyScroll = Descendants(view).OfType<ScrollViewer>().Single(scroll => scroll.Name == "BodyScroll");
+                            var peekTitle = Descendants(view).OfType<TextBlock>().Single(text => text.Text == model.PeekTitle);
+                            var peekTop = peekTitle.TransformToAncestor(bodyScroll).Transform(new Point(0, 0)).Y;
+                            bodyScroll.ScrollToVerticalOffset(bodyScroll.VerticalOffset + peekTop - 12);
+                            host.UpdateLayout();
+                            bodyScroll.UpdateLayout();
+                            Check($"{locale}/{theme}: muestra ocho widgets seleccionados", model.PeekWidgetCount == L10n.tr("%d de %d widgets seleccionados", 8, 8));
+                            Check($"{locale}/{theme}: ignora la antigua preferencia de dos o cuatro y deja uno por página",
+                                model.PeekWidgets.Count == 1 && model.PeekDots.Count == 8 && model.PeekIcons.Count == 8);
+                            DependencyObject? peekCard = Descendants(view).OfType<TextBlock>().FirstOrDefault(text => text.Text == model.PeekWidgetCount);
+                            while (peekCard is not null && peekCard is not Border) peekCard = VisualTreeHelper.GetParent(peekCard);
+                            Check($"{locale}/{theme}: tarjeta de la vista al pasar el ratón visible", peekCard is Border { ActualHeight: > 0 });
+                            if (captureDir is { Length: > 0 } && peekCard is not null)
+                                foreach (double dpi in new[] { 96d, 120d, 144d }) ApprovalNotchTests.Save(view, dpi, Path.Combine(captureDir, $"peek-limit-{locale}-{theme}-{dpi:0}.png"));
+                            model.PeekFolders.Tiles.Single(tile => tile.AutomationId == "folder-peek-ai").Open.Execute(null);
+                            host.UpdateLayout();
+                            if (captureDir is { Length: > 0 }) ApprovalNotchTests.Save(view, 120, Path.Combine(captureDir, $"peek-limit-folder-open-{locale}-{theme}-120.png"));
+                            model.OverlayFolder!.Options.Single(option => option.Id == "agents").Open.Execute(null);
+                            host.UpdateLayout();
+                            var agents = Descendants(host).OfType<BrandSwitch>().SingleOrDefault(sw => sw.DataContext is OptionSheet);
+                            Check($"{locale}/{theme}: Agentes queda desactivado al llegar a ocho", agents is { IsEnabled: false, IsOn: false });
+                            if (captureDir is { Length: > 0 }) ApprovalNotchTests.Save(view, 120, Path.Combine(captureDir, $"peek-limit-disabled-{locale}-{theme}-120.png"));
+                            model.PeekFolders.Tiles.Single(tile => tile.AutomationId == "folder-peek-create").Open.Execute(null);
+                            model.OverlayFolder!.Options.Single(option => option.Id == "notes").Open.Execute(null);
+                            host.UpdateLayout();
+                            var notes = Descendants(host).OfType<BrandSwitch>().SingleOrDefault(sw => sw.DataContext is OptionSheet);
+                            Check($"{locale}/{theme}: Notas conserva su estado seleccionado", notes is { IsEnabled: true, IsOn: true });
+                            Check($"{locale}/{theme}: el interruptor seleccionado conserva el foco de teclado", notes is not null && Keyboard.Focus(notes) == notes);
+                            if (captureDir is { Length: > 0 }) ApprovalNotchTests.Save(view, 120, Path.Combine(captureDir, $"peek-limit-selected-{locale}-{theme}-120.png"));
+                        }
+                        finally { host.Close(); model.Hub.Dispose(); }
+                    }
+            }
+            finally { Theme.ForceHighContrast = originalContrast; Theme.Apply(); }
+            app.Shutdown();
+            return failures == 0 ? 0 : 1;
+        }
+        if (Environment.GetEnvironmentVariable("ITS_ONLY_BEAM") == "1")
+        {
+            GlowNotchTests.Run(Check);
+            app.Shutdown();
+            return failures == 0 ? 0 : 1;
+        }
         if (Environment.GetEnvironmentVariable("ITS_ONLY_NOTIFICATIONS") == "1")
         {
             NotificationTests.Run(Check);
@@ -71,6 +139,13 @@ internal static class Program
             RunContrastAudits(Check);
             app.Shutdown();
             Console.WriteLine(failures == 0 ? "auditoría visual de cámara: todo bien" : $"auditoría visual de cámara: {failures} fallos");
+            return failures == 0 ? 0 : 1;
+        }
+        if (Environment.GetEnvironmentVariable("ITS_ONLY_DISPLAY_SETTINGS") == "1")
+        {
+            RunContrastAudits(Check);
+            app.Shutdown();
+            Console.WriteLine(failures == 0 ? "ajustes de pantalla: todo bien" : $"ajustes de pantalla: {failures} fallos");
             return failures == 0 ? 0 : 1;
         }
         if (Environment.GetEnvironmentVariable("ITS_ONLY_CLIPBOARD_UI") == "1")
@@ -291,27 +366,29 @@ internal static class Program
                 && model.OpenTrayFallback is not null);
             Check($"{language}: interruptor directo o ayuda, nunca los dos",
                 model.ShowTrayPin != model.ShowTrayFallback);
+            model.Show(PanelView.Settings);
             model.CurrentSettingsTab = PanelViewModel.SettingsTab.Notch;
             view.UpdateLayout();
-            foreach (bool hud in new[] { true, false })
-            {
-                int count = hud ? model.HudRows.Count : model.LocalFeatureRows.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    SwitchRow CurrentRow() => (hud ? model.HudRows : model.LocalFeatureRows)[i];
-                    var row = CurrentRow();
-                    bool initial = row.IsOn;
-                    row.Toggle.Execute(null);
-                    view.UpdateLayout();
-                    row = CurrentRow();
-                    var control = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(b => b.Command == row.Toggle);
-                    Check($"{language}: {row.Title} actualiza el interruptor al encenderlo", row.IsOn != initial && control?.IsOn == row.IsOn);
-                    row.Toggle.Execute(null);
-                    view.UpdateLayout();
-                    Check($"{language}: {row.Title} vuelve al estado anterior al apagarlo", CurrentRow().IsOn == initial);
-                }
-            }
-            Check($"{language}: los HUD conservan las actividades predeterminadas", ActivityCatalog.Normalize(null).All(model.ActivityIds.Contains));
+            model.CurrentSettingsTab = PanelViewModel.SettingsTab.Alerts;
+            view.UpdateLayout();
+            Check($"{language}: las actividades en vivo aparecen en Ajustes > Avisos", Descendants(view).OfType<TextBlock>()
+                .Any(text => text.IsVisible && text.Text == model.ActivitiesTitle));
+            model.Show(PanelView.Widgets);
+            view.UpdateLayout();
+            Check($"{language}: la página Widgets ya no contiene el selector de actividades", !Descendants(view).OfType<TextBlock>()
+                .Any(text => text.IsVisible && text.Text == model.ActivitiesTitle));
+            model.Show(PanelView.Settings);
+            model.CurrentSettingsTab = PanelViewModel.SettingsTab.Alerts;
+            view.UpdateLayout();
+            model.ActivityFolders.Tiles.First().Open.Execute(null);
+            model.OverlayFolder!.Options.First().Open.Execute(null);
+            view.UpdateLayout();
+            var activityRow = model.ActivityRows.First(row => row.Title == model.OverlayFolder!.Options.First().Title);
+            var activityControl = Descendants(view).OfType<BrandSwitch>().FirstOrDefault(control => control.Command == activityRow.Toggle);
+            Check($"{language}: las actividades se pueden configurar desde Ajustes", activityControl is not null);
+            Check($"{language}: los valores predeterminados activan todas las actividades salvo el indicador opcional de cámara",
+                ActivityCatalog.Normalize(null).ToHashSet(StringComparer.Ordinal).SetEquals(ActivityCatalog.All.Select(a => a.Id).Where(id => id != "camera"))
+                && ActivityCatalog.Normalize(null).All(model.ActivityIds.Contains));
             model.CurrentSettingsTab = PanelViewModel.SettingsTab.Tray;   // la ayuda y el interruptor de la bandeja están en la pestaña Bandeja
             view.UpdateLayout();
             var trayButton = Descendants(view).OfType<Button>().FirstOrDefault(b => b.Content as string == trayOpen);
@@ -451,8 +528,9 @@ internal static class Program
             Check($"{language}: el widget de notas tiene un campo con nombre accesible",
                 notesBox is not null && System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(notesBox)?.GetName() == model.Hub.Notes.EditorName);
             prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "notes" });
-            Check($"{language}: la pastilla empieza con estado, modelo y RAM, y cada dato tiene texto",
-                model.PillIds.SequenceEqual(new[] { "state", "model", "ram" }) && PillCatalog.All.Where(p => p.Id is not ("media" or "team" or "usage")).All(p => model.PillValue(p.Id).Length > 0));
+            Check($"{language}: la pastilla nueva empieza con la hora, sin estado ni modelo de Ollama",
+                model.PillIds.SequenceEqual(new[] { "clock" }) && model.PillValue("clock").Length > 0
+                && !model.PillIds.Any(id => id is "state" or "model" or "ram"));
             // La música es un dato más de la pastilla (vacío, y por tanto oculto, mientras no suena nada) y entonces no se repite como actividad.
             Check($"{language}: «Música» se puede elegir en la pastilla cerrada y sin música no ocupa sitio",
                 PillCatalog.Find("media") is { Glyph.Length: > 0 } && model.PillValue("media") == "" && PillCatalog.Toggle(new List<string> { "state", "model" }, "media").SequenceEqual(new[] { "state", "model", "media" })
@@ -469,7 +547,7 @@ internal static class Program
             Check($"{language}: la página Widgets guarda los widgets en carpetas de cristal cerradas, cada una con nombre accesible y su cuenta",
                 visibleSwitches().Length == 0 && model.HomeFolders.Tiles.Count == WidgetCatalog.Folders.Count && !model.HasOverlayFolder
                 && folderTiles.Length == WidgetCatalog.Folders.Count && folderTiles.All(named));
-            // Cada lista de la página: abrir una carpeta enseña un icono con nombre por opción y cada opción abre su ventana con un único interruptor con nombre.
+            // Cada grupo tiene carpetas accesibles: cada opción abre su ventana con un único interruptor con nombre.
             var listsOk = true;
             foreach (var list in new[] { model.HomeFolders, model.PeekFolders, model.MetricFolders, model.ActivityFolders, model.PillFolders, model.DockFolders, model.FavoriteFolders })
                 for (int i = 0; i < list.Tiles.Count; i++)
@@ -626,9 +704,20 @@ internal static class Program
             Check($"{language}: se puede quitar el botón de cámara del dock", !model.CameraDockOn && !model.ShowingCamera);
             prefs.SetList(PrefKeys.NotchActivities, ActivityCatalog.All.Select(a => a.Id).ToArray());
             model.Hub.Pomodoro.Toggle.Execute(null);
-            Check($"{language}: la vista corta enseña lo elegido y por defecto Ollama",
+            Check($"{language}: la vista corta conserva lo elegido y activa cinco widgets útiles por defecto",
                 model.PeekWidgets.Select(w => w.Id).SequenceEqual(new[] { "notes" })
-                && WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek).SequenceEqual(new[] { "ollama" }));
+                && WidgetLayout.Normalize(null, WidgetCatalog.DefaultPeek, WidgetCatalog.MaxPeekCells).SequenceEqual(new[] { "media", "todo@1", "pomodoro", "shelf@1", "system" }));
+            var peekSeven = new[] { "media", "todo@1", "pomodoro", "shelf@1", "system", "notes", "clock" };
+            prefs.SetList(PrefKeys.NotchPeekWidgets, peekSeven);
+            Check($"{language}: la vista corta deja añadir el octavo widget aunque haya widgets de dos celdas",
+                model.PeekIds.SequenceEqual(peekSeven) && model.PeekRows.Single(row => row.WidgetId == "code").CanToggle);
+            model.PeekRows.Single(row => row.WidgetId == "code").Toggle.Execute(null);
+            Check($"{language}: la vista corta conserva ocho widgets y bloquea el noveno",
+                model.PeekIds.SequenceEqual([.. peekSeven, "code"])
+                && model.PeekWidgetCount == L10n.tr("%d de %d widgets seleccionados", 8, 8)
+                && !model.PeekRows.Single(row => row.WidgetId == "agents").CanToggle);
+            model.PeekRows.Single(row => row.WidgetId == "agents").Toggle.Execute(null);
+            Check($"{language}: el comando no añade un noveno widget aunque se ejecute directamente", model.PeekIds.Count == 8);
             prefs.SetList(PrefKeys.NotchPeekWidgets, new[] { "ollama" });
             model.WideLayout = false;
             prefs.SetList(PrefKeys.NotchWidgets, new[] { "ollama", "system", "clock" });

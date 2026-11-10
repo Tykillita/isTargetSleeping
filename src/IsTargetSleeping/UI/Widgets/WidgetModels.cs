@@ -454,33 +454,35 @@ public sealed class AudioWidget(Prefs prefs) : WidgetModel(WidgetCatalog.Find("a
 /// Los widgets del notch y su reloj de un segundo: solo corre con el Home a la vista o con algo en marcha (temporizador).
 public sealed class WidgetHub : IDisposable
 {
-    private readonly Dictionary<string, WidgetModel> all;
+    private readonly Dictionary<string, Lazy<WidgetModel>> all;
+    private readonly Lazy<AudioVolume> volume = new(() => new AudioVolume());
+    private readonly Lazy<SystemHuds> huds;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly DispatcherTimer motionResume = new() { Interval = TimeSpan.FromMilliseconds(80) };   // vuelve a leer en cuanto acaba la animación del notch
     private bool homeVisible, peekVisible;
     private HashSet<string> homeNeeds = [], peekNeeds = [];
 
-    public PomodoroWidget Pomodoro { get; } = new();
-    public StayAwakeWidget Awake { get; } = new();
-    public NotesWidget Notes { get; }
-    public TodoWidget Todo { get; }
-    public ShelfWidget Shelf { get; }
-    public SystemWidget SystemStats { get; }
-    public CodeWidget Code { get; }
-    public ClockWidget ClockInfo { get; }
-    public BatteryWidget BatteryInfo { get; } = new();
-    public MediaWidget Media { get; } = new();
-    public AudioVolume Volume { get; } = new();
-    public AudioWidget Audio { get; }
-    public SystemHuds Huds { get; }
-    public AgentsWidget Agents { get; }
-    public UsageWidget Usage { get; }
-    public LmStudioWidget LmStudio { get; }
-    public LauncherWidget Launcher { get; }
-    public WeatherWidget Weather { get; }
-    public TeleprompterWidget Teleprompter { get; }
-    public TeamWidget Team { get; }
-    public LedWidget Leds { get; }
+    public PomodoroWidget Pomodoro => (PomodoroWidget)Find("pomodoro")!;
+    public StayAwakeWidget Awake => (StayAwakeWidget)Find("awake")!;
+    public NotesWidget Notes => (NotesWidget)Find("notes")!;
+    public TodoWidget Todo => (TodoWidget)Find("todo")!;
+    public ShelfWidget Shelf => (ShelfWidget)Find("shelf")!;
+    public SystemWidget SystemStats => (SystemWidget)Find("system")!;
+    public CodeWidget Code => (CodeWidget)Find("code")!;
+    public ClockWidget ClockInfo => (ClockWidget)Find("clock")!;
+    public BatteryWidget BatteryInfo => (BatteryWidget)Find("battery")!;
+    public MediaWidget Media => (MediaWidget)Find("media")!;
+    public AudioVolume Volume => volume.Value;
+    public AudioWidget Audio => (AudioWidget)Find("audio")!;
+    public SystemHuds Huds => huds.Value;
+    public AgentsWidget Agents => (AgentsWidget)Find("agents")!;
+    public UsageWidget Usage => (UsageWidget)Find("usage")!;
+    public LmStudioWidget LmStudio => (LmStudioWidget)Find("lmstudio")!;
+    public LauncherWidget Launcher => (LauncherWidget)Find("launcher")!;
+    public WeatherWidget Weather => (WeatherWidget)Find("weather")!;
+    public TeleprompterWidget Teleprompter => (TeleprompterWidget)Find("teleprompter")!;
+    public TeamWidget Team => (TeamWidget)Find("team")!;
+    public LedWidget Leds => (LedWidget)Find("led")!;
     private bool activityNeeds;
     private bool agentActivityNeeds;
     private bool meetingActivityNeeds;
@@ -490,43 +492,70 @@ public sealed class WidgetHub : IDisposable
     public event Action<string, string>? TeamFinished;
     /// Cada segundo, tras leer los datos: la pastilla cerrada se repinta con ellos.
     public event Action? Ticked;
+    public event Action<WidgetModel>? ModelCreated;
+
+    private Lazy<WidgetModel> Defer(Func<WidgetModel> create) => new(() =>
+    {
+        var widget = create();
+        ModelCreated?.Invoke(widget);
+        return widget;
+    });
 
     public WidgetHub(PanelViewModel panel)
     {
-        Notes = new NotesWidget(persist: !panel.Ollama.IsDemo);
-        Todo = new TodoWidget(persist: !panel.Ollama.IsDemo);
-        Shelf = new ShelfWidget(persist: !panel.Ollama.IsDemo, prefs: panel.Prefs);
-        SystemStats = new SystemWidget(panel);
-        Code = new CodeWidget(panel.Prefs);
-        ClockInfo = new ClockWidget(panel.Prefs);
-        Audio = new AudioWidget(panel.Prefs);
-        Agents = new AgentsWidget(panel.Prefs);
-        Usage = new UsageWidget(panel.Prefs);
-        LmStudio = new LmStudioWidget(panel);
-        Launcher = new LauncherWidget(panel);
-        Weather = new WeatherWidget(panel.Prefs);
-        Teleprompter = new TeleprompterWidget(panel.Prefs, persist: !panel.Ollama.IsDemo);
-        // En demostración (capturas) el equipo no toca la carpeta de datos del usuario.
-        var teamService = new TeamService(panel.Ollama.IsDemo ? new TeamStore(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "its-team-demo")) : TeamStore.Default);
-        Team = new TeamWidget(panel.Prefs, demo: panel.Ollama.IsDemo, teamService, Agents);
-        Team.Finished += (title, text) => TeamFinished?.Invoke(title, text);
-        Leds = new LedWidget(panel.Prefs, demo: panel.Ollama.IsDemo);
-        Huds = new SystemHuds();
-        Huds.Changed += () => Ticked?.Invoke();
-        all = new WidgetModel[]
+        all = new Dictionary<string, Lazy<WidgetModel>>(StringComparer.Ordinal)
         {
-            new OllamaWidget(panel), SystemStats, ClockInfo, Pomodoro, Awake, Notes, Todo, Shelf, BatteryInfo, Media, Code, Audio, Agents, Usage, LmStudio, Launcher, Weather, Teleprompter, Team, Leds,
-        }.ToDictionary(w => w.Id);
-        Pomodoro.Finished += (title, text) => Finished?.Invoke(title, text);
-        Pomodoro.PropertyChanged += (_, _) => Sync();
-        Team.PropertyChanged += (_, _) => Sync();
-        Leds.PropertyChanged += (_, _) => Sync();
+            ["ollama"] = Defer(() => new OllamaWidget(panel)),
+            ["system"] = Defer(() => new SystemWidget(panel)),
+            ["clock"] = Defer(() => new ClockWidget(panel.Prefs)),
+            ["pomodoro"] = Defer(() =>
+            {
+                var widget = new PomodoroWidget();
+                widget.Finished += (title, text) => Finished?.Invoke(title, text);
+                widget.PropertyChanged += (_, _) => Sync();
+                return widget;
+            }),
+            ["awake"] = Defer(() => new StayAwakeWidget()),
+            ["notes"] = Defer(() => new NotesWidget(persist: !panel.Ollama.IsDemo)),
+            ["todo"] = Defer(() => new TodoWidget(persist: !panel.Ollama.IsDemo)),
+            ["shelf"] = Defer(() => new ShelfWidget(persist: !panel.Ollama.IsDemo, prefs: panel.Prefs)),
+            ["battery"] = Defer(() => new BatteryWidget()),
+            ["media"] = Defer(() => new MediaWidget()),
+            ["code"] = Defer(() => new CodeWidget(panel.Prefs)),
+            ["audio"] = Defer(() => new AudioWidget(panel.Prefs)),
+            ["agents"] = Defer(() => new AgentsWidget(panel.Prefs)),
+            ["usage"] = Defer(() => new UsageWidget(panel.Prefs)),
+            ["lmstudio"] = Defer(() => new LmStudioWidget(panel)),
+            ["launcher"] = Defer(() => new LauncherWidget(panel)),
+            ["weather"] = Defer(() => new WeatherWidget(panel.Prefs)),
+            ["teleprompter"] = Defer(() => new TeleprompterWidget(panel.Prefs, persist: !panel.Ollama.IsDemo)),
+            ["team"] = Defer(() =>
+            {
+                var store = panel.Ollama.IsDemo ? new TeamStore(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "its-team-demo")) : TeamStore.Default;
+                var widget = new TeamWidget(panel.Prefs, demo: panel.Ollama.IsDemo, new TeamService(store), Agents);
+                widget.Finished += (title, text) => TeamFinished?.Invoke(title, text);
+                widget.PropertyChanged += (_, _) => Sync();
+                return widget;
+            }),
+            ["led"] = Defer(() =>
+            {
+                var widget = new LedWidget(panel.Prefs, demo: panel.Ollama.IsDemo);
+                widget.PropertyChanged += (_, _) => Sync();
+                return widget;
+            }),
+        };
+        huds = new Lazy<SystemHuds>(() =>
+        {
+            var value = new SystemHuds();
+            value.Changed += () => Ticked?.Invoke();
+            return value;
+        });
         timer.Tick += (_, _) => Tick();
         motionResume.Tick += (_, _) => { if (Motion.IsAnimating) return; motionResume.Stop(); Tick(); };
         Sync();
     }
 
-    public WidgetModel? Find(string id) => all.GetValueOrDefault(id);
+    public WidgetModel? Find(string id) => all.TryGetValue(id, out var widget) ? widget.Value : null;
     public List<WidgetSlot> Slots(IReadOnlyList<string> ids, bool peek, bool customizing = false, Action<string>? resize = null, bool compact = false) =>
         peek
             ? WidgetLayout.Arrange(ids).Select(p => Find(p.Id) is { } w
@@ -540,6 +569,7 @@ public sealed class WidgetHub : IDisposable
     {
         homeVisible = value;
         homeNeeds = [.. widgetIds ?? []];
+        if (value && homeNeeds.Any(id => WidgetLayout.BaseId(id) == "media")) QueueMediaStart();
         Sync();
         if (value) Tick();
     }
@@ -548,10 +578,17 @@ public sealed class WidgetHub : IDisposable
     {
         peekVisible = value;
         peekNeeds = [.. widgetIds ?? []];
+        if (value && peekNeeds.Any(id => WidgetLayout.BaseId(id) == "media")) QueueMediaStart();
         Sync();
         // La primera lectura va después de empezar la animación de apertura: hacerla ya la haría entrecortada.
         if (value) System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => { if (peekVisible) Tick(); }, System.Windows.Threading.DispatcherPriority.Background);
     }
+
+    private void QueueMediaStart() => System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+    {
+        if (homeVisible && homeNeeds.Any(id => WidgetLayout.BaseId(id) == "media")
+            || peekVisible && peekNeeds.Any(id => WidgetLayout.BaseId(id) == "media")) Media.Start();
+    }, DispatcherPriority.Background);
 
     /// Los widgets cuyos datos enseña la pastilla cerrada (CPU, hora, batería): siguen leyendo con el notch cerrado.
     public void SetPillNeeds(IEnumerable<string> widgetIds)
@@ -567,14 +604,16 @@ public sealed class WidgetHub : IDisposable
         agentActivityNeeds = ids.Contains("agents");
         meetingActivityNeeds = ids.Contains("meeting");
         activityNeeds = agentActivityNeeds || meetingActivityNeeds || ids.Any(id => id is "brightness" or "locks" or "bluetooth");
-        Huds.Configure(ids);
-        if (!activityNeeds) Huds.Refresh();
+        if (ids.Any(id => id is "brightness" or "locks" or "bluetooth") || huds.IsValueCreated) Huds.Configure(ids);
         Sync();
     }
 
     private void Sync()
     {
-        if (homeVisible || peekVisible || Pomodoro.Running || pillNeeds.Count > 0 || activityNeeds || Team.NeedsTick || Leds.Always) timer.Start();
+        bool pomodoroRunning = all["pomodoro"].IsValueCreated && Pomodoro.Running;
+        bool teamNeedsTick = all["team"].IsValueCreated && Team.NeedsTick;
+        bool ledsAlways = all["led"].IsValueCreated && Leds.Always;
+        if (homeVisible || peekVisible || pomodoroRunning || pillNeeds.Count > 0 || activityNeeds || teamNeedsTick || ledsAlways) timer.Start();
         else timer.Stop();
     }
 
@@ -583,16 +622,26 @@ public sealed class WidgetHub : IDisposable
         // Con el notch moviéndose, la lectura espera: se hace nada más acabar (ver `Motion.Busy`).
         if (Motion.IsAnimating) { motionResume.Start(); return; }
         var now = DateTime.Now;
-        foreach (var widget in all.Values)
+        foreach (var lazy in all.Values)
+        {
+            if (!lazy.IsValueCreated) continue;
+            var widget = lazy.Value;
             if (homeVisible && homeNeeds.Contains(widget.Id) || peekVisible && peekNeeds.Contains(widget.Id)
                 || widget.Always || pillNeeds.Contains(widget.Id) || widget.Id == "agents" && agentActivityNeeds) widget.Tick(now);
+        }
         if (meetingActivityNeeds && !(homeVisible && homeNeeds.Contains("clock")) && !(peekVisible && peekNeeds.Contains("clock"))) ClockInfo.Tick(now);
-        if (activityNeeds) Huds.Refresh();
         Ticked?.Invoke();
     }
 
     /// El Estante está en el Home o en la vista corta que se ve ahora: ahí van los archivos que se arrastran al notch.
     public bool ShelfShown => homeVisible && homeNeeds.Any(id => WidgetLayout.BaseId(id) == "shelf") || peekVisible && peekNeeds.Any(id => WidgetLayout.BaseId(id) == "shelf");
 
-    public void Dispose() { Notes.Save(); Huds.Dispose(); Audio.Sessions.Dispose(); Leds.Dispose(); Agents.Dispose(); }
+    public void Dispose()
+    {
+        if (all["notes"].IsValueCreated) Notes.Save();
+        if (huds.IsValueCreated) Huds.Dispose();
+        if (all["audio"].IsValueCreated) Audio.Sessions.Dispose();
+        if (all["led"].IsValueCreated) Leds.Dispose();
+        if (all["agents"].IsValueCreated) Agents.Dispose();
+    }
 }

@@ -16,10 +16,9 @@ public static class Motion
     public static bool IsAnimating => Environment.TickCount64 < Interlocked.Read(ref animatingUntil);
     public static void Busy(TimeSpan duration) => Interlocked.Exchange(ref animatingUntil, Math.Max(Interlocked.Read(ref animatingUntil), Environment.TickCount64 + (long)duration.TotalMilliseconds));
 
-    // Resortes amortiguados reales (`SpringEase`), con el ritmo medido en el notch de Nusa (ráfaga de unos 90 fotogramas por segundo): abre en poco más de 200 ms y cierra en
-    // unos 180. Con un rebote visible: al abrir se pasa un 6-8 % y vuelve; al cerrar se pasa un poco por debajo de la pastilla y vuelve. La forma sigue al tamaño en cada
-    // fotograma (con sus esquinas) y la ventana deja margen, así que el rebote no se recorta ni deja el notch cuadrado.
-    public static readonly TimeSpan OpenWidthDuration = TimeSpan.FromMilliseconds(460), OpenHeightDuration = TimeSpan.FromMilliseconds(460), CloseDuration = TimeSpan.FromMilliseconds(340);
+    // El mismo resorte amortiguado conserva su rebote visible, con la apertura comprimida de 460 a 340 ms. La forma sigue al tamaño en cada fotograma y la ventana deja margen,
+    // así que el rebote no se recorta ni deja el notch cuadrado.
+    public static readonly TimeSpan OpenWidthDuration = TimeSpan.FromMilliseconds(340), OpenHeightDuration = TimeSpan.FromMilliseconds(340), CloseDuration = TimeSpan.FromMilliseconds(340);
     public static IEasingFunction OpenWidthEase() => new SpringEase { Damping = 0.7, Frequency = 15, Seconds = 0.46 };
     public static IEasingFunction OpenHeightEase() => new SpringEase { Damping = 0.7, Frequency = 15, Seconds = 0.46 };
     public static IEasingFunction CloseEase() => new SpringEase { Damping = 1.0, Frequency = 17, Seconds = 0.34 };

@@ -6,38 +6,36 @@
 <link rel="icon" href="/Assets/istargetsleeping-icon.svg" type="image/svg+xml">
 <title>isTargetSleeping · Recorrido del notch</title>
 <style>
-  :root { color-scheme: dark; --bg:#050506; --ink:#f5f5f7; --muted:#aaaab1; --line:#29292d; --blue:#c7d8ff; }
+  :root { color-scheme:dark; --bg:#07080b; --ink:#f5f6f8; --muted:#aeb1bb; --blue:#aebfff; }
   * { box-sizing:border-box; margin:0; }
   html,body { width:1920px; height:1080px; overflow:hidden; background:var(--bg); color:var(--ink); font-family:"Segoe UI Variable Display","Segoe UI",Arial,sans-serif; }
-  body { position:relative; }
-  body::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.18; background:radial-gradient(circle,rgba(255,255,255,.15) 1px,transparent 1.5px) 0 0/38px 38px; mask-image:radial-gradient(ellipse at 50% 45%,#000 15%,transparent 78%); }
-  .brand { position:absolute; z-index:5; top:42px; left:84px; display:flex; align-items:center; gap:14px; color:#ededf0; font-size:22px; font-weight:650; letter-spacing:-.3px; }
-  .brand img { width:42px; height:42px; }
-  .brand span { opacity:.88; }
-  .headline { position:absolute; z-index:4; left:0; right:0; top:96px; text-align:center; padding:0 150px; transition:opacity .5s ease, transform .5s ease; }
-  .eyebrow { color:var(--muted); font-size:22px; font-weight:600; letter-spacing:.15px; }
-  h1 { margin-top:12px; font-size:60px; line-height:1.06; letter-spacing:-2px; font-weight:720; }
-  .subtitle { margin:14px auto 0; max-width:900px; color:var(--muted); font-size:25px; line-height:1.36; }
-  .headline.changing { opacity:0; transform:translateY(10px); }
+  body { position:relative; isolation:isolate; }
+  body::before { content:""; position:absolute; z-index:-1; inset:0; pointer-events:none; opacity:.13; background:radial-gradient(circle,rgba(255,255,255,.18) .8px,transparent 1.4px) 0 0/42px 42px; mask-image:radial-gradient(ellipse at 50% 42%,#000 8%,transparent 76%); }
+  .brand { position:absolute; z-index:7; top:34px; left:78px; display:flex; align-items:center; gap:12px; color:#ededf0; font-size:19px; font-weight:650; letter-spacing:-.25px; }
+  .brand img { width:36px; height:36px; }
+  .chapter { position:absolute; z-index:7; top:47px; right:84px; color:#878b98; font:600 13px "Cascadia Mono",Consolas,monospace; letter-spacing:1.45px; text-transform:uppercase; }
+  .headline { position:absolute; z-index:5; left:84px; right:84px; top:93px; text-align:left; padding-right:300px; transition:opacity .42s ease, transform .42s ease; }
+  .eyebrow { color:#bdc2ce; font-size:17px; font-weight:600; letter-spacing:.45px; }
+  h1 { margin-top:10px; font-size:55px; line-height:1.04; letter-spacing:-1.9px; font-weight:720; }
+  .subtitle { margin-top:11px; max-width:840px; color:var(--muted); font-size:22px; line-height:1.34; }
+  .headline.changing { opacity:0; transform:translateY(9px); }
   .stage { position:absolute; inset:0; }
-  #simulator-view { position:absolute; z-index:2; left:0; right:0; top:260px; height:590px; opacity:1; transition:opacity .65s ease; }
-  #simulator { width:1920px; height:590px; border:0; display:block; }
-  .capture { position:absolute; z-index:2; left:0; right:0; top:226px; height:820px; display:flex; align-items:center; justify-content:center; opacity:0; transform:translateY(18px) scale(.985); transition:opacity .6s ease, transform .6s ease; pointer-events:none; }
-  .capture img { display:block; border:1px solid rgba(255,255,255,.16); border-radius:18px; box-shadow:0 38px 100px rgba(0,0,0,.7); background:#08080a; }
-  #settings-frame { width:980px; max-width:calc(100vw - 300px); border-radius:24px; overflow:hidden; }
-  #settings-frame img { width:100%; height:auto; }
-  .capture-note { position:absolute; left:0; right:0; bottom:7px; color:#bdbdc4; text-align:center; font-size:20px; letter-spacing:.2px; }
-  body[data-mode="settings"] #simulator-view { opacity:0; }
-  body[data-mode="settings"] #settings-capture { opacity:1; transform:none; }
-  .foot { position:absolute; z-index:4; left:0; right:0; bottom:46px; display:flex; align-items:center; justify-content:center; gap:12px; color:#85858d; font:600 15px "Segoe UI",Arial,sans-serif; letter-spacing:1.15px; text-transform:uppercase; }
-  .foot::before,.foot::after { content:""; width:54px; height:1px; background:#3a3a40; }
-  .foot .dot { width:4px; height:4px; border-radius:50%; background:#b8b8c0; }
-  .count { position:absolute; z-index:4; top:48px; right:88px; color:#777780; font:600 14px "Cascadia Mono",Consolas,monospace; letter-spacing:1.5px; }
+  #simulator-view { position:absolute; z-index:2; left:0; right:0; top:198px; height:800px; opacity:1; transition:opacity .55s ease; }
+  #simulator { width:1920px; height:800px; border:0; display:block; }
+  .capture { position:absolute; z-index:2; left:0; right:0; top:242px; height:784px; overflow:hidden; opacity:0; transform:translateY(16px) scale(.985); transition:opacity .55s ease, transform .55s ease; pointer-events:none; }
+  .capture img { position:absolute; top:0; left:0; display:block; width:100%; height:auto; border:1px solid rgba(255,255,255,.14); border-radius:19px; box-shadow:0 32px 82px rgba(0,0,0,.58); background:#090a0d; transform-origin:50% 10%; }
+  .capture-note { position:absolute; z-index:1; left:82px; bottom:26px; padding:10px 15px; border:1px solid rgba(255,255,255,.15); border-radius:999px; background:rgba(8,9,12,.86); color:#e9ebf0; font:600 13px "Cascadia Mono",Consolas,monospace; letter-spacing:.9px; text-transform:uppercase; box-shadow:0 8px 28px rgba(0,0,0,.35); }
+  body[data-mode="app"] #simulator-view { opacity:0; }
+  body[data-mode="app"] #app-capture { opacity:1; transform:none; }
+  .edge-beam { position:absolute; z-index:6; top:234px; left:-360px; width:340px; height:2px; pointer-events:none; opacity:0; background:linear-gradient(90deg,transparent,#97aaff 34%,#fff 50%,#a9bcff 67%,transparent); filter:drop-shadow(0 0 7px rgba(121,151,255,.85)); }
+  .foot { position:absolute; z-index:7; left:0; right:0; bottom:34px; display:flex; align-items:center; justify-content:center; gap:12px; color:#888b95; font:600 13px "Segoe UI",Arial,sans-serif; letter-spacing:1.3px; text-transform:uppercase; }
+  .foot::before,.foot::after { content:""; width:48px; height:1px; background:#373940; }
+  .foot .dot { width:4px; height:4px; border-radius:50%; background:#c1c4cd; }
 </style>
 </head>
 <body>
 <div class="brand"><img src="/Assets/istargetsleeping-icon-256.png" alt=""><span>isTargetSleeping</span></div>
-<div class="count" id="count">01 / 08</div>
+<div class="chapter" id="chapter"></div>
 <header class="headline" id="headline">
   <p class="eyebrow" id="eyebrow"></p>
   <h1 id="title"></h1>
@@ -45,100 +43,127 @@
 </header>
 <main class="stage">
   <div id="simulator-view"><iframe id="simulator" title="Simulador animado del notch"></iframe></div>
-  <section class="capture" id="settings-capture">
-    <div id="settings-frame"><img id="settings" alt="Ajustes generales de la app de escritorio"></div>
+  <section class="capture" id="app-capture">
+    <img id="appshot" alt="">
+    <span class="capture-note" id="capture-note"></span>
   </section>
+  <i class="edge-beam" id="edge-beam"></i>
 </main>
-<footer class="foot" id="foot"><span>Windows</span><i class="dot"></i><span id="foot-copy"></span></footer>
+<footer class="foot"><span>Windows</span><i class="dot"></i><span id="foot-copy"></span></footer>
 <script>
 const lang = new URLSearchParams(location.search).get('lang') === 'es' ? 'es' : 'en';
 document.documentElement.lang = lang;
 const text = {
   en: {
-    eyebrow: 'A small window into your day', foot: 'Free and open source',
+    eyebrow: 'A small window into your day', foot: 'Music · System · Widgets',
     scenes: [
-      [0, 7, 'Meet your desktop notch.', 'Explore animated notch states modeled on the app: music, activity and quick controls.', 'pet', 'sim'],
-      [7, 14, 'A notch with room to rest.', 'Its mascot sleeps and wakes inside the notch while your desktop stays clear.', 'pet', 'sim'],
-      [14, 20, 'The compact notch, always close.', 'Time, battery and music fit into the notch’s compact pill.', 'idle', 'sim'],
-      [20, 32, 'Music in your notch.', 'See the cover, progress and playback controls in the animated notch.', 'music', 'sim'],
-      [32, 43, 'Lyrics in your notch.', 'Follow the current line beside playback controls as the notch changes with the song.', 'lyrics', 'sim'],
-      [43, 53, 'System stats in the notch.', 'CPU, memory, graphics and disk in one compact notch view.', 'system', 'sim'],
-      [53, 68, 'Settings for your notch and agents.', 'Set agent permissions, sounds, response time and alerts in the desktop app.', 'music', 'settings'],
-      [68, 77, 'Your day, in the notch.', 'Music, system stats, lyrics and more, always close at hand.', 'music', 'sim'],
+      { start: 0, end: 7, chapter: 'A QUIETER DESKTOP', title: 'One edge. More of your day.', subtitle: 'A small notch for music, useful tools and the moments in between.', mode: 'sim', state: 'pet' },
+      { start: 7, end: 16, chapter: 'THE MASCOT', title: 'It rests until you need it.', subtitle: 'Give the sleepy mascot a tap and watch the notch wake with it.', mode: 'sim', state: 'pet', action: 'wake' },
+      { start: 16, end: 22, chapter: 'THE COMPACT PILL', title: 'Keep the essentials close.', subtitle: 'Time, battery and the details you choose, along the top edge.', mode: 'sim', state: 'idle' },
+      { start: 22, end: 34, chapter: 'MUSIC', title: 'Make room for the song.', subtitle: 'Cover art, playback progress and controls unfold inside the notch.', mode: 'sim', state: 'music' },
+      { start: 34, end: 44, chapter: 'LYRICS', title: 'The words are right there.', subtitle: 'Synchronized lyrics keep the current line beside your controls.', mode: 'sim', state: 'lyrics' },
+      { start: 44, end: 52, chapter: 'SYSTEM', title: 'A quick read of your PC.', subtitle: 'CPU, memory, graphics and storage, without opening another window.', mode: 'sim', state: 'system' },
+      { start: 52, end: 63, chapter: 'WIDGET GALLERY', title: 'Pick the tools that belong there.', subtitle: 'Browse the gallery, preview each size and choose what goes on Home.', mode: 'app', view: 'widgets', note: 'THE DESKTOP APP · WIDGET GALLERY' },
+      { start: 63, end: 74, chapter: 'DISPLAY SETTINGS', title: 'Follow the screen you choose.', subtitle: 'Place the notch on the display that fits the way you work.', mode: 'app', view: 'display', note: 'THE DESKTOP APP · DISPLAY SETTINGS' },
+      { start: 74, end: 77, chapter: 'BACK TO YOUR DAY', title: 'One edge. More of your day.', subtitle: 'Music, your tools and small moments, always within reach.', mode: 'sim', state: 'idle' },
     ],
-    settings: 'Desktop app · Settings · General',
+    settings: 'Current desktop app interface. Sample data.',
   },
   es: {
-    eyebrow: 'Una ventana pequeña a tu día', foot: 'Gratis y de código abierto',
+    eyebrow: 'Una ventana pequeña a tu día', foot: 'Música · Sistema · Widgets',
     scenes: [
-      [0, 7, 'Conoce el notch de tu escritorio.', 'Explora estados animados inspirados en la app: música, actividad y controles rápidos.', 'pet', 'sim'],
-      [7, 14, 'Un notch con espacio para descansar.', 'Su mascota duerme y despierta dentro del notch mientras tu escritorio sigue despejado.', 'pet', 'sim'],
-      [14, 20, 'El notch compacto, siempre a mano.', 'La hora, la batería y la música caben en la pastilla compacta del notch.', 'idle', 'sim'],
-      [20, 32, 'Música en tu notch.', 'La portada, el progreso y los controles de reproducción en el notch animado.', 'music', 'sim'],
-      [32, 43, 'Letras dentro del notch.', 'Sigue la línea actual junto a los controles mientras el notch cambia con la canción.', 'lyrics', 'sim'],
-      [43, 53, 'El sistema, dentro del notch.', 'CPU, memoria, gráficos y disco en una vista compacta del notch.', 'system', 'sim'],
-      [53, 68, 'Ajustes para el notch y sus agentes.', 'Ajusta permisos, sonidos, tiempo de respuesta y avisos desde la app de escritorio.', 'music', 'settings'],
-      [68, 77, 'Tu día, en el notch.', 'Música, sistema, letras y más, siempre a mano.', 'music', 'sim'],
+      { start: 0, end: 7, chapter: 'UN ESCRITORIO MÁS TRANQUILO', title: 'Un borde. Más de tu día.', subtitle: 'Un notch pequeño para la música, tus herramientas y lo que va pasando.', mode: 'sim', state: 'pet' },
+      { start: 7, end: 16, chapter: 'LA MASCOTA', title: 'Descansa hasta que la necesitas.', subtitle: 'Toca a la mascota dormida y mira cómo despierta el notch.', mode: 'sim', state: 'pet', action: 'wake' },
+      { start: 16, end: 22, chapter: 'LA PASTILLA COMPACTA', title: 'Lo esencial, siempre cerca.', subtitle: 'La hora, la batería y los datos que elijas, arriba en la pantalla.', mode: 'sim', state: 'idle' },
+      { start: 22, end: 34, chapter: 'MÚSICA', title: 'Hazle espacio a la música.', subtitle: 'La portada, el progreso y los controles se despliegan en el notch.', mode: 'sim', state: 'music' },
+      { start: 34, end: 44, chapter: 'LETRAS', title: 'La letra va contigo.', subtitle: 'La línea sincronizada aparece junto a los controles.', mode: 'sim', state: 'lyrics' },
+      { start: 44, end: 52, chapter: 'SISTEMA', title: 'El estado del PC, de un vistazo.', subtitle: 'CPU, memoria, gráficos y disco sin abrir otra ventana.', mode: 'sim', state: 'system' },
+      { start: 52, end: 63, chapter: 'GALERÍA DE WIDGETS', title: 'Elige qué herramientas van ahí.', subtitle: 'Explora la galería, prueba cada tamaño y decide qué va en Inicio.', mode: 'app', view: 'widgets', note: 'APP DE ESCRITORIO · GALERÍA DE WIDGETS' },
+      { start: 63, end: 74, chapter: 'AJUSTES DE PANTALLA', title: 'Sigue la pantalla que elijas.', subtitle: 'Pon el notch en el monitor que mejor encaje con tu forma de trabajar.', mode: 'app', view: 'display', note: 'APP DE ESCRITORIO · AJUSTES DE PANTALLA' },
+      { start: 74, end: 77, chapter: 'DE VUELTA A TU DÍA', title: 'Un borde. Más de tu día.', subtitle: 'Música, tus herramientas y pequeños momentos, siempre cerca.', mode: 'sim', state: 'idle' },
     ],
-    settings: 'App de escritorio · Ajustes · General',
+    settings: 'Interfaz actual de la app de escritorio. Datos de ejemplo.',
   },
 }[lang];
+
+const shots = {
+  widgets: `/docs/images/tour-ui-widgets-${lang}.png`,
+  display: `/docs/images/tour-ui-display-${lang}.png`,
+};
+const preload = Object.values(shots).map(src => {
+  const img = new Image(); img.src = src; return img.decode();
+});
 const iframe = document.getElementById('simulator');
 iframe.src = `/site/index.html?lang=${lang}`;
-document.getElementById('settings').src = `/docs/images/settings-${lang}.png`;
 document.getElementById('eyebrow').textContent = text.eyebrow;
 document.getElementById('foot-copy').textContent = text.foot;
-let simulatorFrame = null;
+document.getElementById('capture-note').textContent = text.settings;
+let simulatorFrame = null, active = -1, activeState = 'pet';
 window.tourReady = false;
-iframe.addEventListener('load', () => {
+iframe.addEventListener('load', async () => {
   simulatorFrame = iframe.contentWindow;
   const style = iframe.contentDocument.createElement('style');
   style.textContent = `
-    html,body{width:1920px!important;height:590px!important;min-height:0!important;overflow:hidden!important;background:#000!important}
+    html,body{width:1920px!important;height:800px!important;min-height:0!important;overflow:hidden!important;background:#000!important}
     body>*:not(main):not(script){display:none!important}
-    main{display:block!important;width:1920px!important;height:590px!important;min-height:0!important;overflow:hidden!important}
+    main{display:block!important;width:1920px!important;height:800px!important;min-height:0!important;overflow:hidden!important}
     main>*:not(#probar){display:none!important}
-    #probar{display:block!important;position:relative!important;width:1920px!important;height:590px!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#000!important}
+    #probar{display:block!important;position:relative!important;width:1920px!important;height:800px!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#000!important}
     #probar>.contenedor:first-child{display:none!important}
-    #probar .sim-pin{position:relative!important;top:auto!important;left:auto!important;width:100%!important;height:540px!important;min-height:0!important;padding:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:0!important}
-    #probar .laptop{position:relative!important;top:auto!important;left:auto!important;flex:none!important;width:100%!important;height:320px!important;max-width:none!important;margin:0!important;transform:none!important;opacity:1!important;mask:none!important;-webkit-mask:none!important}
-    #probar .try{margin:0!important;gap:10px!important;justify-content:center!important}
-    #probar .try button{font-size:16px!important;padding:10px 22px!important}
+    #probar .sim-pin{--u:1.34!important;position:relative!important;top:auto!important;left:auto!important;width:100%!important;max-width:none!important;height:780px!important;min-height:0!important;padding:0!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:0!important}
+    #probar .laptop{position:relative!important;top:auto!important;left:auto!important;flex:none!important;width:100%!important;height:460px!important;max-width:none!important;margin:0!important;transform:none!important;opacity:1!important;mask:none!important;-webkit-mask:none!important}
+    #probar .try{margin:12px 0 0!important;gap:10px!important;justify-content:center!important}
+    #probar .try button{font-size:17px!important;padding:12px 24px!important}
     #probar .try button[data-s="ollama"]{display:none!important}
-    #probar .cap{margin-top:10px!important;font-size:14px!important;line-height:1.35!important}
+    #probar .cap{margin-top:14px!important;font-size:16px!important;line-height:1.35!important}
     #probar .revela,#probar .revela.vista,#probar .revela.visible{opacity:1!important;transform:none!important}
     #probar .wall video{display:block!important;opacity:1!important}
+    #probar .mn{transition:width .95s cubic-bezier(.2,.8,.2,1),height .95s cubic-bezier(.2,.8,.2,1),border-radius .75s ease!important}
+    #probar .mn::before,#probar .mn::after{transition:width .65s ease,height .65s ease!important}
+    #probar .ly{transition:opacity .48s ease!important}
   `;
   iframe.contentDocument.head.append(style);
   iframe.contentWindow.scrollTo(0, 0);
   iframe.contentDocument.querySelector('#probar .try button[data-s="pet"]')?.click();
-  document.fonts.ready.then(() => { window.tourReady = true; });
+  await Promise.all([document.fonts.ready, ...preload]);
+  window.tourReady = true;
 });
+
 const scenes = text.scenes;
-let active = -1, activeState = '';
+const ease = value => value * value * (3 - 2 * value);
 function render(time) {
-  const index = Math.max(0, scenes.findIndex((scene, i) => time >= scene[0] && (time < scene[1] || i === scenes.length - 1)));
+  const index = Math.max(0, scenes.findIndex((scene, i) => time >= scene.start && (time < scene.end || i === scenes.length - 1)));
   const scene = scenes[index];
   if (!scene) throw new Error(`No tour scene at ${time}s`);
   if (index !== active) {
     const head = document.getElementById('headline');
     head.classList.add('changing');
     setTimeout(() => {
-      document.getElementById('title').textContent = scene[2];
-      document.getElementById('subtitle').textContent = scene[3];
-      document.body.dataset.mode = scene[5];
-      document.getElementById('count').textContent = `${String(index + 1).padStart(2,'0')} / 08`;
-      document.getElementById('settings').alt = scene[5] === 'settings' ? text.settings : '';
+      document.getElementById('chapter').textContent = scene.chapter;
+      document.getElementById('title').textContent = scene.title;
+      document.getElementById('subtitle').textContent = scene.subtitle;
+      document.body.dataset.mode = scene.mode;
+      document.body.dataset.view = scene.view || '';
+      if (scene.view) document.getElementById('capture-note').textContent = scene.note;
+      if (scene.view) document.getElementById('appshot').src = shots[scene.view];
+      document.getElementById('appshot').alt = scene.mode === 'app' ? scene.chapter : '';
       head.classList.remove('changing');
     }, 140);
-    if (scene[5] === 'sim' && simulatorFrame && activeState !== scene[4]) {
-      iframe.contentDocument.querySelector(`#probar .try button[data-s="${scene[4]}"]`)?.click();
-      if (scene[4] === 'pet') setTimeout(() => iframe.contentDocument.querySelector('#mn')?.click(), 700);
-      activeState = scene[4];
+    if (scene.mode === 'sim' && simulatorFrame && activeState !== scene.state) {
+      iframe.contentDocument.querySelector(`#probar .try button[data-s="${scene.state}"]`)?.click();
+      activeState = scene.state;
     }
+    if (scene.action === 'wake') setTimeout(() => iframe.contentDocument.querySelector('#mn')?.click(), 950);
     active = index;
   }
-  return scene[5];
+  const progress = Math.max(0, Math.min(1, (time - scene.start) / (scene.end - scene.start)));
+  const camera = 1.002 + ease(progress) * .018;
+  document.getElementById('appshot').style.transform = `scale(${camera}) translateY(${-progress * 12}px)`;
+  const sweep = Math.max(0, Math.min(1, (time - scene.start) / 1.1));
+  const beam = document.getElementById('edge-beam');
+  beam.style.left = `${-360 + sweep * 2280}px`;
+  beam.style.opacity = sweep <= 0 || sweep >= 1 ? '0' : String(Math.min(sweep * 7, (1 - sweep) * 7, .9));
+  return scene.mode;
 }
 window.ready = 77;
 window.render = render;

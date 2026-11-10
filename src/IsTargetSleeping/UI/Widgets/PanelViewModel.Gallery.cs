@@ -73,17 +73,15 @@ public sealed partial class PanelViewModel
     /// Si la galería está enseñando datos de muestra de un widget y llegan los de verdad (la música empieza a sonar, se leen las baterías…), se cambia a ellos.
     private void HookGallery()
     {
-        void Arrived(string id) { if (galleryId == id && galleryDemoShown.Contains(id) && GalleryHasReal(id)) System.Windows.Application.Current?.Dispatcher.BeginInvoke(Notify); }
-        Hub.Media.PropertyChanged += (_, _) => Arrived("media");
-        Hub.BatteryInfo.PropertyChanged += (_, _) => Arrived("battery");
-        Hub.Audio.PropertyChanged += (_, _) => Arrived("audio");
-        Hub.Weather.PropertyChanged += (_, _) => Arrived("weather");
-        Hub.Agents.PropertyChanged += (_, _) => Arrived("agents");
-        Hub.Usage.PropertyChanged += (_, _) => Arrived("usage");
-        Hub.Code.PropertyChanged += (_, _) => Arrived("code");
-        Hub.Team.PropertyChanged += (_, _) => Arrived("team");
-        Hub.LmStudio.PropertyChanged += (_, _) => Arrived("lmstudio");
-        Hub.Launcher.PropertyChanged += (_, _) => Arrived("launcher");
+        Hub.ModelCreated += widget =>
+        {
+            if (widget.Id is not ("media" or "battery" or "audio" or "weather" or "agents" or "usage" or "code" or "team" or "lmstudio" or "launcher")) return;
+            widget.PropertyChanged += (_, _) =>
+            {
+                if (galleryId == widget.Id && galleryDemoShown.Contains(widget.Id) && GalleryHasReal(widget.Id))
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(Notify);
+            };
+        };
     }
 
     private WidgetModel? GalleryModelFor(string id)
@@ -154,7 +152,7 @@ public sealed partial class PanelViewModel
         return code;
     }
 
-    private List<WidgetInfo> GalleryItems => WidgetCatalog.All.Where(w => Hub.Find(w.Id) is not null).ToList();
+    private List<WidgetInfo> GalleryItems => WidgetCatalog.All.ToList();
     private WidgetInfo GalleryInfo => GalleryItems.FirstOrDefault(w => w.Id == galleryId) ?? GalleryItems.FirstOrDefault() ?? WidgetCatalog.All[0];
     private IReadOnlyList<(int Cols, int Rows)> GallerySizesOf => WidgetLayout.Sizes(GalleryInfo.Id);
     private (int Cols, int Rows) GalleryChoice => GallerySizesOf[Math.Clamp(gallerySize, 0, GallerySizesOf.Count - 1)];

@@ -7,7 +7,7 @@ public static class BackdropBlur
 {
     /// `bgra` son píxeles de 32 bits, de arriba abajo. Devuelve la imagen reducida (también BGRA, opaca) con el color realzado
     /// (`saturation` 1 = igual) y aclarado (`lift`) y su tamaño en `outWidth` y `outHeight`.
-    public static byte[] Reduce(byte[] bgra, int width, int height, int cell, out int outWidth, out int outHeight, double saturation = 1.35, double lift = 0)
+    public static byte[] Reduce(ReadOnlySpan<byte> bgra, int width, int height, int cell, out int outWidth, out int outHeight, double saturation = 1.35, double lift = 0)
     {
         if (width <= 0 || height <= 0 || bgra.Length < width * height * 4) throw new ArgumentException("la imagen no cabe en el tamaño dado");
         cell = Math.Max(1, cell);

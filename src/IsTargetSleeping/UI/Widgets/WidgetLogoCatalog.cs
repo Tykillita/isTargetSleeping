@@ -5,26 +5,25 @@ namespace IsTargetSleeping.UI.Widgets;
 
 internal static class WidgetLogoCatalog
 {
-    private static readonly IReadOnlyDictionary<string, ImageSource> Logos = WidgetCatalog.All.ToDictionary(
-        widget => widget.Id, Load, StringComparer.Ordinal);
-
-    private static readonly IReadOnlyDictionary<string, ImageSource> FolderLogos = new[]
+    private static readonly Dictionary<string, ImageSource?> Logos = new(StringComparer.Ordinal);
+    private static readonly HashSet<string> FolderLogos = new(StringComparer.Ordinal)
     {
         "activity", "bluetooth", "brightness", "camera", "clean", "cpu", "disk", "gpu", "locks", "meeting", "network", "pressure", "processes", "ram",
-    }.ToDictionary(id => id, LoadFolderLogo, StringComparer.Ordinal);
+    };
 
     private static readonly IReadOnlyDictionary<string, string> FolderAliases = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["volume"] = "audio", ["power"] = "ollama", ["state"] = "ollama", ["model"] = "launcher",
+        ["volume"] = "audio", ["power"] = "ollama", ["state"] = "ollama", ["model"] = "launcher", ["notice"] = "activity",
         ["vram"] = "gpu", ["free"] = "launcher", ["teamcancel"] = "team",
     };
 
     public static ImageSource? For(string id)
     {
-        if (Logos.TryGetValue(id, out var logo) || FolderLogos.TryGetValue(id, out logo)) return logo;
-        return FolderAliases.TryGetValue(id, out var alias)
-            ? Logos.GetValueOrDefault(alias) ?? FolderLogos.GetValueOrDefault(alias)
-            : null;
+        if (Logos.TryGetValue(id, out var logo)) return logo;
+        if (FolderAliases.TryGetValue(id, out var alias)) return Logos[id] = For(alias);
+        logo = WidgetCatalog.Find(id) is { } widget ? Load(widget) : FolderLogos.Contains(id) ? LoadFolderLogo(id) : null;
+        Logos[id] = logo;
+        return logo;
     }
 
     private static ImageSource Load(WidgetInfo widget)

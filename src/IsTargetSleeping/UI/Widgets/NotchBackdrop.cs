@@ -73,10 +73,9 @@ public sealed class NotchBackdrop
             var clock = Stopwatch.StartNew();
             try
             {
-                var pixels = Grab(area);
-                if (pixels is not null)
+                reduced = GrabReduced(area, cell, out w, out h);
+                if (reduced is not null)
                 {
-                    reduced = BackdropBlur.Reduce(pixels, width, height, cell, out w, out h, 1.7, 0.1);
                     luma = BackdropBlur.Luminance(reduced, w, h);
                 }
             }
@@ -130,8 +129,9 @@ public sealed class NotchBackdrop
     }
 
     /// Los píxeles de la pantalla en `area` (BGRA, de arriba abajo). Sin CAPTUREBLT, BitBlt deja fuera las ventanas en capas.
-    private static byte[]? Grab(Win32.RECT area)
+    private static unsafe byte[]? GrabReduced(Win32.RECT area, int cell, out int reducedWidth, out int reducedHeight)
     {
+        reducedWidth = reducedHeight = 0;
         int width = area.Width, height = area.Height;
         var screen = Win32.GetDC(IntPtr.Zero);
         if (screen == IntPtr.Zero) return null;
@@ -144,9 +144,8 @@ public sealed class NotchBackdrop
             if (bitmap == IntPtr.Zero || bits == IntPtr.Zero) return null;
             previous = Win32.SelectObject(memory, bitmap);
             if (!Win32.BitBlt(memory, 0, 0, width, height, screen, area.Left, area.Top, Win32.SRCCOPY)) return null;
-            var pixels = new byte[width * height * 4];
-            Marshal.Copy(bits, pixels, 0, pixels.Length);
-            return pixels;
+            return BackdropBlur.Reduce(new ReadOnlySpan<byte>((void*)bits, checked(width * height * 4)), width, height,
+                cell, out reducedWidth, out reducedHeight, 1.7, 0.1);
         }
         finally
         {

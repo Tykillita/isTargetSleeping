@@ -18,6 +18,8 @@ public partial class NotchPeek : System.Windows.Controls.UserControl
     private int dockTransition;
     private readonly TranslateTransform PageShift = new();
     public event Action? DockLayoutChanged;
+    /// Deja una separación corta bajo el mini dock al abrirlo.
+    public double DockOpenExtraHeight => dockOpen ? 10 : 0;
 
     private readonly TranslateTransform OldShift = new();
     private bool Animates => !model.Prefs.ReducedMotion && IsVisible && pageHost.ActualWidth > 0 && pageHost.ActualHeight > 0;
@@ -75,6 +77,7 @@ public partial class NotchPeek : System.Windows.Controls.UserControl
         this.model = model;
         InitializeComponent();
         DataContext = model;
+        model.Hub.Shelf.PropertyChanged += OnShelfChanged;
         pageHost.RenderTransform = PageShift;
         oldPage.RenderTransform = OldShift;
         model.PeekPageChanging += CaptureOldPage;
@@ -103,6 +106,7 @@ public partial class NotchPeek : System.Windows.Controls.UserControl
     {
         model.PeekPageChanging -= CaptureOldPage;
         model.PeekPageChanged -= SlidePage;
+        model.Hub.Shelf.PropertyChanged -= OnShelfChanged;
         settle.Stop();
         headerClock.Stop();
         PauseHeaderAnimations();
@@ -210,9 +214,20 @@ public partial class NotchPeek : System.Windows.Controls.UserControl
 
     private readonly System.Windows.Media.TranslateTransform dockSlide = new();
 
+    private bool ShelfDropActive => model.Hub.Shelf.Dragging && model.PeekWidgets.Any(widget => WidgetLayout.BaseId(widget.Id) == "shelf");
+
+    private void OnShelfChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (!ShelfDropActive) return;
+        footerHover = false;
+        settle.Stop();
+        SetDock(false);
+    }
+
     /// Al pasar el ratón por los puntos, el notch crece por debajo y salen los iconos de las páginas y Ajustes.
     private void SetDock(bool on)
     {
+        if (on && ShelfDropActive) on = false;
         if (on == dockOpen) return;
         dockOpen = on;
         int transition = ++dockTransition;

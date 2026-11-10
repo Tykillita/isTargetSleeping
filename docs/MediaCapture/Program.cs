@@ -41,6 +41,9 @@ internal static class Program
                 if (args.Contains("--live-widgets"))
                     foreach (var lang in args.Contains("--en-only") ? new[] { "en" } : args.Contains("--es-only") ? new[] { "es" } : new[] { "es", "en" })
                         CaptureNotch(lang, liveWidgets: true);
+                else if (args.Contains("--notch-only"))
+                    foreach (var lang in args.Contains("--en-only") ? new[] { "en" } : args.Contains("--es-only") ? new[] { "es" } : new[] { "es", "en" })
+                        CaptureNotch(lang, closed: true);
                 else if (!args.Contains("--pets-only"))
                     foreach (var lang in new[] { "es", "en" }) CaptureViews(lang);
                 if (!args.Contains("--views-only")) CapturePets();
@@ -109,7 +112,7 @@ internal static class Program
         return (view, frame, model);
     }
 
-    private static void CaptureNotch(string lang, bool liveWidgets = false)
+    private static void CaptureNotch(string lang, bool liveWidgets = false, bool closed = false)
     {
         L10n.Init(lang == "es" ? Language.Es : Language.En);
         var controller = new OllamaController();
@@ -124,9 +127,11 @@ internal static class Program
         {
             controller.LoadDemo();
             prefs.LoadDemo();
+            prefs.SetList(PrefKeys.NotchPill, ["media"]);
             supervisor.LoadDemo();
         }
         var model = new PanelViewModel(supervisor);
+        if (!liveWidgets) model.Hub.Media.LoadDemo();
         if (liveWidgets) _ = controller.Refresh();
         var content = new ContentView(model);
         var desktop = new Window
@@ -150,6 +155,17 @@ internal static class Program
             timer.Start();
             System.Windows.Threading.Dispatcher.PushFrame(wait);
             notch.UpdateLayout();
+            if (closed)
+            {
+                notch.Collapse();
+                var closeWait = new System.Windows.Threading.DispatcherFrame();
+                var closeTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background)
+                { Interval = TimeSpan.FromMilliseconds(450) };
+                closeTimer.Tick += (_, _) => { closeTimer.Stop(); closeWait.Continue = false; };
+                closeTimer.Start();
+                System.Windows.Threading.Dispatcher.PushFrame(closeWait);
+                notch.UpdateLayout();
+            }
             // The floating dock needs room below the notch in this off-screen capture.
             notch.Height = notch.ActualHeight + 24;
             notch.UpdateLayout();

@@ -71,9 +71,9 @@ public static class PrefKeys
     public const string MainModel = "mainModel";              // string, se carga al encender Ollama ("" = ninguno)
     public const string LegacyPanel = "legacyPanel";          // versión legacy: panel de la bandeja en lugar del notch (apagado por defecto)
     public const string NotchWidgets = "notchWidgets";        // lista: ids de los widgets del Home, en orden (sin valor: los de siempre)
-    public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: ids de los widgets de la vista corta (al pasar el ratón); sin valor: Ollama
+    public const string NotchPeekWidgets = "notchPeekWidgets"; // lista: hasta ocho widgets de la vista corta; sin valor: Música, Tareas, Pomodoro, Estante y Sistema
     public const string NotchActivities = "notchActivities";   // lista: actividades en vivo permitidas junto a la pastilla (sin valor: todas)
-    public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: estado, modelo y RAM)
+    public const string NotchPill = "notchPill";               // lista: datos de la pastilla cerrada (sin valor: hora; las actividades aparecen cuando ocurren)
     public const string ClipboardHistory = "clipboardHistory"; // historial de texto copiado, solo en memoria (apagado por defecto)
     public const string AgentDecisionSeconds = "agentDecisionSeconds"; // segundos que espera tu respuesta a un permiso antes de dejarlo a la terminal (280 por defecto)
     public const string AgentNotify = "agentNotify";            // cuánto te molestan los agentes: all (por defecto), important o nothing
@@ -92,7 +92,6 @@ public static class PrefKeys
     public const string NotchDockPages = "notchDockPages";    // lista: páginas opcionales del dock (ollama, activity); Inicio, Widgets y Ajustes siempre están
     public const string NotchFavorites = "notchFavorites";    // lista: acciones de la tira de favoritos del dock (sin valor: encender, liberar RAM, procesos)
     public const string ReducedMotion = "reducedMotion";      // sin animaciones en el ícono (por defecto, como Windows)
-    public const string NotchPeekLayout = "notchPeekLayout";  // lista de un valor: cuántos widgets por página al pasar el ratón (1, 2 o 4; sin valor: 1)
     public const string AgentSounds = "agentSounds";          // el aviso sonoro cuando un agente pide permiso o termina (encendido por defecto)
     public const string AgentApprovals = "agentApprovals";    // aprobar permisos de Claude Code desde el notch (hooks en ~/.claude/settings.json; apagado por defecto)
     public const string NotchMascot = "notchMascot";          // la mascota se asoma al notch cerrado cuando no pasa nada (apagado por defecto)

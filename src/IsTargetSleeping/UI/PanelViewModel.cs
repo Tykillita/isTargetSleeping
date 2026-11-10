@@ -32,7 +32,7 @@ public sealed record PagerIcon(string Glyph, string Title, bool IsSelected, ICom
 
 /// Una categoría de la barra lateral de Ajustes: icono blanco sobre un cuadrado de color, como en Nusa.
 /// Un monitor en la página Pantalla: un rectángulo con su número, su resolución y si el notch vive en él.
-public sealed record ScreenTile(string Number, string Resolution, string PrimaryLabel, bool IsOn, ICommand Toggle);
+public sealed record ScreenTile(string Number, string Resolution, string PrimaryLabel, string StatusLabel, string AccessibleName, bool IsOn, bool CanSelect, ICommand Toggle);
 
 public sealed record SettingsNavItem(string Title, string Glyph, System.Windows.Media.Brush Tint, bool IsSelected, bool ShowLabel, ICommand Pick);
 
@@ -220,7 +220,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         ToggleAddModel = new Command(() => { addingModel = !addingModel; Notify(); });
         PullModel = new ParamCommand(p =>
         {
-            if (p is string name && name.Trim().Length > 0) { Ollama.Pull(name); addingModel = false; Notify(); }
+            if (p is string name && name.Trim().Length > 0) { Ollama.Pull(name); addingModel = false; PullModelName = ""; Notify(); }
         });
         CancelPull = new Command(Ollama.CancelPull);
         ToggleTrayPin = new Command(() => { Prefs.SetTrayPinned(!TrayPin.Pinned); Notify(); });
@@ -257,7 +257,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         AgentAction = new Command(() => _ = Supervisor.InstallAgent());
         RemoveAgent = new Command(() => _ = Supervisor.UninstallAgent());
         PullSuggestions = new[] { "llama3.2", "qwen3", "gemma3", "phi4" }
-            .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; Notify(); })))
+            .Select(name => new Segment(name, false, new Command(() => { Ollama.Pull(name); addingModel = false; PullModelName = ""; Notify(); })))
             .ToList();
         OpenFullFromPeek = new Command(() => AttentionRequested?.Invoke());   // fija el notch abierto en la vista de siempre (ya no se abre con un clic en la vista corta)
         InitWidgets();
@@ -803,6 +803,17 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string AddModelGlyph => addingModel ? "" : "";   // Cancel / Add
     private bool addingModel;
     public bool AddingModel => addingModel && CanAddModel;
+    private string pullModelName = "";
+    public string PullModelName
+    {
+        get => pullModelName;
+        set
+        {
+            if (pullModelName == value) return;
+            pullModelName = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PullModelName)));
+        }
+    }
     public string PullPlaceholder => tr("nombre, p. ej. llama3.2");
     public string PullLabel => tr("Descargar");
     public List<Segment> PullSuggestions { get; }
@@ -1066,7 +1077,6 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
 
     public string NotificationsTitle => tr("Notificaciones");
     public List<SwitchRow> NotificationRows { get; private set; } = [];
-    public List<SwitchRow> HudRows { get; private set; } = [];
     public List<SwitchRow> LocalFeatureRows { get; private set; } = [];
     public double GlassLevel => Prefs.GlassLevel;
     public string GlassLevelText => tr("Nivel de cristal: %@", $"{Math.Round(GlassLevel * 100):0}%");
@@ -1161,12 +1171,17 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
     public string NotchMinimalDetail => tr("Una pastilla más pequeña cuando no pasa nada: una franja negra fina. La música, los avisos y el ratón la despiertan.");
     public bool NotchMinimalOn => Prefs.NotchMinimal;
     public string ScreensIntro => tr("En qué pantalla vive el notch. Con «Seguir al cursor» hay uno solo que pasa a la pantalla donde está el ratón; con «Pantallas elegidas» hay uno en cada pantalla marcada.");
-    public string ScreensClickHint => tr("Pulsa una pantalla para ponerle o quitarle el notch.");
-    public string AllScreensLabel => tr("Todas");
+    public string ScreensClickHint => ScreensPickable
+        ? tr("Pulsa una tarjeta para activar o quitar el notch. Debe quedar al menos un monitor activo.")
+        : tr("El notch sigue el cursor. Elige «Pantallas elegidas» para marcar monitores.");
+    public string ScreenSelectionSummary { get; private set; } = "";
+    public string AllScreensLabel => tr("Todos los monitores");
+    public string PrimaryScreenLabel => tr("Solo el principal");
     public List<Segment> ScreenModeSegments { get; private set; } = [];
     public List<ScreenTile> ScreenTiles { get; private set; } = [];
-    public bool ScreensPickable => (Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected) != NotchScreens.FollowCursor;
+    public bool ScreensPickable => (Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected) == NotchScreens.Selected;
     public ICommand SelectAllScreens { get; private set; } = null!;
+    public ICommand SelectPrimaryScreen { get; private set; } = null!;
     public string VisibilitySectionTitle => tr("Visibilidad y animación");
     public string LyricsTitle => tr("Letras sincronizadas");
     public string LyricsDetail => tr("Busca la letra de lo que suena en lrclib.net: manda el título y el artista de la canción. Se activan al pulsar el botón de letras de la página de música.");
@@ -1326,6 +1341,9 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var games = Prefs.List(PrefKeys.CustomGames);
         var ignored = Prefs.List(PrefKeys.IgnoredGames);
         var notices = string.Join(",", Enum.GetValues<Notice>().Select(n => Prefs.Switch(n.Key(), n.DefaultOn())));
+        var screenMode = Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected;
+        var chosenScreens = Prefs.StoredList(PrefKeys.NotchScreens);
+        var screenSignature = NotchScreens.PreferenceSignature(screenMode, chosenScreens);
         var engineIdle = string.Join(",", engines.Select(e => $"{e.Id}{e.IdleMinutes}{e.Power}"));
         var cleanSwitches = string.Join(",", new[] { PrefKeys.CleanOnCritical, PrefKeys.CleanOnGame, PrefKeys.CleanHotKey }.Select(k => Prefs.Switch(k)))
                             + Prefs.Switch(PrefKeys.TrayPercent, false);
@@ -1334,7 +1352,7 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
                            + $"#{Supervisor.Areas}#{Supervisor.CleanThreshold}#{Supervisor.CleanCooldown}#{Supervisor.CleanInterval}#{cleanSwitches}"
                            + $"#{Prefs.PetPlacement}#{Prefs.PetSpecies}#{string.Join(",", ActivityIds)}"
                            + $"#{Prefs.Switch(PrefKeys.AgentsEnabled, false)}#{Prefs.Switch(PrefKeys.WeatherEnabled, false)}#{Prefs.Switch(PrefKeys.UsageEnabled, false)}#{Prefs.Switch(PrefKeys.OcrEnabled, false)}"
-                           + $"#{Prefs.StoredList(PrefKeys.TeamView)?.FirstOrDefault()}";
+                           + $"#{Prefs.StoredList(PrefKeys.TeamView)?.FirstOrDefault()}#{screenSignature}";
         if (segSignature == segmentsSignature) return;
         segmentsSignature = segSignature;
         IdleSegments = Segments(Ollama.IdleReleaseMinutes, m => Ollama.IdleReleaseMinutes = m);
@@ -1352,21 +1370,40 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
             PetChoices = Pets.PetCatalog.All.Select(s => new PetChoice(s.Name, Pets.PetPreview.For(s), s == pet, new Command(() => Prefs.SetPetSpecies(s.Id)))).ToList();
         for (int i = 0; i < PetChoices.Count; i++) PetChoices[i].Select(Pets.PetCatalog.All[i] == pet);
         var screens = Screens.List();
-        bool picking = (Prefs.StoredList(PrefKeys.NotchScreenMode)?.FirstOrDefault() ?? NotchScreens.Selected) != NotchScreens.FollowCursor;
-        var chosen = Prefs.StoredList(PrefKeys.NotchScreens) ?? [];
+        bool picking = screenMode == NotchScreens.Selected;
+        var chosen = chosenScreens ?? [];
+        var selectedScreens = NotchScreens.Select(screens, screenMode, chosen);
+        ScreenSelectionSummary = selectedScreens is null
+            ? tr("El notch sigue al cursor y aparece en la pantalla donde está el ratón.")
+            : tr("Notch activo en %@ de %@ monitores.", selectedScreens.Count, screens.Count);
         ScreenModeSegments = [new Segment(tr("Seguir al cursor"), !picking, new Command(() => Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.FollowCursor]))),
             new Segment(tr("Pantallas elegidas"), picking, new Command(() => Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected])))];
-        ScreenTiles = screens.Select(sc => new ScreenTile(Screens.Number(sc, screens), $"{sc.Bounds.Width}×{sc.Bounds.Height}", sc.Primary ? tr("Principal") : "",
-            picking && (chosen.Contains(sc.Id) || chosen.Count == 0 && sc.Primary),
+        ScreenTiles = screens.Select(sc =>
+        {
+            var number = Screens.Number(sc, screens);
+            var role = sc.Primary ? tr("Principal") : tr("Secundaria");
+            bool isOn = selectedScreens?.Any(selected => selected.Id == sc.Id) == true;
+            var status = picking ? (isOn ? tr("Notch activo") : tr("Sin notch")) : tr("Sigue al cursor");
+            return new ScreenTile(number, $"{sc.Bounds.Width}×{sc.Bounds.Height}", role, status,
+            tr("Pantalla %@, %@, %@, %@", number, role, $"{sc.Bounds.Width}×{sc.Bounds.Height}", status), isOn, picking,
             new Command(() =>
             {
                 if (!picking) return;
-                var current = Prefs.StoredList(PrefKeys.NotchScreens) is { Count: > 0 } list ? list : screens.Where(x => x.Primary).Select(x => x.Id).ToList();
-                var next = current.Contains(sc.Id) ? current.Where(id => id != sc.Id).ToList() : [.. current, sc.Id];
+                var stored = Prefs.StoredList(PrefKeys.NotchScreens);
+                var current = stored is { Count: > 0 } list ? list : screens.Where(x => x.Primary).Select(x => x.Id).ToList();
+                var next = current.Contains(sc.Id) ? current.Where(id => id != sc.Id).ToList()
+                    : stored is { Count: > 0 } ? [.. current, sc.Id] : [sc.Id];
                 if (next.Count == 0) return;   // siempre queda al menos una pantalla
                 Prefs.SetList(PrefKeys.NotchScreens, next);
-            }))).ToList();
-        SelectAllScreens = new Command(() => { Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected]); Prefs.SetList(PrefKeys.NotchScreens, screens.Select(x => x.Id)); });
+            }));
+        }).ToList();
+        SelectAllScreens = new Command(() => { Prefs.SetList(PrefKeys.NotchScreens, screens.Select(x => x.Id)); Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected]); });
+        SelectPrimaryScreen = new Command(() =>
+        {
+            if (screens.FirstOrDefault(x => x.Primary) is not { } primary) return;
+            Prefs.SetList(PrefKeys.NotchScreens, [primary.Id]);
+            Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.Selected]);
+        });
         bool clickMode = Prefs.OpenOnClick, fastMode = Prefs.AnimSpeed < 1;
         OpenModeSegments = [new Segment(tr("Al pasar el ratón"), !clickMode, new Command(() => Prefs.SetList(PrefKeys.NotchOpenMode, ["hover"]))),
             new Segment(tr("Con un clic"), clickMode, new Command(() => Prefs.SetList(PrefKeys.NotchOpenMode, ["click"])))];
@@ -1385,19 +1422,6 @@ public sealed partial class PanelViewModel : INotifyPropertyChanged
         var kinds = Enum.GetValues<Notice>().Where(n => n != Notice.Update || Supervisor.UpdatesAvailable).ToList();
         NotificationRows = kinds.Select((n, i) => new SwitchRow(n.Title(), null, Prefs.Switch(n.Key(), n.DefaultOn()),
             new Command(() => Prefs.Toggle(n.Key(), n.DefaultOn())), i > 0)).ToList();
-        var enabledHud = ActivityIds;
-        HudRows = new[] { "brightness", "locks", "bluetooth" }.Select((id, i) =>
-        {
-            var info = ActivityCatalog.Find(id)!;
-            var detail = id switch
-            {
-                "brightness" => tr("Solo pantallas internas compatibles. El aviso de Windows permanece."),
-                "locks" => tr("Muestra Bloq. Mayús o Bloq. Núm tras pulsarlos."),
-                _ => tr("Detecta salidas de audio Bluetooth al conectarse o desconectarse."),
-            };
-            return new SwitchRow(info.Title, detail, enabledHud.Contains(id),
-                new Command(() => Prefs.SetList(PrefKeys.NotchActivities, ActivityCatalog.Toggle(ActivityIds, id))), i > 0);
-        }).ToList();
         LocalFeatureRows =
         [
             new(tr("Agentes de IA"), tr("Lee metadatos de sesiones locales de Claude Code y Codex; apagado por defecto."),

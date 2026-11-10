@@ -1,4 +1,4 @@
-"""Verify the bilingual notch tour, current captures and unchanged AAC soundtrack."""
+"""Verify the bilingual notch tour, current app captures and unchanged soundtrack."""
 import hashlib
 import json
 from pathlib import Path
@@ -22,9 +22,10 @@ def main():
     source = (ROOT / "docs" / "tour" / "index.html").read_text(encoding="utf-8").lower()
     assert 'iframe id="simulator"' in source
     assert 'button[data-s="ollama"]{display:none!important}' in source
+    assert 'tour-ui-widgets-${lang}.png' in source and 'tour-ui-display-${lang}.png' in source
+    renderer = (ROOT / "docs" / "tour" / "render.cjs").read_text(encoding="utf-8")
+    assert "nextFrameAt" in renderer and "performance.now()" in renderer
     assert "site/index.html?lang=${lang}#probar" not in source
-    assert "phone-settings" not in source
-    assert "settings-general" not in source and "settings-notch" not in source
     result = {"audioAdtsSha256": expected_audio, "videos": {}, "screenshots": {}}
     for lang in ("es", "en"):
         video = ROOT / "docs" / "video" / f"isTargetSleeping-tour-{lang}.mp4"
@@ -38,13 +39,10 @@ def main():
         assert audio_hash(video) == expected_audio, f"Soundtrack changed: {lang}"
         result["videos"][lang] = {"width": 1920, "height": 1080, "fps": 30,
                                    "frames": frames, "seconds": seconds, "audioIdentical": True}
-        for view in ("settings",):
-            with Image.open(ROOT / "docs" / "images" / f"{view}-{lang}.png") as image:
+        for view in ("widgets", "display"):
+            with Image.open(ROOT / "docs" / "images" / f"tour-ui-{view}-{lang}.png") as image:
                 assert image.size == (1960, 1320), (view, image.size)
-                result["screenshots"][f"{view}-{lang}"] = list(image.size)
-        for state in ("resting", "closed", "music", "lyrics", "system"):
-            with Image.open(ROOT / "docs" / "images" / f"notch-simulator-{state}-{lang}.png") as image:
-                assert image.width > 900 and image.height > 200, (state, image.size)
+                result["screenshots"][f"tour-ui-{view}-{lang}"] = list(image.size)
         with Image.open(ROOT / "docs" / "images" / f"tour-{lang}.jpg") as image:
             assert image.size == (1920, 1080), (lang, image.size)
     output = ROOT / "obj" / "tour-work" / "verification.json"

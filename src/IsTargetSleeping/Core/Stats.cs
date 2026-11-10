@@ -30,15 +30,24 @@ public sealed class StatsStore
 {
     public const int KeepDays = 90;
     public static readonly TimeSpan SampleWindow = TimeSpan.FromMinutes(30);
+    private const long JournalCompactionBytes = 1_048_576;
 
     private readonly string? file;
+    private readonly string? eventsFile;
+    private readonly string? sequenceFile;
+    private readonly string? loadedFile;
     private readonly object gate = new();
+    private readonly object saveGate = new();
     private List<StatEvent> events = [];
-    /// Segundos con algún modelo cargado, por día (yyyy-MM-dd).
     private Dictionary<string, double> loaded = [];
+    private Dictionary<string, double> loadedDelta = [];
+    private readonly Dictionary<Guid, StatEvent> pendingClean = [];
+    private readonly List<JournalEntry> pendingJournal = [];
+    private volatile bool historyLoaded;
     private readonly List<MemorySample> samples = [];
-    private DateTime lastSave = DateTime.MinValue;
-    private bool dirty;
+    private DateTime lastLoadedSave = DateTime.MinValue;
+    private long journalSequence;
+    private bool loadedDirty;
 
     public event Action? Changed;
 
@@ -53,46 +62,197 @@ public sealed class StatsStore
     {
         public List<StatEvent> Events { get; set; } = [];
         public Dictionary<string, double> Loaded { get; set; } = [];
+        public long JournalSequence { get; set; }
     }
+
+    private sealed record JournalEntry(long Sequence, StatEvent Event, Guid? UpdatesClean = null);
 
     public StatsStore(string? file)
     {
         this.file = file;
-        if (file is null) return;
+        eventsFile = file is null ? null : file + ".events.jsonl";
+        sequenceFile = file is null ? null : file + ".events.seq";
+        loadedFile = file is null ? null : file + ".loaded.json";
+        historyLoaded = file is null;
+        if (loadedFile is null) return;
+        bool hasSequence = false;
         try
         {
-            if (File.Exists(file) && JsonSerializer.Deserialize<Data>(File.ReadAllText(file), Json) is { } data)
+            if (File.Exists(sequenceFile) && long.TryParse(File.ReadAllText(sequenceFile), NumberStyles.None, CultureInfo.InvariantCulture, out var sequence))
             {
-                events = data.Events ?? [];
-                loaded = data.Loaded ?? [];
+                journalSequence = Math.Max(0, sequence);
+                hasSequence = true;
             }
         }
         catch { }
-        Prune(DateTime.Now);
+        if (!hasSequence)
+        {
+            try
+            {
+                if (File.Exists(eventsFile))
+                {
+                    foreach (var line in File.ReadLines(eventsFile))
+                        try { if (JsonSerializer.Deserialize<JournalEntry>(line, Json) is { } entry) journalSequence = Math.Max(journalSequence, entry.Sequence); } catch { }
+                }
+            }
+            catch { }
+        }
+        try
+        {
+            if (File.Exists(loadedFile))
+            {
+                using var stream = File.OpenRead(loadedFile);
+                loadedDelta = JsonSerializer.Deserialize<Dictionary<string, double>>(stream, Json) ?? [];
+                int count = loadedDelta.Count;
+                PruneLoadedDelta(DateTime.Now);
+                loadedDirty = count != loadedDelta.Count;
+            }
+        }
+        catch { }
+    }
+
+    private void EnsureHistoryLoaded()
+    {
+        if (historyLoaded) return;
+        lock (saveGate)
+        {
+            if (historyLoaded) return;
+            PersistPendingJournal();
+            long appliedSequence = 0;
+            bool baseLoaded = file is not null && !File.Exists(file);
+            try
+            {
+                if (file is not null && File.Exists(file))
+                {
+                    using var stream = File.OpenRead(file);
+                    if (JsonSerializer.Deserialize<Data>(stream, Json) is { } data)
+                    {
+                        lock (gate)
+                        {
+                            events = data.Events ?? [];
+                            loaded = data.Loaded ?? [];
+                            appliedSequence = Math.Max(0, data.JournalSequence);
+                            journalSequence = Math.Max(journalSequence, appliedSequence);
+                            baseLoaded = true;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            if (eventsFile is not null)
+            {
+                try
+                {
+                    foreach (var line in File.ReadLines(eventsFile))
+                    {
+                        try
+                        {
+                            if (JsonSerializer.Deserialize<JournalEntry>(line, Json) is not { } entry || entry.Sequence <= appliedSequence) continue;
+                            lock (gate) ApplyJournalEntry(entry);
+                            appliedSequence = entry.Sequence;
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+            }
+            lock (gate)
+            {
+                foreach (var entry in pendingJournal.OrderBy(e => e.Sequence))
+                {
+                    if (entry.Sequence <= appliedSequence) continue;
+                    ApplyJournalEntry(entry);
+                    appliedSequence = entry.Sequence;
+                }
+                Prune(DateTime.Now);
+                historyLoaded = true;
+            }
+
+            // shortcut: compacts after a history read passes 1 MiB; schedule compaction if unopened histories grow materially.
+            if (baseLoaded && eventsFile is not null && File.Exists(eventsFile))
+            {
+                try { if (new FileInfo(eventsFile).Length >= JournalCompactionBytes) CompactJournal(appliedSequence); }
+                catch { }
+            }
+        }
+    }
+
+    // Called under gate; updates replay after their original event in the append-only journal.
+    private void ApplyJournalEntry(JournalEntry entry)
+    {
+        if (entry.UpdatesClean is { } requestId)
+        {
+            int index = events.FindIndex(e => e.Clean?.RequestId == requestId);
+            if (index >= 0) events[index] = entry.Event;
+            return;
+        }
+        events.Add(entry.Event);
     }
 
     public void Add(StatEvent e)
     {
-        lock (gate)
+        if (file is null)
         {
-            events.Add(e);
-            Prune(e.At);
-            dirty = true;
+            lock (gate)
+            {
+                events.Add(e);
+                Prune(e.At);
+            }
         }
-        Save(force: true);
+        else
+        {
+            lock (saveGate)
+            {
+                lock (gate)
+                {
+                    var entry = new JournalEntry(++journalSequence, e);
+                    pendingJournal.Add(entry);
+                    if (historyLoaded)
+                    {
+                        ApplyJournalEntry(entry);
+                        Prune(e.At);
+                    }
+                    if (e.Clean is { RequestId: var id } && id != Guid.Empty) pendingClean[id] = e;
+                }
+                PersistPendingJournal();
+            }
+        }
         Changed?.Invoke();
     }
 
     public void UpdateClean(CleanResult result)
     {
-        lock (gate)
+        if (file is null)
         {
-            int index = events.FindIndex(e => e.Clean?.RequestId == result.RequestId);
-            if (index < 0) return;
-            events[index] = events[index] with { Bytes = result.Freed, Clean = result };
-            dirty = true;
+            lock (gate)
+            {
+                int index = events.FindIndex(e => e.Clean?.RequestId == result.RequestId);
+                if (index < 0) return;
+                events[index] = events[index] with { Bytes = result.Freed, Clean = result };
+            }
         }
-        Save(force: true);
+        else
+        {
+            lock (saveGate)
+            {
+                StatEvent? original;
+                lock (gate)
+                {
+                    if (historyLoaded)
+                        original = events.FirstOrDefault(e => e.Clean?.RequestId == result.RequestId);
+                    else
+                        pendingClean.TryGetValue(result.RequestId, out original);
+                    if (original is null) return;
+                    var updated = original with { Bytes = result.Freed, Clean = result };
+                    pendingClean.Remove(result.RequestId);
+                    var entry = new JournalEntry(++journalSequence, updated, result.RequestId);
+                    pendingJournal.Add(entry);
+                    if (historyLoaded) ApplyJournalEntry(entry);
+                }
+                PersistPendingJournal();
+            }
+        }
         Changed?.Invoke();
     }
 
@@ -104,8 +264,9 @@ public sealed class StatsStore
         lock (gate)
         {
             var day = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            loaded[day] = (loaded.TryGetValue(day, out var s) ? s : 0) + seconds;
-            dirty = true;
+            loadedDelta[day] = (loadedDelta.TryGetValue(day, out var s) ? s : 0) + seconds;
+            PruneLoadedDelta(now);
+            loadedDirty = true;
         }
         Save(force: false, now);
     }
@@ -124,11 +285,13 @@ public sealed class StatsStore
 
     public List<StatEvent> Recent(int count)
     {
+        EnsureHistoryLoaded();
         lock (gate) return events.OrderByDescending(e => e.At).Take(count).ToList();
     }
 
     public StatEvent? Last(StatKind kind)
     {
+        EnsureHistoryLoaded();
         lock (gate) return events.Where(e => e.Kind == kind).MaxBy(e => e.At);
     }
 
@@ -136,6 +299,7 @@ public sealed class StatsStore
     /// cargado y reinicios del vigilante.
     public StatsSummary Week(DateTime now)
     {
+        EnsureHistoryLoaded();
         lock (gate)
         {
             var since = now.AddDays(-7);
@@ -146,6 +310,7 @@ public sealed class StatsStore
             {
                 var day = now.Date.AddDays(-i).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 if (loaded.TryGetValue(day, out var s)) seconds += s;
+                if (loadedDelta.TryGetValue(day, out var delta)) seconds += delta;
             }
             var cleans = week.Where(e => e.Kind == StatKind.Clean && (e.Clean is null
                 || e.Clean.Outcome is CleanOutcome.Success or CleanOutcome.Partial)).ToList();
@@ -157,6 +322,7 @@ public sealed class StatsStore
     /// Qué apps despiertan al modelo, las que más primero.
     public List<ClientStat> Clients()
     {
+        EnsureHistoryLoaded();
         lock (gate)
         {
             return events.Where(e => e.Kind == StatKind.Wake && !string.IsNullOrEmpty(e.Subject))
@@ -182,26 +348,103 @@ public sealed class StatsStore
         }
     }
 
+    private void PruneLoadedDelta(DateTime now)
+    {
+        var limit = now.AddDays(-KeepDays).Date;
+        foreach (var day in loadedDelta.Keys.ToList())
+        {
+            if (DateTime.TryParseExact(day, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) && d < limit)
+                loadedDelta.Remove(day);
+        }
+    }
+
     public void Flush() => Save(force: true);
 
     private void Save(bool force, DateTime? now = null)
     {
         if (file is null) return;
-        string text;
-        lock (gate)
+        lock (saveGate)
         {
-            var t = now ?? DateTime.Now;
-            if (!dirty || (!force && t - lastSave < TimeSpan.FromMinutes(1))) return;
-            lastSave = t;
-            dirty = false;
-            text = JsonSerializer.Serialize(new Data { Events = events, Loaded = loaded }, Json);
+            PersistPendingJournal();
+            Dictionary<string, double>? loadedSnapshot = null;
+            lock (gate)
+            {
+                var t = now ?? DateTime.Now;
+                if (!loadedDirty || (!force && t - lastLoadedSave < TimeSpan.FromMinutes(1))) return;
+                lastLoadedSave = t;
+                loadedDirty = false;
+                loadedSnapshot = new(loadedDelta);
+            }
+            if (loadedSnapshot is not null)
+            {
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(loadedFile!))!);
+                    var tmp = loadedFile + ".tmp";
+                    using (var stream = File.Create(tmp)) JsonSerializer.Serialize(stream, loadedSnapshot, Json);
+                    File.Move(tmp, loadedFile!, overwrite: true);
+                }
+                catch { lock (gate) loadedDirty = true; }
+            }
         }
+    }
+
+    // Sequence is committed before append, so a crash can leave gaps but cannot reuse an ID.
+    private void PersistPendingJournal()
+    {
+        if (file is null || eventsFile is null || sequenceFile is null) return;
+        JournalEntry[] pending;
+        lock (gate) pending = [.. pendingJournal];
+        if (pending.Length == 0) return;
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(eventsFile))!);
+            var sequenceTmp = sequenceFile + ".tmp";
+            File.WriteAllText(sequenceTmp, journalSequence.ToString(CultureInfo.InvariantCulture));
+            File.Move(sequenceTmp, sequenceFile, overwrite: true);
+            using (var stream = new FileStream(eventsFile, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read))
+            {
+                if (stream.Length > 0)
+                {
+                    stream.Position = stream.Length - 1;
+                    if (stream.ReadByte() != '\n')
+                    {
+                        stream.Position = stream.Length;
+                        stream.WriteByte((byte)'\n');
+                    }
+                }
+                stream.Position = stream.Length;
+                foreach (var entry in pending)
+                {
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(entry, Json) + "\n");
+                    stream.Write(bytes);
+                }
+                stream.Flush(flushToDisk: true);
+            }
+            lock (gate) pendingJournal.RemoveAll(e => e.Sequence <= pending[^1].Sequence);
+        }
+        catch { }
+    }
+
+    private void CompactJournal(long throughSequence)
+    {
+        if (file is null || eventsFile is null) return;
+        try
+        {
             var tmp = file + ".tmp";
-            File.WriteAllText(tmp, text);
+            lock (gate)
+            {
+                using var stream = File.Create(tmp);
+                JsonSerializer.Serialize(stream, new Data
+                {
+                    Events = events,
+                    Loaded = loaded,
+                    JournalSequence = throughSequence,
+                }, Json);
+            }
             File.Move(tmp, file, overwrite: true);
+            File.WriteAllText(eventsFile, string.Empty);
+            lock (gate) pendingJournal.RemoveAll(e => e.Sequence <= throughSequence);
         }
         catch { }
     }

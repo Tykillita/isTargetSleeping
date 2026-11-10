@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -188,6 +189,7 @@ internal static class ContrastAudit
         check($"{language}: el icono sigue en la carpeta abierta", ReferenceEquals(model.OverlayFolder?.Options.Single().Icon, icon));
 
         var notch = new NotchWindow(model, new ContentView(model));
+        typeof(NotchWindow).GetMethod("EnsureDock", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(notch, null);
         var buttonName = L10n.tr("Abrir %@", title);
         var appButton = All<Button>((DependencyObject)notch.Content).FirstOrDefault(button =>
             System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(button)?.GetName() == buttonName);
@@ -237,6 +239,7 @@ internal static class ContrastAudit
             bool foldersOnly = Environment.GetEnvironmentVariable("ITS_ONLY_WIDGET_FOLDERS") == "1";
             bool calendarOnly = Environment.GetEnvironmentVariable("ITS_ONLY_CALENDAR_SETTINGS") == "1";
             bool homePagesOnly = Environment.GetEnvironmentVariable("ITS_ONLY_HOME_PAGES") == "1";
+            bool displayOnly = Environment.GetEnvironmentVariable("ITS_ONLY_DISPLAY_SETTINGS") == "1";
             var languages = cameraOnly ? Environment.GetEnvironmentVariable("ITS_CAMERA_LANGUAGE")?.ToLowerInvariant() switch
             {
                 "es" => new[] { Language.Es },
@@ -257,11 +260,18 @@ internal static class ContrastAudit
                 "es" => new[] { Language.Es },
                 "en" => new[] { Language.En },
                 _ => new[] { Language.En, Language.Es },
-            } : new[] { Language.En, Language.Es };
+            } : Environment.GetEnvironmentVariable("ITS_ONLY_GALLERY") == "1"
+                ? Environment.GetEnvironmentVariable("ITS_GALLERY_LANGUAGE")?.ToLowerInvariant() switch
+                {
+                    "es" => new[] { Language.Es },
+                    "en" => new[] { Language.En },
+                    _ => new[] { Language.En, Language.Es },
+                }
+                : new[] { Language.En, Language.Es };
             foreach (var language in languages)
             {
                 L10n.Init(language);
-                if (!clipboardOnly && !cameraOnly && !mediaOnly && !homePagesOnly) AuditFavoriteAppIcon(check, language);
+                if (!clipboardOnly && !cameraOnly && !mediaOnly && !foldersOnly && !homePagesOnly && !displayOnly) AuditFavoriteAppIcon(check, language);
                 var prefs = new Prefs();
                 prefs.LoadDemo();
                 if (!clipboardOnly && !mediaOnly) prefs.SetSwitch(PrefKeys.ClipboardHistory, true);
@@ -472,6 +482,14 @@ internal static class ContrastAudit
                             var galleryModel = target.DataContext as PanelViewModel;
                             foreach (var line in galleryBad.Take(6)) Console.WriteLine($"   texto ilegible en {name}: {line}");
                             check($"{language}/{name}: el texto de la galería se lee", galleryBad.Count == 0);
+                            if (name.Contains("Widgets battery", StringComparison.Ordinal) && name.Contains("×2", StringComparison.Ordinal)
+                                && galleryModel?.GalleryPreview?.Model is BatteryWidget battery)
+                            {
+                                var tallLists = All<ItemsControl>(target).Where(control =>
+                                    ReferenceEquals(control.ItemsSource, battery.Top6) || ReferenceEquals(control.ItemsSource, battery.Top10)).ToArray();
+                                check($"{language}/{name}: las listas altas de batería quedan centradas", tallLists.Length > 0
+                                    && tallLists.All(control => control.VerticalAlignment == VerticalAlignment.Center));
+                            }
                             if (name == "Widgets usage 1×1 700")
                             {
                                 var problem = L10n.tr("La sesión caducó: abre %@ para renovarla.", "Claude Code");
@@ -623,10 +641,33 @@ internal static class ContrastAudit
                     setup(model);
                     model.Show(view);
                     var content = new ContentView(model);
+                    if (displayOnly) { content.Width = double.NaN; content.HorizontalAlignment = HorizontalAlignment.Stretch; }
                     var window = Host(content, hostWidth, activate: interactiveGallery);
                     window.Show();
                     window.UpdateLayout();
-                    Audit(name, content, wide);
+                    if (name.StartsWith("Widgets ", StringComparison.Ordinal))
+                    {
+                        Pump(() => false, 0.25);
+                        window.UpdateLayout();
+                    }
+                    if (displayOnly && name.StartsWith("Display settings", StringComparison.Ordinal))
+                    {
+                        var screenCards = All<ItemsControl>(content).Single(control => ReferenceEquals(control.ItemsSource, model.ScreenTiles));
+                        var selector = VisualTreeHelper.GetParent(screenCards);
+                        var selectorIssues = Offenders(selector);
+                        check($"{language}/{name}: texto del selector legible", selectorIssues.Count == 0);
+                        var screenButtons = All<Button>(content).Where(button => button.DataContext is ScreenTile).ToArray();
+                        var markers = All<Border>(content).Where(border => border.Name == "selectedBadge" && border.Visibility == Visibility.Visible).ToArray();
+                        var expectedMarkers = model.ScreenTiles.Count(tile => tile.IsOn);
+                        check($"{language}/{name}: estado visible y nombre accesible en cada monitor",
+                            screenButtons.Length == model.ScreenTiles.Count && screenButtons.All(button => AutomationProperties.GetName(button).Length > 0)
+                            && markers.Length == expectedMarkers);
+                        if (name.EndsWith("cursor", StringComparison.Ordinal))
+                            check($"{language}/{name}: las tarjetas se desactivan al seguir el cursor", screenButtons.Length > 0 && screenButtons.All(button => !button.IsEnabled));
+                        if (Environment.GetEnvironmentVariable("ITS_CAPTURE_UI") is { Length: > 0 })
+                            Capture(content, language, name.Replace(' ', '-').ToLowerInvariant());
+                    }
+                    else Audit(name, content, wide);
                     if (interactiveGallery && All<Button>(content).FirstOrDefault(b => b.Name == "GalleryAddButton") is { IsEnabled: true } add
                         && All<Border>(content).FirstOrDefault(b => b.Name == "GalleryPanel") is { } panel)
                     {
@@ -979,24 +1020,6 @@ internal static class ContrastAudit
                                 && BitConverter.ToUInt32(musicHeader, 40) / BitConverter.ToUInt32(musicHeader, 28) == 48;
                     check($"{language}: el jazz original está integrado como WAV estéreo de 48 segundos", hasJazzPreview);
 
-                    if (media.NoSession && media.HasLaunchers)
-                    {
-                        var card = new ContentControl
-                        {
-                            Content = new WidgetSlot(media, 1, 1, false, rows: 2, grid: true),
-                            ContentTemplate = (DataTemplate)Application.Current.FindResource("WidgetMediaWidget"),
-                        };
-                        var window = Host(card, 330, 360);
-                        window.Show(); window.UpdateLayout();
-                        var buttons = All<Button>(card).Where(button => button.IsVisible).ToArray();
-                        check($"{language}: los accesos muestran el nombre y aceptan foco",
-                            buttons.Length == media.Launchers.Count && buttons.All(button => button.Focusable
-                                && media.Launchers.Any(app => app.Name == AutomationProperties.GetName(button))));
-                        Audit("Música · reproductores instalados", card, true);
-                        Capture(card, language, "music-idle-launchers");
-                        window.Close();
-                    }
-
                     var fallback = new MediaWidget();
                     fallback.LoadIdlePreview();
                     var fallbackCard = new ContentControl
@@ -1006,12 +1029,55 @@ internal static class ContrastAudit
                     };
                     var fallbackWindow = Host(fallbackCard, 330, 360);
                     fallbackWindow.Show(); fallbackWindow.UpdateLayout();
-                    check($"{language}: la pista de muestra aparece pausada, sin controles de pista y con bucle apagado",
-                        fallback.IsFallbackPreview && fallback.HasSession && !fallback.IsPlaying && fallback.CanRepeat && !fallback.CanShuffle && !fallback.CanSkip
+                    check($"{language}: sin historial aparece la pista de muestra pausada, con su portada estrellada",
+                        fallback.IsFallbackPreview && !fallback.HasSession && fallback.HasMediaCard && !fallback.IsPlaying && fallback.CanRepeat && !fallback.CanShuffle && !fallback.CanSkip
                         && fallback.ToggleHelp == L10n.tr("Reproducir") && fallback.RepeatHelp == L10n.tr("Activar bucle"));
                     Audit("Música · jazz en pausa", fallbackCard, true);
                     Capture(fallbackCard, language, "music-idle-jazz");
                     fallbackWindow.Close();
+
+                    var cachedSetting = Defaults.GetString("notchLastMediaTrack");
+                    var cachedCoverPath = Path.Combine(Paths.DataDir, "last-media-cover.png");
+                    var cachedCover = File.Exists(cachedCoverPath) ? File.ReadAllBytes(cachedCoverPath) : null;
+                    try
+                    {
+                        Directory.CreateDirectory(Paths.DataDir);
+                        using (var cover = typeof(MediaWidget).Assembly.GetManifestResourceStream("IsTargetSleeping.Resources.music-demo-cover.jpg"))
+                        using (var copy = File.Create(cachedCoverPath)) cover?.CopyTo(copy);
+                        var track = new MediaTrackSnapshot("Midnight City", "M83", "M83 - Hurry Up, We're Dreaming", "Spotify", "SpotifyAB.SpotifyMusic!Spotify");
+                        Defaults.Set("notchLastMediaTrack", System.Text.Json.JsonSerializer.Serialize(track));
+                        var art = new BitmapImage(new Uri("pack://application:,,,/isTargetSleeping;component/Resources/music-demo-cover.jpg", UriKind.Absolute));
+                        art.Freeze();
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(art));
+                        using (var copy = File.Create(cachedCoverPath)) encoder.Save(copy);
+                        var cached = new MediaWidget();
+                        typeof(MediaWidget).GetMethod("LoadCachedCover", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(cached, null);
+                        var cachedCard = new ContentControl
+                        {
+                            Content = new WidgetSlot(cached, 1, 1, peek: true, alone: true),
+                            ContentTemplate = (DataTemplate)Application.Current.FindResource("WidgetMediaWidget"),
+                        };
+                        var cachedWindow = Host(cachedCard, 390, 180);
+                        cachedWindow.Show(); cachedWindow.UpdateLayout();
+                        var cachedButtons = All<Button>(cachedCard);
+                        var play = cachedButtons.FirstOrDefault(button => ReferenceEquals(button.Command, cached.Toggle));
+                        bool cachedControls = cached.HasCachedTrack && !cached.HasSession && cached.HasMediaCard && cached.HasArt
+                            && play is { IsVisible: true } && play.IsEnabled == cached.CanToggle
+                            && cachedButtons.Any(button => ReferenceEquals(button.Command, cached.Previous) && button.IsVisible && !button.IsEnabled)
+                            && cachedButtons.Any(button => ReferenceEquals(button.Command, cached.Next) && button.IsVisible && !button.IsEnabled)
+                            && All<SeekBar>(cachedCard).Any(bar => bar.IsVisible && !bar.IsEnabled);
+                        check($"{language}: la última canción comparte el diseño completo y limita los controles sin sesión", cachedControls);
+                        Capture(cachedCard, language, "music-cached-last-track");
+                        cachedWindow.Close();
+                    }
+                    finally
+                    {
+                        if (cachedSetting is null) Defaults.Remove("notchLastMediaTrack");
+                        else Defaults.Set("notchLastMediaTrack", cachedSetting);
+                        if (cachedCover is null) { if (File.Exists(cachedCoverPath)) File.Delete(cachedCoverPath); }
+                        else File.WriteAllBytes(cachedCoverPath, cachedCover);
+                    }
                     model.Hub.Dispose();
                     continue;
                 }
@@ -1052,14 +1118,17 @@ internal static class ContrastAudit
                     window.UpdateLayout();
                     if (showFolderPreview) Pump(() => false, 12);
                     var folderControl = All<ContentControl>(content).FirstOrDefault(control => control.Content is WidgetFolders);
+                    check($"{language}/Widgets ya no muestra las opciones de Notch",
+                        !All<ContentControl>(content).Any(control => control.IsVisible
+                            && (ReferenceEquals(control.Content, folderModel.MetricFolders)
+                                || ReferenceEquals(control.Content, folderModel.DockFolders)
+                                || ReferenceEquals(control.Content, folderModel.FavoriteFolders))));
                     FrameworkElement? folderCard = null;
                     for (DependencyObject? current = folderControl; current is not null; current = VisualTreeHelper.GetParent(current))
                         if (current is Border border) { folderCard = border; break; }
                     var allFolderGroups = new[]
                     {
-                        ("home", folderModel.HomeFolders), ("peek", folderModel.PeekFolders), ("metrics", folderModel.MetricFolders),
-                        ("activities", folderModel.ActivityFolders), ("pill", folderModel.PillFolders), ("dock", folderModel.DockFolders),
-                        ("favorites", folderModel.FavoriteFolders),
+                        ("home", folderModel.HomeFolders), ("peek", folderModel.PeekFolders), ("pill", folderModel.PillFolders),
                     };
                     var logoCount = folderModel.HomeFolders.Tiles.SelectMany(tile => tile.Minis).Count(mini => mini.Icon is BitmapSource);
                     check($"{language}/carpetas cerradas: grupos, logos y tarjeta se cargan", folderCard is not null
@@ -1077,7 +1146,7 @@ internal static class ContrastAudit
                         styledFolderCards += groupCard.Style == folderCardStyle ? 1 : 0;
                         Capture(groupCard, language, $"widget-folder-card-{groupName}");
                     }
-                    check($"{language}/las seis tarjetas de carpetas usan el estilo oscuro dedicado", styledFolderCards == 6);
+                    check($"{language}/las dos tarjetas de widgets usan el estilo oscuro dedicado", styledFolderCards == 2);
                     var miniViews = All<Border>(content).Where(border => border.Name == "mini" && border.DataContext is FolderMini).ToArray();
                     bool miniStatesMatch = miniViews.Length > 0 && miniViews.All(border =>
                     {
@@ -1112,7 +1181,7 @@ internal static class ContrastAudit
                             && openLogoPlates.All(plate => plate.Background is SolidColorBrush brush && brush.Color == expectedLogoSurface));
                         check($"{language}/carpeta {groupName}-{tile.AutomationId.Split('-').Last()}: cada opción tiene logo",
                             folderModel.OverlayFolder?.Options.Count > 0 && folderModel.OverlayFolder.Options.All(option => option.Icon is BitmapSource));
-                        if (showFolderPreview && (groupName is "metrics" or "activities") && tile == folders.Tiles[0])
+                        if (showFolderPreview && groupName == "metrics" && tile == folders.Tiles[0])
                             Capture(content, language, $"folder-{groupName}-open");
                         folderModel.CloseTopOverlay();
                         content.UpdateLayout();
@@ -1212,6 +1281,104 @@ internal static class ContrastAudit
                         folderModel.CloseTopOverlay();
                         content.UpdateLayout();
                     }
+
+                    folderModel.Show(PanelView.Settings);
+                    folderModel.CurrentSettingsTab = PanelViewModel.SettingsTab.Notch;
+                    content.UpdateLayout();
+                    var metricControl = All<ContentControl>(content).FirstOrDefault(control => ReferenceEquals(control.Content, folderModel.MetricFolders));
+                    var metricCard = All<Border>(content).FirstOrDefault(border => border.Name == "SystemMetricSettingsCard");
+                    check($"{language}/Notch contiene las gráficas de Sistema", metricCard is { IsVisible: true }
+                        && metricControl is not null
+                        && All<TextBlock>(content).Any(text => text.IsVisible && text.Text == folderModel.SystemMetricsTitle));
+                    metricCard?.BringIntoView();
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    Capture(content, language, "settings-system-metrics");
+                    folderModel.MetricFolders.Tiles.Single(tile => tile.AutomationId == "folder-metrics-compute").Open.Execute(null);
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    Capture(content, language, "settings-system-metrics-open");
+                    folderModel.OverlayFolder!.Options.First().Open.Execute(null);
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    var metricSwitch = All<BrandSwitch>(content).FirstOrDefault(control => control.DataContext is OptionSheet);
+                    check($"{language}/una métrica seleccionada se puede editar desde Ajustes > Notch", metricSwitch is { IsEnabled: true, IsOn: true });
+                    if (metricSwitch is not null)
+                    {
+                        Capture(content, language, "settings-system-metrics-option-on");
+                        Keyboard.Focus(metricSwitch);
+                        content.UpdateLayout();
+                        Capture(content, language, "settings-system-metrics-option-focus");
+                    }
+                    folderModel.CloseTopOverlay();
+                    folderModel.OverlayFolder!.Options.Single(option => option.Id == "gpu").Open.Execute(null);
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    metricSwitch = All<BrandSwitch>(content).FirstOrDefault(control => control.DataContext is OptionSheet);
+                    check($"{language}/una métrica no seleccionada se muestra apagada", metricSwitch is { IsEnabled: true, IsOn: false });
+                    if (metricSwitch is not null) Capture(content, language, "settings-system-metrics-option-off");
+                    folderModel.CloseTopOverlay();
+                    folderModel.CloseTopOverlay();
+                    content.UpdateLayout();
+
+                    foreach (var (name, title, folders, captureName) in new[]
+                    {
+                        ("dock", folderModel.DockTitle, folderModel.DockFolders, "settings-dock-buttons"),
+                        ("favorites", folderModel.FavoritesTitle, folderModel.FavoriteFolders, "settings-favorites"),
+                    })
+                    {
+                        string cardName = name == "dock" ? "DockSettingsCard" : "FavoritesSettingsCard";
+                        var groupCard = All<Border>(content).FirstOrDefault(border => border.Name == cardName);
+                        groupCard?.BringIntoView();
+                        content.UpdateLayout();
+                        window.UpdateLayout();
+                        check($"{language}/{title} está en Ajustes > Notch", groupCard is { IsVisible: true }
+                            && All<TextBlock>(groupCard).Any(text => text.IsVisible && text.Text == title));
+                        Capture(content, language, captureName);
+                        var addApp = name == "favorites" && groupCard is not null
+                            ? All<Button>(groupCard).FirstOrDefault(button => ReferenceEquals(button.Command, folderModel.AddFavoriteApp))
+                            : null;
+                        if (name == "favorites")
+                            check($"{language}/Favoritos conserva Añadir una app", addApp is not null);
+                        folders.Tiles.First().Open.Execute(null);
+                        content.UpdateLayout();
+                        window.UpdateLayout();
+                        check($"{language}/{title}: se puede abrir una carpeta desde Ajustes", folderModel.OverlayFolder is { Options: { Count: > 0 } });
+                        Capture(content, language, captureName + "-open");
+                        folderModel.CloseTopOverlay();
+                        content.UpdateLayout();
+                    }
+
+                    folderModel.CurrentSettingsTab = PanelViewModel.SettingsTab.Alerts;
+                    content.UpdateLayout();
+                    var activityControl = All<ContentControl>(content).FirstOrDefault(control => ReferenceEquals(control.Content, folderModel.ActivityFolders));
+                    FrameworkElement? activityCard = null;
+                    for (DependencyObject? current = activityControl; current is not null; current = VisualTreeHelper.GetParent(current))
+                        if (current is Border border) { activityCard = border; break; }
+                    check($"{language}/Avisos contiene actividades en vivo y no Widgets", activityCard is not null
+                        && All<TextBlock>(content).Any(text => text.IsVisible && text.Text == folderModel.ActivitiesTitle));
+                    if (activityCard is not null) Capture(activityCard, language, "settings-live-activities");
+                    folderModel.ActivityFolders.Tiles.Single(tile => tile.AutomationId == "folder-activities-devices").Open.Execute(null);
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    Capture(content, language, "settings-live-activities-open");
+                    folderModel.OverlayFolder!.Options.Single(option => option.Id == "camera").Open.Execute(null);
+                    content.UpdateLayout();
+                    window.UpdateLayout();
+                    var optionalCamera = All<BrandSwitch>(content).FirstOrDefault(control => control.DataContext is OptionSheet);
+                    check($"{language}/el indicador opcional con la cámara apagada empieza desactivado", optionalCamera is { IsEnabled: true, IsOn: false });
+                    if (optionalCamera is not null) Capture(content, language, "settings-camera-indicator-off");
+                    if (optionalCamera?.DataContext is OptionSheet cameraSheet) cameraSheet.Toggle.Execute(null);
+                    content.UpdateLayout();
+                    optionalCamera = All<BrandSwitch>(content).FirstOrDefault(control => control.DataContext is OptionSheet);
+                    check($"{language}/el indicador opcional se puede activar sin abrir la vista previa", optionalCamera is { IsEnabled: true, IsOn: true });
+                    if (optionalCamera is not null)
+                    {
+                        Capture(content, language, "settings-camera-indicator-on");
+                        Keyboard.Focus(optionalCamera);
+                        content.UpdateLayout();
+                        Capture(content, language, "settings-camera-indicator-focus");
+                    }
                     window.Close();
                     folderModel.Hub.Dispose();
                     continue;
@@ -1231,6 +1398,9 @@ internal static class ContrastAudit
                         ("teleprompter", "1×1", 700d), ("teleprompter", "1×2", 700d),
                         ("code", "1×1", 440d), ("notes", "1×1", 440d),
                     };
+                    if (Environment.GetEnvironmentVariable("ITS_GALLERY_ALL_SIZES") == "1")
+                        galleryCases = WidgetCatalog.All.SelectMany(widget => WidgetLayout.Sizes(widget.Id)
+                            .Select(size => (widget.Id, $"{size.Cols}×{size.Rows}", 700d))).ToArray();
                     if (Environment.GetEnvironmentVariable("ITS_GALLERY_SIDES_ONLY") == "1")
                         galleryCases = [("clock", "1×1", 900d), ("clock", "2×2", 900d), ("clock", "1×2", 900d), ("clock", "1×1", 440d)];
                     if (Environment.GetEnvironmentVariable("ITS_GALLERY_USAGE_ONLY") == "1")
@@ -1240,6 +1410,9 @@ internal static class ContrastAudit
                     // Estante: ITS_GALLERY_SHELF_ONLY=1 y, para ver otro estado, ITS_SHELF_STATE=empty|drag|select (el resto, con los archivos de ejemplo).
                     if (Environment.GetEnvironmentVariable("ITS_GALLERY_SHELF_ONLY") == "1")
                         galleryCases = [("shelf", "1×1", 700d), ("shelf", "2×1", 700d), ("shelf", "2×2", 700d), ("shelf", "1×2", 700d), ("shelf", "1×1", 440d)];
+                    var galleryWidgetFilter = Environment.GetEnvironmentVariable("ITS_GALLERY_WIDGET")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+                    if (galleryWidgetFilter.Length > 0)
+                        galleryCases = galleryCases.Where(c => galleryWidgetFilter.Contains(c.Item1, StringComparer.Ordinal)).ToArray();
                     // Estante en la vista corta (420×147, solo en su página): cada estado a tamaño real. ITS_SHELF_PEEK=1 y ITS_CAPTURE_UI=carpeta.
                     if (Environment.GetEnvironmentVariable("ITS_SHELF_PEEK") == "1")
                     {
@@ -1380,7 +1553,7 @@ internal static class ContrastAudit
                     bool resizeMovesToPage = galleryModel.GalleryAddLabel == L10n.tr("Usar este tamaño en la página");
                     galleryModel.GalleryAdd.Execute(null);
                     bool resizeKeepsOrder = PanelViewModel.HomePages(galleryModel.WidgetIds).SelectMany(page => page)
-                        .SequenceEqual(["system@2", "clock@2x2"]);
+                        .SequenceEqual(["system@2", "clock@2"]);
                     galleryModel.Prefs.SetList(PrefKeys.NotchWidgets, ["ollama@2x2"]);
                     galleryModel.Notify();
                     galleryModel.GalleryDots.First(dot => dot.Name == WidgetCatalog.Find("notes")!.Title).Select.Execute(null);
@@ -1397,6 +1570,45 @@ internal static class ContrastAudit
                     check($"{language}/galería: el tamaño y el botón distinguen Home de una página", resizeMovesToPage && resizeKeepsOrder
                         && addPageLabel && addedPage && removedPage);
                     check($"{language}/galería: seleccionar tamaño, añadir/quitar y deshabilitar al llenar el Home", added && removed && sizeChanged && disabledAtCapacity);
+                    continue;
+                }
+
+                if (displayOnly)
+                {
+                    void StartCursorMode(PanelViewModel model)
+                    {
+                        model.Prefs.SetList(PrefKeys.NotchScreenMode, [NotchScreens.FollowCursor]);
+                        model.Prefs.SetList(PrefKeys.NotchScreens, []);
+                        model.CurrentSettingsTab = PanelViewModel.SettingsTab.Display;
+                    }
+
+                    Page("Display settings cursor", true, StartCursorMode, PanelView.Settings, 1000);
+                    Page("Display settings secondary", true, model =>
+                    {
+                        StartCursorMode(model);
+                        model.ScreenModeSegments[1].Pick.Execute(null);
+                        var screens = Screens.List();
+                        if (screens.FirstOrDefault(screen => !screen.Primary) is { } secondary)
+                        {
+                            var number = Screens.Number(secondary, screens);
+                            model.ScreenTiles.Single(tile => tile.Number == number).Toggle.Execute(null);
+                            check($"{language}: el primer monitor pulsado reemplaza el principal implícito",
+                                model.ScreenTiles.Count(tile => tile.IsOn) == 1 && model.ScreenTiles.Single(tile => tile.Number == number).IsOn);
+                        }
+                        else model.SelectPrimaryScreen.Execute(null);
+                    }, PanelView.Settings, 1000);
+                    Page("Display settings primary", true, model =>
+                    {
+                        StartCursorMode(model);
+                        model.ScreenModeSegments[1].Pick.Execute(null);
+                        model.SelectAllScreens.Execute(null);
+                        bool all = model.ScreenTiles.All(tile => tile.IsOn);
+                        model.SelectPrimaryScreen.Execute(null);
+                        var screens = Screens.List();
+                        var number = Screens.Number(screens.First(screen => screen.Primary), screens);
+                        check($"{language}: ‘Solo el principal’ deja un único monitor tras ‘Todos’", all
+                            && model.ScreenTiles.Count(tile => tile.IsOn) == 1 && model.ScreenTiles.Single(tile => tile.Number == number).IsOn);
+                    }, PanelView.Settings, 1000);
                     continue;
                 }
 
@@ -1487,36 +1699,73 @@ internal static class ContrastAudit
                 }
 
                 // La versión corta (hover) con cada widget solo, el Home con cada widget solo y la lista de widgets por defecto.
-                foreach (var widget in WidgetCatalog.All)
+                var homeWidgetFilter = Environment.GetEnvironmentVariable("ITS_GALLERY_WIDGET")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+                foreach (var widget in WidgetCatalog.All.Where(widget => homeWidgetFilter.Length == 0 || homeWidgetFilter.Contains(widget.Id, StringComparer.Ordinal)))
                 {
-                    prefs.SetList(PrefKeys.NotchWidgets, [widget.Id == "notes" ? "notes@1" : widget.Id]);
-                    prefs.SetList(PrefKeys.NotchPeekWidgets, [widget.Id]);
-                    var home = NewModel(true);
-                    home.Show(PanelView.Home);
-                    var homeView = new ContentView(home);
-                    var homeWindow = Host(homeView);
-                    homeWindow.Show();
-                    homeWindow.UpdateLayout();
-                    Audit($"Home con {widget.Id}", homeView, true);
-                    if (widget.Id == "clock")
+                    bool allSizes = Environment.GetEnvironmentVariable("ITS_GALLERY_ALL_SIZES") == "1";
+                    IReadOnlyList<(int Cols, int Rows)> sizes = allSizes ? WidgetLayout.Sizes(widget.Id)
+                        : new[] { (Cols: widget.Id == "notes" ? 1 : widget.Cells, Rows: widget.Id == "notes" ? 1 : WidgetLayout.DefaultRows(widget.Id)) };
+                    foreach (var size in sizes)
                     {
-                        Capture(homeView, language, "calendar-solo-wide");
-                        if (home.HomeWidgets.SingleOrDefault()?.Model is ClockWidget clock)
+                        string homeId = WidgetLayout.Token(widget.Id, size.Cols, size.Rows, home: true);
+                        string peekId = WidgetLayout.Token(widget.Id, size.Cols, size.Rows, home: false);
+                        string sizeLabel = $"{size.Cols}x{size.Rows}";
+                        prefs.SetList(PrefKeys.NotchWidgets, [homeId]);
+                        prefs.SetList(PrefKeys.NotchPeekWidgets, [peekId]);
+                        var home = NewModel(true);
+                        home.Show(PanelView.Home);
+                        var homeView = new ContentView(home);
+                        var homeWindow = Host(homeView);
+                        homeWindow.Show();
+                        homeWindow.UpdateLayout();
+                        Audit($"Home con {widget.Id} {sizeLabel}", homeView, true);
+                        if (allSizes && All<ItemsControl>(homeView).FirstOrDefault(control => control.Name == "HomeItems") is { } homeItems)
+                            Capture(homeItems, language, $"widget-home-{widget.Id}-{sizeLabel}");
+                        if (widget.Id == "clock" && homeId == widget.Id)
                         {
-                            clock.ToggleAdder.Execute(null);
-                            homeWindow.UpdateLayout();
-                            Audit("Calendario con formulario abierto", homeView, true);
-                            Capture(homeView, language, "calendar-adder-open");
+                            Capture(homeView, language, "calendar-solo-wide");
+                            if (home.HomeWidgets.SingleOrDefault()?.Model is ClockWidget clock)
+                            {
+                                clock.ToggleAdder.Execute(null);
+                                homeWindow.UpdateLayout();
+                                Audit("Calendario con formulario abierto", homeView, true);
+                                Capture(homeView, language, "calendar-adder-open");
+                            }
+                        }
+                        homeWindow.Close();
+                        home.Hub.Dispose();
+
+                        var peekModel = NewModel(true);
+                        var peek = new NotchPeek(peekModel);
+                        var peekWindow = Host(peek, 700, 600);
+                        peekWindow.Show();
+                        peekWindow.UpdateLayout();
+                        Audit($"Vista corta con {widget.Id} {sizeLabel}", peek, true);
+                        if (allSizes) Capture(peek, language, $"widget-hover-{widget.Id}-{sizeLabel}");
+                        peekWindow.Close();
+                        peekModel.Hub.Dispose();
+
+                        if (allSizes && size == sizes[0])
+                        {
+                            var config = NewModel(true);
+                            config.Show(PanelView.Widgets);
+                            var configView = new ContentView(config);
+                            var configWindow = Host(configView, 700, 900);
+                            configWindow.Show();
+                            configWindow.UpdateLayout();
+                            string folderId = WidgetCatalog.Folders.Single(folder => folder.Widgets.Contains(widget.Id)).Id;
+                            config.HomeFolders.Tiles.Single(tile => tile.AutomationId == $"folder-home-{folderId}").Open.Execute(null);
+                            config.OverlayFolder!.Options.Single(option => option.Id == widget.Id).Open.Execute(null);
+                            configView.UpdateLayout();
+                            configWindow.UpdateLayout();
+                            var sheetPreviews = config.Sheet?.Previews.OfType<WidgetPreview>().ToArray() ?? [];
+                            check($"{language}/configuración {widget.Id}: hay vistas previas de sus tamaños",
+                                sheetPreviews.Length > 0 && sheetPreviews.All(preview => preview.Slot.Model is not null));
+                            Capture(configView, language, $"widget-config-{widget.Id}");
+                            configWindow.Close();
+                            config.Hub.Dispose();
                         }
                     }
-                    homeWindow.Close();
-                    var peekModel = NewModel(true);
-                    var peek = new NotchPeek(peekModel);
-                    var peekWindow = Host(peek, 700, 600);
-                    peekWindow.Show();
-                    peekWindow.UpdateLayout();
-                    Audit($"Versión corta con {widget.Id}", peek, true);
-                    peekWindow.Close();
                 }
 
                 // Home conserva sus cuatro celdas; cada widget que excede ese espacio ocupa una página propia.
@@ -1544,7 +1793,7 @@ internal static class ContrastAudit
                 prefs.SetList(PrefKeys.NotchWidgets, WidgetCatalog.DefaultWidgets);
                 prefs.SetList(PrefKeys.NotchPeekWidgets, WidgetCatalog.DefaultPeek);
             }
-            if (clipboardOnly || cameraOnly || mediaOnly || foldersOnly || calendarOnly
+            if (clipboardOnly || cameraOnly || mediaOnly || foldersOnly || calendarOnly || displayOnly
                 || homePagesOnly || Environment.GetEnvironmentVariable("ITS_ONLY_GALLERY") == "1") return;
             // Lo que abre ventanas y popups propios (notch, «Acerca de», menú, tooltip) va después de todo lo demás: deja estado en WPF.
             foreach (var language in new[] { Language.En, Language.Es })

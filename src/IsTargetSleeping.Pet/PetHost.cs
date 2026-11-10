@@ -327,6 +327,8 @@ public static class PetHost
         {
             if (o.UploadsPath is null || o.Policy is null || !Phone(ctx)) { await Reply(ctx, 403, PetProtocol.Error("forbidden", "solo desde el celular")); return; }
             if (o.Policy.Paused) { await Reply(ctx, 403, PetProtocol.Error("forbidden", "Nimbo esta en pausa")); return; }
+            // La subida necesita su propio tope; el resto de peticiones conserva el límite pequeño del protocolo.
+            ctx.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>()?.MaxRequestBodySize = UploadMax;
             string name = new string((ctx.Request.Query["name"].ToString() ?? "").Where(c => char.IsLetterOrDigit(c) || c is '.' or '-' or '_' or ' ').ToArray()).Trim(' ', '.');
             if (name.Length > 60) name = name[^60..];
             string ext = Path.GetExtension(name).ToLowerInvariant();
